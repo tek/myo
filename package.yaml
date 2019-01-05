@@ -1,0 +1,87 @@
+name: myo
+version: 0.1.1.0
+synopsis: neovim layout & command manager
+description: Please see the README on GitHub at <https://github.com/tek/myo-hs>
+github: "tek/myo-hs"
+license: MIT
+license-file: LICENSE
+author: "Torsten Schmits"
+maintainer: "tek@tryp.io"
+copyright: "2018 Torsten Schmits"
+category: Neovim
+build-type: Simple
+
+extra-source-files:
+- README.md
+
+dependencies:
+- base >= 4.7 && < 5
+- ribosome >= 0.1.2
+- chiasma
+- nvim-hs
+- unliftio
+- data-default-class
+- lens
+- hslogger
+- deepseq
+- messagepack
+- prettyprinter
+- containers
+- parsec
+- conduit
+- stm-conduit
+- stm-chans
+- resourcet
+- bytestring
+- typed-process
+- filepath
+- directory
+- split
+- messagepack
+- transformers
+- strings
+- uuid
+
+library:
+ source-dirs: lib
+
+default-extensions:
+- ExistentialQuantification
+- UnicodeSyntax
+- TypeApplications
+- ScopedTypeVariables
+- DeriveGeneric
+- DeriveAnyClass
+
+executables:
+ myo:
+  main: Main.hs
+  source-dirs: app
+  ghc-options:
+  - -threaded
+  - -rtsopts
+  - -with-rtsopts=-N
+  dependencies:
+  - myo
+
+tests:
+  myo-unit:
+    main: SpecMain.hs
+    source-dirs: test/u
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - myo
+    - HTF
+  myo-functional:
+    main: SpecMain.hs
+    source-dirs: test/f
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - myo
+    - HTF
