@@ -3,7 +3,7 @@ module Myo.Command.Data.Command(
 ) where
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
-import Myo.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident)
 
 data Command =
   Command {

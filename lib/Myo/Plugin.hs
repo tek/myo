@@ -9,24 +9,28 @@ where
 import UnliftIO.STM (TVar)
 import Neovim (
   Plugin(..),
-  command',
   Neovim,
   StartupConfig,
   NeovimConfig,
   NeovimPlugin,
+  Synchronous(Async),
+  command',
+  function',
   wrapPlugin,
   )
 import Ribosome.Control.Ribosome (Ribosome)
 import Myo.Init (initialize)
 import Myo.Data.Env (Env)
 import Myo.Diag (myoDiag)
+import Myo.Ui.Toggle (myoTogglePane)
 
 plugin' :: Ribosome (TVar Env) -> Plugin (Ribosome (TVar Env))
 plugin' env =
   Plugin {
     environment = env,
     exports = [
-      $(command' 'myoDiag) []
+      $(command' 'myoDiag) [],
+      $(function' 'myoTogglePane) Async
     ]
   }
 

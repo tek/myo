@@ -41,17 +41,22 @@ dependencies:
 - transformers
 - strings
 - uuid
+- mtl
+- free
 
 library:
  source-dirs: lib
 
 default-extensions:
-- ExistentialQuantification
-- UnicodeSyntax
-- TypeApplications
-- ScopedTypeVariables
-- DeriveGeneric
 - DeriveAnyClass
+- DeriveGeneric
+- ExistentialQuantification
+- FlexibleContexts
+- OverloadedStrings
+- ScopedTypeVariables
+- TypeApplications
+- TypeSynonymInstances
+- UnicodeSyntax
 
 executables:
  myo:

@@ -9,7 +9,7 @@ import Data.Default.Class (Default(def))
 import Test.Framework
 import Ribosome.Api.Buffer (currentBufferContent)
 import Myo.Data.Myo (Myo)
-import Myo.Test.Unit (specWithDef)
+import Myo.Test.Unit (tmuxSpecWithDef)
 import Myo.Diag (myoDiag)
 import Config (vars)
 
@@ -27,4 +27,4 @@ diagSpec = do
 
 test_diag :: IO ()
 test_diag =
-  vars >>= specWithDef diagSpec
+  vars >>= tmuxSpecWithDef diagSpec

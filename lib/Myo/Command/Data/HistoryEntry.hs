@@ -3,7 +3,7 @@ module Myo.Command.Data.HistoryEntry(
 ) where
 
 import Myo.Command.Data.Command (Command)
-import Myo.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident)
 
 data HistoryEntry =
   HistoryEntry {

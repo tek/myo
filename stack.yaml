@@ -1,10 +1,11 @@
 resolver: lts-12.26
 packages:
 - .
-# - ribosome
+- ribosome
+- chiasma
 extra-deps:
 - strings-1.1
 - pretty-terminal-0.1.0.0
-- ribosome-0.1.2.0
-- chiasma-0.1.0.0
 - posix-pty-0.2.1.1
+# - ribosome-0.1.2.0
+# - chiasma-0.1.0.0

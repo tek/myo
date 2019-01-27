@@ -3,6 +3,7 @@
 module Main where
 
 import {-@ HTF_TESTS @-} DiagSpec
+import {-@ HTF_TESTS @-} TogglePaneSpec
 import Test.Framework
 import Test.Framework.BlackBoxTest ()
 

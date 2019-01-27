@@ -1,5 +1,8 @@
 module Myo.Data.Myo(
   Myo,
+  Ribo,
+  TVar,
+  Env,
 ) where
 
 import UnliftIO.STM (TVar)

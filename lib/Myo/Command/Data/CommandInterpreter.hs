@@ -2,7 +2,7 @@ module Myo.Command.Data.CommandInterpreter(
   CommandInterpreter(..),
 ) where
 
-import Myo.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident)
 
 data CommandInterpreter =
   System {
