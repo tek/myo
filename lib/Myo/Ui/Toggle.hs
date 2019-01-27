@@ -1,5 +1,6 @@
 module Myo.Ui.Toggle(
   myoTogglePane,
+  myoToggleLayout,
 ) where
 
 import Control.Lens (view)
@@ -20,7 +21,8 @@ import Myo.Tmux.IO (liftTmux)
 import Myo.Ui.Data.Space (Space(Space))
 import Myo.Ui.Data.Window (Window(Window))
 import Myo.Ui.Render (renderSpace)
-import Myo.Ui.Lens.Toggle (envToggleOnePane)
+import Myo.Ui.Lens.Toggle (envToggleOnePane, envToggleOneLayout)
+import qualified Myo.Log as Log
 
 myoRender :: Myo ()
 myoRender = do
@@ -32,7 +34,7 @@ myoRender = do
 
 reportError :: TreeModError -> Myo ()
 reportError =
-  undefined
+  Log.p
 
 togglePane :: Ident -> ExceptT TreeModError (Ribo (TVar Env)) ()
 togglePane ident = do
@@ -43,4 +45,15 @@ togglePane ident = do
 myoTogglePane :: NO Ident -> Myo ()
 myoTogglePane (NO ident) = do
   result <- runExceptT $ togglePane ident
+  either reportError (const myoRender) result
+
+toggleLayout :: Ident -> ExceptT TreeModError (Ribo (TVar Env)) ()
+toggleLayout ident = do
+  env <- lift Ribo.state
+  newEnv <- envToggleOneLayout ident env
+  lift $ Ribo.put newEnv
+
+myoToggleLayout :: NO Ident -> Myo ()
+myoToggleLayout (NO ident) = do
+  result <- runExceptT $ toggleLayout ident
   either reportError (const myoRender) result
