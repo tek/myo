@@ -48,11 +48,12 @@ specWithDef =
   specWith def
 
 insertInitialViews :: Views -> Views
-insertInitialViews (Views sessions windows panes) =
+insertInitialViews (Views sessions windows panes viewsLog) =
   Views
     (Tmux.View (Ident.Str "vim") (Just (SessionId 0)) : sessions)
     (Tmux.View (Ident.Str "vim") (Just (WindowId 0)) : windows)
     (Tmux.View (Ident.Str "vim") (Just (PaneId 0)) : panes)
+    viewsLog
 
 vimTree :: ViewTree
 vimTree =

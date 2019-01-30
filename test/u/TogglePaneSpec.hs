@@ -4,34 +4,23 @@ module TogglePaneSpec(
   htf_thisModulesTests
 ) where
 
-import Test.Framework
-import Control.Lens (mapMOf)
-import Control.Monad.Error.Class (throwError, liftEither)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (runExceptT)
-import Data.Default.Class (Default(def))
+import Test.Framework
 import UnliftIO.Exception (throwString)
+
 import qualified Chiasma.Monad.Tmux as Tmux (read)
-import Chiasma.Data.Ident
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Chiasma.Codec.Data as Codec (Pane)
-import Chiasma.Ui.Data.TreeModError
-import Chiasma.Ui.Data.View (View, consLayout, consPane, Layout, Pane, ViewTree, Tree(..), TreeSub(..))
-import Chiasma.Ui.ViewTree (togglePane)
+import Chiasma.Ui.Data.View (View, consLayout, consPane, Layout, Pane)
 import Ribosome.Msgpack.NvimObject (NO(..))
-import qualified Ribosome.Control.Ribo as Ribo (state)
 import Myo.Data.Myo (Myo)
-import Myo.Data.Env (Env(ui))
 import Myo.Test.Unit (tmuxSpecWithDef)
 import Myo.Tmux.IO (liftTmux)
 import Myo.Ui.View
 import Myo.Ui.Data.ViewCoords (viewCoords)
-import Myo.Ui.Data.UiState (UiState(..))
-import Myo.Ui.Data.Space (Space(Space))
-import Myo.Ui.Data.Window (Window(Window))
 import Myo.Ui.Toggle (myoTogglePane)
 import Config (vars)
-import qualified Myo.Log as Log
 
 layout :: View Layout
 layout = consLayout (Ident.Str "l")

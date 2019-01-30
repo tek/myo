@@ -24,7 +24,7 @@ envToggleOneView ::
   Ident ->
   Env ->
   m Env
-envToggleOneView toggle err ident env =
+envToggleOneView toggle consError ident env =
   liftEither (newEnv <$ check)
   where
     ((_, check), newEnv) = mapAccumLOf envTreesLens toggleExactlyOne (False, Left TreeModError.NoTrees) env
@@ -32,8 +32,9 @@ envToggleOneView toggle err ident env =
       case (acc, toggle ident a) of
         ((False, Left err), Right tree) -> ((True, checkPreviousError err), tree)
         ((True, Left err), _) -> ((True, checkPreviousError err), a)
-        ((True, _), Right _) -> ((True, Left $ err ident 2), a)
+        ((True, _), Right _) -> ((True, Left $ consError ident 2), a)
         ((found, _), Left err) -> ((found, Left err), a)
+        ((False, Right _), Right _) -> ((True, Left $ consError ident 2), a)
     checkPreviousError err = case err of
       TreeModError.NoTrees -> Right ()
       TreeModError.LayoutMissing _ -> Right ()

@@ -22,7 +22,8 @@ import Ribosome.Control.Ribosome (Ribosome)
 import Myo.Init (initialize)
 import Myo.Data.Env (Env)
 import Myo.Diag (myoDiag)
-import Myo.Ui.Toggle (myoTogglePane)
+import Myo.Ui.Toggle (myoTogglePane, myoToggleLayout)
+import Myo.Command.Run (myoRun)
 
 plugin' :: Ribosome (TVar Env) -> Plugin (Ribosome (TVar Env))
 plugin' env =
@@ -30,7 +31,9 @@ plugin' env =
     environment = env,
     exports = [
       $(command' 'myoDiag) [],
-      $(function' 'myoTogglePane) Async
+      $(function' 'myoTogglePane) Async,
+      $(function' 'myoToggleLayout) Async,
+      $(function' 'myoRun) Async
     ]
   }
 

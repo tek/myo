@@ -48,15 +48,46 @@ library:
  source-dirs: lib
 
 default-extensions:
-- DeriveAnyClass
+- AutoDeriveTypeable
+- BangPatterns
+- BinaryLiterals
+- ConstraintKinds
+- DataKinds
+- DefaultSignatures
+- DeriveDataTypeable
+- DeriveFoldable
+- DeriveFunctor
 - DeriveGeneric
+- DeriveTraversable
+- DoAndIfThenElse
+- EmptyDataDecls
 - ExistentialQuantification
 - FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
+- GADTs
+- GeneralizedNewtypeDeriving
+- InstanceSigs
+- KindSignatures
+- LambdaCase
+- MonadFailDesugaring
+- MultiParamTypeClasses
+- MultiWayIf
+- NamedFieldPuns
 - OverloadedStrings
+- PartialTypeSignatures
+- PatternGuards
+- PolyKinds
+- RankNTypes
+- RecordWildCards
 - ScopedTypeVariables
+- StandaloneDeriving
+- TupleSections
 - TypeApplications
+- TypeFamilies
 - TypeSynonymInstances
 - UnicodeSyntax
+- ViewPatterns
 
 executables:
  myo:
