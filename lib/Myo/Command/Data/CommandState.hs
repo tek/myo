@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module Myo.Command.Data.CommandState(
   CommandState(..),
 ) where

@@ -7,7 +7,7 @@ import Chiasma.Data.Ident (Ident)
 
 data Command =
   Command {
-    name :: Ident,
-    interpreter :: CommandInterpreter
+    cmdIdent :: Ident,
+    cmdInterpreter :: CommandInterpreter
   }
   deriving (Eq, Show)
