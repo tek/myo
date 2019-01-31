@@ -11,7 +11,9 @@ import qualified Ribosome.Control.Ribo as Ribo (inspect)
 import Ribosome.Control.Monad.RiboE (runRiboE, liftRibo)
 import Ribosome.Control.Monad.State (riboState, runRiboState)
 import Ribosome.Data.Errors (ComponentName(ComponentName))
-import qualified Ribosome.Data.Errors as Errors (_componentErrors, _errorMessage)
+import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
+import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
+import Ribosome.Error.Report (reportError)
 import Ribosome.Msgpack.NvimObject (NO(..))
 import Test.Framework
 
@@ -24,18 +26,17 @@ import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner)
 import Myo.Data.Env (Myo, MyoE, Runner, Pid)
 import qualified Myo.Data.Env as Env (_errors)
-import Myo.Env (logError)
 import Myo.Test.Unit (specWithDef)
 
 testError :: String
 testError = "error"
 
-cname :: ComponentName
-cname = ComponentName "test"
+cname :: String
+cname = "test"
 
 runDummy :: RunTask -> MyoE RunError (Maybe Pid)
 runDummy _ = do
-  liftRibo $ logError cname [testError]
+  liftRibo $ reportError cname [testError]
   return Nothing
 
 runSpec :: Myo ()
@@ -44,9 +45,9 @@ runSpec = do
   myoAddSystemCommand $ NO $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing
   _ <- runRiboState $ addRunner (Str "dummy") runDummy (const True)
   myoRun (NO ident)
-  loggedError <- Ribo.inspect $ Lens.view $ Env._errors . Errors._componentErrors . Lens.at cname
-  let errorMessage = fmap (Lens.view Errors._errorMessage) <$> loggedError
-  liftIO $ assertEqual (Just [[testError]]) errorMessage
+  loggedError <- Ribo.inspect $ Lens.view $ Env._errors . Errors.componentErrors . Lens.at (ComponentName cname)
+  let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError
+  liftIO $ assertEqual (Just [testError]) errorReport
 
 test_run :: IO ()
 test_run =

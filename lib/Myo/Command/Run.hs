@@ -82,4 +82,4 @@ runIdent ident = do
 
 myoRun :: NO Ident -> Myo ()
 myoRun (NO ident) =
-  runRiboReport $ runIdent ident
+  runRiboReport "command" $ runIdent ident

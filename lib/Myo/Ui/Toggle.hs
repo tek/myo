@@ -28,7 +28,7 @@ togglePane =
 
 myoTogglePane :: NO Ident -> Myo ()
 myoTogglePane (NO ident) =
-  runRiboReport $ togglePane ident
+  runRiboReport "ui" $ togglePane ident
 
 toggleLayout :: Ident -> MyoE ToggleError ()
 toggleLayout =
@@ -36,4 +36,4 @@ toggleLayout =
 
 myoToggleLayout :: NO Ident -> Myo ()
 myoToggleLayout (NO ident) =
-  runRiboReport $ toggleLayout ident
+  runRiboReport "ui" $ toggleLayout ident

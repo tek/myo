@@ -29,10 +29,10 @@ myoTmux :: ExceptT e MyoTmuxProg a -> MyoE TmuxError (Either e a)
 myoTmux =
   RiboE . ExceptT . liftTmux . runExceptT
 
-myoTmuxReport :: ReportError e => ExceptT e MyoTmuxProg () -> Myo ()
-myoTmuxReport ma = do
+myoTmuxReport :: ReportError e => String -> ExceptT e MyoTmuxProg () -> Myo ()
+myoTmuxReport componentName ma = do
   result <- runRiboE $ myoTmux ma
   case result of
     Right (Right _) -> return ()
-    Right (Left e) -> reportError e
-    Left e -> reportErrorWith tmuxErrorReport e
+    Right (Left e) -> reportError componentName e
+    Left e -> reportErrorWith componentName tmuxErrorReport e
