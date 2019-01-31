@@ -20,7 +20,7 @@ dependencies:
 - chiasma
 - nvim-hs
 - unliftio
-- data-default-class
+- data-default
 - lens
 - hslogger
 - deepseq
@@ -43,6 +43,7 @@ dependencies:
 - uuid
 - mtl
 - free
+- unix
 
 library:
  source-dirs: lib

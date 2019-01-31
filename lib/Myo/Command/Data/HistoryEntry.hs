@@ -3,11 +3,9 @@ module Myo.Command.Data.HistoryEntry(
 ) where
 
 import Myo.Command.Data.Command (Command)
-import Chiasma.Data.Ident (Ident)
 
-data HistoryEntry =
+newtype HistoryEntry =
   HistoryEntry {
-    command :: Command,
-    target :: Maybe Ident
+    command :: Command
   }
   deriving (Eq, Show)

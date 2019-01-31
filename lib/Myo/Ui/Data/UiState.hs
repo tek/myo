@@ -9,7 +9,7 @@ module Myo.Ui.Data.UiState(
 
 import Control.Lens (makeClassy_)
 import GHC.Generics (Generic)
-import Data.Default.Class (Default)
+import Data.Default (Default)
 import Chiasma.Data.Views (Views)
 import Myo.Ui.Data.Space (Space)
 

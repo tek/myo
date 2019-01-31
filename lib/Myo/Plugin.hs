@@ -37,7 +37,7 @@ plugin' env =
     ]
   }
 
-plugin :: Neovim (StartupConfig NeovimConfig) NeovimPlugin
-plugin = do
-  env <- initialize
+plugin :: FilePath -> Neovim (StartupConfig NeovimConfig) NeovimPlugin
+plugin tempdir = do
+  env <- initialize tempdir
   wrapPlugin $ plugin' env

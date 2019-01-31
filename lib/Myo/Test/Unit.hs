@@ -6,14 +6,6 @@ module Myo.Test.Unit(
   tmuxSpecWithDef,
 ) where
 
-import qualified Control.Lens as Lens (over)
-import Data.Default.Class (def)
-import UnliftIO (throwString)
-import UnliftIO.STM (newTVarIO)
-import Ribosome.Config.Setting (updateSetting)
-import qualified Ribosome.Control.Ribo as Ribo (modify)
-import Ribosome.Test.Embed (Vars, TestConfig)
-import Ribosome.Test.Unit (unitSpec)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Chiasma.Data.TmuxId (SessionId(..), WindowId(..), PaneId(..))
 import qualified Chiasma.Data.View as Tmux (View(View))
@@ -21,8 +13,18 @@ import Chiasma.Data.Views (Views(Views))
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Chiasma.Test.Tmux (tmuxSpec)
 import Chiasma.Ui.Data.View
+import qualified Control.Lens as Lens (over)
+import Data.Default (def)
+import Ribosome.Config.Setting (updateSetting)
+import qualified Ribosome.Control.Ribo as Ribo (modify)
+import Ribosome.Test.Embed (Vars, TestConfig)
+import Ribosome.Test.Unit (unitSpec)
+import UnliftIO (throwString)
+import UnliftIO.STM (newTVarIO)
+
+import Myo.Data.Env (Env(tempDir))
 import Myo.Data.Myo (Myo)
-import Myo.Data.Env (Env)
+import Myo.Env (bracketMyoTempDir)
 import Myo.Settings (tmuxSocket)
 import Myo.Test.Config (defaultTestConfig, defaultTestConfigWith)
 import Myo.Ui.Data.Space (Space(Space))
@@ -39,9 +41,12 @@ spec =
   specConfig defaultTestConfig
 
 specWith :: Env -> Myo () -> Vars -> IO ()
-specWith e s vars = do
-  t <- newTVarIO e
-  unitSpec (defaultTestConfigWith vars) t s
+specWith env thunk vars =
+  bracketMyoTempDir run
+  where
+    run tempdir = do
+      t <- newTVarIO env { tempDir = tempdir }
+      unitSpec (defaultTestConfigWith vars) t thunk
 
 specWithDef :: Myo () -> Vars -> IO ()
 specWithDef =

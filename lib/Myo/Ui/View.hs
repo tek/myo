@@ -9,13 +9,23 @@ import Control.Monad.Trans.Class (lift)
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Views (Views)
 import Chiasma.Ui.Lens.Ident (matchIdentL)
-import Chiasma.Ui.Data.View (View(View), consLayout, Pane(Pane), Tree(..), ViewTree, LayoutView, PaneView, TreeSub(..), viewIdent)
+import Chiasma.Ui.Data.View (
+  View(View),
+  consLayout,
+  Pane(Pane),
+  Tree(..),
+  ViewTree,
+  LayoutView,
+  PaneView,
+  TreeSub(..),
+  viewIdent,
+  )
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.ViewState (ViewState(ViewState))
 import qualified Ribosome.Control.Ribo as Ribo (modify, inspect, put)
 import qualified Myo.Data.Env as Env (_ui)
-import Myo.Data.Myo (Myo, Ribo, TVar, Env)
+import Myo.Data.Env (Myo, Ribo, Env)
 import Myo.Ui.Data.ViewCoords (ViewCoords(ViewCoords))
 import Myo.Ui.Data.Space (Space(Space))
 import qualified Myo.Ui.Data.Space as Space (_windows)
@@ -112,20 +122,20 @@ insertPaneEnv :: ViewCoords -> PaneView -> Env -> Maybe Env
 insertPaneEnv =
   insertViewEnv insertPaneIfNonexistent
 
-modifyTree :: (Env -> Either TreeModError Env) -> ExceptT TreeModError (Ribo (TVar Env)) ()
+modifyTree :: (Env -> Either TreeModError Env) -> ExceptT TreeModError (Ribo Env) ()
 modifyTree trans = do
   env <- ExceptT $ Ribo.inspect trans
   lift $ Ribo.put env
 
-modifyTreeMaybe :: (Env -> Maybe Env) -> TreeModError -> ExceptT TreeModError (Ribo (TVar Env)) ()
+modifyTreeMaybe :: (Env -> Maybe Env) -> TreeModError -> ExceptT TreeModError (Ribo Env) ()
 modifyTreeMaybe trans err =
   modifyTree $ maybe (Left err) Right . trans
 
-insertLayout :: ViewCoords -> LayoutView -> ExceptT TreeModError (Ribo (TVar Env)) ()
+insertLayout :: ViewCoords -> LayoutView -> ExceptT TreeModError (Ribo Env) ()
 insertLayout coords view =
   modifyTreeMaybe (insertLayoutEnv coords view) (TreeModError.LayoutExists view)
 
-insertPane :: ViewCoords -> PaneView -> ExceptT TreeModError (Ribo (TVar Env)) ()
+insertPane :: ViewCoords -> PaneView -> ExceptT TreeModError (Ribo Env) ()
 insertPane coords view =
   modifyTreeMaybe (insertPaneEnv coords view) (TreeModError.PaneExists view)
 

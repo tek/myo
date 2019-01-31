@@ -2,12 +2,17 @@ module Myo.Command.Data.Command(
   Command(..),
 ) where
 
+import Chiasma.Data.Ident (Ident, Identifiable(..))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
-import Chiasma.Data.Ident (Ident)
 
 data Command =
   Command {
+    cmdInterpreter :: CommandInterpreter,
     cmdIdent :: Ident,
-    cmdInterpreter :: CommandInterpreter
+    cmdLines :: [String],
+    cmdRunner :: Maybe Ident
   }
   deriving (Eq, Show)
+
+instance Identifiable Command where
+  identify = cmdIdent

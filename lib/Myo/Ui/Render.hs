@@ -21,7 +21,7 @@ import Chiasma.Monad.Stream (TmuxProg)
 import Chiasma.Render (render)
 import Ribosome.Control.Monad.Trans.Ribo (Ribo)
 import Ribosome.Control.Monad.RiboE (liftRibo, anaE)
-import Ribosome.Control.Monad.State (riboStateLocal)
+import Ribosome.Control.Monad.State (riboStateLocalT)
 import Myo.Data.Myo (Env, MyoE)
 import Myo.Env (myoSpaces)
 import Myo.Tmux.IO (myoTmux)
@@ -48,7 +48,7 @@ renderSpace cwd (Space ident windows) =
 
 renderSpaces :: FilePath -> [Space] -> ExceptT RenderError (TmuxProg (Ribo Env)) ()
 renderSpaces cwd spaces =
-  riboStateLocal envViewsLens $ traverse_ (renderSpace cwd) spaces
+  riboStateLocalT envViewsLens $ traverse_ (renderSpace cwd) spaces
 
 myoRender :: MyoE RenderError ()
 myoRender = do

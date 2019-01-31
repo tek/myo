@@ -5,7 +5,7 @@ module DiagSpec(
 ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Default.Class (Default(def))
+import Data.Default (Default(def))
 import Test.Framework
 import Ribosome.Api.Buffer (currentBufferContent)
 import Myo.Data.Myo (Myo)
