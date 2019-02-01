@@ -9,13 +9,12 @@ import qualified Control.Lens as Lens (views)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.State.Class (MonadState, gets)
 import Data.Foldable (find)
-import qualified Ribosome.Control.Ribo as Ribo (prepend)
 import Ribosome.Control.Monad.State (prepend)
 
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..))
-import Myo.Data.Env (Env, Myo, Runner(Runner), RunF, CanRun)
+import Myo.Data.Env (Env, Runner(Runner), RunF, CanRun)
 import qualified Myo.Data.Env as Env (_runners)
 
 canRun :: RunTask -> Runner -> Bool

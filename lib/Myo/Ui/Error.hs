@@ -2,9 +2,9 @@ module Myo.Ui.Error(
   tmuxErrorReport,
   renderErrorReport,
   treeModErrorReport,
+  viewsErrorReport,
 ) where
 
-import System.Log (Priority(ERROR, DEBUG))
 import Chiasma.Data.Cmd (Cmds(Cmds))
 import Chiasma.Data.Ident (Ident, identString)
 import Chiasma.Data.RenderError (RenderError)
@@ -14,6 +14,7 @@ import Chiasma.Data.Views (ViewsError(..))
 import Chiasma.Ui.Data.TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.View (View(View))
 import Ribosome.Error.Report (ErrorReport(ErrorReport))
+import System.Log (Priority(ERROR, DEBUG))
 
 invalidOutput :: String
 invalidOutput = "invalid output from tmux process"

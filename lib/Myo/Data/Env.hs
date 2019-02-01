@@ -14,7 +14,6 @@ module Myo.Data.Env(
   Runner(..),
   RunF,
   CanRun,
-  Pid(..),
 ) where
 
 import Chiasma.Data.Ident (Ident(Str))
@@ -22,7 +21,6 @@ import Control.Lens (makeClassy_)
 import Data.Default (Default(def))
 import Ribosome.Control.Monad.RiboE (RiboE, Ribo)
 import Ribosome.Data.Errors (Errors)
-import UnliftIO.STM (TVar)
 
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Pid (Pid)

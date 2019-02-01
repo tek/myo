@@ -1,6 +1,7 @@
 module Myo.Ui.Lens.Toggle(
   envToggleOnePane,
   envToggleOneLayout,
+  envOpenOnePane,
 ) where
 
 import Control.Lens (mapAccumLOf)
@@ -9,7 +10,7 @@ import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.View (ViewTree)
-import Chiasma.Ui.ViewTree (togglePane, toggleLayout)
+import Chiasma.Ui.ViewTree (togglePane, toggleLayout, openPane)
 import Myo.Data.Env (Env)
 import Myo.Ui.View (envTreesLens)
 
@@ -48,3 +49,7 @@ envToggleOnePane =
 envToggleOneLayout :: MonadError TreeModError m => Ident -> Env -> m Env
 envToggleOneLayout =
   envToggleOneView toggleLayout TreeModError.AmbiguousLayout
+
+envOpenOnePane :: MonadError TreeModError m => Ident -> Env -> m Env
+envOpenOnePane =
+  envToggleOneView openPane TreeModError.AmbiguousPane

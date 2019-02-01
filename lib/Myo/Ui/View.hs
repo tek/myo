@@ -2,13 +2,8 @@
 
 module Myo.Ui.View where
 
-import Control.Lens (Lens', Traversal', transformM, mapMOf, has, each)
-import Control.Lens.Setter ((<>~), (%~))
-import Control.Monad.Trans.Except (ExceptT(ExceptT))
-import Control.Monad.Trans.Class (lift)
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Views (Views)
-import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Chiasma.Ui.Data.View (
   View(View),
   consLayout,
@@ -23,16 +18,22 @@ import Chiasma.Ui.Data.View (
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.ViewState (ViewState(ViewState))
+import Chiasma.Ui.Lens.Ident (matchIdentL)
+import Control.Lens (Lens', Traversal', transformM, mapMOf, has, each)
+import Control.Lens.Setter ((<>~), (%~))
+import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Except (ExceptT(ExceptT))
+import Data.Foldable (traverse_)
 import qualified Ribosome.Control.Ribo as Ribo (modify, inspect, put)
-import qualified Myo.Data.Env as Env (_ui)
+
 import Myo.Data.Env (Myo, Ribo, Env)
-import Myo.Ui.Data.ViewCoords (ViewCoords(ViewCoords))
+import qualified Myo.Data.Env as Env (_ui)
 import Myo.Ui.Data.Space (Space(Space))
 import qualified Myo.Ui.Data.Space as Space (_windows)
+import qualified Myo.Ui.Data.UiState as UiState (_spaces, _views)
+import Myo.Ui.Data.ViewCoords (ViewCoords(ViewCoords))
 import Myo.Ui.Data.Window (Window(Window))
 import qualified Myo.Ui.Data.Window as Window (_layout)
-import qualified Myo.Ui.Data.UiState as UiState (_spaces, _views)
-import Data.Foldable (traverse_)
 
 envSpacesLens :: Lens' Env [Space]
 envSpacesLens = Env._ui . UiState._spaces

@@ -2,20 +2,23 @@ module Myo.Init(
   initialize,
 ) where
 
-import Data.Default (Default(def))
-import System.Log.Logger (updateGlobalLogger, setLevel, Priority(ERROR))
+import Chiasma.Data.Ident (generateIdent)
 import Control.Monad.IO.Class (liftIO)
-import UnliftIO.STM (TVar)
+import Data.Default (Default(def))
 import Neovim (Neovim)
 import Neovim.Context.Internal (Config(customConfig), asks')
-import Chiasma.Data.Ident (generateIdent)
 import Ribosome.Control.Ribosome (newRibosome, Ribosome)
 import Ribosome.Internal.IO (retypeNeovim)
-import Myo.Data.Myo (Myo)
+import System.Log.Logger (updateGlobalLogger, setLevel, Priority(ERROR))
+import UnliftIO.STM (TVar)
+
 import Myo.Data.Env (Env(instanceIdent, tempDir))
+import Myo.Data.Myo (Myo)
+import Myo.Tmux.Runner (addTmuxRunner)
 
 initialize' :: Myo (Ribosome (TVar Env))
-initialize' =
+initialize' = do
+  addTmuxRunner
   asks' customConfig
 
 initialize :: FilePath -> Neovim e (Ribosome (TVar Env))

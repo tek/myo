@@ -11,7 +11,7 @@ import qualified Myo.Data.Env as Env (_command)
 import Myo.Data.Myo (Myo)
 
 myoAddSystemCommand :: NO AddSystemCommandOptions -> Myo ()
-myoAddSystemCommand (NO (AddSystemCommandOptions ident lines runner target)) =
+myoAddSystemCommand (NO (AddSystemCommandOptions ident lines' runner target)) =
   Ribo.prepend (Env._command . CommandState._commands) cmd
   where
-    cmd = systemCommand target ident lines runner
+    cmd = systemCommand target ident lines' runner

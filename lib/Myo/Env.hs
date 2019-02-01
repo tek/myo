@@ -5,17 +5,14 @@ module Myo.Env(
 ) where
 
 import Chiasma.Data.Views (Views)
-import qualified Control.Lens as Lens (over, view)
-import qualified Data.Map.Strict as Map (alter)
-import qualified Ribosome.Control.Ribo as Ribo (modify, inspect)
-import Ribosome.Data.Time (epochSeconds)
-import System.FilePath ((</>), takeFileName)
+import qualified Control.Lens as Lens (view)
+import qualified Ribosome.Control.Ribo as Ribo (inspect)
+import System.FilePath (takeFileName)
 import System.Posix.Process (getProcessID)
 import System.Posix.User (getEffectiveUserName)
 import UnliftIO.Directory (getCurrentDirectory)
 import UnliftIO.Temporary (withSystemTempDirectory, withTempDirectory)
 
-import qualified Myo.Data.Env as Env (_errors)
 import Myo.Data.Myo (Myo)
 import Myo.Ui.Data.Space (Space)
 import Myo.Ui.View (envSpacesLens, envViewsLens)
