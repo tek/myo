@@ -5,10 +5,10 @@ module RunSpec(
 ) where
 
 import Chiasma.Data.Ident (Ident(Str))
-import qualified Control.Lens as Lens (view, at, preview, each)
+import qualified Control.Lens as Lens (view, at)
 import Control.Monad.IO.Class (liftIO)
-import Ribosome.Control.Monad.RiboE (runRiboE, liftRibo)
-import Ribosome.Control.Monad.State (riboState, runRiboStateE)
+import Ribosome.Control.Monad.RiboE (liftRibo)
+import Ribosome.Control.Monad.State (runRiboStateE)
 import qualified Ribosome.Control.Ribo as Ribo (inspect)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
 import Ribosome.Data.Errors (ComponentName(ComponentName))
@@ -20,12 +20,11 @@ import Test.Framework
 import Config (vars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner)
-import Myo.Data.Env (Myo, MyoE, Runner)
+import Myo.Data.Env (Myo, MyoE)
 import qualified Myo.Data.Env as Env (_errors)
 import Myo.Test.Unit (specWithDef)
 
@@ -35,10 +34,9 @@ testError = "error"
 cname :: String
 cname = "test"
 
-runDummy :: RunTask -> MyoE RunError (Maybe Pid)
-runDummy _ = do
+runDummy :: RunTask -> MyoE RunError ()
+runDummy _ =
   liftRibo $ reportError cname [testError]
-  return Nothing
 
 runSpec :: Myo ()
 runSpec = do

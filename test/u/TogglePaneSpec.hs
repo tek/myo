@@ -4,26 +4,26 @@ module TogglePaneSpec(
   htf_thisModulesTests
 ) where
 
+import qualified Chiasma.Codec.Data as Codec (Pane)
+import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+import qualified Chiasma.Monad.Tmux as Tmux (read)
+import Chiasma.Ui.Data.View (View, consLayoutVertical, consPane, Layout, Pane)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (runExceptT)
+import Ribosome.Msgpack.NvimObject (NO(..))
 import Test.Framework
 import UnliftIO.Exception (throwString)
 
-import qualified Chiasma.Monad.Tmux as Tmux (read)
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import qualified Chiasma.Codec.Data as Codec (Pane)
-import Chiasma.Ui.Data.View (View, consLayout, consPane, Layout, Pane)
-import Ribosome.Msgpack.NvimObject (NO(..))
+import Config (vars)
 import Myo.Data.Myo (Myo)
 import Myo.Test.Unit (tmuxSpecWithDef)
 import Myo.Tmux.IO (liftTmux)
-import Myo.Ui.View
 import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Toggle (myoTogglePane)
-import Config (vars)
+import Myo.Ui.View (createSpace, createWindow, insertLayout, insertPane)
 
 layout :: View Layout
-layout = consLayout (Ident.Str "l")
+layout = consLayoutVertical (Ident.Str "l")
 
 pane1 :: View Pane
 pane1 = consPane (Ident.Str "p1")

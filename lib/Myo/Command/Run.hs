@@ -1,5 +1,6 @@
 module Myo.Command.Run(
   myoRun,
+  storeRunningCommand,
 ) where
 
 import Chiasma.Data.Ident (Ident)
@@ -57,7 +58,7 @@ storeRunningCommand (Command _ ident _ _) pid = do
   existing <- findRunningCommand ident
   when (isNothing existing) $ addRunningCommand ident pid
 
-executeRunner :: Runner -> RunTask -> MyoE RunError (Maybe Pid)
+executeRunner :: Runner -> RunTask -> MyoE RunError ()
 executeRunner (Runner _ _ run) = run
 
 runCommand ::
@@ -65,8 +66,8 @@ runCommand ::
 runCommand cmd = do
   task <- runTask cmd
   runner <- riboStateE $ findRunner task
-  pid <- executeRunner runner task
-  riboStateE $ storeRunningCommand cmd pid
+  executeRunner runner task
+  -- riboStateE $ storeRunningCommand cmd pid
   riboStateE $ pushHistory cmd
 
 runIdent ::

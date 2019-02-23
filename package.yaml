@@ -20,6 +20,7 @@ dependencies:
 - chiasma
 - nvim-hs
 - unliftio
+- unliftio-core
 - data-default
 - lens
 - hslogger
@@ -29,6 +30,7 @@ dependencies:
 - containers
 - parsec
 - conduit
+- conduit-extra
 - stm-conduit
 - stm-chans
 - resourcet
@@ -44,6 +46,8 @@ dependencies:
 - mtl
 - free
 - unix
+- network
+- text
 
 library:
  source-dirs: lib

@@ -13,31 +13,42 @@ import Chiasma.Data.TmuxThunk (TmuxError(..))
 import Chiasma.Data.Views (ViewsError(..))
 import Chiasma.Ui.Data.TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.View (View(View))
+import qualified Data.Text as T (unpack)
 import Ribosome.Error.Report (ErrorReport(ErrorReport))
-import System.Log (Priority(ERROR, DEBUG))
+import System.Log (Priority(ERROR, DEBUG, NOTICE))
 
 invalidOutput :: String
 invalidOutput = "invalid output from tmux process"
 
 tmuxErrorReport :: TmuxError -> ErrorReport
 tmuxErrorReport (ProcessFailed (Cmds cmds) reason) =
-  ErrorReport "fatal error in tmux process" (["tmux process failed:", reason, "commands:"] ++ (show <$> cmds)) ERROR
+  ErrorReport "fatal error in tmux process" log' ERROR
+  where
+    log' = ["tmux process failed:", T.unpack reason, "commands:"] ++ (show <$> cmds)
 tmuxErrorReport (OutputParsingFailed (Cmds cmds) output parseError) =
-  ErrorReport invalidOutput (["tmux output parsing failed:"] ++ (show <$> cmds) ++ ["output:"] ++ output ++
-    ["parse error:"] ++ [show parseError]) ERROR
+  ErrorReport invalidOutput (["tmux output parsing failed:"] ++ (show <$> cmds) ++ ["output:"] ++
+  (T.unpack <$> output) ++ ["parse error:", show parseError]) ERROR
 tmuxErrorReport (NoOutput (Cmds cmds)) =
   ErrorReport invalidOutput ("no output from tmux process:" : (show <$> cmds)) ERROR
 tmuxErrorReport (DecodingFailed (Cmds cmds) output decodeError) =
-  ErrorReport invalidOutput ("failed to decode tmux process output:" : (show <$> cmds) ++ ["output:", output,
+  ErrorReport invalidOutput ("failed to decode tmux process output:" : (show <$> cmds) ++ ["output:", T.unpack output,
     "decoding error:", show decodeError]) ERROR
 tmuxErrorReport (InvalidOutput reason cmd) =
   ErrorReport invalidOutput ["invalid output from tmux process:", reason, cmd] ERROR
+tmuxErrorReport (CommandFailed _ err) =
+  ErrorReport invalidOutput ("tmux command failed:" : (T.unpack <$> err)) ERROR
 
 noSuchView :: String -> Ident -> ErrorReport
 noSuchView desc ident =
-  ErrorReport msg [msg] ERROR
+  ErrorReport msg [msg] NOTICE
   where
     msg = "no tmux " ++ desc ++ " with ident `" ++ identString ident ++ "`"
+
+noId :: String -> Ident -> ErrorReport
+noId desc ident =
+  ErrorReport msg [msg] ERROR
+  where
+    msg = "tmux " ++ desc ++ " with ident `" ++ identString ident ++ "`" ++ " has no id"
 
 viewsErrorReport :: ViewsError -> ErrorReport
 viewsErrorReport (NoSuchSession ident) =
@@ -46,6 +57,8 @@ viewsErrorReport (NoSuchWindow ident) =
   noSuchView "window" ident
 viewsErrorReport (NoSuchPane ident) =
   noSuchView "pane" ident
+viewsErrorReport (NoPaneId ident) =
+  noId "pane" ident
 
 renderErrorReport :: RenderError -> ErrorReport
 renderErrorReport (RenderError.RenderError message) =

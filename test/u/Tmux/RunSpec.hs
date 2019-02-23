@@ -4,40 +4,44 @@ module Tmux.RunSpec(
   htf_thisModulesTests,
 ) where
 
+import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.Ident (Ident(Str))
+import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Test.Tmux (sleep)
-import qualified Control.Lens as Lens (view, at, preview, each)
-import Control.Monad.IO.Class (liftIO)
-import Ribosome.Control.Monad.RiboE (runRiboE, liftRibo)
-import Ribosome.Control.Monad.State (riboState, runRiboStateE)
-import qualified Ribosome.Control.Ribo as Ribo (inspect)
-import Ribosome.Data.Errors (ComponentName(ComponentName))
-import Ribosome.Error.Report (printAllErrors)
+import Data.Text (Text)
+import qualified Data.Text as T (unpack)
 import Ribosome.Msgpack.NvimObject ((-$))
 import Test.Framework
 
 import Config (vars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Pid (Pid)
-import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
-import Myo.Command.Runner (addRunner)
-import Myo.Data.Env (Myo, MyoE, Runner)
-import qualified Myo.Data.Env as Env (_errors)
+import Myo.Data.Env (Myo)
 import Myo.Test.Unit (tmuxGuiSpecWithDef)
+import Myo.Tmux.IO (liftTmux)
 import Myo.Tmux.Runner (addTmuxRunner)
-import Myo.Ui.Default (setupDefaultUi)
+import Test ()
+
+line1 :: Text
+line1 = "line 1"
+
+line2 :: Text
+line2 = "line 2"
 
 runSpec :: Myo ()
 runSpec = do
   let ident = Str "cmd"
+  let cmds = T.unpack <$> ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
   addTmuxRunner
-  myoAddSystemCommand -$ AddSystemCommandOptions ident ["ls"] (Just (Str "tmux")) (Just (Str "make"))
+  let opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make"))
+  myoAddSystemCommand -$ opts
   myoRun -$ ident
-  printAllErrors
-  liftIO $ assertEqual "" ""
+  sleep 2
+  outputE <- liftTmux $ capturePane (PaneId 1)
+  output <- gassertRight outputE
+  gassertElem line1 output
+  gassertElem line2 output
 
 test_tmuxRun :: IO ()
 test_tmuxRun =

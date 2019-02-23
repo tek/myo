@@ -12,7 +12,7 @@ import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Log (commandLog)
 import Myo.Command.RunTaskDetails (runDetails)
-import Myo.Data.Env (Env, MyoE)
+import Myo.Data.Env (MyoE)
 import Myo.Ui.Toggle (ensurePaneOpen)
 
 ensurePrerequisites ::
@@ -22,7 +22,9 @@ ensurePrerequisites =
   ensure
   where
     ensure RunTaskDetails.Vim = return ()
-    ensure (RunTaskDetails.UiSystem ident) = mapE RunError.Toggle $ ensurePaneOpen ident
+    ensure (RunTaskDetails.UiSystem ident) =
+      mapE RunError.Toggle $ ensurePaneOpen ident
+    ensure _ = undefined
 
 runTask ::
   Command ->

@@ -4,26 +4,20 @@ module Myo.Tmux.Run(
 ) where
 
 import Chiasma.Command.Pane (sendKeys)
-import Chiasma.Data.View (View(View))
-import Chiasma.View (pane)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State.Class (gets)
-import Control.Monad.Error.Class (liftEither)
-import Control.Monad.Trans.Except (ExceptT(ExceptT))
-import Ribosome.Control.Monad.RiboE (liftRibo, mapE)
-import Ribosome.Control.Monad.State (riboStateLocalE)
-import qualified Ribosome.Control.Ribo as Ribo (inspect)
 import qualified Chiasma.View.State as Views (paneId)
+import Ribosome.Control.Monad.RiboE (mapE, anaE)
+import Ribosome.Control.Monad.State (riboStateLocalE)
 
-import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(Views, Tmux))
 import Myo.Command.Data.RunTask (RunTask(RunTask))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
+import Myo.Command.Log (pipePaneToSocket)
 import Myo.Data.Env (MyoE)
-import Myo.Ui.View (envViewsLens)
 import Myo.Tmux.IO (myoTmux)
+import Myo.Ui.View (envViewsLens)
+import Myo.Ui.Watch (watchPane)
 
 tmuxCanRun :: RunTask -> Bool
 tmuxCanRun (RunTask _ _ details) =
@@ -33,11 +27,14 @@ tmuxCanRun (RunTask _ _ details) =
     checkCmd (RunTaskDetails.UiShell _ _) = True
     checkCmd _ = False
 
-tmuxRun :: RunTask -> MyoE RunError (Maybe Pid)
-tmuxRun (RunTask (Command _ _ lines' _) _ details) = do
+tmuxRun :: RunTask -> MyoE RunError ()
+tmuxRun (RunTask (Command _ _ lines' _) logPath details) =
   run details
-  return Nothing
   where
     run (RunTaskDetails.UiSystem paneIdent) = do
       paneId <- mapE RunError.Views $ riboStateLocalE envViewsLens $ Views.paneId paneIdent
-      mapE RunError.Tmux $ myoTmux $ sendKeys paneId lines'
+      watchPane paneIdent logPath
+      anaE RunError.Tmux $ myoTmux $ do
+        pipePaneToSocket paneId logPath
+        sendKeys paneId lines'
+    run _ = undefined

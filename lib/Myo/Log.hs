@@ -11,14 +11,17 @@ module Myo.Log(
   printViewsLog,
 ) where
 
+import qualified Chiasma.Data.Views as Views (_viewsLog)
+import Chiasma.Ui.ShowTree (printViewTree)
 import qualified Control.Lens as Lens (toListOf, view)
 import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (traverse_)
-import qualified Chiasma.Data.Views as Views (_viewsLog)
-import Chiasma.Ui.ShowTree (printViewTree)
+import Data.Text.Prettyprint.Doc ((<>), line)
+import Data.Text.Prettyprint.Doc.Util (putDocW)
 import Ribosome.Control.Ribo (Ribo)
 import qualified Ribosome.Control.Ribo as Ribo (inspect)
 import qualified Ribosome.Log as R (debug, info, err, p, prefixed)
+
 import Myo.Data.Myo (Myo)
 import Myo.Ui.View (envTreesLens, envViewsLens)
 
@@ -48,4 +51,4 @@ trees = do
 printViewsLog :: Myo ()
 printViewsLog = do
   logged <- Ribo.inspect $ Lens.view $ envViewsLens . Views._viewsLog
-  liftIO $ traverse_ putStrLn (reverse logged)
+  liftIO $ traverse_ (putDocW 100) (fmap (<> line) $ reverse logged)

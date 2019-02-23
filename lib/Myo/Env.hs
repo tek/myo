@@ -7,11 +7,11 @@ module Myo.Env(
 import Chiasma.Data.Views (Views)
 import qualified Control.Lens as Lens (view)
 import qualified Ribosome.Control.Ribo as Ribo (inspect)
-import System.FilePath (takeFileName)
-import System.Posix.Process (getProcessID)
+import System.Directory (getTemporaryDirectory)
+import System.FilePath (takeFileName, (</>))
 import System.Posix.User (getEffectiveUserName)
-import UnliftIO.Directory (getCurrentDirectory)
-import UnliftIO.Temporary (withSystemTempDirectory, withTempDirectory)
+import UnliftIO.Directory (getCurrentDirectory, createDirectoryIfMissing)
+import UnliftIO.Temporary (withTempDirectory)
 
 import Myo.Data.Myo (Myo)
 import Myo.Ui.Data.Space (Space)
@@ -28,7 +28,8 @@ myoSpaces =
 bracketMyoTempDir :: (FilePath -> IO ()) -> IO ()
 bracketMyoTempDir thunk = do
   name <- getEffectiveUserName
-  pid <- getProcessID
+  tmp <- getTemporaryDirectory
+  let base = tmp </> ("myo-" ++ name)
+  createDirectoryIfMissing True base
   project <- takeFileName <$> getCurrentDirectory
-  withSystemTempDirectory ("myo-" ++ name) $ \dir ->
-    withTempDirectory dir (project ++ "-" ++ show pid) thunk
+  withTempDirectory base (project ++ "-") thunk
