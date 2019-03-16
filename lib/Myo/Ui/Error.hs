@@ -14,7 +14,7 @@ import Chiasma.Data.Views (ViewsError(..))
 import Chiasma.Ui.Data.TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.View (View(View))
 import qualified Data.Text as T (unpack)
-import Ribosome.Error.Report (ErrorReport(ErrorReport))
+import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import System.Log (Priority(ERROR, DEBUG, NOTICE))
 
 invalidOutput :: String
@@ -61,8 +61,8 @@ viewsErrorReport (NoPaneId ident) =
   noId "pane" ident
 
 renderErrorReport :: RenderError -> ErrorReport
-renderErrorReport (RenderError.RenderError message) =
-  ErrorReport message ["tmux render error:", message] ERROR
+renderErrorReport (RenderError.NoPrincipal ident) =
+  ErrorReport "internal render error: no view in layout" ["no principal in " ++ identString ident] ERROR
 renderErrorReport (RenderError.Views err) =
   viewsErrorReport err
 renderErrorReport (RenderError.Pack message) =

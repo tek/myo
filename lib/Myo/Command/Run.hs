@@ -8,16 +8,17 @@ import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (preview)
 import Control.Monad (when)
-import Control.Monad.State.Class (MonadState, gets)
+import Control.Monad.DeepState (MonadDeepState, gets)
+import Control.Monad.Trans.Except (runExceptT)
 import Data.Maybe (isNothing)
-import Ribosome.Control.Monad.RiboE (mapE, runRiboReport)
-import Ribosome.Control.Monad.State (prepend)
-import Ribosome.Control.Monad.State (riboStateE)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, local, mapE, prepend, riboE)
+import Ribosome.Error.Report (runRiboReport)
 import Ribosome.Msgpack.NvimObject (NO(..))
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
-import qualified Myo.Command.Data.CommandState as CommandState (_running)
+import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.CommandState as CommandState (running)
 import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
@@ -26,59 +27,60 @@ import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import Myo.Command.History (pushHistory)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
-import Myo.Data.Env (Myo, MyoE, Runner(Runner), Env)
-import qualified Myo.Data.Env as Env (_command)
+import Myo.Data.Env (Env, MyoE, Runner(Runner))
+import qualified Myo.Data.Env as Env (command)
 import Myo.Orphans ()
 
-runningLens :: Lens' Env [RunningCommand]
-runningLens =
-  Env._command . CommandState._running
-
 findRunningCommand ::
-  MonadState Env m =>
+  MonadDeepState s CommandState m =>
   Ident ->
   m (Maybe RunningCommand)
 findRunningCommand ident =
-  gets $ Lens.preview $ runningLens . matchIdentL ident
+  gets f
+  where
+    f :: CommandState -> Maybe RunningCommand
+    f = Lens.preview $ CommandState.running . matchIdentL ident
 
 addRunningCommand ::
-  MonadState Env m =>
+  MonadDeepState s CommandState m =>
   Ident ->
   Maybe Pid ->
   m ()
 addRunningCommand ident pid =
-  prepend runningLens (RunningCommand ident pid)
+  prepend (CommandState.running :: Lens' CommandState [RunningCommand]) (RunningCommand ident pid)
 
 storeRunningCommand ::
-  MonadState Env m =>
+  MonadDeepState s CommandState m =>
   Command ->
   Maybe Pid ->
   m ()
-storeRunningCommand (Command _ ident _ _) pid = do
+storeRunningCommand (Command _ ident _ _ _) pid = do
   existing <- findRunningCommand ident
   when (isNothing existing) $ addRunningCommand ident pid
 
-executeRunner :: Runner -> RunTask -> MyoE RunError ()
+executeRunner :: Runner -> RunTask -> MyoE RunError (ConcNvimS Env) ()
 executeRunner (Runner _ _ run) = run
 
-runCommand ::
-  Command -> MyoE RunError ()
+runCommand :: Command -> MyoE RunError (ConcNvimS Env) ()
 runCommand cmd = do
-  task <- runTask cmd
-  runner <- riboStateE $ findRunner task
+  task <- riboE $ runExceptT $ runTask cmd
+  runner <- findRunner task
   executeRunner runner task
-  -- riboStateE $ storeRunningCommand cmd pid
-  riboStateE $ pushHistory cmd
+  -- storeRunningCommand cmd pid
+  pushHistory cmd
 
 runIdent ::
   Ident ->
-  MyoE RunError ()
+  MyoE RunError (ConcNvimS Env) ()
 runIdent ident = do
   cmd <- mapE RunError.Command cmdResult
   runCommand cmd
   where
-    cmdResult = riboStateE $ commandByIdent ident
+    cmdResult = local Env.command $ commandByIdent ident
 
-myoRun :: NO Ident -> Myo ()
+myoRun :: NO Ident -> ConcNvimS Env ()
 myoRun (NO ident) =
-  runRiboReport "command" $ runIdent ident
+  runRiboReport "command" thunk
+  where
+    thunk :: MyoE RunError (ConcNvimS Env) ()
+    thunk = runIdent ident

@@ -4,13 +4,14 @@ module Myo.Ui.Lens.Toggle(
   envOpenOnePane,
 ) where
 
-import Control.Lens (mapAccumLOf)
-import Control.Monad.Error.Class (MonadError, liftEither)
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.View (ViewTree)
-import Chiasma.Ui.ViewTree (togglePane, toggleLayout, openPane)
+import Chiasma.Ui.ViewTree (openPane, toggleLayout, togglePane)
+import Control.Lens (mapAccumLOf)
+import Control.Monad.DeepError (MonadDeepError, hoistEither)
+
 import Myo.Data.Env (Env)
 import Myo.Ui.View (envTreesLens)
 
@@ -19,14 +20,14 @@ import Myo.Ui.View (envTreesLens)
 -- fold over the results and error if not exactly one 'ViewTree' was successful
 -- if the 'Env' is empty, 'NoTrees' will be returned
 envToggleOneView ::
-  MonadError TreeModError m =>
+  MonadDeepError e TreeModError m =>
   (Ident -> ViewTree -> Either TreeModError ViewTree) ->
   (Ident -> Int -> TreeModError) ->
   Ident ->
   Env ->
   m Env
 envToggleOneView toggle consError ident env =
-  liftEither (newEnv <$ check)
+  hoistEither (newEnv <$ check)
   where
     ((_, check), newEnv) = mapAccumLOf envTreesLens toggleExactlyOne (False, Left TreeModError.NoTrees) env
     toggleExactlyOne acc a =
@@ -42,14 +43,14 @@ envToggleOneView toggle consError ident env =
       TreeModError.PaneMissing _ -> Right ()
       _ -> Left err
 
-envToggleOnePane :: MonadError TreeModError m => Ident -> Env -> m Env
+envToggleOnePane :: MonadDeepError e TreeModError m => Ident -> Env -> m Env
 envToggleOnePane =
   envToggleOneView togglePane TreeModError.AmbiguousPane
 
-envToggleOneLayout :: MonadError TreeModError m => Ident -> Env -> m Env
+envToggleOneLayout :: MonadDeepError e TreeModError m => Ident -> Env -> m Env
 envToggleOneLayout =
   envToggleOneView toggleLayout TreeModError.AmbiguousLayout
 
-envOpenOnePane :: MonadError TreeModError m => Ident -> Env -> m Env
+envOpenOnePane :: MonadDeepError e TreeModError m => Ident -> Env -> m Env
 envOpenOnePane =
   envToggleOneView openPane TreeModError.AmbiguousPane

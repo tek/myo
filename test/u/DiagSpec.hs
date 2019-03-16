@@ -5,13 +5,15 @@ module DiagSpec(
 ) where
 
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Class (lift)
 import Data.Default (Default(def))
-import Test.Framework
 import Ribosome.Api.Buffer (currentBufferContent)
-import Myo.Data.Myo (Myo)
-import Myo.Test.Unit (tmuxSpecWithDef)
-import Myo.Diag (myoDiag)
+import Test.Framework
+
 import Config (vars)
+import Myo.Data.Myo (Myo)
+import Myo.Diag (myoDiag)
+import Myo.Test.Unit (tmuxSpecWithDef)
 
 target :: [String]
 target = [
@@ -21,8 +23,8 @@ target = [
 
 diagSpec :: Myo ()
 diagSpec = do
-  myoDiag def
-  content <- currentBufferContent
+  lift $ myoDiag def
+  content <- lift currentBufferContent
   liftIO $ assertEqual target content
 
 test_diag :: IO ()

@@ -9,38 +9,41 @@ import Chiasma.Data.Ident (Ident, identString)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Control.Lens (Lens', (?~))
-import qualified Control.Lens as Lens (view, at)
-import Control.Monad.Error.Class (MonadError)
+import qualified Control.Lens as Lens (at, view)
+import Control.Monad.DeepError (MonadDeepError)
+import Control.Monad.DeepState (MonadDeepState, gets, modify)
 import Control.Monad.Free (MonadFree)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State.Class (MonadState, gets, modify)
 import Network.Socket (Socket)
 import System.FilePath ((</>))
 
-import qualified Myo.Command.Data.CommandState as CommandState (_logs)
+import qualified Myo.Command.Data.CommandState as CommandState (logs)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Data.Env (Env)
-import qualified Myo.Data.Env as Env (_tempDir, _command)
+import qualified Myo.Data.Env as Env (command, tempDir)
 import Myo.Network.Socket (socketBind)
 
 logLens :: Ident -> Lens' Env (Maybe FilePath)
-logLens ident = Env._command . CommandState._logs . Lens.at ident
+logLens ident = Env.command . CommandState.logs . Lens.at ident
 
 logByIdent ::
-  (MonadError RunError m, MonadState Env m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
   Ident ->
   m (Maybe FilePath)
 logByIdent ident =
   gets $ Lens.view $ logLens ident
 
 logTempDir ::
-  (MonadState Env m) =>
+  (MonadDeepState s Env m) =>
   m FilePath
 logTempDir =
-  gets $ Lens.view Env._tempDir
+  gets g
+  where
+    g :: Env -> String
+    g = Lens.view Env.tempDir
 
 insertLog ::
-  (MonadError RunError m, MonadState Env m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
   Ident ->
   m FilePath
 insertLog ident = do
@@ -50,7 +53,7 @@ insertLog ident = do
   return logPath
 
 commandLog ::
-  (MonadError RunError m, MonadState Env m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
   Ident ->
   m FilePath
 commandLog ident = do
@@ -58,7 +61,7 @@ commandLog ident = do
   maybe (insertLog ident) return existing
 
 commandLogSocketBind ::
-  (MonadError RunError m, MonadState Env m, MonadIO m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadIO m) =>
   Ident ->
   m Socket
 commandLogSocketBind ident = do

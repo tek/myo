@@ -1,15 +1,16 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Myo.Orphans(
 ) where
 
+import Chiasma.Data.Ident (Ident(..))
 import Data.ByteString.Internal (unpackChars)
 import Data.MessagePack (Object(ObjectString))
 import qualified Data.UUID as UUID (toString)
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Encode (MsgpackEncode(..))
-import qualified Ribosome.Msgpack.Util as Util (string, illegalType)
-import Chiasma.Data.Ident (Ident(..))
+import qualified Ribosome.Msgpack.Util as Util (illegalType, string)
 
 instance MsgpackDecode Ident where
   fromMsgpack (ObjectString s) = Right $ Str $ unpackChars s

@@ -11,44 +11,47 @@ module Myo.Log(
   printViewsLog,
 ) where
 
-import qualified Chiasma.Data.Views as Views (_viewsLog)
+import qualified Chiasma.Data.Views as Views (log)
 import Chiasma.Ui.ShowTree (printViewTree)
 import qualified Control.Lens as Lens (toListOf, view)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad.DeepState (MonadDeepState, gets)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (traverse_)
-import Data.Text.Prettyprint.Doc ((<>), line)
+import Data.Text.Prettyprint.Doc (line, (<>))
 import Data.Text.Prettyprint.Doc.Util (putDocW)
-import Ribosome.Control.Ribo (Ribo)
-import qualified Ribosome.Control.Ribo as Ribo (inspect)
-import qualified Ribosome.Log as R (debug, info, err, p, prefixed)
+import qualified Ribosome.Log as R (debug, err, info, p, prefixed)
 
-import Myo.Data.Myo (Myo)
+import Myo.Data.Myo (Env)
 import Myo.Ui.View (envTreesLens, envViewsLens)
 
-debug :: String -> Ribo e ()
+debug :: MonadIO m => String -> m ()
 debug = R.debug "myo"
 
-info :: String -> Ribo e ()
+info :: MonadIO m => String -> m ()
 info = R.info "myo"
 
-err :: String -> Ribo e ()
+err :: MonadIO m => String -> m ()
 err = R.err "myo"
 
-debugS :: Show a => a -> Ribo e ()
+debugS :: (MonadIO m, Show a) => a -> m ()
 debugS = R.debug "myo"
 
-infoS :: Show a => a -> Ribo e ()
+infoS :: (MonadIO m, Show a) => a -> m ()
 infoS = R.info "myo"
 
-errS :: Show a => a -> Ribo e ()
+errS :: (MonadIO m, Show a) => a -> m ()
 errS = R.err "myo"
 
-trees :: Myo ()
+trees ::
+  (MonadIO m, MonadDeepState s Env m) =>
+  m ()
 trees = do
-  ts <- Ribo.inspect $ Lens.toListOf envTreesLens
+  ts <- gets $ Lens.toListOf envTreesLens
   traverse_ printViewTree ts
 
-printViewsLog :: Myo ()
+printViewsLog ::
+  (MonadIO m, MonadDeepState s Env m) =>
+  m ()
 printViewsLog = do
-  logged <- Ribo.inspect $ Lens.view $ envViewsLens . Views._viewsLog
-  liftIO $ traverse_ (putDocW 100) (fmap (<> line) $ reverse logged)
+  logged <- gets $ Lens.view $ envViewsLens . Views.log
+  liftIO $ traverse_ (putDocW 100) ((<> line) <$> reverse logged)

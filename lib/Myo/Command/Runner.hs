@@ -5,17 +5,18 @@ module Myo.Command.Runner(
 
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Maybe (maybeExcept)
+import Control.Lens (Lens')
 import qualified Control.Lens as Lens (views)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.State.Class (MonadState, gets)
 import Data.Foldable (find)
-import Ribosome.Control.Monad.State (prepend)
+import Ribosome.Control.Monad.Ribo (prepend)
 
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..))
-import Myo.Data.Env (Env, Runner(Runner), RunF, CanRun)
-import qualified Myo.Data.Env as Env (_runners)
+import Myo.Data.Env (CanRun, Env, RunF, Runner(Runner))
+import qualified Myo.Data.Env as Env (runners)
 
 canRun :: RunTask -> Runner -> Bool
 canRun task (Runner _ can _) =
@@ -26,7 +27,7 @@ findRunner ::
   RunTask ->
   m Runner
 findRunner task = do
-  mayRunner <- gets $ Lens.views Env._runners $ find (canRun task)
+  mayRunner <- gets $ Lens.views Env.runners $ find (canRun task)
   maybeExcept (RunError.NoRunner task) mayRunner
 
 addRunner ::
@@ -36,4 +37,4 @@ addRunner ::
   CanRun ->
   m ()
 addRunner ident can run =
-  prepend Env._runners (Runner ident run can)
+  prepend (Env.runners :: Lens' Env [Runner]) (Runner ident run can)

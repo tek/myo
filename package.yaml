@@ -18,6 +18,7 @@ dependencies:
 - base >= 4.7 && < 5
 - ribosome >= 0.1.2
 - chiasma
+- cornea
 - nvim-hs
 - unliftio
 - unliftio-core
@@ -48,6 +49,8 @@ dependencies:
 - unix
 - network
 - text
+- exceptions
+- either
 
 library:
  source-dirs: lib

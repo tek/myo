@@ -4,12 +4,11 @@ module Myo.Tmux.Runner(
 
 import Chiasma.Data.Ident (Ident(Str))
 import Data.Functor (void)
-import Ribosome.Control.Monad.State (runRiboStateE)
 
 import Myo.Command.Runner (addRunner)
 import Myo.Data.Env (Myo)
-import Myo.Tmux.Run (tmuxRun, tmuxCanRun)
+import Myo.Tmux.Run (tmuxCanRun, tmuxRun)
 
 addTmuxRunner :: Myo ()
 addTmuxRunner =
-  void $ runRiboStateE $ addRunner (Str "tmux") tmuxRun tmuxCanRun
+  void $ addRunner (Str "tmux") tmuxRun tmuxCanRun

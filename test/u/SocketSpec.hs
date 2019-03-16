@@ -13,17 +13,18 @@ import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.ByteString (ByteString)
 import Data.ByteString.Internal (packChars)
 import Data.Conduit.Network.Unix (sourceSocket)
-import Data.Conduit.TMChan (newTBMChan, TBMChan, sourceTBMChan, sinkTBMChan, tryReadTBMChan)
+import Data.Conduit.TMChan (TBMChan, newTBMChan, sinkTBMChan, sourceTBMChan, tryReadTBMChan)
 import Data.Functor (void)
-import Network.Socket (Socket, SockAddr(SockAddrUnix), connect)
+import Network.Socket (SockAddr(SockAddrUnix), Socket, connect)
 import Network.Socket.ByteString (sendAll)
-import Ribosome.Control.Monad.State (runRiboStateE)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, riboE2ribo)
 import Test.Framework
 import UnliftIO (atomically)
 import UnliftIO.Concurrent (forkIO)
 
+import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Log (commandLog)
-import Myo.Data.Myo (Myo)
+import Myo.Data.Myo (Env, Myo, MyoE)
 import Myo.Network.Socket (socketBind, unixSocket)
 import Myo.Test.Unit (specWithDef)
 
@@ -45,8 +46,11 @@ listen listenChan sock =
 
 logSocketPath :: String -> Myo FilePath
 logSocketPath name = do
-  fp <- runRiboStateE $ commandLog (Str name)
+  fp <- riboE2ribo lg
   liftIO $ either (const $ return "") return fp
+  where
+    lg :: MyoE RunError (ConcNvimS Env) FilePath
+    lg = commandLog (Str name)
 
 chanResult :: TBMChan a -> IO [a]
 chanResult chan = do

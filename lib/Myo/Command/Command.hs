@@ -1,30 +1,48 @@
-module Myo.Command.Command(
-  commandByIdent,
-  systemCommand,
-) where
+module Myo.Command.Command where
 
-import qualified Control.Lens as Lens (views)
-import Control.Monad.Error.Class (MonadError)
-import Control.Monad.State.Class (MonadState, gets)
-import Data.Foldable (find)
-import Chiasma.Data.Maybe (maybeExcept)
 import Chiasma.Data.Ident (Ident, sameIdent)
-import Myo.Data.Env (Env)
-import qualified Myo.Data.Env as Env (_command)
-import qualified Myo.Command.Data.CommandState as CommandState (_commands)
-import Myo.Command.Data.Command (Command(Command))
-import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System))
+import Control.Lens (Lens')
+import qualified Control.Lens as Lens (views)
+import Control.Monad.DeepError (MonadDeepError, hoistMaybe)
+import Control.Monad.DeepState (MonadDeepState, gets)
+import Data.Foldable (find)
+import Ribosome.Control.Monad.Ribo (inspectHeadE)
+
+import Myo.Command.Data.Command (Command(Command), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchCommand))
+import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchCommand, NoCommands))
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System))
+import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.CommandState as CommandState (commands, history)
+import Myo.Command.Data.HistoryEntry (HistoryEntry)
+import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (HistoryEntry(command))
+
+mayCommandByIdent ::
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m (Maybe Command)
+mayCommandByIdent ident =
+  gets f
+  where
+    f :: CommandState -> Maybe Command
+    f = Lens.views CommandState.commands (find $ sameIdent ident)
 
 commandByIdent ::
-  (MonadError CommandError m, MonadState Env m) =>
+  (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>
   Ident ->
   m Command
-commandByIdent ident = do
-  c <- gets $ Lens.views (Env._command . CommandState._commands) (find $ sameIdent ident)
-  maybeExcept (CommandError.NoSuchCommand ident) c
+commandByIdent ident =
+  hoistMaybe (CommandError.NoSuchCommand ident) =<< mayCommandByIdent ident
 
-systemCommand :: (Maybe Ident) -> Ident -> [String] -> (Maybe Ident) -> Command
+systemCommand :: Maybe Ident -> Ident -> [String] -> Maybe Ident -> Maybe CommandLanguage -> Command
 systemCommand target =
   Command (System target)
+
+latestCommand ::
+  (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>
+  m Command
+latestCommand =
+  HistoryEntry.command <$> inspectHeadE CommandError.NoCommands l
+  where
+    l :: Lens' CommandState [HistoryEntry]
+    l = CommandState.history

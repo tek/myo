@@ -3,22 +3,22 @@ module Myo.Ui.Default(
 ) where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Chiasma.Data.TmuxId (SessionId(..), WindowId(..), PaneId(..))
+import Chiasma.Data.TmuxId (PaneId(..), SessionId(..), WindowId(..))
 import qualified Chiasma.Data.View as Tmux (View(View))
 import Chiasma.Data.Views (Views(Views))
-import Chiasma.Ui.Data.View (Tree(..),
-  TreeSub(..),
-  ViewTree,
-  View(..),
+import Chiasma.Ui.Data.View (
   Pane(..),
+  Tree(..),
+  TreeSub(..),
+  View(..),
+  ViewTree,
   consLayout,
   consLayoutVertical,
   consPane,
   )
 import qualified Control.Lens as Lens (over)
-import qualified Ribosome.Control.Ribo as Ribo (modify)
-
-import Myo.Data.Env (Myo)
+import Control.Monad.State.Class (MonadState, modify)
+import Myo.Data.Env (Env)
 import Myo.Ui.Data.Space (Space(Space))
 import Myo.Ui.Data.Window (Window(Window))
 import Myo.Ui.View (envViewsLens, insertSpace)
@@ -43,7 +43,9 @@ mainTree :: ViewTree
 mainTree =
   Tree (consLayout (Ident.Str "main")) [TreeNode vimTree, TreeNode makeTree]
 
-setupDefaultUi :: Myo ()
+setupDefaultUi ::
+  MonadState Env m =>
+  m ()
 setupDefaultUi = do
   insertSpace $ Space (Ident.Str "vim") [Window (Ident.Str "vim") mainTree]
-  Ribo.modify $ Lens.over envViewsLens insertInitialViews
+  modify $ Lens.over envViewsLens insertInitialViews

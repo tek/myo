@@ -4,31 +4,38 @@
 module Myo.Command.Data.CommandState(
   CommandState(..),
   Logs,
-  _commands,
-  _history,
-  _logs,
-  _running,
+  Parser,
+  commands,
+  history,
+  logs,
+  parseResult,
+  parsers,
+  running,
 ) where
 
 import Chiasma.Data.Ident (Ident)
-import Control.Lens (makeClassy_)
+import Data.DeepLenses (deepLenses)
 import Data.Default (Default)
 import Data.Map (Map)
 import GHC.Generics (Generic)
 
-import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
+import Myo.Command.Data.ParsedOutput (ParsedOutput)
 import Myo.Command.Data.RunningCommand (RunningCommand)
 
 type Logs = Map Ident FilePath
+type Parser = [String] -> ParsedOutput
 
 data CommandState =
   CommandState {
-    commands :: [Command],
-    history :: [HistoryEntry],
-    logs :: Logs,
-    running :: [RunningCommand]
+    _commands :: [Command],
+    _history :: [HistoryEntry],
+    _logs :: Logs,
+    _running :: [RunningCommand],
+    _parseResult :: Maybe ParsedOutput,
+    _parsers :: Map CommandLanguage [Parser]
   }
-  deriving (Eq, Show, Generic, Default)
+  deriving (Generic, Default)
 
-makeClassy_ ''CommandState
+deepLenses ''CommandState

@@ -1,19 +1,27 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Myo.Command.Data.CommandError(
   CommandError(..),
 ) where
 
-import System.Log (Priority(ERROR, NOTICE))
 import Chiasma.Data.Ident (Ident, identString)
-import Ribosome.Error.Report (ReportError(..), ErrorReport(ErrorReport))
+import Data.DeepPrisms (deepPrisms)
+import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
+import Ribosome.Error.Report.Class (ReportError(..))
+import System.Log (Priority(ERROR, NOTICE))
 
 data CommandError =
-  CommandError String
+  Misc String
   |
   NoSuchCommand Ident
+  |
+  NoCommands
   deriving (Eq, Show)
 
+deepPrisms ''CommandError
+
 instance ReportError CommandError where
-  errorReport (CommandError err) =
+  errorReport (Misc err) =
     ErrorReport (pre ++ " " ++ err) [pre, err] ERROR
     where
       pre = "command error:"
@@ -21,3 +29,7 @@ instance ReportError CommandError where
     ErrorReport err [err] NOTICE
     where
       err = "no command with ident `" ++ identString ident ++ "`"
+  errorReport NoCommands =
+    ErrorReport err [err] NOTICE
+    where
+      err = "no commands have been created yet"

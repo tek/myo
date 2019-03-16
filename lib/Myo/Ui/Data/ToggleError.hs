@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Myo.Ui.Data.ToggleError(
   ToggleError(..),
 ) where
@@ -5,8 +7,10 @@ module Myo.Ui.Data.ToggleError(
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxThunk (TmuxError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Ribosome.Error.Report (ReportError(..))
-import Myo.Ui.Error (tmuxErrorReport, renderErrorReport, treeModErrorReport)
+import Data.DeepPrisms (deepPrisms)
+import Ribosome.Error.Report.Class (ReportError(..))
+
+import Myo.Ui.Error (renderErrorReport, tmuxErrorReport, treeModErrorReport)
 
 data ToggleError =
   Tmux TmuxError
@@ -15,6 +19,8 @@ data ToggleError =
   |
   Tree TreeModError
   deriving (Eq, Show)
+
+deepPrisms ''ToggleError
 
 instance ReportError ToggleError where
   errorReport (Tmux e) = tmuxErrorReport e

@@ -1,29 +1,28 @@
-module Myo.Env(
-  myoViews,
-  myoSpaces,
-  bracketMyoTempDir,
-) where
+module Myo.Env where
 
 import Chiasma.Data.Views (Views)
-import qualified Control.Lens as Lens (view)
-import qualified Ribosome.Control.Ribo as Ribo (inspect)
+import Control.Monad.DeepState (MonadDeepState(get), gets)
 import System.Directory (getTemporaryDirectory)
 import System.FilePath (takeFileName, (</>))
 import System.Posix.User (getEffectiveUserName)
-import UnliftIO.Directory (getCurrentDirectory, createDirectoryIfMissing)
+import UnliftIO.Directory (createDirectoryIfMissing, getCurrentDirectory)
 import UnliftIO.Temporary (withTempDirectory)
 
-import Myo.Data.Myo (Myo)
 import Myo.Ui.Data.Space (Space)
-import Myo.Ui.View (envSpacesLens, envViewsLens)
+import Myo.Ui.Data.UiState (UiState)
+import qualified Myo.Ui.Data.UiState as UiState (_spaces)
 
-myoViews :: Myo Views
+myoViews ::
+  MonadDeepState s Views m =>
+  m Views
 myoViews =
-  Ribo.inspect $ Lens.view envViewsLens
+  get
 
-myoSpaces :: Myo [Space]
+myoSpaces ::
+  MonadDeepState s UiState m =>
+  m [Space]
 myoSpaces =
-  Ribo.inspect $ Lens.view envSpacesLens
+  gets UiState._spaces
 
 bracketMyoTempDir :: (FilePath -> IO ()) -> IO ()
 bracketMyoTempDir thunk = do

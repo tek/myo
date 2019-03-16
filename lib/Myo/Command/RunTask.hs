@@ -1,36 +1,49 @@
-module Myo.Command.RunTask(
-  runTask,
-) where
+module Myo.Command.RunTask where
 
-import Ribosome.Control.Monad.RiboE (mapE)
-import Ribosome.Control.Monad.State (riboStateE)
+import Chiasma.Ui.Data.TreeModError (TreeModError)
+import Control.Monad.DeepError (MonadDeepError)
+import Control.Monad.DeepState (MonadDeepState)
+import Control.Monad.IO.Class (MonadIO)
+import Myo.Ui.Render (MyoRender)
 
 import Myo.Command.Data.Command (Command(..))
 import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunError as RunError (RunError(Toggle))
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Log (commandLog)
 import Myo.Command.RunTaskDetails (runDetails)
-import Myo.Data.Env (MyoE)
+import Myo.Data.Env (Env)
+import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Toggle (ensurePaneOpen)
 
 ensurePrerequisites ::
+  (
+    MonadIO m,
+    MonadDeepError e TreeModError (t m),
+    MonadDeepError e ToggleError (t m),
+    MonadDeepState s Env m,
+    MyoRender s e t m
+  ) =>
   RunTaskDetails ->
-  MyoE RunError ()
-ensurePrerequisites =
-  ensure
-  where
-    ensure RunTaskDetails.Vim = return ()
-    ensure (RunTaskDetails.UiSystem ident) =
-      mapE RunError.Toggle $ ensurePaneOpen ident
-    ensure _ = undefined
+  t m ()
+ensurePrerequisites RunTaskDetails.Vim = return ()
+ensurePrerequisites (RunTaskDetails.UiSystem ident) =
+  ensurePaneOpen ident
+ensurePrerequisites _ = undefined
 
 runTask ::
+  (
+    MonadIO m,
+    MonadDeepError e TreeModError (t m),
+    MonadDeepError e RunError (t m),
+    MonadDeepError e ToggleError (t m),
+    MonadDeepState s Env (t m),
+    MyoRender s e t m
+  ) =>
   Command ->
-  MyoE RunError RunTask
+  t m RunTask
 runTask cmd = do
-  details <- riboStateE $ runDetails cmd
+  details <- runDetails cmd
   ensurePrerequisites details
-  cmdLog <- riboStateE $ commandLog (cmdIdent cmd)
+  cmdLog <- commandLog (cmdIdent cmd)
   return $ RunTask cmd cmdLog details

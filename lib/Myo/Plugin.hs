@@ -1,31 +1,30 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Myo.Plugin(
   plugin,
 )
 where
 
-import UnliftIO.STM (TVar)
 import Neovim (
-  Plugin(..),
   Neovim,
-  StartupConfig,
   NeovimConfig,
   NeovimPlugin,
+  Plugin(..),
+  StartupConfig,
   Synchronous(Async),
   command',
   function',
   wrapPlugin,
   )
 import Ribosome.Control.Ribosome (Ribosome)
-import Myo.Init (initialize)
+
+import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env)
 import Myo.Diag (myoDiag)
-import Myo.Ui.Toggle (myoTogglePane, myoToggleLayout)
-import Myo.Command.Run (myoRun)
+import Myo.Init (initialize)
+import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 
-plugin' :: Ribosome (TVar Env) -> Plugin (Ribosome (TVar Env))
+plugin' :: Ribosome Env -> Plugin (Ribosome Env)
 plugin' env =
   Plugin {
     environment = env,
