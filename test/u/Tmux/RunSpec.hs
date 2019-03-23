@@ -11,6 +11,7 @@ import Chiasma.Test.Tmux (sleep)
 import Control.Monad.Trans.Class (lift)
 import Data.Text (Text)
 import qualified Data.Text as T (unpack)
+import Ribosome.Control.Monad.Ribo (riboE2ribo)
 import Ribosome.Msgpack.NvimObject ((-$))
 import Test.Framework
 
@@ -19,9 +20,11 @@ import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Myo)
-import Myo.Test.Unit (tmuxSpecWithDef)
+import Myo.Init (initialize')
+import Myo.Test.Unit (tmuxExternalSpec)
 import Myo.Tmux.IO (runTmuxE)
 import Myo.Tmux.Runner (addTmuxRunner)
+import Myo.Ui.Default (detectDefaultUi)
 import Test ()
 
 line1 :: Text
@@ -35,6 +38,7 @@ runSpec = do
   let ident = Str "cmd"
   let cmds = T.unpack <$> ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
   addTmuxRunner
+  initialize'
   let opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing
   myoAddSystemCommand -$ opts
   lift $ myoRun -$ ident
@@ -46,4 +50,4 @@ runSpec = do
 
 test_tmuxRun :: IO ()
 test_tmuxRun =
-  vars >>= tmuxSpecWithDef runSpec
+  vars >>= tmuxExternalSpec runSpec

@@ -17,4 +17,4 @@ test_ppid :: IO ()
 test_ppid = do
   pid <- getProcessID
   pps <- ppids (fromIntegral pid)
-  liftIO $ print pps
+  assertBool (length pps > 2)

@@ -16,6 +16,7 @@ import Ribosome.Error.Report (runRiboReport)
 import Ribosome.Msgpack.NvimObject (NO(..))
 
 import Myo.Data.Myo (Env, MyoE)
+import qualified Myo.Log as Log
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Lens.Toggle (envOpenOnePane, envToggleOneLayout, envToggleOnePane)
@@ -48,8 +49,8 @@ ensurePaneOpen ::
   Ident ->
   m ()
 ensurePaneOpen ident = do
-  myoRender
   openPane ident
+  myoRender
 
 myoTogglePane :: NO Ident -> ConcNvimS Env ()
 myoTogglePane (NO ident) =

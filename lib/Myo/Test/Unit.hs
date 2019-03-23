@@ -23,13 +23,14 @@ import qualified Neovim.Context.Internal as Internal (
 import Neovim.RPC.Common (RPCConfig, SocketType(UnixSocket), createHandle, newRPCConfig)
 import Neovim.RPC.EventHandler (runEventHandler)
 import Neovim.RPC.SocketReader (runSocketReader)
+import Ribosome.Api.Echo (echom)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Control.Concurrent.Wait (waitIODef)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, riboE2ribo, runRib)
 import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Data.Time (sleep)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Test.Embed (Runner, TestConfig(..), Vars, runTest)
+import Ribosome.Test.Embed (Runner, TestConfig(..), Vars, runNeovimThunk, runTest)
 import Ribosome.Test.Unit (tempDir, uSpec, unitSpecR)
 import System.FilePath ((</>))
 import UnliftIO (throwString)
@@ -41,6 +42,7 @@ import UnliftIO.STM (atomically, putTMVar)
 import Myo.Data.Env (Env(_tempDir))
 import Myo.Data.Myo (Myo, MyoE)
 import Myo.Env (bracketMyoTempDir)
+import qualified Myo.Log as Log
 import Myo.Settings (tmuxSocket)
 import qualified Myo.Settings as Settings (detectUi)
 import Myo.Test.Config (defaultTestConfig, defaultTestConfigWith)
@@ -70,13 +72,12 @@ withTmux :: Myo () -> TmuxNative -> Myo ()
 withTmux thunk (TmuxNative (Just socket)) = do
   _ <- riboE2ribo setDetectUi
   _ <- riboE2ribo setTmuxSocket
-  setupDefaultTestUi
   thunk
   where
     setTmuxSocket :: MyoE RpcError (ConcNvimS Env) ()
     setTmuxSocket = updateSetting tmuxSocket socket
     setDetectUi :: MyoE RpcError (ConcNvimS Env) ()
-    setDetectUi = updateSetting Settings.detectUi False
+    setDetectUi = updateSetting Settings.detectUi True
 withTmux _ _ = throwString "no socket in test tmux"
 
 tmuxSpecWithDef :: Myo () -> Vars -> IO ()
@@ -100,26 +101,26 @@ startHandlers socket TestConfig{..} nvimConf = do
     emptyConf = nvimConf { Internal.pluginSettings = Nothing }
 
 runExternalNvim :: TestConfig -> s -> Neovim s () -> FilePath -> IO ()
-runExternalNvim conf ribo thunk socket = do
+runExternalNvim conf ribo specThunk socket = do
   nvimConf <- Internal.newConfig (pure Nothing) newRPCConfig
   let testCfg = Internal.retypeConfig ribo nvimConf
-  bracket (startHandlers socket conf nvimConf) id (runTest conf testCfg thunk)
+  bracket (startHandlers socket conf nvimConf) id (runTest conf testCfg specThunk)
 
 externalNvimCmdline :: FilePath -> String
 externalNvimCmdline socket =
   "nvim --listen " ++ socket ++ " -n -u NONE -i NONE"
 
 runExternal :: TmuxNative -> FilePath -> TestConfig -> s -> Neovim s () -> IO ()
-runExternal api temp conf ribo thunk = do
+runExternal api temp conf ribo specThunk = do
   runExceptT @TmuxError $ runTmux api $ sendKeys (PaneId 0) [externalNvimCmdline socket]
   _ <- waitIODef (pure socket) doesPathExist
-  runExternalNvim conf ribo thunk socket
+  runExternalNvim conf ribo specThunk socket
   where
     socket = temp </> "nvim-socket"
 
 unsafeExternalSpec :: TmuxNative -> FilePath -> Runner s -> TestConfig -> s -> Neovim s () -> IO ()
-unsafeExternalSpec api temp runner conf s spec =
-  runExternal api temp conf s $ runner conf spec
+unsafeExternalSpec api temp runner conf s specThunk =
+  runExternal api temp conf s $ runner conf specThunk
 
 unsafeExternalSpecR ::
   TmuxNative ->
@@ -129,20 +130,20 @@ unsafeExternalSpecR ::
   s ->
   Ribo s (ConcNvimS s) () ->
   IO ()
-unsafeExternalSpecR api temp runner conf s spec = do
+unsafeExternalSpecR api temp runner conf s specThunk = do
   tv <- newRibosomeTVar s
   let ribo = Ribosome (tcPluginName conf) tv
-  unsafeExternalSpec api temp runner conf ribo (runRib spec)
+  unsafeExternalSpec api temp runner conf ribo (runRib specThunk)
 
 externalSpec :: TmuxNative -> Env -> Myo () -> Vars -> IO ()
-externalSpec api env thunk vars =
+externalSpec api env specThunk vars =
   bracketMyoTempDir run
   where
     run tempdir =
-      unsafeExternalSpecR api tempdir uSpec (defaultTestConfigWith vars) env { _tempDir = tempdir } thunk
+      unsafeExternalSpecR api tempdir uSpec (defaultTestConfigWith vars) env { _tempDir = tempdir } specThunk
 
 tmuxExternalSpec :: Myo () -> Vars -> IO ()
-tmuxExternalSpec thunk vars =
+tmuxExternalSpec specThunk vars =
   tmuxGuiSpec run
   where
-    run api = externalSpec api def (withTmux thunk api) vars
+    run api = externalSpec api def (withTmux specThunk api) vars
