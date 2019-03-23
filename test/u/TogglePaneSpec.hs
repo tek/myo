@@ -13,7 +13,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo)
-import Ribosome.Data.Time (sleep)
 import Ribosome.Msgpack.NvimObject (NO(..))
 import Test.Framework
 import UnliftIO.Exception (throwString)

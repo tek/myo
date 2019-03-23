@@ -4,7 +4,6 @@ module Myo.Network.Socket(
 ) where
 
 import Control.Monad.Base (MonadBase, liftBase)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Network.Socket (SockAddr(SockAddrUnix), Socket, socket)
 import qualified Network.Socket as Socket (Family(AF_UNIX), SocketType(Datagram), bind)
 

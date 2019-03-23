@@ -7,20 +7,17 @@ module Myo.Ui.Toggle(
 
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
+import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState(get, put))
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Class (lift)
-import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, riboE)
+import Ribosome.Control.Monad.Ribo (ConcNvimS)
 import Ribosome.Error.Report (runRiboReport)
 import Ribosome.Msgpack.NvimObject (NO(..))
 
 import Myo.Data.Myo (Env, MyoE)
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
-import qualified Myo.Ui.Data.ToggleError as ToggleError (ToggleError(Render))
 import Myo.Ui.Lens.Toggle (envOpenOnePane, envToggleOneLayout, envToggleOnePane)
 import Myo.Ui.Render (MyoRender, myoRender)
 
