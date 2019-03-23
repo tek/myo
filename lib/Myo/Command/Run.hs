@@ -63,7 +63,7 @@ executeRunner (Runner _ _ run) = run
 
 runCommand :: Command -> MyoE RunError (ConcNvimS Env) ()
 runCommand cmd = do
-  task <- riboE $ runExceptT $ runTask cmd
+  task <- runTask cmd
   runner <- findRunner task
   executeRunner runner task
   -- storeRunningCommand cmd pid

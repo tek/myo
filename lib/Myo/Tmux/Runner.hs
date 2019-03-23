@@ -3,12 +3,15 @@ module Myo.Tmux.Runner(
 ) where
 
 import Chiasma.Data.Ident (Ident(Str))
+import Control.Monad.DeepState (MonadDeepState)
 import Data.Functor (void)
 
 import Myo.Command.Runner (addRunner)
-import Myo.Data.Env (Myo)
+import Myo.Data.Env (Env)
 import Myo.Tmux.Run (tmuxCanRun, tmuxRun)
 
-addTmuxRunner :: Myo ()
+addTmuxRunner ::
+  MonadDeepState s Env m =>
+  m ()
 addTmuxRunner =
   void $ addRunner (Str "tmux") tmuxRun tmuxCanRun

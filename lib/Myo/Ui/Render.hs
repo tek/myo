@@ -7,11 +7,12 @@ module Myo.Ui.Render where
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.RenderError (RenderError)
 import qualified Chiasma.Data.RenderError as RenderError (RenderError(..))
-import Chiasma.Data.TmuxThunk (TmuxError, TmuxThunk)
+import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Chiasma.Data.Views (Views)
 import Chiasma.Render (render)
-import Control.Monad (join)
-import Control.Monad.DeepError (MonadDeepError)
+import Control.Monad (join, (<=<))
+import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.DeepState (MonadDeepState(stateM))
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Free.Class (MonadFree)
@@ -64,40 +65,38 @@ renderSpacesE cwd =
   runExceptT . renderSpaces cwd
 
 runRenderSpaces ::
-  (MonadRibo m, Nvim m, MonadDeepState s Views m, RunTmux m) =>
+  (MonadRibo m, MonadDeepError e TmuxError m, MonadDeepError e RenderError m, Nvim m, MonadDeepState s Views m, RunTmux m) =>
   FilePath ->
   [Space] ->
-  m (Either RenderError ())
+  m ()
 runRenderSpaces cwd =
-  fmap (join . mapLeft RenderError.Fatal) <$> runMyoTmux . renderSpacesE cwd
+  hoistEither <=< runMyoTmux . renderSpacesE cwd
 
 class (
-  MonadTrans t,
   MonadRibo m,
-  MonadDeepError e TmuxError (t m),
-  MonadDeepError e RenderError (t m),
   Nvim m,
+  MonadDeepError e TmuxError m,
+  MonadDeepError e RenderError m,
   MonadDeepState s Views m,
-  MonadDeepState s UiState (t m),
+  MonadDeepState s UiState m,
   RunTmux m
   ) =>
-    MyoRender s e t m where
+    MyoRender s e m where
 
 instance (
-  MonadTrans t,
   MonadRibo m,
-  MonadDeepError e TmuxError (t m),
-  MonadDeepError e RenderError (t m),
   Nvim m,
+  MonadDeepError e TmuxError m,
+  MonadDeepError e RenderError m,
   MonadDeepState s Views m,
-  MonadDeepState s UiState (t m),
+  MonadDeepState s UiState m,
   RunTmux m
   ) =>
-    MyoRender s e t m where
+    MyoRender s e m where
 
-myoRender :: (MonadIO m, MyoRender s e t m) =>
-  t m (Either RenderError ())
+myoRender :: (MonadIO m, MyoRender s e m) =>
+  m ()
 myoRender = do
-  cwd <- lift getCurrentDirectory
+  cwd <- getCurrentDirectory
   spaces <- myoSpaces
-  lift $ runRenderSpaces cwd spaces
+  runRenderSpaces cwd spaces

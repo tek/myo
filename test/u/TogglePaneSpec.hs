@@ -13,13 +13,14 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (ExceptT, runExceptT)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo)
+import Ribosome.Data.Time (sleep)
 import Ribosome.Msgpack.NvimObject (NO(..))
 import Test.Framework
 import UnliftIO.Exception (throwString)
 
 import Config (vars)
 import Myo.Data.Myo (Env, Myo)
-import Myo.Test.Unit (tmuxSpecWithDef)
+import Myo.Test.Unit (tmuxExternalSpec)
 import Myo.Tmux.IO (runTmuxE)
 import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Toggle (myoTogglePane)
@@ -59,4 +60,4 @@ togglePaneSpec = do
 
 test_togglePane :: IO ()
 test_togglePane =
-  vars >>= tmuxSpecWithDef togglePaneSpec
+  vars >>= tmuxExternalSpec togglePaneSpec

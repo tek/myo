@@ -10,13 +10,17 @@ import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.DeepState (MonadDeepState(get, put))
 import Control.Monad.IO.Class (MonadIO)
-import Ribosome.Control.Monad.Ribo (ConcNvimS)
+import Control.Monad.Trans.Class (lift)
+import Data.Either.Combinators (mapLeft)
+import Data.Functor (void)
+import Ribosome.Control.Monad.Ribo (ConcNvimS, riboE)
 import Ribosome.Error.Report (runRiboReport)
 import Ribosome.Msgpack.NvimObject (NO(..))
 
 import Myo.Data.Myo (Env, MyoE)
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
+import qualified Myo.Ui.Data.ToggleError as ToggleError (ToggleError(Render))
 import Myo.Ui.Lens.Toggle (envOpenOnePane, envToggleOneLayout, envToggleOnePane)
 import Myo.Ui.Render (MyoRender, myoRender)
 
@@ -39,23 +43,25 @@ openPane =
 ensurePaneOpen ::
   (
     MonadIO m,
-    MonadDeepError e TreeModError (t m),
-    MonadDeepError e ToggleError (t m),
+    MonadDeepError e TreeModError m,
+    MonadDeepError e ToggleError m,
     MonadDeepState s Env m,
-    MyoRender s e t m
+    MyoRender s e m
   ) =>
   Ident ->
-  t m ()
+  m ()
 ensurePaneOpen ident = do
+  myoRender
   openPane ident
-  hoistEither =<< myoRender
 
 myoTogglePane :: NO Ident -> ConcNvimS Env ()
 myoTogglePane (NO ident) =
   runRiboReport "ui" thunk
   where
     thunk :: MyoE ToggleError (ConcNvimS Env) ()
-    thunk = togglePane ident
+    thunk = do
+      togglePane ident
+      void myoRender
 
 toggleLayout ::
   (MonadDeepError e TreeModError m, MonadDeepError e ToggleError m, MonadDeepState s Env m) =>

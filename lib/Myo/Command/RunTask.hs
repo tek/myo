@@ -1,7 +1,7 @@
 module Myo.Command.RunTask where
 
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Control.Monad.DeepError (MonadDeepError)
+import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
 import Myo.Ui.Render (MyoRender)
@@ -19,13 +19,13 @@ import Myo.Ui.Toggle (ensurePaneOpen)
 ensurePrerequisites ::
   (
     MonadIO m,
-    MonadDeepError e TreeModError (t m),
-    MonadDeepError e ToggleError (t m),
     MonadDeepState s Env m,
-    MyoRender s e t m
+    MonadDeepError e ToggleError m,
+    MonadDeepError e TreeModError m,
+    MyoRender s e m
   ) =>
   RunTaskDetails ->
-  t m ()
+  m ()
 ensurePrerequisites RunTaskDetails.Vim = return ()
 ensurePrerequisites (RunTaskDetails.UiSystem ident) =
   ensurePaneOpen ident
@@ -34,14 +34,14 @@ ensurePrerequisites _ = undefined
 runTask ::
   (
     MonadIO m,
-    MonadDeepError e TreeModError (t m),
-    MonadDeepError e RunError (t m),
-    MonadDeepError e ToggleError (t m),
-    MonadDeepState s Env (t m),
-    MyoRender s e t m
+    MonadDeepError e TreeModError m,
+    MonadDeepError e RunError m,
+    MonadDeepError e ToggleError m,
+    MonadDeepState s Env m,
+    MyoRender s e m
   ) =>
   Command ->
-  t m RunTask
+  m RunTask
 runTask cmd = do
   details <- runDetails cmd
   ensurePrerequisites details

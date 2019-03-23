@@ -1,16 +1,20 @@
 module Myo.Tmux.IO where
 
-import Chiasma.Data.TmuxThunk (TmuxError)
-import Chiasma.Monad.Stream (TmuxProg, runTmux)
+import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Monad.Stream (TmuxProg)
+import qualified Chiasma.Monad.Stream as Chiasma (runTmux, runTmuxE)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Control.Monad ((=<<))
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Control.Monad.Error.Class (liftEither)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Class (MonadTrans, lift)
+import Control.Monad.Trans.Except (ExceptT, runExceptT)
+import Data.DeepPrisms (DeepPrisms)
 import Ribosome.Config.Setting (settingMaybe)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, Nvim, Ribo(Ribo))
+import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, Nvim, Ribo(Ribo), RiboE)
+import Ribosome.Orphans ()
 
 import Myo.Data.Env (Env)
 import Myo.Data.Myo (MyoE)
@@ -19,30 +23,20 @@ import Myo.Settings (tmuxSocket)
 
 type MyoTmuxProg m = TmuxProg (Ribo Env m)
 
-runTmuxN ::
-  (MonadRibo m, MonadDeepError e TmuxError m, MonadUnliftIO m, Nvim m, MonadThrow m) =>
+runTmux ::
+  (MonadIO m, MonadRibo m, MonadDeepError e TmuxError m, MonadMask m, Nvim m) =>
   TmuxProg m a ->
   m a
-runTmuxN prog = do
+runTmux prog = do
   socket <- settingMaybe tmuxSocket
-  hoistEither =<< runTmux (TmuxNative socket) prog
+  Chiasma.runTmux (TmuxNative socket) prog
 
 runTmuxE ::
-  (MonadRibo m, MonadUnliftIO m, Nvim m, MonadThrow m) =>
-  TmuxProg m a ->
+  (MonadIO m, MonadRibo m, MonadMask m, Nvim m) =>
+  TmuxProg (ExceptT TmuxError m) a ->
   m (Either TmuxError a)
-runTmuxE prog = do
-  socket <- settingMaybe tmuxSocket
-  runTmux (TmuxNative socket) prog
-
-myoTmux ::
-  (MonadRibo m, MonadUnliftIO m, Nvim m, MonadThrow m) =>
-  TmuxProg m a ->
-  MyoE TmuxError m a
-myoTmux prog = do
-  socket <- settingMaybe tmuxSocket
-  result <- Ribo . lift . lift $ runTmux (TmuxNative socket) prog
-  Ribo . lift . liftEither $ result
+runTmuxE =
+  runExceptT . runTmux
 
 -- myoTmuxReport :: ReportError e => String -> TmuxProg m () -> Myo ()
 -- myoTmuxReport componentName ma = do
@@ -53,7 +47,8 @@ myoTmux prog = do
 --     Left e -> reportErrorWith componentName tmuxErrorReport e
 
 class RunTmux m where
-  runMyoTmux :: TmuxProg m b -> m (Either TmuxError b)
+  runMyoTmux :: TmuxProg m b -> m b
 
-instance RunTmux (Ribo Env (ConcNvimS Env)) where
-  runMyoTmux = runTmuxE
+instance (MonadIO m, MonadRibo m, DeepPrisms e TmuxError, MonadMask m, Nvim m) =>
+  RunTmux (RiboE Env e m) where
+    runMyoTmux = runTmux

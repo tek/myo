@@ -30,6 +30,7 @@ dependencies:
 - prettyprinter
 - containers
 - parsec
+- parsers
 - conduit
 - conduit-extra
 - stm-conduit
@@ -51,6 +52,10 @@ dependencies:
 - text
 - exceptions
 - either
+- attoparsec
+- transformers-base
+- monad-control
+- lifted-base
 
 library:
  source-dirs: lib

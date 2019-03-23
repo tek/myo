@@ -1,8 +1,4 @@
-module Myo.Settings(
-  vimTmuxPane,
-  tmuxSocket,
-  displayResult,
-) where
+module Myo.Settings where
 
 import Ribosome.Data.Setting (Setting(Setting))
 
@@ -13,4 +9,9 @@ tmuxSocket :: Setting FilePath
 tmuxSocket = Setting "tmux_socket" True Nothing
 
 displayResult :: Setting Bool
-displayResult = Setting "display_result" True (Just True)
+displayResult =
+  Setting "display_result" True (Just True)
+
+detectUi :: Setting Bool
+detectUi =
+  Setting "detect_ui" True (Just True)

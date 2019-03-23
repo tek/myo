@@ -4,8 +4,11 @@ module Myo.Ui.Watch(
 
 import Chiasma.Data.Ident (Ident)
 import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
+import Control.Concurrent.Lifted (fork)
+import Control.Monad.Base (MonadBase, liftBase)
+import Control.Monad.DeepState (MonadDeepState, gets)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State.Class (gets)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Network.Unix (sourceSocket)
 import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan)
 import Data.Functor (void)
@@ -24,36 +27,36 @@ handleOutput o = do
   return ()
 
 listen ::
-  (MonadIO m, MonadUnliftIO m) =>
+  (MonadIO m, MonadBaseControl IO m) =>
   Ident ->
   FilePath ->
   TMChan PaneOutput ->
   m ()
 listen ident logPath listenChan = do
-  liftIO $ putStrLn $ "listening on socket at " ++ logPath
+  liftBase $ putStrLn $ "listening on socket at " ++ logPath
   sock <- socketBind logPath
-  void $ forkIO $ runConduit $ sourceSocket sock .| mapC (PaneOutput ident) .| sinkTMChan listenChan
+  void $ fork $ runConduit $ sourceSocket sock .| mapC (PaneOutput ident) .| sinkTMChan listenChan
 
 runWatcher ::
   MonadIO m =>
   TMChan PaneOutput ->
-  Ribo Env m ()
+  m ()
 runWatcher listenChan = do
   liftIO $ putStrLn "running watcher"
   runConduit $ sourceTMChan listenChan .| mapMC handleOutput .| sinkNull
 
-startWatcher :: MonadUnliftIO m => MyoE e m (TMChan PaneOutput)
+startWatcher :: (MonadBaseControl IO m, MonadIO m) => m (TMChan PaneOutput)
 startWatcher = do
   chan <- atomically newTMChan
-  void $ liftRibo $ forkIO $ runWatcher chan
+  void $ fork $ runWatcher chan
   return chan
 
-ensureWatcher :: MonadUnliftIO m => MyoE e m (TMChan PaneOutput)
+ensureWatcher :: (MonadBaseControl IO m, MonadIO m, MonadDeepState s Env m) => m (TMChan PaneOutput)
 ensureWatcher = do
-  current <- liftRibo $ gets Env._watcherChan
+  current <- gets Env._watcherChan
   maybe startWatcher return current
 
-watchPane :: MonadUnliftIO m => Ident -> FilePath -> MyoE e m ()
+watchPane :: (MonadBaseControl IO m, MonadIO m, MonadDeepState s Env m) => Ident -> FilePath -> m ()
 watchPane ident logPath = do
   chan <- ensureWatcher
-  liftRibo $ listen ident logPath chan
+  listen ident logPath chan

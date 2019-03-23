@@ -23,13 +23,14 @@ import Control.Lens (Lens', Traversal', each, has, mapMOf, transformM)
 import Control.Lens.Setter ((%~), (<>~))
 import Control.Monad ((<=<))
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Control.Monad.State.Class (MonadState(put), gets, modify)
+import Control.Monad.DeepState (MonadDeepState(put), gets, modify)
 import Data.Foldable (traverse_)
 
 import Myo.Data.Env (Env, Myo)
 import qualified Myo.Data.Env as Env (ui)
 import Myo.Ui.Data.Space (Space(Space))
 import qualified Myo.Ui.Data.Space as Space (_windows)
+import Myo.Ui.Data.UiState (UiState)
 import qualified Myo.Ui.Data.UiState as UiState (spaces, views)
 import Myo.Ui.Data.ViewCoords (ViewCoords(ViewCoords))
 import Myo.Ui.Data.Window (Window(Window))
@@ -41,9 +42,9 @@ envSpacesLens = Env.ui . UiState.spaces
 envViewsLens :: Lens' Env Views
 envViewsLens = Env.ui . UiState.views
 
-insertSpace :: MonadState Env m => Space -> m ()
+insertSpace :: ∀ s m. MonadDeepState s UiState m => Space -> m ()
 insertSpace space =
-  modify $ envSpacesLens <>~ [space]
+  modify @s @UiState $ UiState.spaces <>~ [space]
 
 createSpace :: Ident -> Myo Space
 createSpace ident = do
@@ -67,7 +68,7 @@ envSpaceLens ident = envSpacesLens . spaceLens ident
 doesSpaceExist :: Ident -> Env -> Bool
 doesSpaceExist = has . envSpaceLens
 
-createWindow :: MonadState Env m => ViewCoords -> m (Maybe Window)
+createWindow :: MonadDeepState s Env m => ViewCoords -> m (Maybe Window)
 createWindow (ViewCoords spaceIdent windowIdent layoutIdent) = do
   exists <- gets $ doesSpaceExist spaceIdent
   modify $ envSpaceLens spaceIdent %~ insertWindowIntoSpace window
@@ -124,14 +125,14 @@ insertPaneEnv =
   insertViewEnv insertPaneIfNonexistent
 
 modifyTree ::
-  (MonadDeepError e TreeModError m, MonadState Env m) =>
+  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
   (Env -> Either TreeModError Env) ->
   m ()
 modifyTree =
   put <=< hoistEither <=< gets
 
 modifyTreeMaybe ::
-  (MonadDeepError e TreeModError m, MonadState Env m) =>
+  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
   (Env -> Maybe Env) ->
   TreeModError ->
   m ()
@@ -139,7 +140,7 @@ modifyTreeMaybe trans err =
   modifyTree $ maybe (Left err) Right . trans
 
 insertLayout ::
-  (MonadDeepError e TreeModError m, MonadState Env m) =>
+  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
   ViewCoords ->
   LayoutView ->
   m ()
@@ -147,7 +148,7 @@ insertLayout coords view =
   modifyTreeMaybe (insertLayoutEnv coords view) (TreeModError.LayoutExists view)
 
 insertPane ::
-  (MonadDeepError e TreeModError m, MonadState Env m) =>
+  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
   ViewCoords ->
   PaneView ->
   m ()

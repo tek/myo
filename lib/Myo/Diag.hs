@@ -17,7 +17,7 @@ diagnosticsData = return ["Diagnostics", ""]
 diagnostics :: Myo ()
 diagnostics = do
   content <- diagnosticsData
-  void $ lift $ showInScratch content (defaultScratchOptions "myo-diagnosticsData")
+  void $ lift $ showInScratch content (defaultScratchOptions "myo-diagnostics")
 
 myoDiag :: CommandArguments -> ConcNvimS Env ()
 myoDiag _ =

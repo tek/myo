@@ -10,10 +10,10 @@ import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Control.Lens (Lens', (?~))
 import qualified Control.Lens as Lens (at, view)
+import Control.Monad.Base (MonadBase)
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState, gets, modify)
 import Control.Monad.Free (MonadFree)
-import Control.Monad.IO.Class (MonadIO)
 import Network.Socket (Socket)
 import System.FilePath ((</>))
 
@@ -61,7 +61,7 @@ commandLog ident = do
   maybe (insertLog ident) return existing
 
 commandLogSocketBind ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadIO m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadBase IO m) =>
   Ident ->
   m Socket
 commandLogSocketBind ident = do

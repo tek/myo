@@ -7,8 +7,8 @@ import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Maybe (maybeExcept)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (views)
+import Control.Monad.DeepState (MonadDeepState, gets)
 import Control.Monad.Error.Class (MonadError)
-import Control.Monad.State.Class (MonadState, gets)
 import Data.Foldable (find)
 import Ribosome.Control.Monad.Ribo (prepend)
 
@@ -22,16 +22,19 @@ canRun :: RunTask -> Runner -> Bool
 canRun task (Runner _ can _) =
   can task
 
+runnerForTask :: RunTask -> Env -> Maybe Runner
+runnerForTask task = Lens.views Env.runners $ find (canRun task)
+
 findRunner ::
-  (MonadError RunError m, MonadState Env m) =>
+  (MonadError RunError m, MonadDeepState s Env m) =>
   RunTask ->
   m Runner
 findRunner task = do
-  mayRunner <- gets $ Lens.views Env.runners $ find (canRun task)
+  mayRunner <- gets (runnerForTask task)
   maybeExcept (RunError.NoRunner task) mayRunner
 
 addRunner ::
-  (MonadState Env m) =>
+  MonadDeepState s Env m =>
   Ident ->
   RunF ->
   CanRun ->
