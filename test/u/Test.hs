@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Test where
 
 import Control.Monad.IO.Class (liftIO)

@@ -4,14 +4,10 @@ module Tmux.ParseSpec(
   htf_thisModulesTests,
 ) where
 
-import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.Ident (Ident(Str))
-import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Test.Tmux (sleep)
-import Control.Monad.Trans.Class (lift)
 import Data.Text (Text)
 import qualified Data.Text as T (unpack)
-import Ribosome.Msgpack.NvimObject ((-$))
 import Test.Framework
 
 import Config (vars)
@@ -19,11 +15,11 @@ import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
-import Myo.Command.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Command.Data.ParsedOutput (ParsedOutput)
 import Myo.Command.Parse (addParser, myoParse)
 import Myo.Command.Run (myoRun)
-import Myo.Data.Myo (Myo)
-import Myo.Test.Unit (tmuxGuiSpecWithDef)
+import Myo.Data.Env (MyoN)
+import Myo.Test.Unit (tmuxGuiSpec)
 import Myo.Tmux.IO ()
 import Myo.Tmux.Runner (addTmuxRunner)
 import Test ()
@@ -40,7 +36,7 @@ lang = CommandLanguage "echo"
 parseEcho :: [String] -> ParsedOutput
 parseEcho = undefined
 
-parseSpec :: Myo ()
+parseSpec :: MyoN ()
 parseSpec = do
   let
     ident = Str "cmd"
@@ -48,12 +44,11 @@ parseSpec = do
     opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) (Just lang)
   addParser lang parseEcho
   addTmuxRunner
-  myoAddSystemCommand -$ opts
-  lift $ myoRun -$ ident
+  myoAddSystemCommand opts
+  myoRun ident
   sleep 2
-  lift $ myoParse -$ ParseOptions Nothing Nothing Nothing
-  gassertEqual "" ""
+  myoParse $ ParseOptions Nothing Nothing Nothing
 
 test_parse :: IO ()
 test_parse =
-  vars >>= tmuxGuiSpecWithDef parseSpec
+  vars >>= tmuxGuiSpec parseSpec

@@ -1,21 +1,18 @@
-module Myo.Command.Runner(
-  findRunner,
-  addRunner,
-) where
+module Myo.Command.Runner where
 
 import Chiasma.Data.Ident (Ident)
-import Chiasma.Data.Maybe (maybeExcept)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (views)
+import Control.Monad.DeepError (MonadDeepError, hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState, gets)
-import Control.Monad.Error.Class (MonadError)
+import Control.Monad.Trans.Control (MonadBaseControl(StM), embed)
 import Data.Foldable (find)
 import Ribosome.Control.Monad.Ribo (prepend)
 
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..))
-import Myo.Data.Env (CanRun, Env, RunF, Runner(Runner))
+import Myo.Data.Env (CanRun, Env, Runner(Runner))
 import qualified Myo.Data.Env as Env (runners)
 
 canRun :: RunTask -> Runner -> Bool
@@ -26,18 +23,24 @@ runnerForTask :: RunTask -> Env -> Maybe Runner
 runnerForTask task = Lens.views Env.runners $ find (canRun task)
 
 findRunner ::
-  (MonadError RunError m, MonadDeepState s Env m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
   RunTask ->
   m Runner
 findRunner task = do
   mayRunner <- gets (runnerForTask task)
-  maybeExcept (RunError.NoRunner task) mayRunner
+  hoistMaybe (RunError.NoRunner task) mayRunner
 
+-- TODO
 addRunner ::
-  MonadDeepState s Env m =>
+  ∀ m s.
+  (MonadBaseControl IO m, MonadDeepState s Env m) =>
   Ident ->
-  RunF ->
+  (RunTask -> m ()) ->
   CanRun ->
   m ()
-addRunner ident can run =
-  prepend (Env.runners :: Lens' Env [Runner]) (Runner ident run can)
+addRunner ident run can = do
+  rawRun <- embed run
+  prepend (Env.runners :: Lens' Env [Runner]) (Runner ident can (restore . rawRun))
+  where
+    restore :: IO (StM m ()) -> IO (Either RunError Env)
+    restore = undefined

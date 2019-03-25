@@ -1,28 +1,19 @@
 module Myo.Tmux.Run where
 
 import Chiasma.Command.Pane (sendKeys)
-import qualified Chiasma.Data.RenderError as RenderError (RenderError(..))
-import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.Views (Views, ViewsError)
 import qualified Chiasma.View.State as Views (paneId)
-import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, local, mapE)
-import UnliftIO (MonadUnliftIO)
 
 import Myo.Command.Data.Command (Command(Command))
-import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunError as RunError (RunError(Views, Toggle))
 import Myo.Command.Data.RunTask (RunTask(RunTask))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Log (pipePaneToSocket)
-import Myo.Data.Env (Env, MyoE)
+import Myo.Data.Env (Env)
 import Myo.Tmux.IO (RunTmux, runMyoTmux)
-import qualified Myo.Ui.Data.ToggleError as ToggleError (ToggleError(..))
-import Myo.Ui.View (envViewsLens)
 import Myo.Ui.Watch (watchPane)
 
 tmuxCanRun :: RunTask -> Bool

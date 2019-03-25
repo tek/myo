@@ -21,7 +21,7 @@ import Data.Text.Prettyprint.Doc (line, (<>))
 import Data.Text.Prettyprint.Doc.Util (putDocW)
 import qualified Ribosome.Log as R (debug, err, info, p, prefixed)
 
-import Myo.Data.Myo (Env)
+import Myo.Data.Env (Env)
 import Myo.Ui.View (envTreesLens, envViewsLens)
 
 debug :: MonadIO m => String -> m ()

@@ -13,10 +13,8 @@ import Data.Map ((!?))
 import qualified Data.Map as Map (insert)
 import Data.Maybe (fromMaybe)
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, Nvim, RiboE, local)
+import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Error.Report (runRiboReport)
-import Ribosome.Msgpack.NvimObject (NO(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 import Myo.Command.Command (commandByIdent, latestCommand)
@@ -29,8 +27,6 @@ import qualified Myo.Command.Data.OutputError as OutputError (OutputError(NoLang
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
 import Myo.Command.Data.ParsedOutput (ParsedOutput)
 import Myo.Command.Output (renderParseResult)
-import Myo.Data.Env (Env)
-import qualified Myo.Data.Env as Env (command)
 import qualified Myo.Settings as Settings (displayResult)
 
 selectCommand ::
@@ -62,24 +58,17 @@ parseCommand (Command _ ident _ _ (Just lang)) = do
 parseCommand (Command _ ident _ _ _) =
   throwHoist $ OutputError.NoLang ident
 
-parse ::
+myoParse ::
   ∀ m e s.
   (MonadRibo m, MonadIO m, Nvim m, MonadDeepState s CommandState m, MonadDeepError e OutputError m, MonadDeepError e CommandError m, MonadDeepError e RpcError m, MonadDeepError e SettingError m) =>
   ParseOptions ->
   m ()
-parse (ParseOptions _ ident _) = do
+myoParse (ParseOptions _ ident _) = do
   cmd <- selectCommand ident
   parseResult <- parseCommand cmd
   modify @s @CommandState $ Lens.set CommandState.parseResult (Just parseResult)
   display <- setting Settings.displayResult
   when display $ renderParseResult parseResult
-
-myoParse :: NO ParseOptions -> ConcNvimS Env ()
-myoParse =
-  runRiboReport "parse" . sss . unNO
-  where
-    sss :: ParseOptions -> RiboE Env OutputError (ConcNvimS Env) ()
-    sss po = local Env.command $ parse po
 
 addParser :: ∀ s m. (MonadDeepState s CommandState m) => CommandLanguage -> Parser -> m ()
 addParser lang parser =

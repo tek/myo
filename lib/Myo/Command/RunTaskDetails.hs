@@ -4,14 +4,12 @@ module Myo.Command.RunTaskDetails(
 
 import Chiasma.Data.Ident (Ident)
 import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState)
 
 import Myo.Command.Data.Command (Command(..))
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter (CommandInterpreter(..))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
-import Myo.Data.Env (Env)
 
 systemTaskDetails :: RunTaskDetails
 systemTaskDetails =
@@ -21,7 +19,7 @@ uiSystemTaskDetails :: Ident -> RunTaskDetails
 uiSystemTaskDetails = RunTaskDetails.UiSystem
 
 uiShellTaskDetails ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
+  (MonadDeepError e RunError m) =>
   Ident ->
   Ident ->
   m RunTaskDetails
@@ -32,7 +30,7 @@ vimTaskDetails :: RunTaskDetails
 vimTaskDetails = undefined
 
 runDetails ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
+  (MonadDeepError e RunError m) =>
   Command ->
   m RunTaskDetails
 runDetails (Command interpreter ident _ _ _) = analyze interpreter

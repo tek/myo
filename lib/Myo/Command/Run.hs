@@ -1,34 +1,39 @@
-module Myo.Command.Run(
-  myoRun,
-  storeRunningCommand,
-) where
+{-# LANGUAGE UndecidableInstances #-}
+
+module Myo.Command.Run where
 
 import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.RenderError (RenderError)
+import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Data.Views (Views)
+import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (preview)
 import Control.Monad (when)
+import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState, gets)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Maybe (isNothing)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, local, mapE, prepend)
-import Ribosome.Error.Report (runRiboReport)
-import Ribosome.Msgpack.NvimObject (NO(..))
+import Ribosome.Control.Monad.Ribo (MonadRibo, prepend)
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (running)
 import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import Myo.Command.History (pushHistory)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
-import Myo.Data.Env (Env, MyoE, Runner(Runner))
-import qualified Myo.Data.Env as Env (command)
+import Myo.Data.Env (Env, Runner(Runner))
 import Myo.Orphans ()
+import Myo.Tmux.IO (RunTmux)
+import Myo.Ui.Data.ToggleError (ToggleError)
+import Myo.Ui.Data.UiState (UiState)
 
 findRunningCommand ::
   MonadDeepState s CommandState m =>
@@ -57,10 +62,40 @@ storeRunningCommand (Command _ ident _ _ _) pid = do
   existing <- findRunningCommand ident
   when (isNothing existing) $ addRunningCommand ident pid
 
-executeRunner :: Runner -> RunTask -> MyoE RunError (ConcNvimS Env) ()
-executeRunner (Runner _ _ run) = run
+executeRunner :: (MonadIO m, MonadDeepError e RunError m, MonadDeepState s Env m) => Runner -> RunTask -> m ()
+executeRunner (Runner _ _ run) task = do
+  _ <- liftIO (run task)
+  undefined
 
-runCommand :: Command -> MyoE RunError (ConcNvimS Env) ()
+class (
+    RunTmux m,
+    MonadRibo m,
+    MonadDeepError e ToggleError m,
+    MonadDeepError e TreeModError m,
+    MonadDeepError e RunError m,
+    MonadDeepError e RenderError m,
+    MonadDeepError e TmuxError m,
+    MonadDeepState s Env m,
+    MonadDeepState s CommandState m,
+    MonadDeepState s UiState m,
+    MonadDeepState s Views m
+    ) => MyoRun s e m where
+
+instance (
+    RunTmux m,
+    MonadRibo m,
+    MonadDeepError e ToggleError m,
+    MonadDeepError e TreeModError m,
+    MonadDeepError e RunError m,
+    MonadDeepError e RenderError m,
+    MonadDeepError e TmuxError m,
+    MonadDeepState s Env m,
+    MonadDeepState s CommandState m,
+    MonadDeepState s UiState m,
+    MonadDeepState s Views m
+    ) => MyoRun s e m where
+
+runCommand :: MyoRun s e m => Command -> m ()
 runCommand cmd = do
   task <- runTask cmd
   runner <- findRunner task
@@ -68,18 +103,7 @@ runCommand cmd = do
   -- storeRunningCommand cmd pid
   pushHistory cmd
 
-runIdent ::
-  Ident ->
-  MyoE RunError (ConcNvimS Env) ()
-runIdent ident = do
-  cmd <- mapE RunError.Command cmdResult
+myoRun :: (MyoRun s e m, MonadDeepError e CommandError m) => Ident -> m ()
+myoRun ident = do
+  cmd <- commandByIdent ident
   runCommand cmd
-  where
-    cmdResult = local Env.command $ commandByIdent ident
-
-myoRun :: NO Ident -> ConcNvimS Env ()
-myoRun (NO ident) =
-  runRiboReport "command" thunk
-  where
-    thunk :: MyoE RunError (ConcNvimS Env) ()
-    thunk = runIdent ident

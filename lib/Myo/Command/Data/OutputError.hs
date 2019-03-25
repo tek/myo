@@ -9,7 +9,6 @@ import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError(..))
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import System.Log (Priority(NOTICE))
 
 import Myo.Command.Data.CommandError (CommandError)
@@ -20,8 +19,6 @@ data OutputError =
   NoLang Ident
   |
   Setting SettingError
-  |
-  Rpc RpcError
   deriving Show
 
 deepPrisms ''OutputError
@@ -33,7 +30,5 @@ instance ReportError OutputError where
     ErrorReport msg [msg] NOTICE
     where
       msg = "command `" ++ identString ident ++ "` has no language"
-  errorReport (Rpc e) =
-    errorReport e
   errorReport (Setting e) =
     errorReport e

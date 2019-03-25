@@ -8,8 +8,9 @@ import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Test.Tmux (sleep)
 import Conduit (runConduit, (.|))
 import Config (vars)
+import Control.Concurrent.Lifted (fork)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
 import Data.ByteString.Internal (packChars)
 import Data.Conduit.Network.Unix (sourceSocket)
@@ -17,40 +18,33 @@ import Data.Conduit.TMChan (TBMChan, newTBMChan, sinkTBMChan, sourceTBMChan, try
 import Data.Functor (void)
 import Network.Socket (SockAddr(SockAddrUnix), Socket, connect)
 import Network.Socket.ByteString (sendAll)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, riboE2ribo)
 import Test.Framework
 import UnliftIO (atomically)
-import UnliftIO.Concurrent (forkIO)
 
-import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Log (commandLog)
-import Myo.Data.Myo (Env, Myo, MyoE)
+import Myo.Data.Env (MyoN)
 import Myo.Network.Socket (socketBind, unixSocket)
 import Myo.Test.Unit (specWithDef)
 
 watcher ::
-  (MonadIO m, MonadUnliftIO m) =>
+  (MonadIO m, MonadBaseControl IO m) =>
   TBMChan ByteString ->
   TBMChan ByteString ->
   m ()
 watcher listenChan resultChan =
-  void $ forkIO $ runConduit $ sourceTBMChan listenChan .| sinkTBMChan resultChan
+  void $ fork $ runConduit $ sourceTBMChan listenChan .| sinkTBMChan resultChan
 
 listen ::
-  (MonadIO m, MonadUnliftIO m) =>
+  (MonadIO m, MonadBaseControl IO m) =>
   TBMChan ByteString ->
   Socket ->
   m ()
 listen listenChan sock =
-  void $ forkIO $ runConduit $ sourceSocket sock .| sinkTBMChan listenChan
+  void $ fork $ runConduit $ sourceSocket sock .| sinkTBMChan listenChan
 
-logSocketPath :: String -> Myo FilePath
-logSocketPath name = do
-  fp <- riboE2ribo lg
-  liftIO $ either (const $ return "") return fp
-  where
-    lg :: MyoE RunError (ConcNvimS Env) FilePath
-    lg = commandLog (Str name)
+logSocketPath :: String -> MyoN FilePath
+logSocketPath =
+  commandLog . Str
 
 chanResult :: TBMChan a -> IO [a]
 chanResult chan = do
@@ -61,7 +55,7 @@ chanResult chan = do
       return (a : rec)
     _ -> return []
 
-socketSpec :: Myo ()
+socketSpec :: MyoN ()
 socketSpec = do
   sockPath1 <- logSocketPath "s1"
   sockPath2 <- logSocketPath "r2"
@@ -75,16 +69,18 @@ socketSpec = do
   resultChan <- atomically $ newTBMChan 6
   watcher listenChan resultChan
   listen listenChan r1
-  liftIO $ sendAll w1 $ packChars "s1"
-  liftIO $ sendAll w1 $ packChars "s1"
-  liftIO $ sendAll w1 $ packChars "s1"
+  send w1 "s1"
+  send w1 "s1"
+  send w1 "s1"
   listen listenChan r2
-  liftIO $ sendAll w2 $ packChars "s2"
-  liftIO $ sendAll w2 $ packChars "s2"
-  liftIO $ sendAll w1 $ packChars "s1"
+  send w2 "s2"
+  send w2 "s2"
+  send w1 "s1"
   sleep 0.1
   result <- liftIO $ chanResult resultChan
   liftIO $ assertEqual ["s1", "s1", "s1", "s2", "s2", "s1"] result
+  where
+    send w s = liftIO $ sendAll w $ packChars s
 
 test_socket :: IO ()
 test_socket =

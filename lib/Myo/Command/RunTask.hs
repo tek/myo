@@ -1,7 +1,7 @@
 module Myo.Command.RunTask where
 
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
+import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
 import Myo.Ui.Render (MyoRender)

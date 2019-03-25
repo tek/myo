@@ -5,33 +5,37 @@ module Myo.Init where
 import Chiasma.Data.Ident (generateIdent)
 import Chiasma.Data.TmuxError (TmuxError)
 import Control.Monad (when)
-import Control.Monad.Catch (MonadMask)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Data.DeepPrisms (deepPrisms)
 import Data.Default (Default(def))
 import Neovim (Neovim)
 import Neovim.Context.Internal (Config(customConfig), asks')
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, liftRibo, riboE2ribo, runRib)
+import Ribosome.Control.Monad.Ribo (riboE2ribo, runRib)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError')
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Internal.IO (retypeNeovim)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 import System.Log.Logger (Priority(ERROR), setLevel, updateGlobalLogger)
 
-import Myo.Data.Env (Env(_instanceIdent, _tempDir))
-import Myo.Data.Myo (Myo, MyoE)
+import Chiasma.Data.Views (ViewsError)
+import Myo.Data.Env (Env(_instanceIdent, _tempDir), Myo, MyoN)
 import qualified Myo.Settings as Settings (detectUi)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (detectDefaultUi)
-import Myo.Ui.Error (tmuxErrorReport)
+import Myo.Ui.Error (tmuxErrorReport, viewsErrorReport)
 
 data InitError =
   Setting SettingError
   |
   Tmux TmuxError
+  |
+  Views ViewsError
+  |
+  Rpc RpcError
   deriving Show
 
 deepPrisms ''InitError
@@ -39,10 +43,12 @@ deepPrisms ''InitError
 instance ReportError InitError where
   errorReport (Setting e) = errorReport e
   errorReport (Tmux e) = tmuxErrorReport e
+  errorReport (Views e) = viewsErrorReport e
+  errorReport (Rpc e) = errorReport e
 
-initialize'' :: (MonadIO m, Nvim m, MonadRibo m, MonadMask m) => MyoE InitError m ()
+initialize'' :: MyoN ()
 initialize'' = do
-  liftRibo addTmuxRunner
+  addTmuxRunner
   detect <- setting Settings.detectUi
   when detect detectDefaultUi
 

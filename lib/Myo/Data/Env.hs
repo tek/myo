@@ -12,14 +12,17 @@ import Ribosome.Data.Errors (Errors)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
+import Myo.Data.Error (Error)
 import Myo.Ui.Data.PaneOutput (PaneOutput)
 import Myo.Ui.Data.UiState (UiState)
 
-type Myo a = Ribo Env (ConcNvimS Env) a
+type EnvN = ConcNvimS Env
+type Myo a = Ribo Env EnvN a
 type MyoE e m a = RiboE Env e m a
+type MyoN a = RiboE Env Error EnvN a
 
 type CanRun = RunTask -> Bool
-type RunF = RunTask -> MyoE RunError (ConcNvimS Env) ()
+type RunF = RunTask -> IO (Either RunError Env)
 
 data Runner =
   Runner Ident CanRun RunF

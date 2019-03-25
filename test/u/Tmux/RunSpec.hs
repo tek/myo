@@ -8,23 +8,19 @@ import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Test.Tmux (sleep)
-import Control.Monad.Trans.Class (lift)
 import Data.Text (Text)
 import qualified Data.Text as T (unpack)
-import Ribosome.Control.Monad.Ribo (riboE2ribo)
-import Ribosome.Msgpack.NvimObject ((-$))
 import Test.Framework
 
 import Config (vars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)
-import Myo.Data.Env (Myo)
-import Myo.Init (initialize')
-import Myo.Test.Unit (tmuxExternalSpec)
+import Myo.Data.Env (MyoN)
+import Myo.Init (initialize'')
+import Myo.Test.Unit (tmuxGuiSpec)
 import Myo.Tmux.IO (runTmuxE)
 import Myo.Tmux.Runner (addTmuxRunner)
-import Myo.Ui.Default (detectDefaultUi)
 import Test ()
 
 line1 :: Text
@@ -33,15 +29,15 @@ line1 = "line 1"
 line2 :: Text
 line2 = "line 2"
 
-runSpec :: Myo ()
+runSpec :: MyoN ()
 runSpec = do
   let ident = Str "cmd"
   let cmds = T.unpack <$> ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
   addTmuxRunner
-  initialize'
+  initialize''
   let opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing
-  myoAddSystemCommand -$ opts
-  lift $ myoRun -$ ident
+  myoAddSystemCommand opts
+  myoRun ident
   sleep 1
   outputE <- runTmuxE $ capturePane (PaneId 1)
   output <- gassertRight outputE
@@ -50,4 +46,4 @@ runSpec = do
 
 test_tmuxRun :: IO ()
 test_tmuxRun =
-  vars >>= tmuxExternalSpec runSpec
+  vars >>= tmuxGuiSpec runSpec

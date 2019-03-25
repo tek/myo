@@ -6,12 +6,11 @@ module DiagSpec(
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
-import Data.Default (Default(def))
 import Ribosome.Api.Buffer (currentBufferContent)
 import Test.Framework
 
 import Config (vars)
-import Myo.Data.Myo (Myo)
+import Myo.Data.Env (MyoN)
 import Myo.Diag (myoDiag)
 import Myo.Test.Unit (tmuxSpecWithDef)
 
@@ -21,9 +20,9 @@ target = [
   ""
   ]
 
-diagSpec :: Myo ()
+diagSpec :: MyoN ()
 diagSpec = do
-  lift $ myoDiag def
+  myoDiag
   content <- lift currentBufferContent
   liftIO $ assertEqual target content
 

@@ -26,7 +26,7 @@ import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.DeepState (MonadDeepState(put), gets, modify)
 import Data.Foldable (traverse_)
 
-import Myo.Data.Env (Env, Myo)
+import Myo.Data.Env (Env)
 import qualified Myo.Data.Env as Env (ui)
 import Myo.Ui.Data.Space (Space(Space))
 import qualified Myo.Ui.Data.Space as Space (_windows)
@@ -46,7 +46,7 @@ insertSpace :: ∀ s m. MonadDeepState s UiState m => Space -> m ()
 insertSpace space =
   modify @s @UiState $ UiState.spaces <>~ [space]
 
-createSpace :: Ident -> Myo Space
+createSpace :: MonadDeepState s UiState m => Ident -> m Space
 createSpace ident = do
   insertSpace space
   return space
@@ -106,6 +106,9 @@ envTreeLens (ViewCoords spaceIdent windowIdent _) =
 
 envTreesLens :: Traversal' Env ViewTree
 envTreesLens = envSpacesLens . each . Space._windows . each . Window._layout
+
+uiTreesLens :: Traversal' UiState ViewTree
+uiTreesLens = UiState.spaces . each . Space._windows . each . Window._layout
 
 insertViewEnv ::
   (Ident -> View a -> ViewTree -> Maybe ViewTree) ->

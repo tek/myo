@@ -1,27 +1,14 @@
 module Myo.Diag where
 
-import Control.Monad.Trans.Class (lift)
 import Data.Functor (void)
-import Neovim (CommandArguments)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, liftRibo)
+import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions)
-import Ribosome.Error.Report (runRiboReport)
 import Ribosome.Scratch (showInScratch)
 
-import Myo.Data.Env (Env)
-import Myo.Data.Myo (Myo, MyoE)
-
-diagnosticsData :: Myo [String]
+diagnosticsData :: Monad m => m [String]
 diagnosticsData = return ["Diagnostics", ""]
 
-diagnostics :: Myo ()
-diagnostics = do
+myoDiag :: NvimE e m => m ()
+myoDiag = do
   content <- diagnosticsData
-  void $ lift $ showInScratch content (defaultScratchOptions "myo-diagnostics")
-
-myoDiag :: CommandArguments -> ConcNvimS Env ()
-myoDiag _ =
-  runRiboReport "diag" thunk
-  where
-    thunk :: MyoE () (ConcNvimS Env) ()
-    thunk = liftRibo diagnostics
+  void $ showInScratch content (defaultScratchOptions "myo-diagnostics")

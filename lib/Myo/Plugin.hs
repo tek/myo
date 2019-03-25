@@ -1,9 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Myo.Plugin(
-  plugin,
-)
-where
+module Myo.Plugin where
 
 import Neovim (
   Neovim,
@@ -11,30 +8,33 @@ import Neovim (
   NeovimPlugin,
   Plugin(..),
   StartupConfig,
-  Synchronous(Async),
-  command',
-  function',
   wrapPlugin,
   )
+import Ribosome.Control.Monad.Ribo (ConcNvimS)
 import Ribosome.Control.Ribosome (Ribosome)
+import Ribosome.Plugin (nvimPlugin, rpcHandlerDef)
 
 import Myo.Command.Run (myoRun)
-import Myo.Data.Env (Env)
+import Myo.Data.Env (Env, MyoE)
+import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
 import Myo.Init (initialize)
-import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
+-- import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
+
+handleError :: Error -> MyoE Error (ConcNvimS Env) ()
+handleError =
+  undefined
 
 plugin' :: Ribosome Env -> Plugin (Ribosome Env)
 plugin' env =
-  Plugin {
-    environment = env,
-    exports = [
-      $(command' 'myoDiag) [],
-      $(function' 'myoTogglePane) Async,
-      $(function' 'myoToggleLayout) Async,
-      $(function' 'myoRun) Async
-    ]
-  }
+  nvimPlugin env funcs handleError
+  where
+    funcs = [
+      $(rpcHandlerDef 'myoDiag),
+      -- $(rpcHandlerDef 'myoTogglePane),
+      -- $(rpcHandlerDef 'myoToggleLayout),
+      $(rpcHandlerDef 'myoRun)
+      ]
 
 plugin :: FilePath -> Neovim (StartupConfig NeovimConfig) NeovimPlugin
 plugin tempdir = do
