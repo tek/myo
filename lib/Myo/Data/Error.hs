@@ -15,6 +15,7 @@ data Error =
   Command CommandError
   |
   Output OutputError
+  deriving Show
 
 deepPrisms ''Error
 

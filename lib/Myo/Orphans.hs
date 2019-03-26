@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Myo.Orphans(
 ) where

@@ -19,7 +19,7 @@ import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
-import Myo.Command.Runner (addRunner)
+import Myo.Command.Runner (addRunner, mkRunner)
 import Myo.Data.Env (MyoN)
 import qualified Myo.Data.Env as Env (errors)
 import Myo.Test.Unit (specWithDef)
@@ -38,7 +38,7 @@ runSpec :: MyoN ()
 runSpec = do
   let ident = Str "cmd"
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing
-  _ <- addRunner (Str "dummy") runDummy (const True)
+  _ <- addRunner (Str "dummy") (mkRunner runDummy) (const True)
   myoRun ident
   loggedError <- gets $ Lens.view $ Env.errors . Errors.componentErrors . Lens.at (ComponentName cname)
   let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError

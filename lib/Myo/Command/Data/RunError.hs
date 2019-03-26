@@ -9,7 +9,7 @@ import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import System.Log (Priority(NOTICE))
+import System.Log (Priority(NOTICE, DEBUG))
 
 import qualified Myo.Command.Data.Command as Cmd (Command(Command))
 import Myo.Command.Data.CommandError (CommandError(..))
@@ -29,6 +29,8 @@ data RunError =
   Tmux TmuxError
   |
   Rpc RpcError
+  |
+  IOEmbed String
   deriving Show
 
 deepPrisms ''RunError
@@ -44,3 +46,4 @@ instance ReportError RunError where
   errorReport (Views e) = viewsErrorReport e
   errorReport (Tmux e) = tmuxErrorReport e
   errorReport (Rpc e) = errorReport e
+  errorReport (IOEmbed e) = ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG

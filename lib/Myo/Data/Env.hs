@@ -22,7 +22,7 @@ type MyoE e m a = RiboE Env e m a
 type MyoN a = RiboE Env Error EnvN a
 
 type CanRun = RunTask -> Bool
-type RunF = RunTask -> IO (Either RunError Env)
+type RunF = RunTask -> IO (Either RunError ())
 
 data Runner =
   Runner Ident CanRun RunF

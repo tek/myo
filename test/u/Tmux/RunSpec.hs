@@ -19,7 +19,7 @@ import Myo.Command.Run (myoRun)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
 import Myo.Test.Unit (tmuxGuiSpec)
-import Myo.Tmux.IO (runTmuxE)
+import Myo.Tmux.IO (runTmux)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Test ()
 
@@ -31,18 +31,17 @@ line2 = "line 2"
 
 runSpec :: MyoN ()
 runSpec = do
-  let ident = Str "cmd"
-  let cmds = T.unpack <$> ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
   addTmuxRunner
   initialize''
-  let opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing
-  myoAddSystemCommand opts
+  myoAddSystemCommand $ AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing
   myoRun ident
   sleep 1
-  outputE <- runTmuxE $ capturePane (PaneId 1)
-  output <- gassertRight outputE
+  output <- runTmux $ capturePane (PaneId 1)
   gassertElem line1 output
   gassertElem line2 output
+  where
+    ident = Str "cmd"
+    cmds = T.unpack <$> ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 test_tmuxRun :: IO ()
 test_tmuxRun =

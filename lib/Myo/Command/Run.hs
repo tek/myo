@@ -11,8 +11,8 @@ import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (preview)
 import Control.Monad (when)
-import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState, gets)
+import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither)
+import Control.Monad.DeepState (MonadDeepState(stateM), gets)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Maybe (isNothing)
 import Ribosome.Control.Monad.Ribo (MonadRibo, prepend)
@@ -64,8 +64,8 @@ storeRunningCommand (Command _ ident _ _ _) pid = do
 
 executeRunner :: (MonadIO m, MonadDeepError e RunError m, MonadDeepState s Env m) => Runner -> RunTask -> m ()
 executeRunner (Runner _ _ run) task = do
-  _ <- liftIO (run task)
-  undefined
+  r <- liftIO $ run task
+  hoistEither r
 
 class (
     RunTmux m,
