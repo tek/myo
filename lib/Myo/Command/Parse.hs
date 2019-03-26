@@ -4,10 +4,10 @@ module Myo.Command.Parse(
 ) where
 
 import Chiasma.Data.Ident (Ident)
-import qualified Control.Lens as Lens (over, set)
+import qualified Control.Lens as Lens (over)
 import Control.Monad (when)
 import Control.Monad.DeepError (MonadDeepError(throwHoist))
-import Control.Monad.DeepState (MonadDeepState, modify)
+import Control.Monad.DeepState (MonadDeepState, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Map ((!?))
 import qualified Data.Map as Map (insert)
@@ -59,20 +59,20 @@ parseCommand (Command _ ident _ _ _) =
   throwHoist $ OutputError.NoLang ident
 
 myoParse ::
-  ∀ m e s.
+  ∀ s e m.
   (MonadRibo m, MonadIO m, Nvim m, MonadDeepState s CommandState m, MonadDeepError e OutputError m, MonadDeepError e CommandError m, MonadDeepError e RpcError m, MonadDeepError e SettingError m) =>
   ParseOptions ->
   m ()
 myoParse (ParseOptions _ ident _) = do
   cmd <- selectCommand ident
   parseResult <- parseCommand cmd
-  modify @s @CommandState $ Lens.set CommandState.parseResult (Just parseResult)
+  setL @CommandState CommandState.parseResult (Just parseResult)
   display <- setting Settings.displayResult
   when display $ renderParseResult parseResult
 
-addParser :: ∀ s m. (MonadDeepState s CommandState m) => CommandLanguage -> Parser -> m ()
+addParser :: MonadDeepState s CommandState m => CommandLanguage -> Parser -> m ()
 addParser lang parser =
-  modify @s @CommandState $ Lens.over CommandState.parsers update
+  modify @CommandState $ Lens.over CommandState.parsers update
   where
     update parsers =
       Map.insert lang (parser : current) parsers

@@ -2,15 +2,13 @@ module Myo.Tmux.Runner where
 
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.Views (Views, ViewsError)
-import Control.Monad.DeepError (MonadDeepError, catchAt)
+import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Functor (void)
-import Ribosome.Data.Functor ((<$<))
 
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Runner (RunInIO, addRunner, mkRunner)
 import Myo.Data.Env (Env)
 import Myo.Tmux.IO (RunTmux)

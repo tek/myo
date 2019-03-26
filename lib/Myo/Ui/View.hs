@@ -44,7 +44,7 @@ envViewsLens = Env.ui . UiState.views
 
 insertSpace :: ∀ s m. MonadDeepState s UiState m => Space -> m ()
 insertSpace space =
-  modify @s @UiState $ UiState.spaces <>~ [space]
+  modify @UiState $ UiState.spaces <>~ [space]
 
 createSpace :: MonadDeepState s UiState m => Ident -> m Space
 createSpace ident = do

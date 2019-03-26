@@ -9,7 +9,6 @@ import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
 
 pushHistory ::
-  ∀ s m.
   MonadDeepState s CommandState m =>
   Command ->
   m ()

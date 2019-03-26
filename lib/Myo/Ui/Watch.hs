@@ -5,8 +5,7 @@ module Myo.Ui.Watch(
 import Chiasma.Data.Ident (Ident)
 import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
-import qualified Control.Lens as Lens (set, view)
-import Control.Monad.DeepState (MonadDeepState, gets, modify, setL)
+import Control.Monad.DeepState (MonadDeepState, getsL, setL)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Conduit.Network.Unix (sourceSocket)
@@ -46,13 +45,12 @@ startWatcher :: ∀ s m. (MonadBaseControl IO m, MonadIO m, MonadDeepState s Env
 startWatcher = do
   chan <- atomically newTMChan
   void $ fork $ runWatcher chan
-  modify @s @Env $ Lens.set Env.watcherChan (Just chan)
-  setL Env.watcherChan (Just chan)
+  setL @Env Env.watcherChan (Just chan)
   return chan
 
 ensureWatcher :: ∀ s m. (MonadBaseControl IO m, MonadIO m, MonadDeepState s Env m) => m (TMChan PaneOutput)
 ensureWatcher = do
-  current <- gets @s @Env (Lens.view Env.watcherChan)
+  current <- getsL @Env Env.watcherChan
   maybe startWatcher return current
 
 watchPane :: (MonadBaseControl IO m, MonadIO m, MonadDeepState s Env m) => Ident -> FilePath -> m ()
