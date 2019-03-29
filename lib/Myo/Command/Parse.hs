@@ -1,17 +1,16 @@
-module Myo.Command.Parse(
-  myoParse,
-  addParser,
-) where
+module Myo.Command.Parse where
 
 import Chiasma.Data.Ident (Ident)
-import qualified Control.Lens as Lens (over)
-import Control.Monad (when)
-import Control.Monad.DeepError (MonadDeepError(throwHoist))
-import Control.Monad.DeepState (MonadDeepState, modify, setL)
+import qualified Control.Lens as Lens (at, over)
+import Control.Monad (join, when)
+import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither, hoistMaybe)
+import Control.Monad.DeepState (MonadDeepState, getsL, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
+import Data.ByteString (ByteString)
 import Data.Map ((!?))
 import qualified Data.Map as Map (insert)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.SettingError (SettingError)
@@ -20,13 +19,16 @@ import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Myo.Command.Command (commandByIdent, latestCommand)
 import Myo.Command.Data.Command (Command(Command), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandState (CommandState, Parser)
-import qualified Myo.Command.Data.CommandState as CommandState (parseResult, parsers)
-import Myo.Command.Data.OutputError (OutputError)
-import qualified Myo.Command.Data.OutputError as OutputError (OutputError(NoLang))
+import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parseResult)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
-import Myo.Command.Data.ParsedOutput (ParsedOutput)
 import Myo.Command.Output (renderParseResult)
+import Myo.Output.Data.OutputError (OutputError)
+import qualified Myo.Output.Data.OutputError as OutputError (OutputError(NoLang, NoHandler))
+import Myo.Output.Data.OutputEvent (OutputEvent)
+import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
+import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Settings as Settings (displayResult)
 
 selectCommand ::
@@ -36,25 +38,40 @@ selectCommand ::
 selectCommand (Just ident) = commandByIdent ident
 selectCommand Nothing = latestCommand
 
-commandOutput :: Ident -> m ()
-commandOutput = undefined
+commandOutput :: MonadDeepState s CommandState m => Ident -> m Text
+commandOutput _ =
+  return ""
 
-parserForLang :: Monad m => CommandLanguage -> m ()
-parserForLang = undefined
+handlersForLang ::
+  (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
+  CommandLanguage ->
+  m [OutputHandler]
+handlersForLang lang = do
+  result <- getsL @CommandState $ CommandState.outputHandlers . Lens.at lang
+  hoistMaybe (OutputError.NoHandler lang) result
 
-parseWithLang :: Monad m => CommandLanguage -> m ParsedOutput
-parseWithLang lang = do
-  _ <- parserForLang lang
-  return undefined
-  -- output <-
+parseWith :: MonadDeepError s OutputError m => OutputParser -> Text -> m ParsedOutput
+parseWith (OutputParser parser) =
+  hoistEither . parser
+
+parseWithLang ::
+  (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
+  CommandLanguage ->
+  Text ->
+  m [ParsedOutput]
+parseWithLang lang output = do
+  handlers <- handlersForLang lang
+  traverse parse handlers
+  where
+    parse (OutputHandler parser) = parseWith parser output
 
 parseCommand ::
   (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
   Command ->
-  m ParsedOutput
+  m [ParsedOutput]
 parseCommand (Command _ ident _ _ (Just lang)) = do
-  _ <- commandOutput ident
-  parseWithLang lang
+  output <- commandOutput ident
+  parseWithLang lang output
 parseCommand (Command _ ident _ _ _) =
   throwHoist $ OutputError.NoLang ident
 
@@ -70,11 +87,9 @@ myoParse (ParseOptions _ ident _) = do
   display <- setting Settings.displayResult
   when display $ renderParseResult parseResult
 
-addParser :: MonadDeepState s CommandState m => CommandLanguage -> Parser -> m ()
-addParser lang parser =
-  modify @CommandState $ Lens.over CommandState.parsers update
+addHandler :: MonadDeepState s CommandState m => CommandLanguage -> OutputHandler -> m ()
+addHandler lang parser =
+  modify @CommandState $ Lens.over (CommandState.outputHandlers . Lens.at lang) update
   where
-    update parsers =
-      Map.insert lang (parser : current) parsers
-      where
-        current = fromMaybe [] (parsers !? lang)
+    update (Just current) = Just (parser : current)
+    update Nothing = Just [parser]

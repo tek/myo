@@ -62,7 +62,12 @@ renderSpacesE cwd =
   runExceptT . renderSpaces cwd
 
 runRenderSpaces ::
-  (MonadRibo m, MonadDeepError e TmuxError m, MonadDeepError e RenderError m, Nvim m, MonadDeepState s Views m, RunTmux m) =>
+  MonadRibo m =>
+  MonadDeepError e TmuxError m =>
+  MonadDeepError e RenderError m =>
+  Nvim m =>
+  MonadDeepState s Views m =>
+  RunTmux m =>
   FilePath ->
   [Space] ->
   m ()

@@ -21,7 +21,7 @@ import Network.Socket.ByteString (sendAll)
 import Test.Framework
 import UnliftIO (atomically)
 
-import Myo.Command.Log (commandLog)
+import Myo.Command.Log (commandLogPath)
 import Myo.Data.Env (MyoN)
 import Myo.Network.Socket (socketBind, unixSocket)
 import Myo.Test.Unit (specWithDef)
@@ -44,7 +44,7 @@ listen listenChan sock =
 
 logSocketPath :: String -> MyoN FilePath
 logSocketPath =
-  commandLog . Str
+  commandLogPath . Str
 
 chanResult :: TBMChan a -> IO [a]
 chanResult chan = do

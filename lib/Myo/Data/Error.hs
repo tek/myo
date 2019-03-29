@@ -6,8 +6,8 @@ import Data.DeepPrisms (deepPrisms)
 import Ribosome.Error.Report.Class (ReportError(..))
 
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.OutputError (OutputError)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Output.Data.OutputError (OutputError)
 
 data Error =
   Run RunError

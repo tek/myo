@@ -1,40 +1,36 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Myo.Command.Data.CommandState(
-  CommandState(..),
-  Logs,
-  Parser,
-  commands,
-  history,
-  logs,
-  parseResult,
-  parsers,
-  running,
-) where
+module Myo.Command.Data.CommandState where
 
 import Chiasma.Data.Ident (Ident)
+import Control.Concurrent.STM.TMChan (TMChan)
 import Data.DeepLenses (deepLenses)
 import Data.Default (Default)
 import Data.Map (Map)
 import GHC.Generics (Generic)
 
 import Myo.Command.Data.Command (Command, CommandLanguage)
+import Myo.Command.Data.CommandLog (CommandLog)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
-import Myo.Command.Data.ParsedOutput (ParsedOutput)
 import Myo.Command.Data.RunningCommand (RunningCommand)
+import Myo.Output.Data.OutputHandler (OutputHandler)
+import Myo.Output.Data.ParsedOutput (ParsedOutput)
+import Myo.Ui.Data.PaneOutput (PaneOutput)
 
-type Logs = Map Ident FilePath
-type Parser = [String] -> ParsedOutput
+type LogPaths = Map Ident FilePath
+type Logs = Map Ident CommandLog
 
 data CommandState =
   CommandState {
     _commands :: [Command],
     _history :: [HistoryEntry],
+    _logPaths :: LogPaths,
     _logs :: Logs,
     _running :: [RunningCommand],
-    _parseResult :: Maybe ParsedOutput,
-    _parsers :: Map CommandLanguage [Parser]
+    _parseResult :: Maybe [ParsedOutput],
+    _outputHandlers :: Map CommandLanguage [OutputHandler],
+    _watcherChan :: Maybe (TMChan PaneOutput)
   }
   deriving (Generic, Default)
 

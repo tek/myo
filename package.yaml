@@ -56,6 +56,9 @@ dependencies:
 - transformers-base
 - monad-control
 - lifted-base
+- stringsearch
+- composition-extra
+- utf8-string
 
 library:
  source-dirs: lib

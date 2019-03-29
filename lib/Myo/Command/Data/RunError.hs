@@ -9,7 +9,7 @@ import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import System.Log (Priority(NOTICE, DEBUG))
+import System.Log (Priority(NOTICE, DEBUG, ERROR))
 
 import qualified Myo.Command.Data.Command as Cmd (Command(Command))
 import Myo.Command.Data.CommandError (CommandError(..))
@@ -31,6 +31,8 @@ data RunError =
   Rpc RpcError
   |
   IOEmbed String
+  |
+  SocketFailure
   deriving Show
 
 deepPrisms ''RunError
@@ -47,3 +49,4 @@ instance ReportError RunError where
   errorReport (Tmux e) = tmuxErrorReport e
   errorReport (Rpc e) = errorReport e
   errorReport (IOEmbed e) = ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
+  errorReport SocketFailure = ErrorReport "internal error" ["could not create listener socket"] ERROR

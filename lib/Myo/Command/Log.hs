@@ -1,79 +1,95 @@
-module Myo.Command.Log(
-  commandLog,
-  commandLogSocketBind,
-  pipePaneToSocket,
-) where
+module Myo.Command.Log where
 
-import Chiasma.Command.Pane (pipePane)
+import Chiasma.Command.Pane (paneTarget, pipePane)
 import Chiasma.Data.Ident (Ident, identString)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Control.Lens (Lens', (?~))
-import qualified Control.Lens as Lens (at, view)
+import qualified Control.Lens as Lens (at, over, view)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState, gets, modify)
+import Control.Monad.DeepState (MonadDeepState, gets, getsL, modify)
 import Control.Monad.Free (MonadFree)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.ByteString (ByteString)
 import Network.Socket (Socket)
 import System.FilePath ((</>))
 
-import qualified Myo.Command.Data.CommandState as CommandState (logs)
+import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
+import qualified Myo.Command.Data.CommandLog as CommandLog (current)
+import Myo.Command.Data.CommandState (CommandState, Logs)
+import qualified Myo.Command.Data.CommandState as CommandState (logPaths, logs)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Data.Env (Env)
 import qualified Myo.Data.Env as Env (command, tempDir)
 import Myo.Network.Socket (socketBind)
 
-logLens :: Ident -> Lens' Env (Maybe FilePath)
-logLens ident = Env.command . CommandState.logs . Lens.at ident
+logPathLens :: Ident -> Lens' CommandState (Maybe FilePath)
+logPathLens ident = CommandState.logPaths . Lens.at ident
 
-logByIdent ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
+logPathByIdent ::
+  (MonadDeepError e RunError m, MonadDeepState s CommandState m) =>
   Ident ->
   m (Maybe FilePath)
-logByIdent ident =
-  gets $ Lens.view $ logLens ident
+logPathByIdent ident =
+  getsL $ logPathLens ident
 
 logTempDir ::
-  (MonadDeepState s Env m) =>
+  MonadDeepState s Env m =>
   m FilePath
 logTempDir =
-  gets g
-  where
-    g :: Env -> String
-    g = Lens.view Env.tempDir
+  getsL @Env Env.tempDir
 
-insertLog ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
+insertLogPath ::
+  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadDeepState s CommandState m) =>
   Ident ->
   m FilePath
-insertLog ident = do
+insertLogPath ident = do
   base <- logTempDir
   let logPath = base </> "pane-" ++ identString ident
-  modify $ logLens ident ?~ logPath
+  modify $ logPathLens ident ?~ logPath
   return logPath
 
-commandLog ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m) =>
+commandLogPath ::
+  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadDeepState s CommandState m) =>
   Ident ->
   m FilePath
-commandLog ident = do
-  existing <- logByIdent ident
-  maybe (insertLog ident) return existing
+commandLogPath ident = do
+  existing <- logPathByIdent ident
+  maybe (insertLogPath ident) return existing
 
 commandLogSocketBind ::
-  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadBase IO m) =>
+  (MonadDeepError e RunError m, MonadDeepState s Env m, MonadDeepState s CommandState m, MonadBase IO m) =>
   Ident ->
   m Socket
 commandLogSocketBind ident = do
-  filePath <- commandLog ident
+  filePath <- commandLogPath ident
   socketBind filePath
 
 pipePaneToSocket ::
-  MonadFree TmuxThunk m =>
+  (MonadIO m, MonadFree TmuxThunk m) =>
   PaneId ->
   FilePath ->
   m ()
 pipePaneToSocket paneId logPath =
   pipePane paneId cmd
   where
-    cmd = "socat UNIX-LISTEN:" ++ logPath ++ " -"
+    cmd = "'socat STDIN UNIX-SENDTO:" ++ logPath ++ "'"
+
+logLens :: Ident -> Lens' CommandState (Maybe CommandLog)
+logLens ident = CommandState.logs . Lens.at ident
+
+commandLogs :: MonadDeepState s CommandState m => m Logs
+commandLogs =
+  getsL @CommandState CommandState.logs
+
+commandLog :: MonadDeepState s CommandState m => Ident -> m (Maybe CommandLog)
+commandLog ident =
+  getsL (logLens ident)
+
+appendLog :: MonadDeepState s CommandState m => Ident -> ByteString -> m ()
+appendLog ident bytes =
+  modify $ Lens.over (logLens ident) append
+  where
+    append (Just (CommandLog prev cur)) = Just (CommandLog prev (cur <> bytes))
+    append Nothing = Just (CommandLog [] bytes)

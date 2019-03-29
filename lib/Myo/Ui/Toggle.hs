@@ -23,27 +23,29 @@ toggleView toggle ident =
   put =<< toggle ident =<< get
 
 togglePane ::
-  (MonadDeepError e TreeModError m, MonadDeepError e ToggleError m, MonadDeepState s UiState m) =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepState s UiState m =>
   Ident ->
   m ()
 togglePane =
   toggleView toggleOnePane
 
 openPane ::
-  (MonadDeepError e TreeModError m, MonadDeepError e ToggleError m, MonadDeepState s UiState m) =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepState s UiState m =>
   Ident ->
   m ()
 openPane =
   toggleView openOnePane
 
 ensurePaneOpen ::
-  (
-    MonadIO m,
-    MonadDeepError e TreeModError m,
-    MonadDeepError e ToggleError m,
-    MonadDeepState s UiState m,
-    MyoRender s e m
-  ) =>
+  MonadIO m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepState s UiState m =>
+  MyoRender s e m =>
   Ident ->
   m ()
 ensurePaneOpen ident = do

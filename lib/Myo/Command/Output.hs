@@ -2,7 +2,8 @@ module Myo.Command.Output(
   renderParseResult,
 ) where
 
-import Myo.Command.Data.ParsedOutput (ParsedOutput)
+import Myo.Output.Data.ParsedOutput (ParsedOutput)
 
-renderParseResult :: ParsedOutput -> m ()
-renderParseResult = undefined
+renderParseResult :: Monad m => [ParsedOutput] -> m ()
+renderParseResult _ =
+  return ()
