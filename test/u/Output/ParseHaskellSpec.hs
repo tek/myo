@@ -25,30 +25,31 @@ import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 haskellOutput :: Text
 haskellOutput =
   Text.unlines [
-    -- "/path/to/Module/File.hs:13:5: error:",
-    -- "    • Couldn't match type ‘TypeA’ with ‘TypeB’",
-    -- "      Expected type: TypeB",
-    -- "        Actual type: TypeA",
-    -- "    • In the expression: f a b",
-    -- "      In an equation for ‘Module.foo’:",
-    -- "          foo = f a b",
-    -- "   |",
-    -- "13 |   f a b",
-    -- "   |   ^^^^",
-    -- "",
-    -- "/path/to/Module/File.hs:19:7: error: [-fhygiene]",
-    -- "    Not in scope: type constructor or class ‘Something’",
-    -- "   |",
-    -- "19 | makeSomething :: String -> [Something]",
-    -- "   |                             ^^^^^^^^^",
-    -- "",
-    -- "/path/to/Module/File.hs:2:77: warning: [-Wmissing-methods]",
-    -- "    • No explicit implementation for",
-    -- "        ‘meth’",
-    -- "    • In the instance declaration for ‘Closs Int’",
-    -- "   |",
-    -- "31 | instance Closs Int where",
-    -- "   |          ^^^^^^^^^",
+    "/path/to/Module/File.hs:13:5: error:",
+    "    • Couldn't match type ‘TypeA’ with ‘TypeB’",
+    "      Expected type: TypeB",
+    "        Actual type: TypeA",
+    "    • In the expression: f a b",
+    "      In an equation for ‘Module.foo’:",
+    "          foo = f a b",
+    "   |",
+    "13 |   f a b",
+    "   |   ^^^^",
+    "",
+    "/path/to/Module/File.hs:19:7: error: [-fhygiene]",
+    "    Not in scope: type constructor or class ‘Something’",
+    "   |",
+    "19 | makeSomething :: String -> [Something]",
+    "   |                             ^^^^^^^^^",
+    "",
+    "/path/to/Module/File.hs:2:77: warning: [-Wmissing-methods]",
+    "    • No explicit implementation for",
+    "        ‘meth’",
+    "    • In the instance declaration for ‘Closs Int’",
+    "   |",
+    "31 | instance Closs Int where",
+    "   |          ^^^^^^^^^",
+    "",
     "/path/to/file.hs:5:5: error:",
     "    • Couldn't match expected type ‘StateT",
     "                                      (ReaderT",
@@ -71,6 +72,25 @@ haskellOutput =
     ""
     ]
 
+target = [
+  "/path/to/Module/File.hs \57505 14",
+  "type mismatch",
+  "TypeA",
+  "TypeB",
+  "",
+  "/path/to/Module/File.hs \57505 20",
+  "type not in scope: Something",
+  "",
+  "/path/to/Module/File.hs \57505 3",
+  "method not implemented: meth",
+  "",
+  "/path/to/file.hs \57505 6",
+  "type mismatch",
+  "t0 Data1 -> StateT (ReaderT e0) ()",
+  "StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0",
+  ""
+  ]
+
 parseHaskell :: IO (Either OutputError ParsedOutput)
 parseHaskell =
   runExceptT $ parseWith haskellOutputParser haskellOutput
@@ -82,4 +102,4 @@ test_parseHaskell = do
   let
     report = cons 0
     lines = Text.unpack . ReportLine._text <$> ParseReport._lines report
-  traverse_ putStrLn lines
+  assertEqual target lines

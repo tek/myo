@@ -14,7 +14,7 @@ import Text.Parser.Combinators (between, choice, many, manyTill, notFollowedBy, 
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, token, whiteSpace)
 
-import Myo.Output.Data.Location (Location)
+import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
@@ -108,13 +108,19 @@ formatMessage (NoMethod meth) =
 formatMessage (Verbatim text) =
   [text]
 
+formatLocation :: Location -> String
+formatLocation (Location path line _) =
+  path ++ " \57505 " ++ show (line + 1)
+
 parsedOutputCons :: [HaskellOutputEvent] -> Int -> ParseReport
 parsedOutputCons events offset =
   ParseReport events' (join lines')
   where
     (events', lines') = unzip (cons <$> events)
     cons HaskellOutputEvent{..} =
-      (OutputEvent (Just location) level, ReportLine index . Text.pack <$> formatMessage message)
+      (OutputEvent (Just location) level, ReportLine index . Text.pack <$> formattedLines)
+      where
+        formattedLines = formatLocation location : formatMessage message ++ [""]
 
 eventLevel :: EventType -> Int
 eventLevel EventType.Warning = 1
