@@ -9,3 +9,9 @@ data ParseReport =
     _lines :: [ReportLine]
   }
   deriving (Eq, Show)
+
+instance Semigroup ParseReport where
+  (ParseReport e1 l1) <> (ParseReport e2 l2) = ParseReport (e1 <> e2) (l1 <> l2)
+
+instance Monoid ParseReport where
+  mempty = ParseReport mempty mempty

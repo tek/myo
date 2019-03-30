@@ -9,12 +9,14 @@ import Data.DeepLenses (deepLenses)
 import Data.Default (Default)
 import Data.Map (Map)
 import GHC.Generics (Generic)
+import Ribosome.Data.Scratch (Scratch)
 
 import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.CommandLog (CommandLog)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.RunningCommand (RunningCommand)
 import Myo.Output.Data.OutputHandler (OutputHandler)
+import Myo.Output.Data.ParseReport (ParseReport)
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Ui.Data.PaneOutput (PaneOutput)
 
@@ -28,7 +30,9 @@ data CommandState =
     _logPaths :: LogPaths,
     _logs :: Logs,
     _running :: [RunningCommand],
-    _parseResult :: Maybe [ParsedOutput],
+    _parsedOutput :: Maybe [ParsedOutput],
+    _parseReports :: Maybe ParseReport,
+    _reportScratch :: Maybe Scratch,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _watcherChan :: Maybe (TMChan PaneOutput)
   }

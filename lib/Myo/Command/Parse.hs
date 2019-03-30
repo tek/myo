@@ -20,7 +20,7 @@ import Myo.Command.Command (commandByIdent, latestCommand)
 import Myo.Command.Data.Command (Command(Command), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parseResult)
+import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parsedOutput)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
 import Myo.Command.Output (renderParseResult)
 import Myo.Output.Data.OutputError (OutputError)
@@ -76,16 +76,22 @@ parseCommand (Command _ ident _ _ _) =
   throwHoist $ OutputError.NoLang ident
 
 myoParse ::
-  ∀ s e m.
-  (MonadRibo m, MonadIO m, Nvim m, MonadDeepState s CommandState m, MonadDeepError e OutputError m, MonadDeepError e CommandError m, MonadDeepError e RpcError m, MonadDeepError e SettingError m) =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e RpcError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepState s CommandState m =>
+  MonadIO m =>
+  MonadRibo m =>
+  Nvim m =>
   ParseOptions ->
   m ()
 myoParse (ParseOptions _ ident _) = do
   cmd <- selectCommand ident
-  parseResult <- parseCommand cmd
-  setL @CommandState CommandState.parseResult (Just parseResult)
+  parsedOutput <- parseCommand cmd
+  setL @CommandState CommandState.parsedOutput (Just parsedOutput)
   display <- setting Settings.displayResult
-  when display $ renderParseResult parseResult
+  when display $ renderParseResult parsedOutput
 
 addHandler :: MonadDeepState s CommandState m => CommandLanguage -> OutputHandler -> m ()
 addHandler lang parser =

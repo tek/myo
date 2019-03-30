@@ -112,15 +112,21 @@ formatLocation :: Location -> String
 formatLocation (Location path line _) =
   path ++ " \57505 " ++ show (line + 1)
 
+formatReportLine :: Int -> Location -> HaskellMessage -> [ReportLine]
+formatReportLine index location message =
+  ReportLine index . Text.pack <$> (formatLocation location : formatMessage message ++ [""])
+
+formatEvent :: Location -> Int -> Int -> HaskellMessage -> (OutputEvent, [ReportLine])
+formatEvent location level index message =
+  (OutputEvent (Just location) level, formatReportLine index location message)
+
 parsedOutputCons :: [HaskellOutputEvent] -> Int -> ParseReport
 parsedOutputCons events offset =
   ParseReport events' (join lines')
   where
     (events', lines') = unzip (cons <$> events)
     cons HaskellOutputEvent{..} =
-      (OutputEvent (Just location) level, ReportLine index . Text.pack <$> formattedLines)
-      where
-        formattedLines = formatLocation location : formatMessage message ++ [""]
+      formatEvent location level (index + offset) message
 
 eventLevel :: EventType -> Int
 eventLevel EventType.Warning = 1

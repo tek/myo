@@ -3,13 +3,18 @@ module Myo.Test.Unit where
 import Chiasma.Command.Pane (sendKeys)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
+import qualified Chiasma.Test.Screenshot as Chiasma (screenshot)
 import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec)
+import Control.Monad.Free.Class (MonadFree)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Default (def)
 import Data.Foldable (traverse_)
 import Data.Functor (void)
+import Data.Text (Text)
 import qualified Neovim.Context.Internal as Internal (
   Config,
   globalFunctionMap,
@@ -27,7 +32,7 @@ import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
 import Ribosome.Error.Report.Class (ReportError)
 import Ribosome.Plugin (RpcHandler)
 import Ribosome.Test.Embed (Runner, TestConfig(..), Vars, runTest)
-import Ribosome.Test.Unit (uSpec, unitSpec)
+import Ribosome.Test.Unit (fixture, uSpec, unitSpec)
 import System.FilePath ((</>))
 import UnliftIO (throwString)
 import UnliftIO.Async (async, cancel)
@@ -158,3 +163,14 @@ tmuxGuiSpec specThunk vars =
   Chiasma.tmuxGuiSpec run
   where
     run api = guiSpec api def (withTmux specThunk api) vars
+
+screenshot ::
+  MonadFree TmuxThunk m =>
+  MonadIO m =>
+  String ->
+  Bool ->
+  Int ->
+  m (Maybe ([Text], [Text]))
+screenshot name record pane = do
+  storage <- fixture "screenshots"
+  Chiasma.screenshot record storage name pane
