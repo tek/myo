@@ -24,7 +24,7 @@ import UnliftIO (atomically)
 import Myo.Command.Log (commandLogPath)
 import Myo.Data.Env (MyoN)
 import Myo.Network.Socket (socketBind, unixSocket)
-import Myo.Test.Unit (specWithDef)
+import Unit (specWithDef)
 
 watcher ::
   (MonadIO m, MonadBaseControl IO m) =>

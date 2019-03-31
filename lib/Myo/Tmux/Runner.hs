@@ -8,12 +8,12 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Functor (void)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
+import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Runner (RunInIO, addRunner, mkRunner)
 import Myo.Data.Env (Env)
-import Myo.Tmux.IO (RunTmux)
 import Myo.Tmux.Run (tmuxCanRun, tmuxRun)
 
 addTmuxRunner ::

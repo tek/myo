@@ -9,6 +9,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Concurrent.Wait (waitIODef)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
+import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 import UnliftIO.Directory (doesPathExist)
 
 import Myo.Command.Data.Command (Command(Command))
@@ -20,7 +21,6 @@ import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Log (pipePaneToSocket)
 import Myo.Command.Watch (watchPane)
 import Myo.Data.Env (Env)
-import Myo.Tmux.IO (RunTmux, runMyoTmux)
 
 tmuxCanRun :: RunTask -> Bool
 tmuxCanRun (RunTask _ _ details) =
@@ -47,7 +47,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
       paneId <- Views.paneId paneIdent
       watchPane commandIdent logPath
       waitForSocket logPath
-      runMyoTmux $ do
+      runRiboTmux $ do
         pipePaneToSocket paneId logPath
         sendKeys paneId lines'
     run _ = undefined

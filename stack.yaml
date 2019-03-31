@@ -1,7 +1,8 @@
 resolver: lts-12.26
 packages:
 - .
-- ribosome
+- ribosome/modules/core
+- ribosome/modules/test
 - chiasma
 - ../cornea
 extra-deps:
@@ -9,4 +10,5 @@ extra-deps:
 - pretty-terminal-0.1.0.0
 - posix-pty-0.2.1.1
 # - ribosome-0.1.2.0
+# - ribosome-test-0.1.2.0
 # - chiasma-0.1.0.0

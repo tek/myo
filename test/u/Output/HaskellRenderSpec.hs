@@ -4,10 +4,19 @@ module Output.HaskellRenderSpec(
   htf_thisModulesTests,
 ) where
 
-import Ribosome.Data.Time (sleep)
+import Control.Monad.IO.Class (liftIO)
+import Data.Functor (void)
+import Ribosome.Api.Buffer (currentBufferContent)
+import Ribosome.Api.Syntax (executeSyntax)
+import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
+import Ribosome.Nvim.Api.IO (vimCommandOutput)
+import Ribosome.System.Time (sleep)
+import Ribosome.Test.Screenshot (assertScreenshot)
+import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
-import Config (vars)
 import Myo.Command.Output (renderParseResult)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
@@ -17,10 +26,7 @@ import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
-import Myo.Test.Unit (tmuxGuiSpec)
-import Myo.Tmux.IO (runTmux)
-import Ribosome.Api.Buffer (currentBufferContent)
-import Test (screenshot)
+import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 
 events :: [OutputEvent]
 events =
@@ -36,7 +42,7 @@ reportLines =
 
 parsedOutput :: ParsedOutput
 parsedOutput =
-  ParsedOutput (\ x -> ParseReport events reportLines)
+  ParsedOutput haskellSyntax (const $ ParseReport events reportLines)
 
 target :: [String]
 target = [
@@ -50,14 +56,28 @@ target = [
   ""
   ]
 
+setupHighlights :: NvimE e m => m ()
+setupHighlights =
+  void $ executeSyntax (Syntax [] [syntaxHighlight "Error" [("ctermfg", "1"), ("cterm", "bold")]] [])
+
+myoSyntax :: NvimE e m => m [String]
+myoSyntax =
+  filter isMyo . lines <$> vimCommandOutput "syntax"
+  where
+    isMyo item = take 3 item == "Myo"
+
 haskellRenderSpec :: MyoN ()
 haskellRenderSpec = do
   initialize''
+  setupHighlights
   renderParseResult [parsedOutput]
   content <- currentBufferContent
   gassertEqual target content
-  screenshot "render-haskell-parse-result" False 0
+  sleep 2
+  s <- myoSyntax
+  liftIO $ traverse putStrLn s
+  assertScreenshot "render-haskell-parse-result" False 0
 
 test_haskellRender :: IO ()
 test_haskellRender =
-  vars >>= tmuxGuiSpec haskellRenderSpec
+  tmuxGuiSpecDef haskellRenderSpec

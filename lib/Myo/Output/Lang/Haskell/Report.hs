@@ -21,8 +21,10 @@ import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
+import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
+import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 
 data HaskellMessage =
   FoundReq1 String String
@@ -110,7 +112,7 @@ formatMessage (Verbatim text) =
 
 formatLocation :: Location -> String
 formatLocation (Location path line _) =
-  path ++ " \57505 " ++ show (line + 1)
+  unwords [path, lineNumber, show (line + 1)]
 
 formatReportLine :: Int -> Location -> HaskellMessage -> [ReportLine]
 formatReportLine index location message =
@@ -139,6 +141,6 @@ eventReport index (HaskellEvent loc tpe (messageText :| _)) = do
 
 haskellReport :: [HaskellEvent] -> Either OutputError ParsedOutput
 haskellReport events =
-  ParsedOutput . parsedOutputCons <$> (traverse (uncurry eventReport) . zipWithIndex) events
+  ParsedOutput haskellSyntax . parsedOutputCons <$> (traverse (uncurry eventReport) . zipWithIndex) events
   where
     zipWithIndex = toListOf (ifolded . withIndex)

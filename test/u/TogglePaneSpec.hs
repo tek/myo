@@ -8,16 +8,16 @@ import qualified Chiasma.Codec.Data as Codec (Pane)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Chiasma.Monad.Tmux as Tmux (read)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
+import Ribosome.Orphans ()
+import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
 
 import Config (vars)
 import Myo.Data.Env (MyoN)
-import Myo.Test.Unit (tmuxSpecWithDef)
-import Myo.Tmux.IO (runTmuxE)
 import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Toggle (myoTogglePane)
 import Myo.Ui.View (createSpace, createWindow, insertLayout, insertPane)
-import Test ()
+import Unit (tmuxSpecWithDef)
 
 layout :: View Layout
 layout = consLayoutVertical (Ident.Str "l")

@@ -11,9 +11,9 @@ import qualified Data.ByteString.Char8 as ByteString (lines)
 import Data.ByteString.Internal (packChars)
 import Data.Text (Text)
 import qualified Data.Text as T (unpack)
+import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Test.Framework
 
-import Config (vars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
@@ -29,10 +29,7 @@ import Myo.Output.Data.OutputEvent (OutputEvent)
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
-import Myo.Test.Unit (tmuxGuiSpec)
-import Myo.Tmux.IO ()
 import Myo.Tmux.Runner (addTmuxRunner)
-import Test ()
 
 line1 :: String
 line1 = "line 1"
@@ -65,4 +62,4 @@ parseSpec = do
 
 test_parse :: IO ()
 test_parse =
-  vars >>= tmuxGuiSpec parseSpec
+  tmuxGuiSpecDef parseSpec

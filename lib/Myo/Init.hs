@@ -19,6 +19,7 @@ import Ribosome.Error.Report (reportError')
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Internal.IO (retypeNeovim)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
+import Ribosome.Orphans ()
 import System.Log.Logger (Priority(ERROR), setLevel, updateGlobalLogger)
 
 import Chiasma.Data.Views (ViewsError)

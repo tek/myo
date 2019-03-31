@@ -7,6 +7,7 @@ import Data.DeepLenses (deepLenses)
 import Data.Default (Default(def))
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE)
 import Ribosome.Data.Errors (Errors)
+import Ribosome.Orphans ()
 
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)

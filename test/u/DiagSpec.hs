@@ -12,7 +12,7 @@ import Test.Framework
 import Config (vars)
 import Myo.Data.Env (MyoN)
 import Myo.Diag (myoDiag)
-import Myo.Test.Unit (tmuxSpecWithDef)
+import Unit (tmuxSpecWithDef)
 
 target :: [String]
 target = [

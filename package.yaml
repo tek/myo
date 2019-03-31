@@ -126,4 +126,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - myo
+    - ribosome-test
     - HTF

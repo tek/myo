@@ -20,10 +20,10 @@ import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.State (runStateT)
 import Data.Foldable (traverse_)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
+import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 import UnliftIO.Directory (getCurrentDirectory)
 
 import Myo.Env (myoSpaces)
-import Myo.Tmux.IO (RunTmux, runMyoTmux)
 import Myo.Ui.Data.Space (Space(Space))
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.Window (Window(Window))
@@ -72,7 +72,7 @@ runRenderSpaces ::
   [Space] ->
   m ()
 runRenderSpaces cwd =
-  hoistEither <=< runMyoTmux . renderSpacesE cwd
+  hoistEither <=< runRiboTmux . renderSpacesE cwd
 
 class (
   MonadRibo m,

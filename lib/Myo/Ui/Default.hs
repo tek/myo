@@ -32,11 +32,11 @@ import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 import Myo.Data.Env (Env)
 import Myo.System.Proc (ppids)
-import Myo.Tmux.IO (RunTmux, runMyoTmux)
 import Myo.Ui.Data.Space (Space(Space))
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.Window (Window(Window))
 import Myo.Ui.View (envViewsLens, insertSpace)
+import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
 insertInitialViews :: SessionId -> WindowId -> PaneId -> Views -> Views
 insertInitialViews sid wid pid (Views sessions windows panes viewsLog) =
@@ -94,5 +94,5 @@ detectDefaultUi ::
   m ()
 detectDefaultUi = do
   insertSpace $ Space (Ident.Str "vim") [Window (Ident.Str "vim") mainTree]
-  (Codec.PaneCoords sid wid pid) <- runMyoTmux detectVimPane
+  (Codec.PaneCoords sid wid pid) <- runRiboTmux detectVimPane
   modify $ insertInitialViews sid wid pid

@@ -7,7 +7,7 @@ module Output.ParseHaskellSpec(
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Attoparsec.Text (parseOnly)
 import Data.Foldable (traverse_)
-import Data.Functor.Syntax
+import Data.Functor.Syntax ((<$$>))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
 import Data.Word (Word8)
@@ -98,7 +98,7 @@ parseHaskell =
 test_parseHaskell :: IO ()
 test_parseHaskell = do
   outputE <- parseHaskell
-  ParsedOutput cons <- assertRight outputE
+  ParsedOutput _ cons <- assertRight outputE
   let
     report = cons 0
     lines = Text.unpack . ReportLine._text <$> ParseReport._lines report

@@ -10,6 +10,8 @@ import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Test.Tmux (sleep)
 import Data.Text (Text)
 import qualified Data.Text as T (unpack)
+import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
 import Config (vars)
@@ -18,10 +20,7 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSyst
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
-import Myo.Test.Unit (tmuxGuiSpec)
-import Myo.Tmux.IO (runTmux)
 import Myo.Tmux.Runner (addTmuxRunner)
-import Test ()
 
 line1 :: Text
 line1 = "line 1"
@@ -45,4 +44,4 @@ runSpec = do
 
 test_tmuxRun :: IO ()
 test_tmuxRun =
-  vars >>= tmuxGuiSpec runSpec
+  tmuxGuiSpecDef runSpec

@@ -22,7 +22,7 @@ import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner, mkRunner)
 import Myo.Data.Env (MyoN)
 import qualified Myo.Data.Env as Env (errors)
-import Myo.Test.Unit (specWithDef)
+import Unit (specWithDef)
 
 testError :: String
 testError = "error"
