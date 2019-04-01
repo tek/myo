@@ -39,3 +39,7 @@ instance ReportError OutputError where
     ErrorReport msg [msg] NOTICE
     where
       msg = "no output handler for language `" ++ lang ++ "`"
+  errorReport (Parse err) =
+    ErrorReport msg ["OutputError.Parse:", err] NOTICE
+    where
+      msg = "failed to parse command output"
