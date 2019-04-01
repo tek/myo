@@ -12,7 +12,7 @@ import Data.Default (Default(def))
 import Neovim (Neovim)
 import Neovim.Context.Internal (Config(customConfig), asks')
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Monad.Ribo (riboE2ribo, runRib)
+import Ribosome.Control.Monad.Ribo (NvimE, riboE2ribo, runRib)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError')
@@ -65,3 +65,7 @@ initialize tmpdir = do
   iid <- generateIdent
   ribo <- newRibosome "myo" def { _instanceIdent = iid, _tempDir = tmpdir }
   retypeNeovim (const ribo) (runRib initialize')
+
+myoPoll :: NvimE e m => m Bool
+myoPoll =
+  return True

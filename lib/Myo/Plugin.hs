@@ -10,15 +10,16 @@ import Neovim (
   StartupConfig,
   wrapPlugin,
   )
+import Neovim.Plugin.Classes (Synchronous(Sync))
 import Ribosome.Control.Monad.Ribo (ConcNvimS)
 import Ribosome.Control.Ribosome (Ribosome)
-import Ribosome.Plugin (nvimPlugin, rpcHandlerDef)
+import Ribosome.Plugin (RpcHandlerConfig(RpcHandlerConfig), nvimPlugin, rpcHandler, rpcHandlerDef)
 
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env, MyoE)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
-import Myo.Init (initialize)
+import Myo.Init (initialize, myoPoll)
 -- import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 
 handleError :: Error -> MyoE Error (ConcNvimS Env) ()
@@ -31,6 +32,7 @@ plugin' env =
   where
     funcs = [
       $(rpcHandlerDef 'myoDiag),
+      $(rpcHandler (RpcHandlerConfig Sync Nothing) 'myoPoll),
       -- $(rpcHandlerDef 'myoTogglePane),
       -- $(rpcHandlerDef 'myoToggleLayout),
       $(rpcHandlerDef 'myoRun)
