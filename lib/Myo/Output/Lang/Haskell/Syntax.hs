@@ -206,4 +206,4 @@ haskellSyntax =
         notInScopeHead
       ]
     highlights = [hiReq, hiTrigger]
-    hilinks = [hlLineNumber, hlFoundReq, hlFound, hlBang, hlKw, hlNotInScope]
+    hilinks = [hlPath, hlLineNumber, hlFoundReq, hlFound, hlBang, hlKw, hlNotInScope]
