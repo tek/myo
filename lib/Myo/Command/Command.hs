@@ -11,7 +11,7 @@ import Ribosome.Control.Monad.Ribo (inspectHeadE)
 import Myo.Command.Data.Command (Command(Command), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchCommand, NoCommands))
-import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System))
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System, Shell))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands, history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
@@ -37,6 +37,10 @@ commandByIdent ident =
 systemCommand :: Maybe Ident -> Ident -> [String] -> Maybe Ident -> Maybe CommandLanguage -> Command
 systemCommand target =
   Command (System target)
+
+shellCommand :: Ident -> Ident -> [String] -> Maybe Ident -> Maybe CommandLanguage -> Command
+shellCommand target =
+  Command (Shell target)
 
 latestCommand ::
   (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>

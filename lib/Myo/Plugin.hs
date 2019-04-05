@@ -10,32 +10,35 @@ import Neovim (
   StartupConfig,
   wrapPlugin,
   )
-import Neovim.Plugin.Classes (Synchronous(Sync))
 import Ribosome.Control.Monad.Ribo (ConcNvimS)
 import Ribosome.Control.Ribosome (Ribosome)
-import Ribosome.Plugin (RpcHandlerConfig(RpcHandlerConfig), nvimPlugin, rpcHandler, rpcHandlerDef)
+import Ribosome.Error.Report (reportError)
+import Ribosome.Plugin (cmd, nvimPlugin, rpcHandler, rpcHandlerDef, sync)
 
+import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env, MyoE)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
 import Myo.Init (initialize, myoPoll)
--- import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
+import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 
 handleError :: Error -> MyoE Error (ConcNvimS Env) ()
 handleError =
-  undefined
+  reportError "myo"
 
 plugin' :: Ribosome Env -> Plugin (Ribosome Env)
 plugin' env =
   nvimPlugin env funcs handleError
   where
     funcs = [
-      $(rpcHandlerDef 'myoDiag),
-      $(rpcHandler (RpcHandlerConfig Sync Nothing) 'myoPoll),
-      -- $(rpcHandlerDef 'myoTogglePane),
-      -- $(rpcHandlerDef 'myoToggleLayout),
-      $(rpcHandlerDef 'myoRun)
+      $(rpcHandler (cmd []) 'myoDiag),
+      $(rpcHandler sync 'myoPoll),
+      $(rpcHandlerDef 'myoAddSystemCommand),
+      $(rpcHandlerDef 'myoAddShellCommand),
+      $(rpcHandlerDef 'myoTogglePane),
+      $(rpcHandlerDef 'myoToggleLayout),
+      $(rpcHandler (cmd []) 'myoRun)
       ]
 
 plugin :: FilePath -> Neovim (StartupConfig NeovimConfig) NeovimPlugin
