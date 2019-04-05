@@ -1,12 +1,11 @@
 module Myo.Output.Lang.Haskell.Syntax where
 
-import qualified Data.Map as Map (empty, fromList)
+import qualified Data.Map as Map (fromList)
 import Ribosome.Data.Syntax (
   HiLink(..),
   Highlight(..),
   Syntax(Syntax),
   SyntaxItem(..),
-  SyntaxItemDetail(..),
   syntaxHighlight,
   syntaxMatch,
   syntaxRegion,

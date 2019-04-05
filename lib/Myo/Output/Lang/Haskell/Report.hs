@@ -1,18 +1,14 @@
 module Myo.Output.Lang.Haskell.Report where
 
-import Control.Applicative (Alternative)
-import Control.Lens (ifolded, toListOf, views, withIndex, (^..))
+import Control.Lens (ifolded, toListOf, withIndex)
 import Control.Monad (join)
-import Data.Attoparsec.Text (Parser, parseOnly)
-import qualified Data.ByteString.Char8 as ByteString (pack)
+import Data.Attoparsec.Text (parseOnly)
 import Data.Either.Combinators (mapLeft)
-import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Text as Text (pack)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
-import Text.Parser.Combinators (between, choice, many, manyTill, notFollowedBy, sepBy1, skipMany, skipOptional, some, try)
-import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
-import Text.Parser.Token (TokenParsing, brackets, natural, token, whiteSpace)
+import Text.Parser.Char (CharParsing, anyChar, char, noneOf, string)
+import Text.Parser.Combinators (between, choice, many, sepBy1, skipMany, skipOptional, some)
+import Text.Parser.Token (TokenParsing, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)

@@ -1,23 +1,20 @@
 module Myo.Output.Lang.Haskell.Parser where
 
-import Control.Applicative (Alternative)
 import Control.Monad ((<=<))
 import Data.Attoparsec.Text (parseOnly)
-import qualified Data.ByteString.UTF8 as ByteString (fromString, toString)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Text (Text)
 import qualified Data.Text as Text (pack)
-import Text.Parser.Char (CharParsing, anyChar, char, digit, newline, noneOf, notChar, string)
-import Text.Parser.Combinators (choice, eof, many, manyTill, notFollowedBy, skipMany, skipOptional, try)
+import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
+import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
-import Myo.Output.Data.OutputEvent (OutputEvent)
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
@@ -71,9 +68,9 @@ multiMessage ::
   LookAheadParsing m =>
   m (NonEmpty String)
 multiMessage = do
-  head <- part
-  tail <- many part
-  return $ head :| tail
+  head' <- part
+  tail' <- many part
+  return $ head' :| tail'
   where
     part = ws *> dot *> ws *> manyTill anyChar (choice [void $ lookAhead dot, void emptyLine, eof])
 

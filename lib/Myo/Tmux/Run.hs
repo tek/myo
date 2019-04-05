@@ -5,7 +5,7 @@ import Chiasma.Data.Views (Views, ViewsError)
 import qualified Chiasma.View.State as Views (paneId)
 import Control.Monad.DeepError (MonadDeepError, throwHoist)
 import Control.Monad.DeepState (MonadDeepState)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Concurrent.Wait (waitIODef)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
@@ -20,7 +20,6 @@ import Myo.Command.Data.RunTask (RunTask(RunTask))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Log (pipePaneToSocket)
 import Myo.Command.Watch (watchPane)
-import Myo.Data.Env (Env)
 
 tmuxCanRun :: RunTask -> Bool
 tmuxCanRun (RunTask _ _ details) =

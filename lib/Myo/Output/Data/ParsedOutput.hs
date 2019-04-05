@@ -1,6 +1,5 @@
 module Myo.Output.Data.ParsedOutput where
 
-import Data.DeepLenses (deepLenses)
 import Ribosome.Data.Syntax (Syntax)
 
 import Myo.Output.Data.ParseReport (ParseReport)
