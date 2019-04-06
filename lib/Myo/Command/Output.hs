@@ -10,7 +10,6 @@ import Data.Traversable (mapAccumL)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchSyntax)
 import Ribosome.Data.Syntax (Syntax)
-import Ribosome.Error.Report (reportError)
 import Ribosome.Scratch (showInScratchOrCreate)
 
 import Myo.Command.Data.CommandState (CommandState)

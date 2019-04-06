@@ -14,7 +14,6 @@ import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
-import Config (vars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)

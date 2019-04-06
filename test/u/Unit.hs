@@ -1,42 +1,14 @@
 module Unit where
 
-import Chiasma.Command.Pane (sendKeys)
-import Chiasma.Data.TmuxError (TmuxError)
-import Chiasma.Data.TmuxId (PaneId(PaneId))
-import Chiasma.Monad.Stream (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
-import qualified Chiasma.Test.Tmux as Chiasma (tmuxGuiSpec, tmuxSpec)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Except (runExceptT)
+import qualified Chiasma.Test.Tmux as Chiasma (tmuxSpec)
 import Data.Default (def)
-import Data.Foldable (traverse_)
-import Data.Functor (void)
-import qualified Neovim.Context.Internal as Internal (
-  Config,
-  globalFunctionMap,
-  mkFunctionMap,
-  newConfig,
-  pluginSettings,
-  retypeConfig,
-  )
-import Neovim.RPC.Common (RPCConfig, SocketType(UnixSocket), createHandle, newRPCConfig)
-import Neovim.RPC.EventHandler (runEventHandler)
-import Neovim.RPC.SocketReader (runSocketReader)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Config.Settings (tmuxSocket)
-import Ribosome.Control.Concurrent.Wait (waitIODef)
-import Ribosome.Control.Ribosome (Ribosome(Ribosome), newRibosomeTVar)
-import Ribosome.Error.Report.Class (ReportError)
-import Ribosome.Plugin (RpcHandler)
-import Ribosome.Test.Embed (Runner, TestConfig(..), Vars, runTest)
+import Ribosome.Test.Embed (TestConfig(..), Vars)
 import Ribosome.Test.Orphans ()
-import Ribosome.Test.Unit (fixture, uSpec, unitSpec)
-import System.FilePath ((</>))
+import Ribosome.Test.Unit (unitSpec)
 import UnliftIO (throwString)
-import UnliftIO.Async (async, cancel)
-import UnliftIO.Directory (doesPathExist)
-import UnliftIO.Exception (bracket)
-import UnliftIO.STM (atomically, putTMVar)
 
 import Config (defaultTestConfig, defaultTestConfigWith)
 import Myo.Data.Env (Env(_tempDir), MyoN)

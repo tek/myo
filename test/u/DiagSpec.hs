@@ -16,7 +16,11 @@ import Unit (tmuxSpecWithDef)
 
 target :: [String]
 target = [
-  "Diagnostics",
+  "# Diagnostics",
+  "",
+  "## Commands",
+  "",
+  "## Errors",
   ""
   ]
 

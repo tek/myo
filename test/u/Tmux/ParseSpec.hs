@@ -6,11 +6,9 @@ module Tmux.ParseSpec(
 
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Test.Tmux (sleep)
-import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as ByteString (lines)
 import Data.ByteString.Internal (packChars)
 import Data.Text (Text)
-import qualified Data.Text as T (unpack)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Test.Framework
 
@@ -19,13 +17,12 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSyst
 import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
 import qualified Myo.Command.Data.CommandLog as CommandLog (_current)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
-import Myo.Command.Log (commandLog, commandLogs)
+import Myo.Command.Log (commandLog)
 import Myo.Command.Parse (addHandler, myoParse)
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.OutputEvent (OutputEvent)
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput)

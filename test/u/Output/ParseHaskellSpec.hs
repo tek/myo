@@ -5,20 +5,14 @@ module Output.ParseHaskellSpec(
 ) where
 
 import Control.Monad.Trans.Except (runExceptT)
-import Data.Attoparsec.Text (parseOnly)
-import Data.Foldable (traverse_)
-import Data.Functor.Syntax ((<$$>))
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines, unpack)
-import Data.Word (Word8)
-import Myo.Output.Data.OutputEvent (OutputEvent)
 import Test.Framework
-import Text.Parser.Char (CharParsing, anyChar, char, digit, newline, notChar, string)
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 
@@ -72,6 +66,7 @@ haskellOutput =
     ""
     ]
 
+target :: [String]
 target = [
   "/path/to/Module/File.hs \57505 14",
   "type mismatch",
@@ -101,5 +96,5 @@ test_parseHaskell = do
   ParsedOutput _ cons <- assertRight outputE
   let
     report = cons 0
-    lines = Text.unpack . ReportLine._text <$> ParseReport._lines report
-  assertEqual target lines
+    lines' = Text.unpack . ReportLine._text <$> ParseReport._lines report
+  assertEqual target lines'
