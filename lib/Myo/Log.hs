@@ -1,14 +1,6 @@
-module Myo.Log(
-  debug,
-  info,
-  err,
-  debugS,
-  infoS,
-  errS,
-  R.p,
-  R.prefixed,
-  trees,
-  printViewsLog,
+module Myo.Log (
+  module Myo.Log,
+  module Ribosome.Log,
 ) where
 
 import qualified Chiasma.Data.Views as Views (log)
@@ -19,28 +11,10 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (traverse_)
 import Data.Text.Prettyprint.Doc (line, (<>))
 import Data.Text.Prettyprint.Doc.Util (putDocW)
-import qualified Ribosome.Log as R (debug, err, info, p, prefixed)
+import Ribosome.Log (debug, err, info, p, prefixed)
 
 import Myo.Data.Env (Env)
 import Myo.Ui.View (envTreesLens, envViewsLens)
-
-debug :: MonadIO m => String -> m ()
-debug = R.debug "myo"
-
-info :: MonadIO m => String -> m ()
-info = R.info "myo"
-
-err :: MonadIO m => String -> m ()
-err = R.err "myo"
-
-debugS :: (MonadIO m, Show a) => a -> m ()
-debugS = R.debug "myo"
-
-infoS :: (MonadIO m, Show a) => a -> m ()
-infoS = R.info "myo"
-
-errS :: (MonadIO m, Show a) => a -> m ()
-errS = R.err "myo"
 
 trees ::
   (MonadIO m, MonadDeepState s Env m) =>

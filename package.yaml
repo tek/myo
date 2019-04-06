@@ -59,6 +59,7 @@ dependencies:
 - stringsearch
 - composition-extra
 - utf8-string
+- regex-with-pcre
 
 library:
  source-dirs: lib

@@ -11,14 +11,15 @@ import Test.Framework
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 
 haskellOutput :: Text
 haskellOutput =
   Text.unlines [
+    "leading crap",
     "/path/to/Module/File.hs:13:5: error:",
     "    • Couldn't match type ‘TypeA’ with ‘TypeB’",
     "      Expected type: TypeB",

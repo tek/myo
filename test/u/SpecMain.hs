@@ -8,6 +8,7 @@ import {-@ HTF_TESTS @-} DiagSpec
 import {-@ HTF_TESTS @-} Output.EmptyOutputSpec
 import {-@ HTF_TESTS @-} Output.HaskellRenderSpec
 import {-@ HTF_TESTS @-} Output.ParseHaskellSpec
+import {-@ HTF_TESTS @-} Output.SanitizeSpec
 import {-@ HTF_TESTS @-} ProcSpec
 import {-@ HTF_TESTS @-} RunSpec
 import {-@ HTF_TESTS @-} SocketSpec

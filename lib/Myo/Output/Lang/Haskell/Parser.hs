@@ -4,7 +4,9 @@ import Control.Monad ((<=<))
 import Data.Attoparsec.Text (parseOnly)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
+import Data.Functor.Syntax ((<$$>))
 import Data.List.NonEmpty (NonEmpty((:|)))
+import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import qualified Data.Text as Text (pack)
 import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
@@ -28,6 +30,10 @@ colon =
 ws :: TokenParsing m => m ()
 ws =
   skipOptional whiteSpace
+
+skipLine :: CharParsing m => m ()
+skipLine =
+  void $ manyTill anyChar newline
 
 locationLine ::
   Monad m =>
@@ -93,7 +99,7 @@ parseHaskellErrors ::
   LookAheadParsing m =>
   m [HaskellEvent]
 parseHaskellErrors =
-  many event
+  catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =

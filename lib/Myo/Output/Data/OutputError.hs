@@ -24,6 +24,8 @@ data OutputError =
   Parse String
   |
   NoEvents Ident
+  |
+  NoOutput Ident
   deriving Show
 
 deepPrisms ''OutputError
@@ -49,3 +51,7 @@ instance ReportError OutputError where
     ErrorReport msg [msg] NOTICE
     where
       msg = "no events in output of command `" ++ identString ident ++ "`"
+  errorReport (NoOutput ident) =
+    ErrorReport msg [msg] NOTICE
+    where
+      msg = "command `" ++ identString ident ++ "` has not generated any output"
