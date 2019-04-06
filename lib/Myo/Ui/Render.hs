@@ -11,7 +11,7 @@ import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Chiasma.Data.Views (Views)
 import Chiasma.Render (render)
 import Control.Monad ((<=<))
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
+import Control.Monad.DeepError (hoistEither, MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState(stateM))
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Free.Class (MonadFree)
@@ -19,9 +19,9 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.State (runStateT)
 import Data.Foldable (traverse_)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
-import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
-import UnliftIO.Directory (getCurrentDirectory)
+import Ribosome.Api.Path (nvimCwd)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
+import Ribosome.Tmux.Run (runRiboTmux, RunTmux)
 
 import Myo.Env (myoSpaces)
 import Myo.Ui.Data.Space (Space(Space))
@@ -65,7 +65,7 @@ runRenderSpaces ::
   MonadRibo m =>
   MonadDeepError e TmuxError m =>
   MonadDeepError e RenderError m =>
-  Nvim m =>
+  NvimE e m =>
   MonadDeepState s Views m =>
   RunTmux m =>
   FilePath ->
@@ -76,7 +76,7 @@ runRenderSpaces cwd =
 
 class (
   MonadRibo m,
-  Nvim m,
+  NvimE e m,
   MonadDeepError e TmuxError m,
   MonadDeepError e RenderError m,
   MonadDeepState s Views m,
@@ -87,7 +87,7 @@ class (
 
 instance (
   MonadRibo m,
-  Nvim m,
+  NvimE e m,
   MonadDeepError e TmuxError m,
   MonadDeepError e RenderError m,
   MonadDeepState s Views m,
@@ -99,6 +99,6 @@ instance (
 myoRender :: (MonadIO m, MyoRender s e m) =>
   m ()
 myoRender = do
-  cwd <- getCurrentDirectory
+  cwd <- nvimCwd
   spaces <- myoSpaces
   runRenderSpaces cwd spaces
