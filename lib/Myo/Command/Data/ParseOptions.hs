@@ -1,9 +1,13 @@
-module Myo.Command.Data.ParseOptions(
-  ParseOptions(..),
-) where
+{-# LANGUAGE DeriveAnyClass #-}
+
+module Myo.Command.Data.ParseOptions where
 
 import Chiasma.Data.Ident (Ident)
+import GHC.Generics (Generic)
+import Ribosome.Msgpack.Decode (MsgpackDecode)
+
 import Myo.Command.Data.Command (CommandLanguage)
+import Myo.Orphans ()
 
 data ParseOptions =
   ParseOptions {
@@ -11,4 +15,4 @@ data ParseOptions =
     command :: Maybe Ident,
     lang :: Maybe CommandLanguage
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, MsgpackDecode)

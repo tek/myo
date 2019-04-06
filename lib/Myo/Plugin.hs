@@ -16,6 +16,7 @@ import Ribosome.Error.Report (reportError)
 import Ribosome.Plugin (cmd, nvimPlugin, rpcHandler, rpcHandlerDef, sync)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
+import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env, MyoE)
 import Myo.Data.Error (Error)
@@ -38,7 +39,9 @@ plugin' env =
       $(rpcHandlerDef 'myoAddShellCommand),
       $(rpcHandlerDef 'myoTogglePane),
       $(rpcHandlerDef 'myoToggleLayout),
-      $(rpcHandler (cmd []) 'myoRun)
+      $(rpcHandler (cmd []) 'myoRun),
+      $(rpcHandlerDef 'myoParse),
+      $(rpcHandler (cmd []) 'myoParseLatest)
       ]
 
 plugin :: FilePath -> Neovim (StartupConfig NeovimConfig) NeovimPlugin

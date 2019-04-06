@@ -88,6 +88,19 @@ myoParse (ParseOptions _ ident _) = do
   display <- setting Settings.displayResult
   when display $ renderParseResult (cmdIdent cmd) parsedOutput
 
+myoParseLatest ::
+  MonadDeepError e CommandError m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e RpcError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepState s CommandState m =>
+  MonadIO m =>
+  MonadRibo m =>
+  Nvim m =>
+  m ()
+myoParseLatest =
+  myoParse (ParseOptions Nothing Nothing Nothing)
+
 addHandler :: MonadDeepState s CommandState m => CommandLanguage -> OutputHandler -> m ()
 addHandler lang parser =
   modify @CommandState $ Lens.over (CommandState.outputHandlers . Lens.at lang) update
