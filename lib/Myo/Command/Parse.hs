@@ -3,8 +3,8 @@ module Myo.Command.Parse where
 import Chiasma.Data.Ident (Ident)
 import qualified Control.Lens as Lens (at, over)
 import Control.Monad (when)
-import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither, hoistMaybe)
-import Control.Monad.DeepState (MonadDeepState, getsL, modify, setL)
+import Control.Monad.DeepError (hoistEither, hoistMaybe, MonadDeepError(throwHoist))
+import Control.Monad.DeepState (getsL, modify, MonadDeepState, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
 import Ribosome.Config.Setting (setting)
@@ -13,7 +13,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 import Myo.Command.Command (commandByIdent, latestCommand)
-import Myo.Command.Data.Command (Command(Command), CommandLanguage)
+import Myo.Command.Data.Command (Command(Command, cmdIdent), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parsedOutput)
@@ -86,7 +86,7 @@ myoParse (ParseOptions _ ident _) = do
   parsedOutput <- parseCommand cmd
   setL @CommandState CommandState.parsedOutput (Just parsedOutput)
   display <- setting Settings.displayResult
-  when display $ renderParseResult parsedOutput
+  when display $ renderParseResult (cmdIdent cmd) parsedOutput
 
 addHandler :: MonadDeepState s CommandState m => CommandLanguage -> OutputHandler -> m ()
 addHandler lang parser =

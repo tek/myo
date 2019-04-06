@@ -4,6 +4,7 @@ module Output.HaskellRenderSpec(
   htf_thisModulesTests,
 ) where
 
+import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor (void)
 import Data.Functor.Syntax ((<$$>))
@@ -15,7 +16,6 @@ import Ribosome.Nvim.Api.IO (vimCommandOutput)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Screenshot (assertScreenshot)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
-import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
 import Myo.Command.Output (renderParseResult)
@@ -23,11 +23,11 @@ import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
-import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Data.String (lineNumber)
-import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
+import Myo.Output.Lang.Haskell.Report (formatReportLine, HaskellMessage(..))
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 
 events :: [OutputEvent]
@@ -111,7 +111,7 @@ haskellRenderSpec :: MyoN ()
 haskellRenderSpec = do
   initialize''
   setupHighlights
-  renderParseResult [parsedOutput]
+  renderParseResult (Ident.Str "test") [parsedOutput]
   content <- currentBufferContent
   gassertEqual target content
   syntax <- myoSyntax

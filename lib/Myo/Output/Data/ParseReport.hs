@@ -15,3 +15,7 @@ instance Semigroup ParseReport where
 
 instance Monoid ParseReport where
   mempty = ParseReport mempty mempty
+
+noEventsInReport :: ParseReport -> Bool
+noEventsInReport (ParseReport e _) =
+  null e

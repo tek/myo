@@ -22,6 +22,8 @@ data OutputError =
   NoHandler CommandLanguage
   |
   Parse String
+  |
+  NoEvents Ident
   deriving Show
 
 deepPrisms ''OutputError
@@ -43,3 +45,7 @@ instance ReportError OutputError where
     ErrorReport msg ["OutputError.Parse:", err] NOTICE
     where
       msg = "failed to parse command output"
+  errorReport (NoEvents ident) =
+    ErrorReport msg [msg] NOTICE
+    where
+      msg = "no events in output of command `" ++ identString ident ++ "`"
