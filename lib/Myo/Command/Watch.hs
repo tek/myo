@@ -5,7 +5,7 @@ import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Monad.DeepState (MonadDeepState, getsL, setL)
+import Control.Monad.DeepState (getsL, MonadDeepState, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
@@ -14,7 +14,7 @@ import Data.ByteString.Internal (packChars)
 import qualified Data.ByteString.Lazy as LB (ByteString, toChunks)
 import qualified Data.ByteString.Search as ByteString (replace)
 import Data.Conduit.Network.Unix (sourceSocket)
-import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan)
+import Data.Conduit.TMChan (newTMChan, sinkTMChan, sourceTMChan, TMChan)
 import Data.Either.Combinators (whenLeft)
 import Data.Functor (void)
 import Network.Socket (Socket)
@@ -27,6 +27,7 @@ import UnliftIO (atomically)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (watcherChan)
 import Myo.Command.Log (appendLog)
+import qualified Myo.Log as Log (debug)
 import Myo.Network.Socket (socketBind)
 import Myo.Ui.Data.PaneOutput (PaneOutput(PaneOutput))
 
@@ -66,9 +67,10 @@ listen ::
   TMChan PaneOutput ->
   m ()
 listen ident logPath listenChan = do
-  -- liftBase $ putStrLn $ "listening on socket at " ++ logPath
-  sock <- socketBind logPath
-  void $ fork $ listener ident sock listenChan
+  Log.debug $ "listening on socket at " ++ logPath
+  try (socketBind logPath) >>= \case
+    Right sock -> void $ fork $ listener ident sock listenChan
+    Left (_ :: IOException) -> return ()
 
 runWatcher ::
   (MonadRibo m, Nvim m, MonadIO m, MonadDeepState s CommandState m, MonadBaseControl IO m) =>
@@ -100,6 +102,5 @@ watchPane ::
   Ident ->
   FilePath ->
   m ()
-watchPane ident logPath = do
-  chan <- ensureWatcher
-  listen ident logPath chan
+watchPane ident logPath =
+  listen ident logPath =<< ensureWatcher
