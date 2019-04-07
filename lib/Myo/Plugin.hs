@@ -7,7 +7,6 @@ import Neovim (
   NeovimConfig,
   NeovimPlugin,
   Plugin(..),
-  StartupConfig,
   wrapPlugin,
   )
 import Ribosome.Control.Monad.Ribo (ConcNvimS)
@@ -46,7 +45,7 @@ plugin' env =
       $(rpcHandler (autocmd "VimLeavePre") 'myoQuit)
       ]
 
-plugin :: FilePath -> Neovim (StartupConfig NeovimConfig) NeovimPlugin
+plugin :: FilePath -> Neovim e NeovimPlugin
 plugin tempdir = do
   env <- initialize tempdir
   wrapPlugin $ plugin' env
