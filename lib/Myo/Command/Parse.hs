@@ -4,7 +4,7 @@ module Myo.Command.Parse where
 
 import Chiasma.Data.Ident (Ident)
 import qualified Control.Lens as Lens (at, over)
-import Control.Monad (liftM, when, (<=<))
+import Control.Monad (when)
 import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither, hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState, getsL, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
@@ -15,7 +15,7 @@ import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Text.RE.PCRE.String (RE, SearchReplace, compileSearchReplace, ed, (*=~/))
+import Text.RE.PCRE.String (RE, SearchReplace, ed, (*=~/))
 
 import Myo.Command.Command (commandByIdent, latestCommand)
 import Myo.Command.Data.Command (Command(Command, cmdIdent), CommandLanguage)

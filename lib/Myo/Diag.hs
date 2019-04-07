@@ -5,7 +5,7 @@ import Data.Functor (void)
 import Data.Text.Prettyprint.Doc (line, pretty, (<>))
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Errors (Errors)
-import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchSyntax)
+import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
 import Ribosome.Data.Syntax (
   HiLink(..),
   Syntax(Syntax),
@@ -68,4 +68,6 @@ myoDiag ::
   m ()
 myoDiag = do
   content <- diagnosticsData
-  void $ showInScratch content (scratchSyntax [diagnosticsSyntax] $ defaultScratchOptions "myo-diagnostics")
+  void $ showInScratch content options
+  where
+    options = scratchFocus $ scratchSyntax [diagnosticsSyntax] $ defaultScratchOptions "myo-diagnostics"
