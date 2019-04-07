@@ -7,7 +7,7 @@ import Control.Monad.DeepError (MonadDeepError, throwHoist)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
-import Ribosome.Control.Concurrent.Wait (waitIODef)
+import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 import UnliftIO.Directory (doesPathExist)
@@ -31,7 +31,7 @@ tmuxCanRun (RunTask _ _ details) =
 
 waitForSocket :: (MonadIO m, MonadBaseControl IO m, MonadDeepError e RunError m) => FilePath -> m ()
 waitForSocket logPath =
-  waitIODef (pure logPath) doesPathExist >>= \case
+  waitIOPredDef (pure logPath) doesPathExist >>= \case
     Right _ -> return ()
     Left _ -> throwHoist RunError.SocketFailure
 
