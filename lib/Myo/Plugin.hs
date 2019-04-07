@@ -42,7 +42,7 @@ plugin' env =
       $(rpcHandler (cmd []) 'myoRun),
       $(rpcHandlerDef 'myoParse),
       $(rpcHandler (cmd []) 'myoParseLatest),
-      $(rpcHandler (autocmd "VimLeavePre") 'myoQuit)
+      $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit)
       ]
 
 plugin :: FilePath -> Neovim e NeovimPlugin
