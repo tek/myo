@@ -20,11 +20,12 @@ import Chiasma.Ui.Data.View (
   )
 import Control.Lens (findMOf)
 import qualified Control.Lens as Lens (each, over)
-import Control.Monad.DeepState (MonadDeepState, modify)
+import Control.Monad.DeepState (MonadDeepState, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.Maybe (MaybeT(..))
+import Data.Functor.Syntax ((<$$>))
 import Ribosome.Api.Process (vimPid)
 import Ribosome.Control.Monad.Ribo (Nvim)
 import Ribosome.Data.Functor ((<$<))
@@ -34,6 +35,7 @@ import Myo.Data.Env (Env)
 import Myo.System.Proc (ppids)
 import Myo.Ui.Data.Space (Space(Space))
 import Myo.Ui.Data.UiState (UiState)
+import qualified Myo.Ui.Data.UiState as UiState (vimPaneId)
 import Myo.Ui.Data.Window (Window(Window))
 import Myo.Ui.View (envViewsLens, insertSpace)
 import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
@@ -59,15 +61,17 @@ mainTree =
   Tree (consLayout (Ident.Str "main")) [TreeNode vimTree, TreeNode makeTree]
 
 setupDefaultTestUi ::
-  (MonadDeepState s Env m, MonadDeepState s UiState m) =>
+  MonadDeepState s Env m =>
+  MonadDeepState s Views m =>
+  MonadDeepState s UiState m =>
   m ()
 setupDefaultTestUi = do
   insertSpace $ Space (Ident.Str "vim") [Window (Ident.Str "vim") mainTree]
-  modify $ Lens.over envViewsLens (insertInitialViews (SessionId 0) (WindowId 0) (PaneId 0))
+  modify $ insertInitialViews (SessionId 0) (WindowId 0) (PaneId 0)
 
 containsVimPid :: MonadIO m => Codec.PanePid -> Int -> m Bool
 containsVimPid (Codec.PanePid _ panePid) =
-  (panePid `elem`) <$< ppids
+  (panePid `elem`) <$$> ppids
 
 detectVimPidPane ::
   (MonadIO m, Nvim m) =>
@@ -90,9 +94,14 @@ detectVimPane = do
   either (fail . show) detectVimPidPane result
 
 detectDefaultUi ::
-  (MonadIO m, Nvim m, MonadDeepState s Views m, MonadDeepState s UiState m, RunTmux m) =>
+  MonadIO m =>
+  Nvim m =>
+  MonadDeepState s Views m =>
+  MonadDeepState s UiState m =>
+  RunTmux m =>
   m ()
 detectDefaultUi = do
   insertSpace $ Space (Ident.Str "vim") [Window (Ident.Str "vim") mainTree]
   (Codec.PaneCoords sid wid pid) <- runRiboTmux detectVimPane
   modify $ insertInitialViews sid wid pid
+  setL @UiState UiState.vimPaneId (Just pid)
