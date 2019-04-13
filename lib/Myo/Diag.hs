@@ -3,7 +3,7 @@ module Myo.Diag where
 import Control.Monad.DeepState (MonadDeepState, getsL)
 import Data.Functor (void)
 import Data.Text.Prettyprint.Doc (line, pretty, (<>))
-import Ribosome.Control.Monad.Ribo (NvimE)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
 import Ribosome.Data.Syntax (
@@ -62,6 +62,7 @@ diagnosticsData = do
   return $ ["# Diagnostics", "", "## Commands"] ++ cmdDiagnostics cmds ++ ["", "## Errors"] ++ errorDiagnostics errors
 
 myoDiag ::
+  MonadRibo m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   NvimE e m =>

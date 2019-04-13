@@ -1,7 +1,6 @@
 module Myo.Tmux.Quit where
 
 import Chiasma.Command.Pane (closePane)
-import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.View (viewId)
 import Chiasma.Data.Views (Views)
 import qualified Chiasma.Data.Views as Views (panes)
