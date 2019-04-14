@@ -5,6 +5,7 @@ module Main where
 import Test.Framework
 import Test.Framework.BlackBoxTest ()
 import {-@ HTF_TESTS @-} DiagSpec
+import {-@ HTF_TESTS @-} Output.CycleSpec
 import {-@ HTF_TESTS @-} Output.EmptyOutputSpec
 import {-@ HTF_TESTS @-} Output.HaskellRenderSpec
 import {-@ HTF_TESTS @-} Output.ParseHaskellSpec

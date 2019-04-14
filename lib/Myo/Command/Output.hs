@@ -7,15 +7,19 @@ import Control.Monad.DeepState (MonadDeepState, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Traversable (mapAccumL)
 import Ribosome.Api.Echo (echom)
+import Ribosome.Api.Window (setCursor)
+import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
+import Ribosome.Data.Scratch (Scratch(Scratch))
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)
+import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (killScratch, scratchPreviousWindow, showInScratch)
 
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (parseReport, parseResult)
+import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport, parseResult)
 import Myo.Output.Data.OutputError (OutputError(NoEvents, NotParsed))
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
@@ -23,11 +27,16 @@ import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (ParsedOutput(_syntax))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
-import Myo.Output.ParseReport (selectCurrentLineEventFrom)
-
-scratchName :: Text
-scratchName =
-  "myo-report"
+import Myo.Output.ParseReport (
+  currentReport,
+  cycleIndex,
+  navigateToCurrentEvent,
+  outputMainWindow,
+  outputWindow,
+  scratchName,
+  selectCurrentLineEventFrom,
+  )
+import qualified Myo.Settings as Settings (outputAutoJump, outputJumpFirst)
 
 mappings :: [Mapping]
 mappings =
@@ -42,11 +51,15 @@ renderReport ::
   NvimE e m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
   ParseReport ->
   [Syntax] ->
   m ()
-renderReport (ParseReport _ lines') syntax =
-  void $ showInScratch (render <$> lines') options
+renderReport (ParseReport _ lines') syntax = do
+  (Scratch _ _ _ window _) <- showInScratch (render <$> lines') options
+  jumpFirst <- setting Settings.outputJumpFirst
+  let line = if jumpFirst then 0 else length lines' - 1
+  setCursor window line 0
   where
     render (ReportLine _ text) =
       text
@@ -60,12 +73,14 @@ renderParseResult ::
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e OutputError m =>
+  MonadDeepError e SettingError m =>
   Ident ->
   [ParsedOutput] ->
   m ()
 renderParseResult ident output = do
   when (noEventsInReport report) (throwHoist (NoEvents ident))
   setL @CommandState CommandState.parseReport (Just report)
+  setL @CommandState CommandState.currentEvent 0
   renderReport report syntax
   where
     report = mconcat reports
@@ -91,7 +106,44 @@ outputSelect ::
   NvimE e m =>
   m ()
 outputSelect = do
-  window <- hoistMaybe (OutputError.Internal "no scratch") =<< scratchPreviousWindow scratchName
+  mainWindow <- outputMainWindow
+  window <- outputWindow
   (ParseResult ident _) <- hoistMaybe NotParsed =<< getsL @CommandState CommandState.parseResult
-  report <- hoistMaybe (NoEvents ident) =<< getsL @CommandState CommandState.parseReport
-  selectCurrentLineEventFrom report window
+  report <- currentReport id
+  selectCurrentLineEventFrom report window mainWindow
+
+cycleAndNavigate ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e DecodeError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  Int ->
+  m ()
+cycleAndNavigate offset = do
+  changed <- cycleIndex offset
+  jump <- setting Settings.outputAutoJump
+  when changed (navigateToCurrentEvent jump)
+
+myoPrev ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e DecodeError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  m ()
+myoPrev =
+  cycleAndNavigate (-1)
+
+myoNext ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e DecodeError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  m ()
+myoNext =
+  cycleAndNavigate 1

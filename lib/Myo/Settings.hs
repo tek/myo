@@ -22,3 +22,11 @@ defaultGeometry =
 vimPaneGeometry :: Setting ViewGeometry
 vimPaneGeometry =
   Setting "vim_pane_geometry" True (Just defaultGeometry)
+
+outputJumpFirst :: Setting Bool
+outputJumpFirst =
+  Setting "output_jump_first" True (Just False)
+
+outputAutoJump :: Setting Bool
+outputAutoJump =
+  Setting "output_auto_jump" True (Just True)

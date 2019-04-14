@@ -31,6 +31,7 @@ data CommandState =
     _running :: [RunningCommand],
     _parseResult :: Maybe ParseResult,
     _parseReport :: Maybe ParseReport,
+    _currentEvent :: Int,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _watcherChan :: Maybe (TMChan PaneOutput)
   }
