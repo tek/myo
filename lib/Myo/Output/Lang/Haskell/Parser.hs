@@ -50,7 +50,7 @@ locationLine = do
   ws
   skipOptional (brackets (many $ noneOf "]"))
   ws
-  return (Location path (fromIntegral lineno) (Just (fromIntegral colno)), tpe)
+  return (Location path (fromIntegral lineno - 1) (Just (fromIntegral colno - 1)), tpe)
 
 emptyLine :: Monad m => CharParsing m => m Char
 emptyLine =
