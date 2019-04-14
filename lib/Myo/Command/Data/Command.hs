@@ -10,14 +10,14 @@ import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
 
 newtype CommandLanguage =
-  CommandLanguage String
+  CommandLanguage Text
   deriving (Eq, Show, Ord, Generic, MsgpackDecode)
 
 data Command =
   Command {
     cmdInterpreter :: CommandInterpreter,
     cmdIdent :: Ident,
-    cmdLines :: [String],
+    cmdLines :: [Text],
     cmdRunner :: Maybe Ident,
     lang :: Maybe CommandLanguage
   }
@@ -31,8 +31,8 @@ instance Pretty Command where
     nest 2 . vsep $ header : info
     where
       header = prettyS "*" <+> pretty ident
-      info = prettyIprt : prettyLines : maybeToList (prettyRunner <$> runner) ++ maybeToList (prettyLang <$> lang)
+      info = prettyIprt : prettyLines : maybeToList (prettyRunner <$> runner) <> maybeToList (prettyLang <$> lang)
       prettyIprt = prettyS "interpreter:" <+> pretty iprt
       prettyRunner _ = prettyS "runner"
-      prettyLines = nest 2 . vsep $ prettyS "lines:" : (prettyS <$> lines')
+      prettyLines = nest 2 . vsep $ prettyS "lines:" : (pretty <$> lines')
       prettyLang (CommandLanguage a) = prettyS "language:" <+> pretty a

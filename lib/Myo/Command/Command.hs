@@ -34,11 +34,11 @@ commandByIdent ::
 commandByIdent ident =
   hoistMaybe (CommandError.NoSuchCommand ident) =<< mayCommandByIdent ident
 
-systemCommand :: Maybe Ident -> Ident -> [String] -> Maybe Ident -> Maybe CommandLanguage -> Command
+systemCommand :: Maybe Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Command
 systemCommand target =
   Command (System target)
 
-shellCommand :: Ident -> Ident -> [String] -> Maybe Ident -> Maybe CommandLanguage -> Command
+shellCommand :: Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Command
 shellCommand target =
   Command (Shell target)
 

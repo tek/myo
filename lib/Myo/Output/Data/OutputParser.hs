@@ -1,6 +1,7 @@
 module Myo.Output.Data.OutputParser where
 
 import Data.Text (Text)
+import qualified Text.Show
 
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
@@ -8,5 +9,5 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 newtype OutputParser =
   OutputParser (Text -> Either OutputError ParsedOutput)
 
-instance Show OutputParser where
+instance Text.Show.Show OutputParser where
  show _ = "OutputParser"

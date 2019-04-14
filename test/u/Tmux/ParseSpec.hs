@@ -7,7 +7,6 @@ module Tmux.ParseSpec(
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Test.Tmux (sleep)
 import qualified Data.ByteString.Char8 as ByteString (lines)
-import Data.ByteString.Internal (packChars)
 import Data.Text (Text)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Test.Framework
@@ -28,10 +27,10 @@ import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Tmux.Runner (addTmuxRunner)
 
-line1 :: String
+line1 :: Text
 line1 = "line 1"
 
-line2 :: String
+line2 :: Text
 line2 = "line 2"
 
 lang :: CommandLanguage
@@ -54,7 +53,7 @@ parseSpec = do
   sleep 2
   mayLog <- commandLog ident
   log' <- ByteString.lines . CommandLog._current <$> gassertJust mayLog
-  gassertBool $ packChars line2 `elem` log'
+  gassertBool $ encodeUtf8 line2 `elem` log'
   myoParse $ ParseOptions Nothing Nothing Nothing
 
 test_parse :: IO ()

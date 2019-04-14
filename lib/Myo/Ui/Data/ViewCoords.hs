@@ -1,7 +1,4 @@
-module Myo.Ui.Data.ViewCoords(
-  ViewCoords(..),
-  viewCoords,
-) where
+module Myo.Ui.Data.ViewCoords where
 
 import Chiasma.Data.Ident (Ident(Str))
 
@@ -12,5 +9,5 @@ data ViewCoords =
     vcLayout :: Ident
   }
 
-viewCoords :: String -> String -> String -> ViewCoords
-viewCoords si wi vi = ViewCoords (Str si) (Str wi) (Str vi)
+viewCoords :: Text -> Text -> Text -> ViewCoords
+viewCoords si wi vi = ViewCoords (Str (toString si)) (Str (toString wi)) (Str (toString vi))

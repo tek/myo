@@ -6,7 +6,9 @@ module Output.ParseHaskellSpec(
 
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Text (Text)
-import qualified Data.Text as Text (unlines, unpack)
+import qualified Data.Text as Text (unlines)
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector (fromList)
 import Test.Framework
 
 import Myo.Command.Parse (parseWith)
@@ -34,7 +36,7 @@ haskellOutput =
     "/path/to/Module/File.hs:19:7: error: [-fhygiene]",
     "    Not in scope: type constructor or class ‘Something’",
     "   |",
-    "19 | makeSomething :: String -> [Something]",
+    "19 | makeSomething :: Text -> [Something]",
     "   |                             ^^^^^^^^^",
     "",
     "/path/to/Module/File.hs:2:77: warning: [-Wmissing-methods]",
@@ -67,8 +69,8 @@ haskellOutput =
     ""
     ]
 
-target :: [String]
-target = [
+target :: Vector Text
+target = Vector.fromList [
   "/path/to/Module/File.hs \57505 14",
   "type mismatch",
   "TypeA",
@@ -97,5 +99,5 @@ test_parseHaskell = do
   ParsedOutput _ cons <- assertRight outputE
   let
     report = cons 0
-    lines' = Text.unpack . ReportLine._text <$> ParseReport._lines report
+    lines' = ReportLine._text <$> ParseReport._lines report
   assertEqual target lines'

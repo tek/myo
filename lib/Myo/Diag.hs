@@ -12,6 +12,7 @@ import Ribosome.Data.Syntax (
   SyntaxItem(..),
   syntaxMatch,
   )
+import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (showInScratch)
 
 import Myo.Command.Data.Command (Command)
@@ -44,27 +45,28 @@ diagnosticsSyntax =
     highlights = []
     hilinks = [headlineLink, itemLink]
 
-cmdDiagnostics :: [Command] -> [String]
+cmdDiagnostics :: [Command] -> [Text]
 cmdDiagnostics cmds =
   lines =<< (show . (line <>) . pretty <$> cmds)
 
-errorDiagnostics :: Errors -> [String]
+errorDiagnostics :: Errors -> [Text]
 errorDiagnostics =
   lines . show . (line <>) . pretty
 
 diagnosticsData ::
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  m [String]
+  m [Text]
 diagnosticsData = do
   cmds <- getsL @CommandState CommandState.commands
   errors <- getsL @Env Env.errors
-  return $ ["# Diagnostics", "", "## Commands"] ++ cmdDiagnostics cmds ++ ["", "## Errors"] ++ errorDiagnostics errors
+  return $ ["# Diagnostics", "", "## Commands"] <> cmdDiagnostics cmds <> ["", "## Errors"] <> errorDiagnostics errors
 
 myoDiag ::
   MonadRibo m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
   NvimE e m =>
   m ()
 myoDiag = do

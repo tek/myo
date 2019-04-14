@@ -19,7 +19,6 @@ import Data.Functor (void)
 import Network.Socket (SockAddr(SockAddrUnix), Socket, connect)
 import Network.Socket.ByteString (sendAll)
 import Test.Framework
-import UnliftIO (atomically)
 
 import Myo.Command.Log (commandLogPath)
 import Myo.Data.Env (MyoN)
@@ -42,9 +41,9 @@ listen ::
 listen listenChan sock =
   void $ fork $ runConduit $ sourceSocket sock .| sinkTBMChan listenChan
 
-logSocketPath :: String -> MyoN FilePath
+logSocketPath :: Text -> MyoN FilePath
 logSocketPath =
-  commandLogPath . Str
+  commandLogPath . Str . toString
 
 chanResult :: TBMChan a -> IO [a]
 chanResult chan = do

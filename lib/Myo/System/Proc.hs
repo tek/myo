@@ -9,7 +9,6 @@ import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (readFile)
 import Data.Conduit.List (unfoldM)
-import Data.Either.Combinators (rightToMaybe)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Ribosome.Data.Functor ((<$<))
 import System.FilePath (FilePath, (</>))
@@ -23,9 +22,9 @@ procStatPpid = do
   skipMany anyChar
   return $ fromIntegral pp
 
-parseProcStatPpid :: ByteString -> Either String Int
+parseProcStatPpid :: ByteString -> Either Text Int
 parseProcStatPpid =
-  parseOnly procStatPpid
+  mapLeft toText . parseOnly procStatPpid
 
 procStatPath :: Int -> FilePath
 procStatPath pid =

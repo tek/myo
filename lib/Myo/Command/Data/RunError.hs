@@ -2,7 +2,7 @@
 
 module Myo.Command.Data.RunError where
 
-import Chiasma.Data.Ident (identString)
+import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Data.DeepPrisms (deepPrisms)
@@ -30,7 +30,7 @@ data RunError =
   |
   Rpc RpcError
   |
-  IOEmbed String
+  IOEmbed Text
   |
   SocketFailure
   deriving Show
@@ -42,7 +42,7 @@ instance ReportError RunError where
   errorReport (NoRunner task@(RunTask (Cmd.Command _ ident _ _ _) _ _)) =
     ErrorReport user ["no runner for task:", show task] NOTICE
     where
-      user = "no runner available for command `" ++ identString ident ++ "`"
+      user = "no runner available for command `" <> identText ident <> "`"
   errorReport (Toggle e) =
     errorReport e
   errorReport (Views e) = viewsErrorReport e

@@ -14,7 +14,7 @@ import Myo.Data.Env (MyoN)
 import Myo.Diag (myoDiag)
 import Unit (tmuxSpecWithDef)
 
-target :: [String]
+target :: [Text]
 target = [
   "# Diagnostics",
   "",

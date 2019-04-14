@@ -9,7 +9,6 @@ import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Test.Tmux (sleep)
 import Data.Text (Text)
-import qualified Data.Text as T (unpack)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
@@ -39,7 +38,7 @@ runSpec = do
   gassertElem line2 output
   where
     ident = Str "cmd"
-    cmds = T.unpack <$> ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
+    cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 test_tmuxRun :: IO ()
 test_tmuxRun =

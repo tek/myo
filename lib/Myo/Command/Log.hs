@@ -45,7 +45,7 @@ insertLogPath ::
   m FilePath
 insertLogPath ident = do
   base <- logTempDir
-  let logPath = base </> "pane-" ++ identString ident
+  let logPath = base </> "pane-" <> identString ident
   modify $ logPathLens ident ?~ logPath
   return logPath
 
@@ -73,7 +73,7 @@ pipePaneToSocket ::
 pipePaneToSocket paneId logPath =
   pipePane paneId cmd
   where
-    cmd = "'socat STDIN UNIX-SENDTO:" ++ logPath ++ "'"
+    cmd = "'socat STDIN UNIX-SENDTO:" <> logPath <> "'"
 
 logLens :: Ident -> Lens' CommandState (Maybe CommandLog)
 logLens ident = CommandState.logs . Lens.at ident

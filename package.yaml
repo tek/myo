@@ -15,51 +15,53 @@ extra-source-files:
 - README.md
 
 dependencies:
-- base >= 4.7 && < 5
-- ribosome >= 0.1.2
+- attoparsec
+- base-noprelude >= 4.7 && < 5
+- bytestring
 - chiasma
-- cornea
-- nvim-hs
-- unliftio
-- unliftio-core
-- data-default
-- lens
-- hslogger
-- deepseq
-- messagepack
-- prettyprinter
-- containers
-- parsec
-- parsers
+- composition-extra
 - conduit
 - conduit-extra
-- stm-conduit
-- stm-chans
-- resourcet
-- bytestring
-- typed-process
-- filepath
+- containers
+- cornea
+- data-default
+- deepseq
 - directory
-- split
-- messagepack
-- transformers
-- strings
-- uuid
-- mtl
-- free
-- unix
-- network
-- text
-- exceptions
 - either
-- attoparsec
-- transformers-base
-- monad-control
+- exceptions
+- filepath
+- free
+- hslogger
+- lens
 - lifted-base
-- stringsearch
-- composition-extra
-- utf8-string
+- messagepack
+- messagepack
+- monad-control
+- mtl
+- network
+- nvim-hs
+- parsec
+- parsers
+- prettyprinter
 - regex-with-pcre
+- relude
+- resourcet
+- ribosome >= 0.1.2
+- split
+- stm-chans
+- stm-conduit
+- strings
+- stringsearch
+- text
+- transformers
+- transformers-base
+- typed-process
+- unix
+- unliftio
+- unliftio-core
+- utf8-string
+- uuid
+- vector
 
 library:
  source-dirs: lib

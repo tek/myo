@@ -7,7 +7,7 @@ module RunSpec(
 import Chiasma.Data.Ident (Ident(Str))
 import qualified Control.Lens as Lens (at, view)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State.Class (gets)
+import qualified Control.Monad.State.Class as State (gets)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
 import Ribosome.Data.Errors (ComponentName(ComponentName))
 import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
@@ -24,10 +24,10 @@ import Myo.Data.Env (MyoN)
 import qualified Myo.Data.Env as Env (errors)
 import Unit (specWithDef)
 
-testError :: String
+testError :: Text
 testError = "error"
 
-cname :: String
+cname :: Text
 cname = "test"
 
 runDummy :: RunTask -> MyoN ()
@@ -40,7 +40,7 @@ runSpec = do
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing
   _ <- addRunner (Str "dummy") (mkRunner runDummy) (const True)
   myoRun ident
-  loggedError <- gets $ Lens.view $ Env.errors . Errors.componentErrors . Lens.at (ComponentName cname)
+  loggedError <- State.gets $ Lens.view $ Env.errors . Errors.componentErrors . Lens.at (ComponentName cname)
   let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError
   liftIO $ assertEqual (Just [testError]) errorReport
 

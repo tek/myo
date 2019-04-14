@@ -5,8 +5,8 @@ module Output.QuitSpec(
 ) where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Control.Monad.DeepError (catchAt, throwHoist)
-import Myo.Output.Data.OutputError (OutputError(NoEvents))
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector (fromList)
 import Ribosome.Plugin.Mapping (executeMapping)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Test.Ui (windowCountIs)
@@ -24,17 +24,17 @@ import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), form
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Plugin (mappingOutputQuit)
 
-events :: [OutputEvent]
+events :: Vector OutputEvent
 events =
-  [OutputEvent Nothing 0, OutputEvent Nothing 1]
+  Vector.fromList [OutputEvent Nothing 0, OutputEvent Nothing 1]
 
 loc :: Location
 loc =
   Location "/path/to/File.hs" 10 Nothing
 
-reportLines :: [ReportLine]
+reportLines :: Vector ReportLine
 reportLines =
-  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB") ++ formatReportLine 0 loc (NoMethod "fmap")
+  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB") <> formatReportLine 0 loc (NoMethod "fmap")
 
 parsedOutput :: ParsedOutput
 parsedOutput =

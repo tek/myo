@@ -48,5 +48,5 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
       waitForSocket logPath
       runRiboTmux $ do
         pipePaneToSocket paneId logPath
-        sendKeys paneId lines'
+        sendKeys paneId (toString <$> lines')
     run _ = undefined

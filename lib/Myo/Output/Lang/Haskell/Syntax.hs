@@ -14,18 +14,18 @@ import Ribosome.Data.Syntax (
 
 import Myo.Output.Data.String (colMarker, lineNumber)
 
-errorEnd :: String
-errorEnd = "\\ze.*\\(" ++ lineNumber ++ "\\|" ++ colMarker ++ "\\)"
+errorEnd :: Text
+errorEnd = "\\ze.*\\(" <> lineNumber <> "\\|" <> colMarker <> "\\)"
 
-foundReqHead :: String
+foundReqHead :: Text
 foundReqHead =
   "type mismatch"
 
-noInstanceMarker :: String
+noInstanceMarker :: Text
 noInstanceMarker =
   "\\s*!instance:"
 
-notInScopeMarker :: String
+notInScopeMarker :: Text
 notInScopeMarker = "Variable not in scope:"
 
 haskellInclude :: SyntaxItem
@@ -36,7 +36,7 @@ location :: SyntaxItem
 location =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoLocation" ("^.*" ++ lineNumber ++ ".*$")
+    item = syntaxMatch "MyoLocation" ("^.*" <> lineNumber <> ".*$")
     options = ["skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoPath,MyoLineNumber"), ("nextgroup", "MyoHsError")]
 
@@ -44,7 +44,7 @@ path :: SyntaxItem
 path =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoPath" ("^.*\\ze\\( " ++ lineNumber ++ ".*$\\)\\@=")
+    item = syntaxMatch "MyoPath" ("^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=")
     options = ["contained"]
     params = Map.fromList [("containedin", "MyoLocation")]
 
@@ -52,7 +52,7 @@ lineNumberSymbol :: SyntaxItem
 lineNumberSymbol =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoLineNumber" ("\\(" ++ lineNumber ++ " \\)\\@<=\\zs\\d\\+\\ze")
+    item = syntaxMatch "MyoLineNumber" ("\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze")
     options = ["contained"]
     params = Map.fromList [("containedin", "MyoLocation")]
 
@@ -107,7 +107,7 @@ noInstanceHead :: SyntaxItem
 noInstanceHead =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsNoInstanceHead" ("\\s*" ++ noInstanceMarker ++ ".*$")
+    item = syntaxMatch "MyoHsNoInstanceHead" ("\\s*" <> noInstanceMarker <> ".*$")
     options = ["contained", "skipnl"]
     params = Map.fromList [("contains", "MyoHsNoInstanceBang"), ("nextgroup", "MyoHsNoInstanceDesc")]
 
@@ -154,7 +154,7 @@ notInScopeHead :: SyntaxItem
 notInScopeHead =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsNotInScopeHead" ("\\s*" ++ notInScopeMarker)
+    item = syntaxMatch "MyoHsNotInScopeHead" ("\\s*" <> notInScopeMarker)
     options = ["contained", "skipnl"]
     params = Map.fromList [("nextgroup", "MyoHsCode")]
 

@@ -12,7 +12,7 @@ import Myo.Orphans ()
 data AddSystemCommandOptions =
   AddSystemCommandOptions {
     ident :: Ident,
-    lines :: [String],
+    lines :: [Text],
     runner :: Maybe Ident,
     target :: Maybe Ident,
     lang :: Maybe CommandLanguage

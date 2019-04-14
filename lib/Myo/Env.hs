@@ -1,7 +1,6 @@
 module Myo.Env where
 
 import Chiasma.Data.Views (Views)
-import Control.Monad.DeepState (MonadDeepState(get), gets)
 import System.Directory (getTemporaryDirectory)
 import System.FilePath (takeFileName, (</>))
 import System.Posix.User (getEffectiveUserName)
@@ -28,7 +27,7 @@ bracketMyoTempDir :: (FilePath -> IO ()) -> IO ()
 bracketMyoTempDir thunk = do
   name <- getEffectiveUserName
   tmp <- getTemporaryDirectory
-  let base = tmp </> ("myo-" ++ name)
+  let base = tmp </> ("myo-" <> name)
   createDirectoryIfMissing True base
   project <- takeFileName <$> getCurrentDirectory
-  withTempDirectory base (project ++ "-") thunk
+  withTempDirectory base (project <> "-") thunk

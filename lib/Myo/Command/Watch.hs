@@ -10,19 +10,16 @@ import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (concat)
-import Data.ByteString.Internal (packChars)
 import qualified Data.ByteString.Lazy as LB (ByteString, toChunks)
 import qualified Data.ByteString.Search as ByteString (replace)
 import Data.Conduit.Network.Unix (sourceSocket)
 import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan)
-import Data.Either.Combinators (whenLeft)
 import Data.Functor (void)
 import Network.Socket (Socket)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report (processErrorReport')
 import System.Log (Priority(NOTICE))
-import UnliftIO (atomically)
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (watcherChan)
@@ -35,9 +32,9 @@ strictByteString :: LB.ByteString -> ByteString
 strictByteString =
   ByteString.concat . LB.toChunks
 
-replace :: String -> String -> ByteString -> ByteString
+replace :: Text -> Text -> ByteString -> ByteString
 replace from to =
-  strictByteString . ByteString.replace (packChars from) (packChars to)
+  strictByteString . ByteString.replace (encodeUtf8 from :: ByteString) (encodeUtf8 to :: ByteString)
 
 sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
@@ -58,7 +55,7 @@ listener ::
   m ()
 listener ident sock listenChan = do
   result <- try $ runConduit $ sourceSocket sock .| mapC (PaneOutput ident) .| sinkTMChan listenChan
-  whenLeft result (processErrorReport' "watcher" . listenerErrorReport)
+  whenLeft () result (processErrorReport' "watcher" . listenerErrorReport)
 
 listen ::
   (MonadRibo m, Nvim m, MonadIO m, MonadBaseControl IO m) =>
@@ -67,7 +64,7 @@ listen ::
   TMChan PaneOutput ->
   m ()
 listen ident logPath listenChan = do
-  Log.debug $ "listening on socket at " ++ logPath
+  Log.debug $ "listening on socket at " <> logPath
   try (socketBind logPath) >>= \case
     Right sock -> void $ fork $ listener ident sock listenChan
     Left (_ :: IOException) -> return ()

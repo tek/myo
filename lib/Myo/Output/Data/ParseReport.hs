@@ -1,12 +1,14 @@
 module Myo.Output.Data.ParseReport where
 
+import Data.Vector (Vector)
+
 import Myo.Output.Data.OutputEvent (OutputEvent)
 import Myo.Output.Data.ReportLine (ReportLine)
 
 data ParseReport =
   ParseReport {
-    _events :: [OutputEvent],
-    _lines :: [ReportLine]
+    _events :: Vector OutputEvent,
+    _lines :: Vector ReportLine
   }
   deriving (Eq, Show)
 
