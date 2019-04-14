@@ -5,6 +5,7 @@ module Myo.Data.Error where
 import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Error.Report.Class (ReportError(..))
+import Ribosome.Msgpack.Error (DecodeError)
 
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.RunError (RunError)
@@ -18,6 +19,8 @@ data Error =
   Output OutputError
   |
   Mapping MappingError
+  |
+  Decode DecodeError
   deriving Show
 
 deepPrisms ''Error
@@ -27,3 +30,4 @@ instance ReportError Error where
   errorReport (Command e) = errorReport e
   errorReport (Output e) = errorReport e
   errorReport (Mapping e) = errorReport e
+  errorReport (Decode e) = errorReport e

@@ -3,14 +3,17 @@
 module Myo.Plugin where
 
 import Control.Monad ((<=<))
+import Myo.Output.Data.OutputError (OutputError)
 import Neovim (Neovim, NeovimPlugin, Plugin(..), wrapPlugin)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, NvimE, RiboE)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Error.Report (reportError)
+import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Plugin (RpcDef, autocmd, cmd, nvimPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
+import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Output (outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoRun)
@@ -47,11 +50,20 @@ mappingOutputQuit ::
 mappingOutputQuit =
   mappingHandler "output-quit" outputQuit
 
-mappingOutputSelect :: Functor m => MappingHandler m
+mappingOutputSelect ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e OutputError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  MappingHandler m
 mappingOutputSelect =
   mappingHandler "output-select" outputSelect
 
 mappings ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e OutputError m =>
   MonadRibo m =>
   NvimE e m =>
   [MappingHandler m]

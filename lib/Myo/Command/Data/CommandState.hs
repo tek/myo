@@ -16,7 +16,7 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.RunningCommand (RunningCommand)
 import Myo.Output.Data.OutputHandler (OutputHandler)
 import Myo.Output.Data.ParseReport (ParseReport)
-import Myo.Output.Data.ParsedOutput (ParsedOutput)
+import Myo.Output.Data.ParseResult (ParseResult)
 import Myo.Ui.Data.PaneOutput (PaneOutput)
 
 type LogPaths = Map Ident FilePath
@@ -29,8 +29,8 @@ data CommandState =
     _logPaths :: LogPaths,
     _logs :: Logs,
     _running :: [RunningCommand],
-    _parsedOutput :: Maybe [ParsedOutput],
-    _parseReports :: Maybe ParseReport,
+    _parseResult :: Maybe ParseResult,
+    _parseReport :: Maybe ParseReport,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _watcherChan :: Maybe (TMChan PaneOutput)
   }

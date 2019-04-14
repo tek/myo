@@ -7,7 +7,8 @@ import Data.Functor (void)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
-import qualified Data.Text as Text (pack)
+import Data.Vector (Vector)
+import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
 import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
@@ -62,20 +63,20 @@ dot =
 singleMessage ::
   Monad m =>
   CharParsing m =>
-  m (NonEmpty String)
+  m (NonEmpty Text)
 singleMessage =
-  pure <$> manyTill anyChar (choice [void emptyLine, eof])
+  pure . toText <$> manyTill anyChar (choice [void emptyLine, eof])
 
 multiMessage ::
   Monad m =>
   CharParsing m =>
   TokenParsing m =>
   LookAheadParsing m =>
-  m (NonEmpty String)
+  m (NonEmpty Text)
 multiMessage = do
   head' <- part
   tail' <- many part
-  return $ head' :| tail'
+  return $ toText <$> head' :| tail'
   where
     part = ws *> dot *> ws *> manyTill anyChar (choice [void $ lookAhead dot, void emptyLine, eof])
 
@@ -89,20 +90,20 @@ event = do
   (location, tpe) <- locationLine
   msgs <- choice [multiMessage, singleMessage]
   skipMany newline
-  return $ HaskellEvent location tpe (Text.pack <$> msgs)
+  return $ HaskellEvent location tpe msgs
 
 parseHaskellErrors ::
   Monad m =>
   CharParsing m =>
   TokenParsing m =>
   LookAheadParsing m =>
-  m [HaskellEvent]
+  m (Vector HaskellEvent)
 parseHaskellErrors =
-  catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
+  Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =
-  haskellReport <=< mapLeft OutputError.Parse . parseOnly parseHaskellErrors
+  haskellReport <=< mapLeft (OutputError.Parse . toText) . parseOnly parseHaskellErrors
 
 haskellOutputParser :: OutputParser
 haskellOutputParser =

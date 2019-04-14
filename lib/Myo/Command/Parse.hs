@@ -8,25 +8,25 @@ import Control.Monad (when)
 import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither, hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState, getsL, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
-import qualified Data.ByteString.UTF8 as ByteString (toString)
 import Data.Text (Text)
-import qualified Data.Text as Text (pack)
+import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.SettingError (SettingError)
+import qualified Ribosome.Log as Log
+import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Text.RE.PCRE.String (RE, SearchReplace, ed, (*=~/))
+import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
 
 import Myo.Command.Command (commandByIdent, latestCommand)
 import Myo.Command.Data.Command (Command(Command, cmdIdent), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandLog as CommandLog (CommandLog(_current))
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parsedOutput)
+import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parseResult)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
 import Myo.Command.Log (commandLog)
 import Myo.Command.Output (renderParseResult)
-import qualified Myo.Log as Log
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(NoLang, NoHandler, NoOutput))
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
@@ -43,15 +43,15 @@ selectCommand ::
 selectCommand (Just ident) = commandByIdent ident
 selectCommand Nothing = latestCommand
 
-removeTerminalCodesRE :: SearchReplace RE String
+removeTerminalCodesRE :: SearchReplace RE Text
 removeTerminalCodesRE =
   [ed|\e\[[0-9;?]*[a-zA-z]///|]
 
-removeLineFeedRE :: SearchReplace RE String
+removeLineFeedRE :: SearchReplace RE Text
 removeLineFeedRE =
   [ed|\r///|]
 
-sanitizeOutput :: String -> String
+sanitizeOutput :: Text -> Text
 sanitizeOutput =
   (*=~/ removeTerminalCodesRE) . (*=~/ removeLineFeedRE)
 
@@ -64,7 +64,7 @@ commandOutput ident = do
   clog <- commandLog ident
   maybe (throwHoist (OutputError.NoOutput ident)) convert clog
   where
-    convert = return . Text.pack . sanitizeOutput . ByteString.toString . CommandLog._current
+    convert = return . sanitizeOutput . decodeUtf8 . CommandLog._current
 
 handlersForLang ::
   (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
@@ -95,7 +95,7 @@ parseCommand ::
   m [ParsedOutput]
 parseCommand (Command _ ident _ _ (Just lang)) = do
   output <- commandOutput ident
-  Log.debug (show output)
+  Log.debugShow output
   parseWithLang lang output
 parseCommand (Command _ ident _ _ _) =
   throwHoist $ OutputError.NoLang ident
@@ -103,6 +103,7 @@ parseCommand (Command _ ident _ _ _) =
 myoParse ::
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
+  MonadDeepError e DecodeError m =>
   MonadDeepError e RpcError m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
@@ -114,13 +115,14 @@ myoParse ::
 myoParse (ParseOptions _ ident _) = do
   cmd <- selectCommand ident
   parsedOutput <- parseCommand cmd
-  setL @CommandState CommandState.parsedOutput (Just parsedOutput)
+  setL @CommandState CommandState.parseResult (Just (ParseResult (cmdIdent cmd) parsedOutput))
   display <- setting Settings.displayResult
   when display $ renderParseResult (cmdIdent cmd) parsedOutput
 
 myoParseLatest ::
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
+  MonadDeepError e DecodeError m =>
   MonadDeepError e RpcError m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
