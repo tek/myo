@@ -9,16 +9,17 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Api.Window (currentCursor, cursor)
 import Ribosome.Config.Setting (updateSetting)
+import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Plugin.Mapping (executeMapping)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
-import Ribosome.Test.Ui (windowCountIs)
+import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
 import Ribosome.Test.Unit (fixture)
 import System.FilePath ((</>))
 import Test.Framework
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (parseResult)
-import Myo.Command.Output (myoNext, renderParseResult)
+import Myo.Command.Output (myoNext, myoPrev, renderParseResult)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
@@ -53,21 +54,39 @@ parsedOutput :: FilePath -> ParsedOutput
 parsedOutput file =
   ParsedOutput haskellSyntax (const $ ParseReport (events file) (reportLines file))
 
-outputNextSpec :: MyoN ()
-outputNextSpec = do
+cycleSpecRender :: MyoN Window
+cycleSpecRender = do
   file <- fixture $ "output" </> "select" </> "File.hs"
   let po = [parsedOutput file]
-  updateSetting Settings.outputJumpFirst True
   initialize''
   setL @CommandState CommandState.parseResult (Just (ParseResult (Ident.Str "test") po))
   renderParseResult (Ident.Str "test") po
   windowCountIs 2
-  ow <- outputWindow
+  outputWindow
+
+outputPrevSpec :: MyoN ()
+outputPrevSpec = do
+  updateSetting Settings.outputJumpFirst False
+  ow <- cycleSpecRender
+  currentCursorIs 3 4
+  cursorIs 5 0 ow
+  myoPrev
+  currentCursorIs 9 2
+  cursorIs 0 0 ow
+
+test_outputPrev :: IO ()
+test_outputPrev =
+  tmuxGuiSpecDef outputPrevSpec
+
+outputNextSpec :: MyoN ()
+outputNextSpec = do
+  updateSetting Settings.outputJumpFirst True
+  ow <- cycleSpecRender
+  currentCursorIs 9 2
+  cursorIs 0 0 ow
   myoNext
-  (line, col) <- currentCursor
-  gassertEqual (3, 4) (line, col)
-  (oline, ocol) <- cursor ow
-  gassertEqual (5, 0) (oline, ocol)
+  currentCursorIs 3 4
+  cursorIs 5 0 ow
 
 test_outputNext :: IO ()
 test_outputNext =

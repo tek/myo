@@ -8,6 +8,7 @@ import qualified Data.Vector as Vector (findIndex)
 import Ribosome.Api.Buffer (bufferForFile, edit)
 import Ribosome.Api.Window (currentLine, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
+import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (nvimWinSetBuf, vimCommand, vimSetCurrentWindow, windowIsValid)
@@ -22,6 +23,8 @@ import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Interna
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import qualified Myo.Output.Data.ParseReport as ParseReport (events)
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (ParsedOutput(_syntax))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 
 scratchName :: Text
@@ -64,9 +67,9 @@ selectEvent ::
   Window ->
   OutputEvent ->
   m ()
-selectEvent previousWindow (OutputEvent (Just (Location path line col)) _) = do
-  previousExists <- windowIsValid previousWindow
-  window <- if previousExists then return previousWindow else findWindow
+selectEvent mainWindow (OutputEvent (Just (Location path line col)) _) = do
+  previousExists <- windowIsValid mainWindow
+  window <- if previousExists then return mainWindow else findWindow
   vimSetCurrentWindow window
   existingBuffer <- bufferForFile (toText path)
   maybe (edit path) (nvimWinSetBuf window) existingBuffer
@@ -188,3 +191,14 @@ navigateToCurrentEvent ::
   m ()
 navigateToCurrentEvent jump =
   navigateToEvent jump =<< currentEvent
+
+compileReport :: [ParsedOutput] -> (ParseReport, [Syntax])
+compileReport output =
+  (mconcat reports, syntax)
+  where
+    syntax = ParsedOutput._syntax <$> output
+    (_, reports) = mapAccumL format 0 output
+    format offset (ParsedOutput _ cons) =
+      (offset + length events, report')
+      where
+        report'@(ParseReport events _) = cons offset

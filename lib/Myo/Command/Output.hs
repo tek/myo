@@ -25,9 +25,9 @@ import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Interna
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
 import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (ParsedOutput(_syntax))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.ParseReport (
+  compileReport,
   currentReport,
   cycleIndex,
   navigateToCurrentEvent,
@@ -55,11 +55,8 @@ renderReport ::
   ParseReport ->
   [Syntax] ->
   m ()
-renderReport (ParseReport _ lines') syntax = do
-  (Scratch _ _ _ window _) <- showInScratch (render <$> lines') options
-  jumpFirst <- setting Settings.outputJumpFirst
-  let line = if jumpFirst then 0 else length lines' - 1
-  setCursor window line 0
+renderReport (ParseReport _ lines') syntax =
+  void $ showInScratch (render <$> lines') options
   where
     render (ReportLine _ text) =
       text
@@ -80,16 +77,14 @@ renderParseResult ::
 renderParseResult ident output = do
   when (noEventsInReport report) (throwHoist (NoEvents ident))
   setL @CommandState CommandState.parseReport (Just report)
-  setL @CommandState CommandState.currentEvent 0
+  jumpFirst <- setting Settings.outputJumpFirst
+  setL @CommandState CommandState.currentEvent (first jumpFirst)
   renderReport report syntax
+  navigateToCurrentEvent =<< setting Settings.outputAutoJump
   where
-    report = mconcat reports
-    syntax = ParsedOutput._syntax <$> output
-    (_, reports) = mapAccumL format 0 output
-    format offset (ParsedOutput _ cons) =
-      (offset + length events, report')
-      where
-        report'@(ParseReport events _) = cons offset
+    first jumpFirst = if jumpFirst then 0 else length events - 1
+    (report@(ParseReport events _), syntax) =
+      compileReport output
 
 outputQuit ::
   MonadRibo m =>
@@ -123,8 +118,7 @@ cycleAndNavigate ::
   m ()
 cycleAndNavigate offset = do
   changed <- cycleIndex offset
-  jump <- setting Settings.outputAutoJump
-  when changed (navigateToCurrentEvent jump)
+  when changed (navigateToCurrentEvent True)
 
 myoPrev ::
   MonadDeepState s CommandState m =>
