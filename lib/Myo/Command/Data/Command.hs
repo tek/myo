@@ -6,12 +6,13 @@ import Data.Maybe (maybeToList)
 import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
 import GHC.Generics (Generic)
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
+import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
 
 newtype CommandLanguage =
   CommandLanguage Text
-  deriving (Eq, Show, Ord, Generic, MsgpackDecode)
+  deriving (Eq, Show, Ord, Generic, MsgpackDecode, MsgpackEncode)
 
 data Command =
   Command {

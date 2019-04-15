@@ -3,6 +3,9 @@ module Myo.Settings where
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry(ViewGeometry))
 import Ribosome.Data.Setting (Setting(Setting))
 
+import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions)
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions)
+
 vimTmuxPane :: Setting Int
 vimTmuxPane =
   Setting "vim_tmux_pane" True Nothing
@@ -30,3 +33,11 @@ outputJumpFirst =
 outputAutoJump :: Setting Bool
 outputAutoJump =
   Setting "output_auto_jump" True (Just True)
+
+systemCommands :: Setting [AddSystemCommandOptions]
+systemCommands =
+  Setting "system_commands" True (Just [])
+
+shellCommands :: Setting [AddShellCommandOptions]
+shellCommands =
+  Setting "shell_commands" True (Just [])
