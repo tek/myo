@@ -48,14 +48,14 @@ import Myo.Ui.Data.Window (Window(Window))
 ui1 :: UiSettingCodec
 ui1 =
   UiSettingCodec
-    [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "vim" }]
-    []
+    (Just [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "vim" }])
+    Nothing
 
 ui2 :: UiSettingCodec
 ui2 =
   UiSettingCodec
-    [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "make" }]
-    [def { AddPaneOptions.ident = Just (Ident.Str "pane"), AddPaneOptions.layout = Ident.Str "test" }]
+    (Just [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "make" }])
+    (Just [def { AddPaneOptions.ident = Just (Ident.Str "pane"), AddPaneOptions.layout = Ident.Str "test" }])
 
 paneData :: MonadDeepState s UiState m => m [Text]
 paneData =

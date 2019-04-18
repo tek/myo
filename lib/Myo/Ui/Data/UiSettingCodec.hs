@@ -11,7 +11,7 @@ import Myo.Ui.Data.AddPaneOptions (AddPaneOptions)
 
 data UiSettingCodec =
   UiSettingCodec {
-    layouts :: [AddLayoutOptions],
-    panes :: [AddPaneOptions]
+    layouts :: Maybe [AddLayoutOptions],
+    panes :: Maybe [AddPaneOptions]
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)

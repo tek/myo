@@ -81,5 +81,5 @@ updateUi ::
 updateUi o = do
   UiSettingCodec layouts panes <- fromMsgpack' o
   resetUi
-  traverse_ (uncurry insertOrUpdateLayout) =<< traverse createLayout layouts
-  traverse_ (uncurry insertOrUpdatePane) =<< traverse createPane panes
+  traverse_ (uncurry insertOrUpdateLayout) =<< traverse createLayout (fold layouts)
+  traverse_ (uncurry insertOrUpdatePane) =<< traverse createPane (fold panes)
