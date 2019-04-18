@@ -18,6 +18,7 @@ import {-@ HTF_TESTS @-} RunSpec
 import {-@ HTF_TESTS @-} SocketSpec
 import {-@ HTF_TESTS @-} Tmux.ParseSpec
 import {-@ HTF_TESTS @-} Tmux.RunSpec
+import {-@ HTF_TESTS @-} Tmux.UpdateSpec
 import {-@ HTF_TESTS @-} ToggleLayoutSpec
 import {-@ HTF_TESTS @-} TogglePaneSpec
 

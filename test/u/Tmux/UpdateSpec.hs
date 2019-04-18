@@ -1,13 +1,16 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Command.UpdateSpec(
+module Tmux.UpdateSpec(
   htf_thisModulesTests,
 ) where
 
 import Chiasma.Data.Ident (identText)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+import Chiasma.Ui.Data.View (TreeSub(TreeNode, TreeLeaf), View(View))
+import qualified Control.Lens as Lens (toListOf)
 import Control.Monad.Trans.Except (ExceptT)
+import Data.Bifoldable (bifoldMap)
 import Data.Default (def)
 import qualified Data.Map as Map (singleton)
 import Data.MessagePack (Object)
@@ -34,52 +37,60 @@ import Myo.Data.Env (Env(_tempDir))
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, variables)
 import qualified Myo.Settings as Settings (systemCommands)
+import qualified Myo.Ui.Data.AddLayoutOptions as AddLayoutOptions (AddLayoutOptions(layout, ident))
+import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions(layout, ident))
+import Myo.Ui.Data.Space (Space(Space))
+import Myo.Ui.Data.UiSettingCodec (UiSettingCodec(UiSettingCodec))
 import Myo.Ui.Data.UiState (UiState)
 import qualified Myo.Ui.Data.UiState as UiState (spaces)
+import Myo.Ui.Data.Window (Window(Window))
 
-commands1 :: [AddSystemCommandOptions]
-commands1 =
-  [AddSystemCommandOptions (Ident.Str "c1") ["tail"] Nothing Nothing Nothing]
+ui1 :: UiSettingCodec
+ui1 =
+  UiSettingCodec
+    [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "vim" }]
+    []
 
-commands2 :: [AddSystemCommandOptions]
-commands2 =
-  [
-    AddSystemCommandOptions (Ident.Str "c1") ["tails"] Nothing Nothing Nothing,
-    AddSystemCommandOptions (Ident.Str "c2") ["echo"] Nothing Nothing Nothing
-    ]
+ui2 :: UiSettingCodec
+ui2 =
+  UiSettingCodec
+    [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "make" }]
+    [def { AddPaneOptions.ident = Just (Ident.Str "pane"), AddPaneOptions.layout = Ident.Str "test" }]
 
-cmdData :: MonadDeepState s CommandState m => m [(Text, [Text])]
-cmdData =
-  fmap extract <$> getsL @CommandState CommandState.commands
+paneData :: MonadDeepState s UiState m => m [Text]
+paneData =
+  (>>= extractS) <$> getsL @UiState UiState.spaces
   where
-    extract (Command _ ident lines _ _) = (identText ident, lines)
+    extractS (Space _ windows) = windows >>= extractW
+    extractW (Window _ layout) = bifoldMap viewName viewName layout
+    viewName (View ident _ _ _) = [identText ident]
 
 $(return [])
 
 plugin :: FilePath -> IO (Plugin (Ribosome Env))
 plugin tempDir = do
   ribo <- newRibosome "myo" def { _tempDir = tempDir }
-  return $ riboPlugin "myo" ribo [$(rpcHandler sync 'cmdData)] [] handleError variables
+  return $ riboPlugin "myo" ribo [$(rpcHandler sync 'paneData)] [] handleError variables
 
-getCmdData ::
+getUiData ::
   NvimE e m =>
-  m [(Text, [Text])]
-getCmdData =
-  vimCallFunction "CmdData" []
+  m [Text]
+getUiData =
+  vimCallFunction "PaneData" []
 
-updateCommandsSpec :: ExceptT RpcError (Neovim ()) ()
-updateCommandsSpec = do
-  setVar "myo_system_commands" commands1
+updateUiSpec :: ExceptT RpcError (Neovim ()) ()
+updateUiSpec = do
+  setVar "myo_ui" ui1
   doautocmd "CmdlineLeave"
-  await (gassertEqual [("c1", ["tail"])]) getCmdData
-  setVar "myo_system_commands" commands2
+  await (gassertEqual ["main", "vim", "test", "vim", "make", "make"]) getUiData
+  setVar "myo_ui" ui2
   doautocmd "BufWinEnter"
-  await (gassertEqual [("c1", ["tails"]), ("c2", ["echo"])]) getCmdData
+  await (gassertEqual ["main", "vim", "vim", "make", "test", "pane", "make"]) getUiData
 
-test_updateCommands :: IO ()
-test_updateCommands =
+test_updateUi :: IO ()
+test_updateUi =
   bracketMyoTempDir run
   where
     run tempDir = do
       plug <- plugin tempDir
-      integrationSpecDef plug updateCommandsSpec
+      integrationSpecDef plug updateUiSpec

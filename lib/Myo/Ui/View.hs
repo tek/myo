@@ -2,7 +2,7 @@
 
 module Myo.Ui.View where
 
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident, sameIdent)
 import Chiasma.Data.Views (Views)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
@@ -20,6 +20,7 @@ import Chiasma.Ui.Data.View (
 import Chiasma.Ui.Data.ViewState (ViewState(ViewState))
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (Lens', Traversal', each, has, mapMOf, transformM)
+import qualified Control.Lens as Lens (view)
 import Control.Lens.Setter ((%~), (<>~))
 import Control.Monad ((<=<))
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
@@ -29,12 +30,12 @@ import Data.Foldable (traverse_)
 import Myo.Data.Env (Env)
 import qualified Myo.Data.Env as Env (ui)
 import Myo.Ui.Data.Space (Space(Space))
-import qualified Myo.Ui.Data.Space as Space (_windows)
+import qualified Myo.Ui.Data.Space as Space (windows)
 import Myo.Ui.Data.UiState (UiState)
 import qualified Myo.Ui.Data.UiState as UiState (spaces, views)
 import Myo.Ui.Data.ViewCoords (ViewCoords(ViewCoords))
 import Myo.Ui.Data.Window (Window(Window))
-import qualified Myo.Ui.Data.Window as Window (_layout)
+import qualified Myo.Ui.Data.Window as Window (layout)
 
 envSpacesLens :: Lens' Env [Space]
 envSpacesLens = Env.ui . UiState.spaces
@@ -60,7 +61,7 @@ spaceLens :: Ident -> Traversal' [Space] Space
 spaceLens = matchIdentL
 
 spaceWindowLens :: Ident -> Ident -> Traversal' [Space] Window
-spaceWindowLens spaceIdent windowIdent = spaceLens spaceIdent . Space._windows . matchIdentL windowIdent
+spaceWindowLens spaceIdent windowIdent = spaceLens spaceIdent . Space.windows . matchIdentL windowIdent
 
 envSpaceLens :: Ident -> Traversal' Env Space
 envSpaceLens ident = envSpacesLens . spaceLens ident
@@ -78,10 +79,10 @@ createWindow (ViewCoords spaceIdent windowIdent layoutIdent) = do
     rootLayout = consLayout layoutIdent
 
 windowLayoutLens :: Ident -> Traversal' [Window] ViewTree
-windowLayoutLens ident = matchIdentL ident . Window._layout
+windowLayoutLens ident = matchIdentL ident . Window.layout
 
 spacesLayoutLens :: Ident -> Ident -> Traversal' [Space] ViewTree
-spacesLayoutLens spaceIdent windowIdent = spaceWindowLens spaceIdent windowIdent . Window._layout
+spacesLayoutLens spaceIdent windowIdent = spaceWindowLens spaceIdent windowIdent . Window.layout
 
 insertLayoutIfNonexistent :: Ident -> LayoutView -> ViewTree -> Maybe ViewTree
 insertLayoutIfNonexistent _ (View newIdent _ _ _) (Tree (View currentIdent _ _ _) _) | newIdent == currentIdent =
@@ -105,10 +106,10 @@ envTreeLens (ViewCoords spaceIdent windowIdent _) =
   envSpacesLens . spacesLayoutLens spaceIdent windowIdent
 
 envTreesLens :: Traversal' Env ViewTree
-envTreesLens = envSpacesLens . each . Space._windows . each . Window._layout
+envTreesLens = envSpacesLens . each . Space.windows . each . Window.layout
 
 uiTreesLens :: Traversal' UiState ViewTree
-uiTreesLens = UiState.spaces . each . Space._windows . each . Window._layout
+uiTreesLens = UiState.spaces . each . Space.windows . each . Window.layout
 
 insertViewEnv ::
   (Ident -> View a -> ViewTree -> Maybe ViewTree) ->

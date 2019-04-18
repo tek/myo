@@ -61,7 +61,9 @@ vimTree vimGeometry =
 
 makeTree :: ViewTree
 makeTree =
-  Tree (consLayoutVertical (Ident.Str "make")) [TreeLeaf ((consPane (Ident.Str "make")) { extra = Pane False False Nothing })]
+  Tree (consLayoutVertical (Ident.Str "make")) [
+    TreeLeaf ((consPane (Ident.Str "make")) { extra = Pane False False Nothing })
+    ]
 
 mainTree :: ViewGeometry -> ViewTree
 mainTree vimGeometry =

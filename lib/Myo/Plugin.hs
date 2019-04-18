@@ -9,6 +9,7 @@ import Myo.Output.Data.OutputError (OutputError)
 import Neovim (Neovim, NeovimPlugin, Plugin(..), wrapPlugin)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, NvimE, RiboE)
 import Ribosome.Control.Ribosome (Ribosome)
+import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Plugin (RpcDef, autocmd, cmd, riboPlugin, rpcHandler, rpcHandlerDef, sync)
@@ -25,8 +26,9 @@ import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
 import Myo.Init (initialize, myoPoll)
 import Myo.Quit (myoQuit)
-import Myo.Tmux.Update (updatePanes)
+import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
+import Myo.Ui.Update (updateUi)
 
 handleError :: Error -> MyoE Error (ConcNvimS Env) ()
 handleError =
@@ -77,11 +79,17 @@ mappings =
   [mappingOutputQuit, mappingOutputSelect]
 
 variables ::
+  MonadIO m =>
+  MonadRibo m =>
+  NvimE e m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
+  MonadDeepState s UiState m =>
   Map Text (Object -> m ())
 variables =
-  Map.fromList [("myo_system_commands", updateSystemCommands), ("myo_panes", updatePanes)]
+  Map.fromList [("myo_system_commands", updateSystemCommands), ("myo_ui", updateUi)]
 
 plugin' :: Ribosome Env -> Plugin (Ribosome Env)
 plugin' env =

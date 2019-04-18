@@ -6,6 +6,7 @@ import Ribosome.Msgpack.Decode (fromMsgpack')
 import Ribosome.Msgpack.Error (DecodeError)
 
 import Myo.Command.Command (shellCommand, systemCommand)
+import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands)
@@ -21,3 +22,15 @@ updateSystemCommands o = do
   where
     create (AddSystemCommandOptions ident lines' runner target lang) =
       systemCommand target ident lines' runner lang
+
+updateShellCommands ::
+  MonadDeepError e DecodeError m =>
+  MonadDeepState s CommandState m =>
+  Object ->
+  m ()
+updateShellCommands o = do
+  cmdData <- fromMsgpack' o
+  modify @CommandState (Lens.set CommandState.commands (create <$> cmdData))
+  where
+    create (AddShellCommandOptions ident lines' runner target lang) =
+      shellCommand target ident lines' runner lang

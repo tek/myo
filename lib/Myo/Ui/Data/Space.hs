@@ -1,22 +1,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Myo.Ui.Data.Space(
-  Space(..),
-  _windows,
-) where
+module Myo.Ui.Data.Space where
 
-import Control.Lens (makeClassy_)
 import Chiasma.Data.Ident (Ident, Identifiable(..))
+import Control.Lens (makeClassy)
 import Myo.Ui.Data.Window (Window)
 
 data Space =
   Space {
-    ident :: Ident,
-    windows :: [Window]
+    _ident :: Ident,
+    _windows :: [Window]
   }
   deriving (Eq, Show)
 
-makeClassy_ ''Space
+makeClassy ''Space
 
 instance Identifiable Space where
-  identify = ident
+  identify = _ident

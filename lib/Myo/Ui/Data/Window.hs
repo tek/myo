@@ -1,22 +1,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Myo.Ui.Data.Window(
-  Window(..),
-  _layout,
-) where
+module Myo.Ui.Data.Window where
 
-import Control.Lens (makeClassy_)
 import Chiasma.Data.Ident (Ident, Identifiable(..))
 import Chiasma.Ui.Data.View (ViewTree)
+import Control.Lens (makeClassy)
 
 data Window =
   Window {
-    ident :: Ident,
-    layout :: ViewTree
+    _ident :: Ident,
+    _layout :: ViewTree
   }
   deriving (Eq, Show)
 
-makeClassy_ ''Window
+makeClassy ''Window
 
 instance Identifiable Window where
-  identify = ident
+  identify = _ident
