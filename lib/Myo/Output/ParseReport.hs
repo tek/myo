@@ -121,13 +121,13 @@ currentReport ::
   (ParseReport -> a) ->
   m a
 currentReport f =
-  f <$> (hoistMaybe OutputError.NotParsed =<< getsL @CommandState CommandState.parseReport)
+  f <$> (hoistMaybe OutputError.NotParsed =<< getL @CommandState CommandState.parseReport)
 
 currentEvent ::
   MonadDeepState s CommandState m =>
   m Int
 currentEvent =
-  getsL @CommandState CommandState.currentEvent
+  getL @CommandState CommandState.currentEvent
 
 cycleIndex ::
   MonadDeepState s CommandState m =>

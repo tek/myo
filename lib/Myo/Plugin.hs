@@ -20,7 +20,7 @@ import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoRun)
-import Myo.Command.Update (updateSystemCommands)
+import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env, MyoE)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
@@ -89,7 +89,7 @@ variables ::
   MonadDeepState s UiState m =>
   Map Text (Object -> m ())
 variables =
-  Map.fromList [("myo_system_commands", updateSystemCommands), ("myo_ui", updateUi)]
+  Map.fromList [("myo_commands", updateCommands), ("myo_ui", updateUi)]
 
 plugin' :: Ribosome Env -> Plugin (Ribosome Env)
 plugin' env =

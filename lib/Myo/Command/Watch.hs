@@ -5,7 +5,7 @@ import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Monad.DeepState (MonadDeepState, getsL, setL)
+import Control.Monad.DeepState (MonadDeepState, getL, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
@@ -91,7 +91,7 @@ ensureWatcher ::
   (MonadRibo m, Nvim m, MonadBaseControl IO m, MonadIO m, MonadDeepState s CommandState m) =>
   m (TMChan PaneOutput)
 ensureWatcher = do
-  current <- getsL @CommandState CommandState.watcherChan
+  current <- getL @CommandState CommandState.watcherChan
   maybe startWatcher return current
 
 watchPane ::

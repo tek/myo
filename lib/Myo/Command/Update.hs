@@ -8,29 +8,20 @@ import Ribosome.Msgpack.Error (DecodeError)
 import Myo.Command.Command (shellCommand, systemCommand)
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec(CommandSettingCodec))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands)
 
-updateSystemCommands ::
+updateCommands ::
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
   Object ->
   m ()
-updateSystemCommands o = do
-  cmdData <- fromMsgpack' o
-  modify @CommandState (Lens.set CommandState.commands (create <$> cmdData))
+updateCommands o = do
+  CommandSettingCodec system shell <- fromMsgpack' o
+  modify @CommandState (Lens.set CommandState.commands ((createShell <$> fold shell) ++ (createSystem <$> fold system)))
   where
-    create (AddSystemCommandOptions ident lines' runner target lang) =
+    createSystem (AddSystemCommandOptions ident lines' runner target lang) =
       systemCommand target ident lines' runner lang
-
-updateShellCommands ::
-  MonadDeepError e DecodeError m =>
-  MonadDeepState s CommandState m =>
-  Object ->
-  m ()
-updateShellCommands o = do
-  cmdData <- fromMsgpack' o
-  modify @CommandState (Lens.set CommandState.commands (create <$> cmdData))
-  where
-    create (AddShellCommandOptions ident lines' runner target lang) =
+    createShell (AddShellCommandOptions ident lines' runner target lang) =
       shellCommand target ident lines' runner lang

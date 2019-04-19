@@ -103,7 +103,7 @@ outputSelect ::
 outputSelect = do
   mainWindow <- outputMainWindow
   window <- outputWindow
-  (ParseResult ident _) <- hoistMaybe NotParsed =<< getsL @CommandState CommandState.parseResult
+  (ParseResult ident _) <- hoistMaybe NotParsed =<< getL @CommandState CommandState.parseResult
   report <- currentReport id
   selectCurrentLineEventFrom report window mainWindow
 

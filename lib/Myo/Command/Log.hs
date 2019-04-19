@@ -8,7 +8,7 @@ import Control.Lens (Lens', (?~))
 import qualified Control.Lens as Lens (at, over)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState, getsL, modify)
+import Control.Monad.DeepState (MonadDeepState, getL, modify)
 import Control.Monad.Free (MonadFree)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
@@ -31,13 +31,13 @@ logPathByIdent ::
   Ident ->
   m (Maybe FilePath)
 logPathByIdent ident =
-  getsL $ logPathLens ident
+  getL $ logPathLens ident
 
 logTempDir ::
   MonadDeepState s Env m =>
   m FilePath
 logTempDir =
-  getsL @Env Env.tempDir
+  getL @Env Env.tempDir
 
 insertLogPath ::
   (MonadDeepError e RunError m, MonadDeepState s Env m, MonadDeepState s CommandState m) =>
@@ -80,11 +80,11 @@ logLens ident = CommandState.logs . Lens.at ident
 
 commandLogs :: MonadDeepState s CommandState m => m Logs
 commandLogs =
-  getsL @CommandState CommandState.logs
+  getL @CommandState CommandState.logs
 
 commandLog :: MonadDeepState s CommandState m => Ident -> m (Maybe CommandLog)
 commandLog ident =
-  getsL (logLens ident)
+  getL (logLens ident)
 
 appendLog :: MonadDeepState s CommandState m => Ident -> ByteString -> m ()
 appendLog ident bytes =

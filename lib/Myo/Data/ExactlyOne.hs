@@ -16,5 +16,7 @@ foldForOne f =
       (: acc) <$> f a
     folder (One acc) a =
       case f a of
-        NotFound a -> One (a : acc)
+        NotFound a' -> One (a' : acc)
         _ -> Multiple
+    folder Multiple _ =
+      Multiple

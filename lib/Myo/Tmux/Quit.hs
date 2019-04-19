@@ -4,7 +4,7 @@ import Chiasma.Command.Pane (closePane)
 import Chiasma.Data.View (viewId)
 import Chiasma.Data.Views (Views)
 import qualified Chiasma.Data.Views as Views (panes)
-import Control.Monad.DeepState (MonadDeepState, getsL)
+import Control.Monad.DeepState (MonadDeepState, getL)
 import Data.Foldable (traverse_)
 import Data.Maybe (catMaybes)
 import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
@@ -20,10 +20,10 @@ closePanes ::
   MonadDeepState s Views m =>
   m ()
 closePanes =
-  traverse_ close =<< getsL @UiState UiState.vimPaneId
+  traverse_ close =<< getL @UiState UiState.vimPaneId
   where
     close vimPaneId = do
-      panes <- getsL @Views Views.panes
+      panes <- getL @Views Views.panes
       runRiboTmux $ traverse_ closePane (filter (vimPaneId /=) . catMaybes $ viewId <$> panes)
 
 tmuxQuit ::

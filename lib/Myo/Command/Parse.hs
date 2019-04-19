@@ -6,7 +6,7 @@ import Chiasma.Data.Ident (Ident)
 import qualified Control.Lens as Lens (at, over)
 import Control.Monad (when)
 import Control.Monad.DeepError (MonadDeepError(throwHoist), hoistEither, hoistMaybe)
-import Control.Monad.DeepState (MonadDeepState, getsL, modify, setL)
+import Control.Monad.DeepState (MonadDeepState, getL, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
 import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
@@ -71,7 +71,7 @@ handlersForLang ::
   CommandLanguage ->
   m [OutputHandler]
 handlersForLang lang = do
-  result <- getsL @CommandState $ CommandState.outputHandlers . Lens.at lang
+  result <- getL @CommandState $ CommandState.outputHandlers . Lens.at lang
   hoistMaybe (OutputError.NoHandler lang) result
 
 parseWith :: MonadDeepError s OutputError m => OutputParser -> Text -> m ParsedOutput

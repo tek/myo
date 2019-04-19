@@ -50,7 +50,7 @@ commands2 =
 
 cmdData :: MonadDeepState s CommandState m => m [(Text, [Text])]
 cmdData =
-  fmap extract <$> getsL @CommandState CommandState.commands
+  fmap extract <$> getL @CommandState CommandState.commands
   where
     extract (Command _ ident lines _ _) = (identText ident, lines)
 

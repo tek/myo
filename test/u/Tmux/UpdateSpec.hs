@@ -59,7 +59,7 @@ ui2 =
 
 paneData :: MonadDeepState s UiState m => m [Text]
 paneData =
-  (>>= extractS) <$> getsL @UiState UiState.spaces
+  (>>= extractS) <$> getL @UiState UiState.spaces
   where
     extractS (Space _ windows) = windows >>= extractW
     extractW (Window _ layout) = bifoldMap viewName viewName layout

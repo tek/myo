@@ -1,8 +1,8 @@
 module Myo.Diag where
 
-import Control.Monad.DeepState (MonadDeepState, getsL)
+import Control.Monad.DeepState (MonadDeepState, getL)
 import Data.Functor (void)
-import Data.Text.Prettyprint.Doc (line, pretty, (<>))
+import Data.Text.Prettyprint.Doc (Doc, line, pretty, vsep, (<>))
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
@@ -20,6 +20,9 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands)
 import Myo.Data.Env (Env)
 import qualified Myo.Data.Env as Env (errors)
+import Myo.Ui.Data.Space (Space)
+import Myo.Ui.Data.UiState (UiState)
+import qualified Myo.Ui.Data.UiState as UiState (spaces)
 
 headlineMatch :: SyntaxItem
 headlineMatch =
@@ -45,32 +48,41 @@ diagnosticsSyntax =
     highlights = []
     hilinks = [headlineLink, itemLink]
 
-cmdDiagnostics :: [Command] -> [Text]
+cmdDiagnostics :: [Command] -> Doc a
 cmdDiagnostics cmds =
-  lines =<< (show . (line <>) . pretty <$> cmds)
+  "## Commands" <> line <> vsep (pretty <$> cmds)
 
-errorDiagnostics :: Errors -> [Text]
-errorDiagnostics =
-  lines . show . (line <>) . pretty
+uiDiagnostics :: [Space] -> Doc a
+uiDiagnostics spaces =
+  "## Ui" <> line <> (vsep . fmap pretty) spaces
+
+errorDiagnostics :: Errors -> Doc a
+errorDiagnostics errs =
+  "## Errors" <> line <> pretty errs
 
 diagnosticsData ::
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  m [Text]
+  MonadDeepState s UiState m =>
+  m (Doc a)
 diagnosticsData = do
-  cmds <- getsL @CommandState CommandState.commands
-  errors <- getsL @Env Env.errors
-  return $ ["# Diagnostics", "", "## Commands"] <> cmdDiagnostics cmds <> ["", "## Errors"] <> errorDiagnostics errors
+  cmds <- getsL @CommandState CommandState.commands cmdDiagnostics
+  ui <- getsL @UiState UiState.spaces uiDiagnostics
+  errors <- getsL @Env Env.errors errorDiagnostics
+  return $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
+  where
+    headline = "# Diagnostics"
 
 myoDiag ::
   MonadRibo m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
+  MonadDeepState s UiState m =>
   MonadDeepError e DecodeError m =>
   NvimE e m =>
   m ()
 myoDiag = do
   content <- diagnosticsData
-  void $ showInScratch content options
+  void $ showInScratch (lines . show $ content) options
   where
     options = scratchFocus $ scratchSyntax [diagnosticsSyntax] $ defaultScratchOptions "myo-diagnostics"
