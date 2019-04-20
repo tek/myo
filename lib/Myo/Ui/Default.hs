@@ -56,13 +56,13 @@ vimTree :: ViewGeometry -> ViewTree
 vimTree vimGeometry =
   Tree vimLayout [TreeLeaf vimPane]
   where
-    vimLayout = (consLayoutVertical (Ident.Str "vim")) { viewGeometry = vimGeometry }
-    vimPane = (consPane (Ident.Str "vim")) { extra = Pane True False Nothing }
+    vimLayout = (consLayoutVertical (Ident.Str "vim")) { _geometry = vimGeometry }
+    vimPane = (consPane (Ident.Str "vim")) { _extra = Pane True False Nothing }
 
 makeTree :: ViewTree
 makeTree =
   Tree (consLayoutVertical (Ident.Str "make")) [
-    TreeLeaf ((consPane (Ident.Str "make")) { extra = Pane False False Nothing })
+    TreeLeaf ((consPane (Ident.Str "make")) { _extra = Pane False True Nothing })
     ]
 
 mainTree :: ViewGeometry -> ViewTree

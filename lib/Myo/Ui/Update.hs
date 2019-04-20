@@ -51,7 +51,7 @@ createLayout ::
   MonadIO m =>
   AddLayoutOptions ->
   m (Ident, View Layout)
-createLayout (AddLayoutOptions layout vertical i minimized minSize maxSize fixedSize ms weight position pin) = do
+createLayout (AddLayoutOptions layout vertical i minimized minSize maxSize fixedSize ms weight position) = do
   ident <- maybe generateIdent return i
   return (layout, View ident st geometry extra)
   where

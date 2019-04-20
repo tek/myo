@@ -2,8 +2,9 @@ module Myo.Ui.Toggle where
 
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState(get, put))
+import qualified Chiasma.Ui.ViewTree as Chiasma (ensurePaneOpen)
+import qualified Control.Lens as Lens (mapMOf)
+import Control.Monad.DeepState (modifyM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Functor (void)
 import Ribosome.Tmux.Run (RunTmux)
@@ -13,6 +14,7 @@ import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Lens.Toggle (openOnePane, toggleOneLayout, toggleOnePane)
 import Myo.Ui.Render (MyoRender, myoRender)
+import Myo.Ui.View (uiTreesLens)
 
 toggleView ::
   (MonadDeepError e ToggleError m, MonadDeepState s UiState m) =>
@@ -49,7 +51,7 @@ ensurePaneOpen ::
   Ident ->
   m ()
 ensurePaneOpen ident = do
-  openPane ident
+  modifyM $ Lens.mapMOf uiTreesLens (hoistEither . Chiasma.ensurePaneOpen ident)
   myoRender
 
 myoTogglePane ::

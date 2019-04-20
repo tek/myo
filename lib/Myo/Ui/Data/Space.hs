@@ -4,7 +4,7 @@ module Myo.Ui.Data.Space where
 
 import Chiasma.Data.Ident (Ident, Identifiable(..))
 import Control.Lens (makeClassy)
-import Data.Text.Prettyprint.Doc (Pretty(..), emptyDoc, nest, vsep, (<+>))
+import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
 
 import Myo.Ui.Data.Window (Window)
 

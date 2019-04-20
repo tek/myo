@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module ToggleLayoutSpec(
+module Tmux.ToggleLayoutSpec(
   htf_thisModulesTests
 ) where
 

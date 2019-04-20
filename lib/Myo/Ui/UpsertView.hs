@@ -11,7 +11,7 @@ import Chiasma.Ui.Data.View (
   )
 import qualified Control.Lens as Lens (each, over, transform)
 
-import Myo.Ui.Data.Space (Space(Space))
+import Myo.Ui.Data.Space (Space)
 import qualified Myo.Ui.Data.Space as Space (windows)
 import qualified Myo.Ui.Data.Window as Window (layout)
 
@@ -39,7 +39,7 @@ upsertPane layoutIdent newPane@(View newIdent _ _ _) (Tree layout@(View currentI
       layoutIdent == currentIdent && any samePaneIdent sub
     newSub =
       replace <$> sub
-    replace (TreeLeaf pane@(View ident _ _ _)) | newIdent == ident =
+    replace (TreeLeaf (View ident _ _ _)) | newIdent == ident =
       TreeLeaf newPane
     replace a =
       a

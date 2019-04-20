@@ -1,6 +1,5 @@
 module Myo.Diag where
 
-import Control.Monad.DeepState (MonadDeepState, getL)
 import Data.Functor (void)
 import Data.Text.Prettyprint.Doc (Doc, line, pretty, vsep, (<>))
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)

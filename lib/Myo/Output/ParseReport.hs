@@ -1,19 +1,17 @@
 module Myo.Output.ParseReport where
 
-import Control.Lens (Lens')
 import qualified Control.Lens as Lens (views)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.Vector ((!?))
 import qualified Data.Vector as Vector (findIndex)
 import Ribosome.Api.Buffer (bufferForFile, edit)
-import Ribosome.Api.Window (currentLine, setCursor, setLine, windowLine)
+import Ribosome.Api.Window (setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Nvim.Api.IO (nvimWinSetBuf, vimCommand, vimSetCurrentWindow, windowIsValid)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Scratch (killScratch, scratchPreviousWindow, scratchWindow, showInScratch)
+import Ribosome.Scratch (scratchPreviousWindow, scratchWindow)
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
@@ -42,16 +40,16 @@ eventByLine ::
   ParseReport ->
   Int ->
   Maybe OutputEvent
-eventByLine report@(ParseReport _ lines) line = do
-  (ReportLine eventIndex _) <- lines !? line
+eventByLine report@(ParseReport _ lines') line = do
+  (ReportLine eventIndex _) <- lines' !? line
   eventByIndex report eventIndex
 
 lineNumberByEventIndex ::
   ParseReport ->
   Int ->
   Maybe Int
-lineNumberByEventIndex(ParseReport _ lines) eventIndex =
-  Vector.findIndex matchEventIndex lines
+lineNumberByEventIndex(ParseReport _ lines') eventIndex =
+  Vector.findIndex matchEventIndex lines'
   where
     matchEventIndex (ReportLine ei _) = ei == eventIndex
 
@@ -112,8 +110,8 @@ selectCurrentLineEventFrom ::
   Window ->
   Window ->
   m ()
-selectCurrentLineEventFrom report outputWindow mainWindow =
-  selectMaybeEvent mainWindow =<< eventByLine report <$> windowLine outputWindow
+selectCurrentLineEventFrom report outputWindow' mainWindow =
+  selectMaybeEvent mainWindow =<< eventByLine report <$> windowLine outputWindow'
 
 currentReport ::
   MonadDeepState s CommandState m =>

@@ -1,20 +1,27 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module TogglePaneSpec(
+module Tmux.TogglePaneSpec(
   htf_thisModulesTests
 ) where
 
 import qualified Chiasma.Codec.Data as Codec (Pane)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Chiasma.Monad.Tmux as Tmux (read)
+import Chiasma.Test.Tmux (sleep)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
 import Ribosome.Orphans ()
+import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
 
 import Config (vars)
+import Myo.Command.Add (myoAddSystemCommand)
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Run (myoRun)
 import Myo.Data.Env (MyoN)
+import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Data.ViewCoords (viewCoords)
+import Myo.Ui.Default (setupDefaultTestUi)
 import Myo.Ui.Toggle (myoTogglePane)
 import Myo.Ui.View (createSpace, createWindow, insertLayout, insertPane)
 import Unit (tmuxSpecWithDef)
@@ -47,3 +54,21 @@ togglePaneSpec = do
 test_togglePane :: IO ()
 test_togglePane =
   vars >>= tmuxSpecWithDef togglePaneSpec
+
+shellPanePinSpec :: MyoN ()
+shellPanePinSpec = do
+  setupDefaultTestUi
+  addTmuxRunner
+  insertPane (viewCoords "vim" "vim" "make") (consPane sid)
+  myoAddSystemCommand (AddSystemCommandOptions sid ["tail"] Nothing (Just sid) Nothing)
+  myoRun sid
+  sleep 3
+  panes <- gassertRight =<< runTmuxE (Tmux.read @Codec.Pane "list-panes" ["-a"])
+  liftIO $ traverse print panes
+  gassertEqual 3 (length panes)
+  where
+    sid = Ident.Str "shell"
+
+test_shellPanePin :: IO ()
+test_shellPanePin =
+  tmuxGuiSpecDef shellPanePinSpec

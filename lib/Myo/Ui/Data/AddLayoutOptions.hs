@@ -21,7 +21,6 @@ data AddLayoutOptions =
     fixedSize :: Maybe Float,
     minimizedSize :: Maybe Float,
     weight :: Maybe Float,
-    position :: Maybe Float,
-    pin :: Maybe Bool
+    position :: Maybe Float
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode, Default)
