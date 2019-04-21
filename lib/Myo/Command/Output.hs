@@ -16,6 +16,7 @@ import Ribosome.Scratch (killScratch, showInScratch)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
 import Myo.Output.Data.OutputError (OutputError(NoEvents))
+import Myo.Output.Data.OutputEvent (EventIndex(EventIndex))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
@@ -71,7 +72,7 @@ renderParseResult ident output = do
   when (noEventsInReport report) (throwHoist (NoEvents ident))
   setL @CommandState CommandState.parseReport (Just report)
   jumpFirst <- setting Settings.outputJumpFirst
-  setL @CommandState CommandState.currentEvent (first' jumpFirst)
+  setL @CommandState CommandState.currentEvent (EventIndex (first' jumpFirst))
   renderReport report syntax
   navigateToCurrentEvent =<< setting Settings.outputAutoJump
   where

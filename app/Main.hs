@@ -5,4 +5,4 @@ import Myo.Plugin (plugin)
 
 main :: IO ()
 main =
-  bracketMyoTempDir $ \dir -> neovim defaultConfig {plugins = [plugin dir]}
+  bracketMyoTempDir $ \dir -> neovim defaultConfig { plugins = [plugin dir] }

@@ -18,7 +18,7 @@ import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, pa
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal, NoLocation, NotParsed))
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import qualified Myo.Output.Data.ParseReport as ParseReport (events)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
@@ -31,9 +31,9 @@ scratchName =
 
 eventByIndex ::
   ParseReport ->
-  Int ->
+  EventIndex ->
   Maybe OutputEvent
-eventByIndex (ParseReport events _) eventIndex =
+eventByIndex (ParseReport events _) (EventIndex eventIndex) =
   events !? eventIndex
 
 eventByLine ::
@@ -46,7 +46,7 @@ eventByLine report@(ParseReport _ lines') line = do
 
 lineNumberByEventIndex ::
   ParseReport ->
-  Int ->
+  EventIndex ->
   Maybe Int
 lineNumberByEventIndex(ParseReport _ lines') eventIndex =
   Vector.findIndex matchEventIndex lines'
@@ -95,7 +95,7 @@ selectEventByIndexFromReport ::
   MonadRibo m =>
   NvimE e m =>
   ParseReport ->
-  Int ->
+  EventIndex ->
   Window ->
   m ()
 selectEventByIndexFromReport report eventIndex window =
@@ -123,7 +123,7 @@ currentReport f =
 
 currentEvent ::
   MonadDeepState s CommandState m =>
-  m Int
+  m EventIndex
 currentEvent =
   getL @CommandState CommandState.currentEvent
 
@@ -133,10 +133,10 @@ cycleIndex ::
   Int ->
   m Bool
 cycleIndex offset = do
-  current <- currentEvent
+  (EventIndex current) <- currentEvent
   total <- currentReport (Lens.views ParseReport.events length)
   let new = (current + offset) `mod` total
-  setL @CommandState CommandState.currentEvent new
+  setL @CommandState CommandState.currentEvent (EventIndex new)
   return (new /= current)
 
 scratchErrorMaybe ::
@@ -167,7 +167,7 @@ navigateToEvent ::
   MonadRibo m =>
   NvimE e m =>
   Bool ->
-  Int ->
+  EventIndex ->
   m ()
 navigateToEvent jump eventIndex = do
   report <- currentReport id

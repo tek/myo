@@ -1,8 +1,12 @@
 module Myo.Output.Data.OutputEvent where
 
-import Prelude hiding (lines)
+import Data.Default (Default)
 
 import Myo.Output.Data.Location (Location)
+
+newtype EventIndex =
+  EventIndex Int
+  deriving (Eq, Show, Default)
 
 data OutputEvent =
   OutputEvent {

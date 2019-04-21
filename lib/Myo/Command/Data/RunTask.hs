@@ -5,6 +5,7 @@ module Myo.Command.Data.RunTask(
 
 import Chiasma.Data.Ident (Ident)
 import Myo.Command.Data.Command (Command)
+import Path (Abs, File, Path)
 
 data RunTaskDetails =
   Vim
@@ -24,7 +25,7 @@ data RunTaskDetails =
 data RunTask =
   RunTask {
     rtCommand :: Command,
-    rtLog :: FilePath,
+    rtLog :: Path Abs File,
     rtDetails :: RunTaskDetails
   }
   deriving (Eq, Show)

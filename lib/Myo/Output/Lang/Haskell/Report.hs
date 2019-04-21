@@ -16,7 +16,7 @@ import Text.Parser.Token (TokenParsing, whiteSpace)
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
@@ -115,7 +115,7 @@ formatLocation (Location path line _) =
 
 formatReportLine :: Int -> Location -> HaskellMessage -> Vector ReportLine
 formatReportLine index location message =
-  ReportLine index <$> Vector.fromList (formatLocation location : formatMessage message <> [""])
+  ReportLine (EventIndex index) <$> Vector.fromList (formatLocation location : formatMessage message <> [""])
 
 formatEvent :: Location -> Int -> Int -> HaskellMessage -> (OutputEvent, Vector ReportLine)
 formatEvent location level index message =

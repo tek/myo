@@ -35,13 +35,14 @@ dependencies:
 - lens
 - lifted-base
 - messagepack
-- messagepack
 - monad-control
 - mtl
 - network
 - nvim-hs
 - parsec
 - parsers
+- path
+- path-io
 - prettyprinter
 - regex-with-pcre
 - relude
@@ -97,6 +98,7 @@ default-extensions:
 - PartialTypeSignatures
 - PatternGuards
 - PolyKinds
+- QuasiQuotes
 - RankNTypes
 - RecordWildCards
 - ScopedTypeVariables

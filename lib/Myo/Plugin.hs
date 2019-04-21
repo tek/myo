@@ -7,7 +7,8 @@ import qualified Data.Map as Map (fromList)
 import Data.MessagePack (Object)
 import Myo.Output.Data.OutputError (OutputError)
 import Neovim (Neovim, NeovimPlugin, Plugin(..), wrapPlugin)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, MonadRibo, NvimE, RiboE)
+import Path (Abs, Dir, Path)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError)
@@ -21,24 +22,24 @@ import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoRun)
 import Myo.Command.Update (updateCommands)
-import Myo.Data.Env (Env, MyoE)
+import Myo.Data.Env (Env, MyoN)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
-import Myo.Init (initialize, myoPoll)
+import Myo.Init (initialize)
 import Myo.Quit (myoQuit)
+import Myo.Save (myoSave)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 import Myo.Ui.Update (updateUi)
 
-handleError :: Error -> MyoE Error (ConcNvimS Env) ()
+handleError :: Error -> MyoN ()
 handleError =
   reportError "myo"
 
-rpcHandlers :: [[RpcDef (RiboE Env Error (ConcNvimS Env))]]
+rpcHandlers :: [[RpcDef MyoN]]
 rpcHandlers =
   [
     $(rpcHandler (cmd []) 'myoDiag),
-    $(rpcHandler sync 'myoPoll),
     $(rpcHandlerDef 'myoAddSystemCommand),
     $(rpcHandlerDef 'myoAddShellCommand),
     $(rpcHandlerDef 'myoTogglePane),
@@ -95,6 +96,6 @@ plugin' :: Ribosome Env -> Plugin (Ribosome Env)
 plugin' env =
   riboPlugin "myo" env rpcHandlers mappings handleError variables
 
-plugin :: FilePath -> Neovim e NeovimPlugin
+plugin :: Path Abs Dir -> Neovim e NeovimPlugin
 plugin =
   wrapPlugin . plugin' <=< initialize

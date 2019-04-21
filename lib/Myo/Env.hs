@@ -1,11 +1,10 @@
 module Myo.Env where
 
 import Chiasma.Data.Views (Views)
-import System.Directory (getTemporaryDirectory)
-import System.FilePath (takeFileName, (</>))
+import Control.Monad.Catch (MonadMask)
+import Path (Abs, Dir, Path, dirname, parseRelDir, toFilePath, (</>))
+import Path.IO (createDirIfMissing, getCurrentDir, getTempDir, withTempDir)
 import System.Posix.User (getEffectiveUserName)
-import UnliftIO.Directory (createDirectoryIfMissing, getCurrentDirectory)
-import UnliftIO.Temporary (withTempDirectory)
 
 import Myo.Ui.Data.Space (Space)
 import Myo.Ui.Data.UiState (UiState)
@@ -23,11 +22,16 @@ myoSpaces ::
 myoSpaces =
   gets UiState._spaces
 
-bracketMyoTempDir :: (FilePath -> IO ()) -> IO ()
+bracketMyoTempDir ::
+  MonadMask m =>
+  MonadIO m =>
+  (Path Abs Dir -> m ()) ->
+  m ()
 bracketMyoTempDir thunk = do
-  name <- getEffectiveUserName
-  tmp <- getTemporaryDirectory
-  let base = tmp </> ("myo-" <> name)
-  createDirectoryIfMissing True base
-  project <- takeFileName <$> getCurrentDirectory
-  withTempDirectory base (project <> "-") thunk
+  name <- liftIO getEffectiveUserName
+  tmp <- getTempDir
+  sub <- parseRelDir ("myo-" <> name)
+  let base = tmp </> sub
+  createDirIfMissing True base
+  project <- dirname <$> getCurrentDir
+  withTempDir base (toFilePath project <> "-") thunk

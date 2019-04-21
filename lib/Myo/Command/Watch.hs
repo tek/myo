@@ -16,6 +16,7 @@ import Data.Conduit.Network.Unix (sourceSocket)
 import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan)
 import Data.Functor (void)
 import Network.Socket (Socket)
+import Path (Abs, File, Path, toFilePath)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report (processErrorReport')
@@ -60,12 +61,12 @@ listener ident sock listenChan = do
 listen ::
   (MonadRibo m, Nvim m, MonadIO m, MonadBaseControl IO m) =>
   Ident ->
-  FilePath ->
+  Path Abs File ->
   TMChan PaneOutput ->
   m ()
 listen ident logPath listenChan = do
-  Log.debug $ "listening on socket at " <> logPath
-  try (socketBind logPath) >>= \case
+  Log.debug $ "listening on socket at " <> toFilePath logPath
+  try (socketBind (toFilePath logPath)) >>= \case
     Right sock -> void $ fork $ listener ident sock listenChan
     Left (_ :: IOException) -> return ()
 
@@ -97,7 +98,7 @@ ensureWatcher = do
 watchPane ::
   (MonadRibo m, Nvim m, MonadBaseControl IO m, MonadIO m, MonadDeepState s CommandState m) =>
   Ident ->
-  FilePath ->
+  Path Abs File ->
   m ()
 watchPane ident logPath =
   listen ident logPath =<< ensureWatcher

@@ -9,17 +9,19 @@ import Data.DeepLenses (deepLenses)
 import Data.Default (Default)
 import Data.Map (Map)
 import GHC.Generics (Generic)
+import Path (Abs, File, Path)
 
 import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.CommandLog (CommandLog)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.RunningCommand (RunningCommand)
+import Myo.Output.Data.OutputEvent (EventIndex)
 import Myo.Output.Data.OutputHandler (OutputHandler)
 import Myo.Output.Data.ParseReport (ParseReport)
 import Myo.Output.Data.ParseResult (ParseResult)
 import Myo.Ui.Data.PaneOutput (PaneOutput)
 
-type LogPaths = Map Ident FilePath
+type LogPaths = Map Ident (Path Abs File)
 type Logs = Map Ident CommandLog
 
 data CommandState =
@@ -31,7 +33,7 @@ data CommandState =
     _running :: [RunningCommand],
     _parseResult :: Maybe ParseResult,
     _parseReport :: Maybe ParseReport,
-    _currentEvent :: Int,
+    _currentEvent :: EventIndex,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _watcherChan :: Maybe (TMChan PaneOutput)
   }
