@@ -30,7 +30,7 @@ import Myo.Output.ParseReport (
   scratchName,
   selectCurrentLineEventFrom,
   )
-import qualified Myo.Settings as Settings (outputAutoJump, outputJumpFirst)
+import qualified Myo.Settings as Settings (outputAutoJump, outputSelectFirst)
 
 mappings :: [Mapping]
 mappings =
@@ -71,7 +71,7 @@ renderParseResult ::
 renderParseResult ident output = do
   when (noEventsInReport report) (throwHoist (NoEvents ident))
   setL @CommandState CommandState.parseReport (Just report)
-  jumpFirst <- setting Settings.outputJumpFirst
+  jumpFirst <- setting Settings.outputSelectFirst
   setL @CommandState CommandState.currentEvent (EventIndex (first' jumpFirst))
   renderReport report syntax
   navigateToCurrentEvent =<< setting Settings.outputAutoJump

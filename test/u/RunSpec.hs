@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module RunSpec(
-  htf_thisModulesTests,
-) where
+module RunSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (Ident(Str))
 import qualified Control.Lens as Lens (at, view)
@@ -14,7 +12,7 @@ import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
 import Ribosome.Error.Report (reportError)
 import Test.Framework
 
-import Config (vars)
+import Config (defaultVars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.RunTask (RunTask)
@@ -46,4 +44,4 @@ runSpec = do
 
 test_run :: IO ()
 test_run =
-  vars >>= specWithDef runSpec
+  defaultVars >>= specWithDef runSpec

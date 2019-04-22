@@ -75,9 +75,8 @@ commandLogSocketBind ::
   MonadBase IO m =>
   Ident ->
   m Socket
-commandLogSocketBind ident = do
-  filePath <- commandLogPath ident
-  socketBind (toFilePath filePath)
+commandLogSocketBind =
+  socketBind <=< commandLogPath
 
 pipePaneToSocket ::
   (MonadIO m, MonadFree TmuxThunk m) =>
@@ -113,3 +112,22 @@ appendLog ident bytes =
   where
     append (Just (CommandLog prev cur)) = Just (CommandLog prev (cur <> bytes))
     append Nothing = Just (CommandLog [] bytes)
+
+pushCommandLog ::
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m ()
+pushCommandLog ident =
+  modifyL (logLens ident) (fmap push)
+  where
+    push (CommandLog prev cur) | ByteString.null cur =
+      CommandLog prev cur
+    push (CommandLog prev cur) =
+      CommandLog (cur : prev) ""
+
+pushCommandLogs ::
+  MonadDeepState s CommandState m =>
+  m ()
+pushCommandLogs = do
+  idents <- getsL @CommandState CommandState.logs Map.keys
+  traverse_ pushCommandLog idents

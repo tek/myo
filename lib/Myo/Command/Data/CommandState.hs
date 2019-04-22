@@ -10,6 +10,7 @@ import Data.Default (Default)
 import Data.Map (Map)
 import GHC.Generics (Generic)
 import Path (Abs, File, Path)
+import qualified Text.Show (Show(show))
 
 import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.CommandLog (CommandLog)
@@ -40,3 +41,7 @@ data CommandState =
   deriving (Generic, Default)
 
 deepLenses ''CommandState
+
+instance Text.Show.Show CommandState where
+  show (CommandState cmds hist lps ls rn _ prprt ce han _) =
+    "CommandState" ++ show (cmds, hist, lps, ls, rn, prprt, ce, han)

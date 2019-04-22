@@ -48,7 +48,7 @@ lineNumberByEventIndex ::
   ParseReport ->
   EventIndex ->
   Maybe Int
-lineNumberByEventIndex(ParseReport _ lines') eventIndex =
+lineNumberByEventIndex (ParseReport _ lines') eventIndex =
   Vector.findIndex matchEventIndex lines'
   where
     matchEventIndex (ReportLine ei _) = ei == eventIndex

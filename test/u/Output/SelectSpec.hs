@@ -15,6 +15,7 @@ import Ribosome.Test.Unit (fixture)
 import System.FilePath ((</>))
 import Test.Framework
 
+import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (parseResult)
 import Myo.Command.Output (renderParseResult)
@@ -29,6 +30,7 @@ import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Plugin (mappingOutputSelect)
+import Unit (tmuxSpec)
 
 events :: FilePath -> Vector OutputEvent
 events file =
@@ -60,4 +62,4 @@ outputSelectSpec = do
 
 test_outputSelect :: IO ()
 test_outputSelect =
-  tmuxGuiSpecDef outputSelectSpec
+  tmuxSpec (svar outputSelectFirst True . svar outputAutoJump False) outputSelectSpec

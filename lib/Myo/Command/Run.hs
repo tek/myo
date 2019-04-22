@@ -26,6 +26,7 @@ import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import Myo.Command.History (pushHistory)
+import Myo.Command.Log (pushCommandLog)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
 import Myo.Data.Env (Env, Runner(Runner))
@@ -86,6 +87,7 @@ runCommand ::
 runCommand cmd = do
   task <- runTask cmd
   runner <- findRunner task
+  pushCommandLog (cmdIdent cmd)
   executeRunner runner task
   -- storeRunningCommand cmd pid
   pushHistory cmd

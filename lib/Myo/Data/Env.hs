@@ -9,6 +9,7 @@ import Path (Abs, Dir, Path, absdir)
 import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Orphans ()
+import qualified Text.Show (Show(show))
 
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
@@ -41,3 +42,6 @@ deepLenses ''Env
 
 instance Default Env where
   def = Env def def def def (Str "myo") [absdir|/tmp/myo|]
+
+instance Text.Show.Show Env where
+  show (Env cmds ui errs _ ii td) = "Env" ++ show (cmds, ui, errs, ii, td)

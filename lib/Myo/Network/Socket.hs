@@ -1,11 +1,9 @@
-module Myo.Network.Socket(
-  unixSocket,
-  socketBind,
-) where
+module Myo.Network.Socket where
 
 import Control.Monad.Base (MonadBase, liftBase)
 import Network.Socket (SockAddr(SockAddrUnix), Socket, socket)
 import qualified Network.Socket as Socket (Family(AF_UNIX), SocketType(Datagram), bind)
+import Path (Abs, File, Path, toFilePath)
 
 unixSocket :: MonadBase IO m => m Socket
 unixSocket =
@@ -13,9 +11,9 @@ unixSocket =
 
 socketBind ::
   MonadBase IO m =>
-  FilePath ->
+  Path Abs File ->
   m Socket
-socketBind filePath = do
+socketBind socketPath = do
   sock <- unixSocket
-  liftBase $ Socket.bind sock $ SockAddrUnix filePath
+  liftBase $ Socket.bind sock $ SockAddrUnix (toFilePath socketPath)
   return sock

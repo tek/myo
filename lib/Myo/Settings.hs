@@ -26,8 +26,8 @@ vimPaneGeometry :: Setting ViewGeometry
 vimPaneGeometry =
   Setting "vim_pane_geometry" True (Just defaultGeometry)
 
-outputJumpFirst :: Setting Bool
-outputJumpFirst =
+outputSelectFirst :: Setting Bool
+outputSelectFirst =
   Setting "output_jump_first" True (Just False)
 
 outputAutoJump :: Setting Bool
@@ -41,3 +41,7 @@ systemCommands =
 shellCommands :: Setting [AddShellCommandOptions]
 shellCommands =
   Setting "shell_commands" True (Just [])
+
+resetOnSave :: Setting Bool
+resetOnSave =
+  Setting "reset_on_save" True (Just True)

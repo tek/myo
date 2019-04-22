@@ -1,15 +1,12 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Tmux.RunSpec(
-  htf_thisModulesTests,
-) where
+module Tmux.RunSpec (htf_thisModulesTests) where
 
 import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Test.Tmux (sleep)
 import Data.Text (Text)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
@@ -19,6 +16,7 @@ import Myo.Command.Run (myoRun)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
 import Myo.Tmux.Runner (addTmuxRunner)
+import Unit (tmuxGuiSpecDef)
 
 line1 :: Text
 line1 = "line 1"

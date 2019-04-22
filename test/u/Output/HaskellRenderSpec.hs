@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Output.HaskellRenderSpec(
-  htf_thisModulesTests,
-) where
+module Output.HaskellRenderSpec (htf_thisModulesTests) where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Functor (void)
@@ -15,11 +13,12 @@ import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (vimCommandOutput)
+import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
+import Ribosome.System.Time (sleep)
 import Ribosome.Test.Screenshot (assertScreenshot)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Test.Framework
 
+import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
@@ -31,18 +30,19 @@ import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
-
-events :: Vector OutputEvent
-events =
-  Vector.fromList [OutputEvent Nothing 0, OutputEvent Nothing 1]
+import Unit (tmuxSpec)
 
 loc :: Location
 loc =
   Location "/path/to/File.hs" 10 Nothing
 
+events :: Vector OutputEvent
+events =
+  Vector.fromList [OutputEvent (Just loc) 0, OutputEvent (Just loc) 1]
+
 reportLines :: Vector ReportLine
 reportLines =
-  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB") <> formatReportLine 0 loc (NoMethod "fmap")
+  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB") <> formatReportLine 1 loc (NoMethod "fmap")
 
 parsedOutput :: ParsedOutput
 parsedOutput =
@@ -117,6 +117,7 @@ haskellRenderSpec = do
   initialize''
   setupHighlights
   renderParseResult (Ident.Str "test") [parsedOutput]
+  vimCommand "wincmd w"
   content <- currentBufferContent
   gassertEqual target content
   syntax <- myoSyntax
@@ -125,4 +126,4 @@ haskellRenderSpec = do
 
 test_haskellRender :: IO ()
 test_haskellRender =
-  tmuxGuiSpecDef haskellRenderSpec
+  tmuxSpec (svar outputSelectFirst True . svar outputAutoJump False) haskellRenderSpec

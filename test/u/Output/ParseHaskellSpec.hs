@@ -71,18 +71,18 @@ haskellOutput =
 
 target :: Vector Text
 target = Vector.fromList [
-  "/path/to/Module/File.hs \57505 14",
+  "/path/to/Module/File.hs \57505 13",
   "type mismatch",
   "TypeA",
   "TypeB",
   "",
-  "/path/to/Module/File.hs \57505 20",
+  "/path/to/Module/File.hs \57505 19",
   "type not in scope: Something",
   "",
-  "/path/to/Module/File.hs \57505 3",
+  "/path/to/Module/File.hs \57505 2",
   "method not implemented: meth",
   "",
-  "/path/to/file.hs \57505 6",
+  "/path/to/file.hs \57505 5",
   "type mismatch",
   "t0 Data1 -> StateT (ReaderT e0) ()",
   "StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0",

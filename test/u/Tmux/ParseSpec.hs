@@ -8,7 +8,6 @@ import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Test.Tmux (sleep)
 import qualified Data.ByteString.Char8 as ByteString (lines)
 import Data.Text (Text)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Test.Framework
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -26,6 +25,7 @@ import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Tmux.Runner (addTmuxRunner)
+import Unit (tmuxSpecDef)
 
 line1 :: Text
 line1 = "line 1"
@@ -39,8 +39,8 @@ lang = CommandLanguage "echo"
 parseEcho :: Text -> Either OutputError ParsedOutput
 parseEcho = undefined
 
-parseSpec :: MyoN ()
-parseSpec = do
+parseTmuxSpec :: MyoN ()
+parseTmuxSpec = do
   let
     ident = Str "cmd"
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
@@ -56,6 +56,6 @@ parseSpec = do
   gassertBool $ encodeUtf8 line2 `elem` log'
   myoParse $ ParseOptions Nothing Nothing Nothing
 
-test_parse :: IO ()
-test_parse =
-  tmuxGuiSpecDef parseSpec
+test_parseTmux :: IO ()
+test_parseTmux =
+  tmuxSpecDef parseTmuxSpec

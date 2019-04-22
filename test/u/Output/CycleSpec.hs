@@ -7,10 +7,8 @@ module Output.CycleSpec(
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Ribosome.Api.Window (currentCursor, cursor)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Plugin.Mapping (executeMapping)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
 import Ribosome.Test.Unit (fixture)
@@ -31,8 +29,7 @@ import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.ParseReport (outputWindow)
-import Myo.Plugin (mappingOutputSelect)
-import qualified Myo.Settings as Settings (outputJumpFirst)
+import qualified Myo.Settings as Settings (outputSelectFirst)
 
 loc1 :: FilePath -> Location
 loc1 file =
@@ -66,7 +63,7 @@ cycleSpecRender = do
 
 outputPrevSpec :: MyoN ()
 outputPrevSpec = do
-  updateSetting Settings.outputJumpFirst False
+  updateSetting Settings.outputSelectFirst False
   ow <- cycleSpecRender
   currentCursorIs 3 4
   cursorIs 5 0 ow
@@ -80,7 +77,7 @@ test_outputPrev =
 
 outputNextSpec :: MyoN ()
 outputNextSpec = do
-  updateSetting Settings.outputJumpFirst True
+  updateSetting Settings.outputSelectFirst True
   ow <- cycleSpecRender
   currentCursorIs 9 2
   cursorIs 0 0 ow

@@ -1,27 +1,21 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Tmux.UpdateSpec(
-  htf_thisModulesTests,
-) where
+module Tmux.UpdateSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (identText)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Chiasma.Ui.Data.View (TreeSub(TreeNode, TreeLeaf), View(View))
-import qualified Control.Lens as Lens (toListOf)
+import Chiasma.Ui.Data.View (View(View))
 import Control.Monad.Trans.Except (ExceptT)
 import Data.Bifoldable (bifoldMap)
 import Data.Default (def)
-import qualified Data.Map as Map (singleton)
-import Data.MessagePack (Object)
 import Neovim (Neovim, Plugin(..))
+import Path (Abs, Dir, Path)
 import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Api.Variable (setVar)
-import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
-import Ribosome.Msgpack.Encode (toMsgpack)
-import Ribosome.Nvim.Api.IO (vimCallFunction, vimGetVar, vimSetVar)
+import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
 import Ribosome.Test.Await (await)
@@ -29,14 +23,9 @@ import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
 import Test.Framework
 
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Command (Command(Command))
-import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (commands)
 import Myo.Data.Env (Env(_tempDir))
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, variables)
-import qualified Myo.Settings as Settings (systemCommands)
 import qualified Myo.Ui.Data.AddLayoutOptions as AddLayoutOptions (AddLayoutOptions(layout, ident))
 import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions(layout, ident))
 import Myo.Ui.Data.Space (Space(Space))
@@ -67,7 +56,7 @@ paneData =
 
 $(return [])
 
-plugin :: FilePath -> IO (Plugin (Ribosome Env))
+plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
 plugin tempDir = do
   ribo <- newRibosome "myo" def { _tempDir = tempDir }
   return $ riboPlugin "myo" ribo [$(rpcHandler sync 'paneData)] [] handleError variables

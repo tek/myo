@@ -10,11 +10,9 @@ import qualified Chiasma.Monad.Tmux as Tmux (read)
 import Chiasma.Test.Tmux (sleep)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
 import Ribosome.Orphans ()
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
 
-import Config (vars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)
@@ -24,7 +22,7 @@ import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Myo.Ui.Toggle (myoTogglePane)
 import Myo.Ui.View (createSpace, createWindow, insertLayout, insertPane)
-import Unit (tmuxSpecWithDef)
+import Unit (tmuxSpecDef)
 
 layout :: View Layout
 layout = consLayoutVertical (Ident.Str "l")
@@ -53,7 +51,7 @@ togglePaneSpec = do
 
 test_togglePane :: IO ()
 test_togglePane =
-  vars >>= tmuxSpecWithDef togglePaneSpec
+  tmuxSpecDef togglePaneSpec
 
 shellPanePinSpec :: MyoN ()
 shellPanePinSpec = do
@@ -64,11 +62,10 @@ shellPanePinSpec = do
   myoRun sid
   sleep 3
   panes <- gassertRight =<< runTmuxE (Tmux.read @Codec.Pane "list-panes" ["-a"])
-  liftIO $ traverse print panes
   gassertEqual 3 (length panes)
   where
     sid = Ident.Str "shell"
 
 test_shellPanePin :: IO ()
 test_shellPanePin =
-  tmuxGuiSpecDef shellPanePinSpec
+  tmuxSpecDef shellPanePinSpec

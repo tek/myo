@@ -1,18 +1,15 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module DiagSpec(
-  htf_thisModulesTests
-) where
+module DiagSpec (htf_thisModulesTests) where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Test.Framework
 
-import Config (vars)
 import Myo.Data.Env (MyoN)
 import Myo.Diag (myoDiag)
-import Unit (tmuxSpecWithDef)
+import Unit (tmuxSpecDef)
 
 target :: [Text]
 target = [
@@ -20,8 +17,11 @@ target = [
   "",
   "## Commands",
   "",
-  "## Errors",
-  ""
+  "",
+  "## Ui",
+  "",
+  "",
+  "## Errors"
   ]
 
 diagSpec :: MyoN ()
@@ -32,4 +32,4 @@ diagSpec = do
 
 test_diag :: IO ()
 test_diag =
-  vars >>= tmuxSpecWithDef diagSpec
+  tmuxSpecDef diagSpec

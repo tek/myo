@@ -4,6 +4,7 @@ import Chiasma.Data.Views (Views)
 import Control.Monad.Catch (MonadMask)
 import Path (Abs, Dir, Path, dirname, parseRelDir, toFilePath, (</>))
 import Path.IO (createDirIfMissing, getCurrentDir, getTempDir, withTempDir)
+import System.FilePath (dropTrailingPathSeparator)
 import System.Posix.User (getEffectiveUserName)
 
 import Myo.Ui.Data.Space (Space)
@@ -34,4 +35,4 @@ bracketMyoTempDir thunk = do
   let base = tmp </> sub
   createDirIfMissing True base
   project <- dirname <$> getCurrentDir
-  withTempDir base (toFilePath project <> "-") thunk
+  withTempDir base (dropTrailingPathSeparator (toFilePath project)) thunk

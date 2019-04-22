@@ -12,6 +12,7 @@ import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Test.Ui (windowCountIs)
 import Test.Framework
 
+import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
@@ -23,6 +24,7 @@ import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Plugin (mappingOutputQuit)
+import Unit (tmuxSpec)
 
 events :: Vector OutputEvent
 events =
@@ -50,4 +52,4 @@ outputQuitSpec = do
 
 test_outputQuit :: IO ()
 test_outputQuit =
-  tmuxGuiSpecDef outputQuitSpec
+  tmuxSpec (svar outputSelectFirst True . svar outputAutoJump False) outputQuitSpec

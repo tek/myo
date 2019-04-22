@@ -49,7 +49,9 @@ rpcHandlers =
     $(rpcHandler (cmd []) 'myoParseLatest),
     $(rpcHandlerDef 'myoPrev),
     $(rpcHandlerDef 'myoNext),
-    $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit)
+    $(rpcHandlerDef 'myoSave),
+    $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
+    $(rpcHandler (autocmd "BufWritePre" . sync) 'myoSave)
     ]
 
 mappingOutputQuit ::

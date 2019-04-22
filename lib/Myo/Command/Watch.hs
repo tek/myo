@@ -66,7 +66,7 @@ listen ::
   m ()
 listen ident logPath listenChan = do
   Log.debug $ "listening on socket at " <> toFilePath logPath
-  try (socketBind (toFilePath logPath)) >>= \case
+  try (socketBind logPath) >>= \case
     Right sock -> void $ fork $ listener ident sock listenChan
     Left (_ :: IOException) -> return ()
 
