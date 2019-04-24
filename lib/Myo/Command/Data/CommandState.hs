@@ -15,12 +15,12 @@ import qualified Text.Show (Show(show))
 import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.CommandLog (CommandLog)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
+import Myo.Command.Data.MonitorEvent (MonitorEvent)
 import Myo.Command.Data.RunningCommand (RunningCommand)
 import Myo.Output.Data.OutputEvent (EventIndex)
 import Myo.Output.Data.OutputHandler (OutputHandler)
 import Myo.Output.Data.ParseReport (ParseReport)
 import Myo.Output.Data.ParseResult (ParseResult)
-import Myo.Ui.Data.PaneOutput (PaneOutput)
 
 type LogPaths = Map Ident (Path Abs File)
 type Logs = Map Ident CommandLog
@@ -36,7 +36,7 @@ data CommandState =
     _parseReport :: Maybe ParseReport,
     _currentEvent :: EventIndex,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
-    _watcherChan :: Maybe (TMChan PaneOutput)
+    _monitorChan :: Maybe (TMChan MonitorEvent)
   }
   deriving (Generic, Default)
 

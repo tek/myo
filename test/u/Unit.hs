@@ -41,6 +41,10 @@ specWithDef :: MyoN () -> Vars -> IO ()
 specWithDef =
   specWith def
 
+specDef :: MyoN () -> IO ()
+specDef thunk =
+  specWithDef thunk def
+
 withTmux :: MyoN () -> TmuxNative -> MyoN ()
 withTmux thunk (TmuxNative (Just socket)) = do
   _ <- updateSetting Settings.detectUi True

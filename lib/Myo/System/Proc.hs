@@ -2,19 +2,25 @@ module Myo.System.Proc where
 
 import Conduit (ConduitT, runConduit, sinkList, (.|))
 import Control.Applicative (Alternative)
-import Control.Exception (IOException, try)
+import Control.Exception (IOException)
+import Control.Exception.Lifted (try, tryJust)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Attoparsec.ByteString (parseOnly)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Attoparsec.Text (parseOnly)
 import Data.Bifunctor (first)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B (readFile)
 import Data.Conduit.List (unfoldM)
 import Data.List.NonEmpty (NonEmpty((:|)))
+import Path (absdir, toFilePath)
+import Path.IO (listDir)
 import Ribosome.Data.Functor ((<$<))
 import System.FilePath (FilePath, (</>))
 import Text.Parser.Char (CharParsing, anyChar, noneOf, spaces)
 import Text.Parser.Combinators (many, skipMany)
 import Text.Parser.Token (TokenParsing, decimal, parens)
+import Text.RE.PCRE.Text (RE, matchedText, re, (?=~))
+import UnliftIO.Directory (doesPathExist)
 
 procStatPpid :: (Alternative m, CharParsing m, TokenParsing m, Monad m) => m Int
 procStatPpid = do
@@ -22,7 +28,7 @@ procStatPpid = do
   skipMany anyChar
   return $ fromIntegral pp
 
-parseProcStatPpid :: ByteString -> Either Text Int
+parseProcStatPpid :: Text -> Either Text Int
 parseProcStatPpid =
   mapLeft toText . parseOnly procStatPpid
 
@@ -30,14 +36,23 @@ procStatPath :: Int -> FilePath
 procStatPath pid =
   "/proc" </> show pid </> "stat"
 
-ppid :: MonadIO m => Int -> m (Maybe Int)
+ppid ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Int ->
+  m (Maybe Int)
 ppid =
-  parse . err <$< liftIO . try @IOException . B.readFile . procStatPath
+  parse . (first err) <$< try . readFile . procStatPath
   where
-    err = first (const "failed to read procstat")
+    err (_ :: SomeException) =
+      "failed to read procstat"
     parse = rightToMaybe . (>>= parseProcStatPpid)
 
-ppidsC :: MonadIO m => Int -> ConduitT () Int m ()
+ppidsC ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Int ->
+  ConduitT () Int m ()
 ppidsC =
   unfoldM unfolder
   where
@@ -46,6 +61,41 @@ ppidsC =
 -- |Query /proc/$pid/stat and extract the parent PID
 -- recurse until PID 0 is hit
 -- return all found parents, including the target PID itself, starting with the target
-ppids :: MonadIO m => Int -> m (NonEmpty Int)
+ppids ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Int ->
+  m (NonEmpty Int)
 ppids pid =
   (pid :|) <$> runConduit (ppidsC pid .| sinkList)
+
+pidRegex :: RE
+pidRegex =
+  [re|[0-9]+|]
+
+-- |Query /proc for all PIDs and their parent PIDs, then filter those whose PPIDs match the supplied PID
+childPids ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Int ->
+  m [Int]
+childPids pid = do
+  (dirs, _) <- listDir [absdir|/proc|]
+  let
+    pidStrings = catMaybes ((\ a -> matchedText (a ?=~ pidRegex)) . toText . toFilePath <$> dirs)
+    pids = mapMaybe (rightToMaybe . readEither) pidStrings
+  mapMaybe matchParent <$> traverse withPpid pids
+  where
+    withPpid pid' =
+      (pid',) <$$> ppid pid'
+    matchParent (Just (p, pp)) | pp == pid =
+      Just p
+    matchParent _ =
+      Nothing
+
+processExists ::
+  MonadIO m =>
+  Int ->
+  m Bool
+processExists =
+  doesPathExist . procStatPath

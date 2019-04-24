@@ -22,7 +22,8 @@ instance Show e => RunInIO (RiboE s e (ConcNvimS s)) where
   runInIOSE =
     fmap catch . embed
     where
-      catch run = fmap (either (Left . RunError.IOEmbed . show) id) . run
+      catch run =
+        either (Left . RunError.IOEmbed . show) id <$$> run
 
 canRun :: RunTask -> Runner -> Bool
 canRun task (Runner _ can _) =
@@ -47,7 +48,7 @@ addRunner ::
   m ()
 addRunner ident run can = do
   er <- runInIOSE run
-  prepend (Env.runners :: Lens' Env [Runner]) (Runner ident can er)
+  prepend @Env Env.runners (Runner ident can er)
 
 mkRunner :: MonadDeepError e RunError m => (RunTask -> m ()) -> RunTask -> m (Either RunError ())
 mkRunner run =

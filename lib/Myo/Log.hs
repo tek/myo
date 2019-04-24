@@ -11,7 +11,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (traverse_)
 import Data.Text.Prettyprint.Doc (line, (<>))
 import Data.Text.Prettyprint.Doc.Util (putDocW)
-import Ribosome.Log (debug, err, info, p, prefixed)
+import Ribosome.Log (debug, err, info, prefixed)
 
 import Myo.Data.Env (Env)
 import Myo.Ui.View (envTreesLens, envViewsLens)

@@ -2,7 +2,7 @@ module Myo.Diag where
 
 import Data.Functor (void)
 import Data.Text.Prettyprint.Doc (Doc, line, pretty, vsep, (<>))
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, inspectErrors)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
 import Ribosome.Data.Syntax (
@@ -18,7 +18,6 @@ import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands)
 import Myo.Data.Env (Env)
-import qualified Myo.Data.Env as Env (errors)
 import Myo.Ui.Data.Space (Space)
 import Myo.Ui.Data.UiState (UiState)
 import qualified Myo.Ui.Data.UiState as UiState (spaces)
@@ -60,6 +59,7 @@ errorDiagnostics errs =
   "## Errors" <> line <> pretty errs
 
 diagnosticsData ::
+  MonadRibo m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadDeepState s UiState m =>
@@ -67,7 +67,7 @@ diagnosticsData ::
 diagnosticsData = do
   cmds <- getsL @CommandState CommandState.commands cmdDiagnostics
   ui <- getsL @UiState UiState.spaces uiDiagnostics
-  errors <- getsL @Env Env.errors errorDiagnostics
+  errors <- inspectErrors errorDiagnostics
   return $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
   where
     headline = "# Diagnostics"

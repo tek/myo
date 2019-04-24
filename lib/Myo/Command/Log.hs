@@ -18,6 +18,7 @@ import qualified Data.Map as Map (keys)
 import Network.Socket (Socket)
 import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
 
+import Myo.Command.Command (mainCommand)
 import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
 import Myo.Command.Data.CommandState (CommandState, Logs)
 import qualified Myo.Command.Data.CommandState as CommandState (logPaths, logs)
@@ -99,8 +100,9 @@ commandLog ::
   MonadDeepState s CommandState m =>
   Ident ->
   m (Maybe CommandLog)
-commandLog ident =
-  getL (logLens ident)
+commandLog ident = do
+  logIdent <- mainCommand ident
+  getL (logLens logIdent)
 
 appendLog ::
   MonadDeepState s CommandState m =>

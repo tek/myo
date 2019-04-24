@@ -17,7 +17,7 @@ data RunTaskDetails =
   }
   |
   UiShell {
-    shell :: Command,
+    shell :: Ident,
     pane :: Ident
   }
   deriving (Eq, Show)

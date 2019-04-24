@@ -1,5 +1,3 @@
-{-# LANGUAGE UndecidableInstances #-}
-
 module Myo.Command.Run where
 
 import Chiasma.Data.Ident (Ident)
@@ -12,6 +10,7 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.DeepState (MonadDeepState, gets)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Maybe (isNothing)
 import Ribosome.Control.Monad.Ribo (MonadRibo, prepend)
 import Ribosome.Tmux.Run (RunTmux)
@@ -23,43 +22,42 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (running)
 import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask)
+import Myo.Command.Data.RunTask (RunTask, RunTaskDetails)
+import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
+import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import Myo.Command.History (pushHistory)
 import Myo.Command.Log (pushCommandLog)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
+import Myo.Command.RunningCommand (isCommandRunning)
 import Myo.Data.Env (Env, Runner(Runner))
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
+import Myo.Ui.Toggle (ensurePaneOpen)
 
-findRunningCommand ::
+ensurePrerequisites ::
+  RunTmux m =>
+  MonadRibo m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  Ident ->
-  m (Maybe RunningCommand)
-findRunningCommand ident =
-  gets f
-  where
-    f :: CommandState -> Maybe RunningCommand
-    f = Lens.preview $ CommandState.running . matchIdentL ident
-
-addRunningCommand ::
-  MonadDeepState s CommandState m =>
-  Ident ->
-  Maybe Pid ->
+  MonadThrow m =>
+  RunTaskDetails ->
   m ()
-addRunningCommand ident pid =
-  prepend (CommandState.running :: Lens' CommandState [RunningCommand]) (RunningCommand ident pid)
-
-storeRunningCommand ::
-  MonadDeepState s CommandState m =>
-  Command ->
-  Maybe Pid ->
-  m ()
-storeRunningCommand (Command _ ident _ _ _) pid = do
-  existing <- findRunningCommand ident
-  when (isNothing existing) $ addRunningCommand ident pid
+ensurePrerequisites (RunTaskDetails.UiSystem ident) =
+  ensurePaneOpen ident
+ensurePrerequisites (RunTaskDetails.UiShell shellIdent paneIdent) = do
+  running <- isCommandRunning shellIdent
+  unless running (myoRun shellIdent)
+ensurePrerequisites _ =
+  return ()
 
 executeRunner ::
   MonadIO m =>
@@ -76,9 +74,11 @@ runCommand ::
   RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
+  MonadBaseControl IO m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
   MonadDeepError e RunError m =>
+  MonadDeepError e CommandError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadThrow m =>
@@ -86,23 +86,24 @@ runCommand ::
   m ()
 runCommand cmd = do
   task <- runTask cmd
+  ensurePrerequisites (RunTask.rtDetails task)
   runner <- findRunner task
   pushCommandLog (cmdIdent cmd)
   executeRunner runner task
-  -- storeRunningCommand cmd pid
   pushHistory cmd
 
 myoRun ::
   RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
+  MonadBaseControl IO m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
   MonadDeepError e RunError m =>
+  MonadDeepError e CommandError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadThrow m =>
-  MonadDeepError e CommandError m =>
   Ident ->
   m ()
 myoRun =

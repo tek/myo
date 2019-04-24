@@ -25,6 +25,7 @@ import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Class (lift)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Except (runExceptT)
 import Control.Monad.Trans.Maybe (MaybeT(..))
 import Data.Functor.Syntax ((<$$>))
@@ -90,12 +91,19 @@ setupDefaultTestUi = do
   setupDefaultUi
   modify $ insertInitialViews (SessionId 0) (WindowId 0) (PaneId 0)
 
-containsVimPid :: MonadIO m => Codec.PanePid -> Int -> m Bool
+containsVimPid ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Codec.PanePid ->
+  Int ->
+  m Bool
 containsVimPid (Codec.PanePid _ panePid) =
   (panePid `elem`) <$$> ppids
 
 detectVimPidPane ::
-  (MonadIO m, Nvim m) =>
+  MonadIO m =>
+  Nvim m =>
+  MonadBaseControl IO m =>
   Int ->
   TmuxProg m Codec.PaneCoords
 detectVimPidPane vpid = do
@@ -108,7 +116,9 @@ detectVimPidPane vpid = do
       MaybeT $ pane paneId
 
 detectVimPane ::
-  (MonadIO m, Nvim m) =>
+  MonadIO m =>
+  Nvim m =>
+  MonadBaseControl IO m =>
   TmuxProg m Codec.PaneCoords
 detectVimPane = do
   result <- runExceptT @RpcError vimPid
@@ -118,6 +128,7 @@ detectDefaultUi ::
   NvimE e m =>
   MonadRibo m =>
   MonadIO m =>
+  MonadBaseControl IO m =>
   Nvim m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s Views m =>

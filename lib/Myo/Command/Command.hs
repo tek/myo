@@ -50,3 +50,7 @@ latestCommand =
   where
     l :: Lens' CommandState [HistoryEntry]
     l = CommandState.history
+
+mainCommand :: Ident -> m Ident
+mainCommand =
+  undefined

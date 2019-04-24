@@ -8,7 +8,7 @@ import Myo.Command.Data.Pid (Pid)
 data RunningCommand =
   RunningCommand {
     runningCommandIdent :: Ident,
-    runningCommandPid :: (Maybe Pid)
+    runningCommandPid :: Pid
   }
   deriving (Eq, Show)
 

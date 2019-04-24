@@ -31,6 +31,7 @@ dependencies:
 - exceptions
 - filepath
 - free
+- hourglass
 - hslogger
 - lens
 - lifted-base

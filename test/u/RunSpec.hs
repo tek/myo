@@ -6,6 +6,7 @@ import Chiasma.Data.Ident (Ident(Str))
 import qualified Control.Lens as Lens (at, view)
 import Control.Monad.IO.Class (liftIO)
 import qualified Control.Monad.State.Class as State (gets)
+import Ribosome.Control.Monad.Ribo (inspectErrors)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
 import Ribosome.Data.Errors (ComponentName(ComponentName))
 import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
@@ -18,9 +19,8 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSyst
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner, mkRunner)
-import Myo.Data.Env (MyoN)
-import qualified Myo.Data.Env as Env (errors)
-import Unit (specWithDef)
+import Myo.Data.Env (Env, MyoN)
+import Unit (specDef)
 
 testError :: Text
 testError = "error"
@@ -32,16 +32,16 @@ runDummy :: RunTask -> MyoN ()
 runDummy _ =
   reportError cname [testError]
 
-runSpec :: MyoN ()
-runSpec = do
+runSystemSpec :: MyoN ()
+runSystemSpec = do
   let ident = Str "cmd"
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing
-  _ <- addRunner (Str "dummy") (mkRunner runDummy) (const True)
+  addRunner (Str "dummy") (mkRunner runDummy) (const True)
   myoRun ident
-  loggedError <- State.gets $ Lens.view $ Env.errors . Errors.componentErrors . Lens.at (ComponentName cname)
+  loggedError <- inspectErrors $ Lens.view $ Errors.componentErrors . Lens.at (ComponentName cname)
   let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError
   liftIO $ assertEqual (Just [testError]) errorReport
 
-test_run :: IO ()
-test_run =
-  defaultVars >>= specWithDef runSpec
+test_runSystem :: IO ()
+test_runSystem =
+  specDef runSystemSpec

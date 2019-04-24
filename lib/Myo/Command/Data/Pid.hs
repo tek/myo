@@ -1,7 +1,5 @@
-module Myo.Command.Data.Pid(
-  Pid(..),
-) where
+module Myo.Command.Data.Pid where
 
 newtype Pid =
-  Pid Int
+  Pid { pidNum :: Int }
   deriving (Eq, Show)

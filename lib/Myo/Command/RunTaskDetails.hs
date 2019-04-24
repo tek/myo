@@ -1,13 +1,15 @@
-module Myo.Command.RunTaskDetails(
-  runDetails,
-) where
+module Myo.Command.RunTaskDetails where
 
 import Chiasma.Data.Ident (Ident)
 import Control.Monad.DeepError (MonadDeepError)
 
+import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
+import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter (CommandInterpreter(..))
+import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 
@@ -19,23 +21,33 @@ uiSystemTaskDetails :: Ident -> RunTaskDetails
 uiSystemTaskDetails = RunTaskDetails.UiSystem
 
 uiShellTaskDetails ::
-  (MonadDeepError e RunError m) =>
-  Ident ->
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e RunError m =>
   Ident ->
   m RunTaskDetails
-uiShellTaskDetails =
-  undefined
+uiShellTaskDetails shellIdent = do
+  target <- extractTarget =<< cmdInterpreter <$> commandByIdent shellIdent
+  return $ RunTaskDetails.UiShell shellIdent target
+  where
+    extractTarget (CommandInterpreter.System (Just target)) =
+      return target
+    extractTarget _ = do
+      shell <- commandByIdent shellIdent
+      throwHoist (RunError.InvalidShell shell)
 
 vimTaskDetails :: RunTaskDetails
 vimTaskDetails = undefined
 
 runDetails ::
-  (MonadDeepError e RunError m) =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e RunError m =>
   Command ->
   m RunTaskDetails
 runDetails (Command interpreter ident _ _ _) = analyze interpreter
   where
     analyze (CommandInterpreter.System Nothing) = return systemTaskDetails
     analyze (CommandInterpreter.System (Just paneIdent)) = return $ uiSystemTaskDetails paneIdent
-    analyze (CommandInterpreter.Shell paneIdent) = uiShellTaskDetails ident paneIdent
+    analyze (CommandInterpreter.Shell shellIdent) = uiShellTaskDetails shellIdent
     analyze (CommandInterpreter.Vim _ _) = return vimTaskDetails

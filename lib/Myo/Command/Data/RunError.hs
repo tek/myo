@@ -33,6 +33,8 @@ data RunError =
   IOEmbed Text
   |
   SocketFailure
+  |
+  InvalidShell Cmd.Command
   deriving Show
 
 deepPrisms ''RunError
@@ -50,3 +52,7 @@ instance ReportError RunError where
   errorReport (Rpc e) = errorReport e
   errorReport (IOEmbed e) = ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
   errorReport SocketFailure = ErrorReport "internal error" ["could not create listener socket"] ERROR
+  errorReport (InvalidShell command@(Cmd.Command _ ident _ _ _)) =
+    ErrorReport msg ["RunError.InvalidShell:", show command] ERROR
+    where
+      msg = "invalid command for shell: " <> show ident
