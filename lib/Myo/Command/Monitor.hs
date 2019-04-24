@@ -5,7 +5,7 @@ import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Monad.DeepState (MonadDeepState, getL, setL)
+import Control.Monad.DeepState (getL, MonadDeepState, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
@@ -13,7 +13,7 @@ import qualified Data.ByteString as ByteString (concat)
 import qualified Data.ByteString.Lazy as LB (ByteString, toChunks)
 import qualified Data.ByteString.Search as ByteString (replace)
 import Data.Conduit.Network.Unix (sourceSocket)
-import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan, writeTMChan)
+import Data.Conduit.TMChan (newTMChan, sinkTMChan, sourceTMChan, TMChan, writeTMChan)
 import Data.Functor (void)
 import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Network.Socket (Socket)
@@ -51,6 +51,7 @@ sanitizeOutput =
 -- on a tick, check and update or remove pid job after timeout
 -- also, check running commands for being alive
 handleEvent ::
+  MonadRibo m =>
   MonadDeepState s CommandState m =>
   MonadIO m =>
   MonadBaseControl IO m =>
@@ -60,10 +61,10 @@ handleEvent (CommandOutput ident bytes) =
   appendLog ident (sanitizeOutput bytes)
 handleEvent event@(CommandPid ident findPid started) = do
   now <- liftIO timeCurrent
-  when (now - started < Elapsed (Seconds 3)) $ void . fork $ do
-    pid <- liftIO findPid
-    maybe recurse (storeRunningCommand ident) pid
+  when (now - started < Elapsed (Seconds 3)) check
   where
+    check =
+      void . fork . maybe recurse (storeRunningCommand ident) =<< liftIO findPid
     recurse =
       sleep 0.1 *> handleEvent event
 

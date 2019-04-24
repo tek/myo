@@ -26,6 +26,7 @@ import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner, mkRunner)
+import Myo.Command.RunningCommand (isCommandRunning)
 import Myo.Data.Env (MyoN)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
@@ -75,11 +76,11 @@ tmuxRunShellSpec = do
   myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines (Just "tmux") shellIdent Nothing
   myoRun cmdIdent
   await firstCondition paneContent
-  await gassertNotEmpty (getL @CommandState CommandState.running)
+  await gassertBool (isCommandRunning shellIdent)
   myoRun cmdIdent
   await secondCondition paneContent
-  killCommand "cat"
-  sleep 0.5
+  killCommand shellIdent
+  await (gassertBool . not) (isCommandRunning shellIdent)
   myoRun cmdIdent
   await thirdCondition paneContent
   where

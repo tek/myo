@@ -14,6 +14,7 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (running)
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
+import qualified Myo.Log as Log
 import Myo.System.Proc (processExists)
 
 findRunningCommand ::
@@ -27,11 +28,13 @@ findRunningCommand ident =
     f = Lens.preview $ CommandState.running . matchIdentL ident
 
 storeRunningCommand ::
+  MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
   Pid ->
   m ()
-storeRunningCommand ident pid =
+storeRunningCommand ident pid = do
+  Log.debug @Text $ "storing running command `" <> show ident <> "` with pid " <> show pid
   modifyL @CommandState CommandState.running update
   where
     update rcs =
