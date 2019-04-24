@@ -1,24 +1,25 @@
 module Myo.Command.Monitor where
 
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident, sameIdent)
 import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Monad.DeepState (getL, MonadDeepState, setL)
+import Control.Monad.DeepState (MonadDeepState, getL, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (concat)
 import qualified Data.ByteString.Lazy as LB (ByteString, toChunks)
 import qualified Data.ByteString.Search as ByteString (replace)
+import Data.Conduit.List (unfoldM)
 import Data.Conduit.Network.Unix (sourceSocket)
-import Data.Conduit.TMChan (newTMChan, sinkTMChan, sourceTMChan, TMChan, writeTMChan)
+import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan, writeTMChan)
 import Data.Functor (void)
 import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Network.Socket (Socket)
 import Path (Abs, File, Path, toFilePath)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
+import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, prepend)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report (processErrorReport')
 import Ribosome.System.Time (sleep)
@@ -26,8 +27,9 @@ import System.Hourglass (timeCurrent)
 import System.Log (Priority(NOTICE))
 
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (monitorChan)
-import Myo.Command.Data.MonitorEvent (MonitorEvent(CommandOutput, CommandPid))
+import qualified Myo.Command.Data.CommandState as CommandState (monitorChan, pendingCommands)
+import Myo.Command.Data.MonitorEvent (MonitorEvent(CommandOutput, Tick))
+import Myo.Command.Data.PendingCommand (PendingCommand(PendingCommand))
 import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Log (appendLog)
 import Myo.Command.RunningCommand (storeRunningCommand)
@@ -46,10 +48,34 @@ sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
   replace "\r\n" "\n"
 
--- TODO start a thread that only sends ticks every .1s
--- have state that tracks pending commands
--- on a tick, check and update or remove pid job after timeout
--- also, check running commands for being alive
+addPendingCommand ::
+  MonadDeepState s CommandState m =>
+  PendingCommand ->
+  m ()
+addPendingCommand =
+  prepend @CommandState CommandState.pendingCommands
+
+removePendingCommand ::
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m ()
+removePendingCommand ident =
+  modifyL @CommandState CommandState.pendingCommands (filter (not . sameIdent ident))
+
+checkPid ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  PendingCommand ->
+  m ()
+checkPid (PendingCommand ident findPid started) = do
+  now <- liftIO timeCurrent
+  done <- if now - started < Elapsed (Seconds 3) then check else return True
+  when done (removePendingCommand ident)
+  where
+    check =
+      maybe (return False) ((True <$) . storeRunningCommand ident) =<< liftIO findPid
+
+-- TODO check running commands for being alive
 handleEvent ::
   MonadRibo m =>
   MonadDeepState s CommandState m =>
@@ -59,14 +85,9 @@ handleEvent ::
   m ()
 handleEvent (CommandOutput ident bytes) =
   appendLog ident (sanitizeOutput bytes)
-handleEvent event@(CommandPid ident findPid started) = do
-  now <- liftIO timeCurrent
-  when (now - started < Elapsed (Seconds 3)) check
-  where
-    check =
-      void . fork . maybe recurse (storeRunningCommand ident) =<< liftIO findPid
-    recurse =
-      sleep 0.1 *> handleEvent event
+handleEvent Tick = do
+  pending <- getL @CommandState CommandState.pendingCommands
+  traverse_ checkPid pending
 
 listenerErrorReport :: IOException -> ErrorReport
 listenerErrorReport ex =
@@ -89,6 +110,7 @@ listen ::
   MonadRibo m =>
   Nvim m =>
   MonadIO m =>
+  MonadDeepState s CommandState m =>
   MonadBaseControl IO m =>
   Ident ->
   Path Abs File ->
@@ -107,34 +129,64 @@ listen cmdIdent logPath findPid listenChan = do
       fork $ listener cmdIdent sock listenChan
     enqueueCommandPid fp = do
       now <- liftIO timeCurrent
-      atomically $ writeTMChan listenChan (CommandPid cmdIdent fp now)
+      addPendingCommand (PendingCommand cmdIdent fp now)
 
 runMonitor ::
-  (MonadRibo m, Nvim m, MonadIO m, MonadDeepState s CommandState m, MonadBaseControl IO m) =>
+  MonadRibo m =>
+  Nvim m =>
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
+  MonadBaseControl IO m =>
   TMChan MonitorEvent ->
   m ()
 runMonitor listenChan =
   runConduit $ sourceTMChan listenChan .| mapMC handleEvent .| sinkNull
 
+runClock ::
+  MonadRibo m =>
+  Nvim m =>
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
+  MonadBaseControl IO m =>
+  TMChan MonitorEvent ->
+  m ()
+runClock listenChan =
+  runConduit $ unfoldM unfolder () .| sinkTMChan listenChan
+  where
+    unfolder _ =
+      sleep 0.1 $> Just (Tick, ())
+
 startMonitor ::
-  (MonadRibo m, Nvim m, MonadBaseControl IO m, MonadIO m, MonadDeepState s CommandState m) =>
+  MonadRibo m =>
+  Nvim m =>
+  MonadBaseControl IO m =>
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
   m (TMChan MonitorEvent)
 startMonitor = do
   chan <- atomically newTMChan
   void $ fork $ runMonitor chan
+  void $ fork $ runClock chan
   setL @CommandState CommandState.monitorChan (Just chan)
   return chan
 
 ensureMonitor ::
-  ∀ s m.
-  (MonadRibo m, Nvim m, MonadBaseControl IO m, MonadIO m, MonadDeepState s CommandState m) =>
+  MonadRibo m =>
+  Nvim m =>
+  MonadBaseControl IO m =>
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
   m (TMChan MonitorEvent)
 ensureMonitor = do
   current <- getL @CommandState CommandState.monitorChan
   maybe startMonitor return current
 
 monitorCommand ::
-  (MonadRibo m, Nvim m, MonadBaseControl IO m, MonadIO m, MonadDeepState s CommandState m) =>
+  MonadRibo m =>
+  Nvim m =>
+  MonadBaseControl IO m =>
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
   Ident ->
   Path Abs File ->
   Maybe (IO (Maybe Pid)) ->

@@ -16,6 +16,7 @@ import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.CommandLog (CommandLog)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.MonitorEvent (MonitorEvent)
+import Myo.Command.Data.PendingCommand (PendingCommand)
 import Myo.Command.Data.RunningCommand (RunningCommand)
 import Myo.Output.Data.OutputEvent (EventIndex)
 import Myo.Output.Data.OutputHandler (OutputHandler)
@@ -36,12 +37,13 @@ data CommandState =
     _parseReport :: Maybe ParseReport,
     _currentEvent :: EventIndex,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
-    _monitorChan :: Maybe (TMChan MonitorEvent)
+    _monitorChan :: Maybe (TMChan MonitorEvent),
+    _pendingCommands :: [PendingCommand]
   }
   deriving (Generic, Default)
 
 deepLenses ''CommandState
 
 instance Text.Show.Show CommandState where
-  show (CommandState cmds hist lps ls rn _ prprt ce han _) =
-    "CommandState" ++ show (cmds, hist, lps, ls, rn, prprt, ce, han)
+  show (CommandState cmds hist lps ls rn _ prprt ce han _ pc) =
+    "CommandState" ++ show (cmds, hist, lps, ls, rn, prprt, ce, han, pc)

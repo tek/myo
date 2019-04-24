@@ -34,7 +34,7 @@ renderWindow ::
   Window ->
   m ()
 renderWindow cwd spaceIdent (Window windowIdent tree) =
-  stateM $ runStateT $ render cwd spaceIdent windowIdent tree
+  render cwd spaceIdent windowIdent tree
 
 renderSpace ::
   (MonadDeepState s Views m, MonadFree TmuxThunk m, MonadError RenderError m) =>

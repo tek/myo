@@ -12,8 +12,4 @@ data MonitorEvent =
     mecoOutput :: ByteString
   }
   |
-  CommandPid {
-    mecpCommand :: Ident,
-    mecpFindPid :: IO (Maybe Pid),
-    mecpStartTime :: Elapsed
-  }
+  Tick
