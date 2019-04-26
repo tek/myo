@@ -4,8 +4,6 @@ module RunSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (Ident(Str))
 import qualified Control.Lens as Lens (at, view)
-import Control.Monad.IO.Class (liftIO)
-import qualified Control.Monad.State.Class as State (gets)
 import Ribosome.Control.Monad.Ribo (inspectErrors)
 import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
 import Ribosome.Data.Errors (ComponentName(ComponentName))
@@ -13,13 +11,12 @@ import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
 import Ribosome.Error.Report (reportError)
 import Test.Framework
 
-import Config (defaultVars)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner, mkRunner)
-import Myo.Data.Env (Env, MyoN)
+import Myo.Data.Env (MyoN)
 import Unit (specDef)
 
 testError :: Text

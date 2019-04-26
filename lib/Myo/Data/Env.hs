@@ -46,4 +46,4 @@ instance Default Env where
   def = Env def def def (Str "myo") [absdir|/tmp/myo|]
 
 instance Text.Show.Show Env where
-  show (Env cmds ui _ ii td) = "Env" ++ show (cmds, ui, ii, td)
+  show (Env cmds ui' _ ii td) = "Env" ++ show (cmds, ui', ii, td)

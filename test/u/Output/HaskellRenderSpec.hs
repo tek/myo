@@ -14,7 +14,6 @@ import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
-import Ribosome.System.Time (sleep)
 import Ribosome.Test.Screenshot (assertScreenshot)
 import Test.Framework
 

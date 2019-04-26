@@ -1,7 +1,6 @@
 module Myo.Command.Runner where
 
 import Chiasma.Data.Ident (Ident)
-import Control.Lens (Lens')
 import qualified Control.Lens as Lens (views)
 import Control.Monad.DeepError (MonadDeepError, catchAt, hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState, gets)

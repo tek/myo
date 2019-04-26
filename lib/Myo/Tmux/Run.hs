@@ -3,9 +3,9 @@ module Myo.Tmux.Run where
 import Chiasma.Codec.Data.PanePid (PanePid)
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
 import Chiasma.Command.Pane (panePid, sendKeys)
-import Chiasma.Data.Ident (Ident, identText)
+import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
-import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.Views (Views, ViewsError)
 import qualified Chiasma.Monad.Stream as Chiasma (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
@@ -13,7 +13,7 @@ import qualified Chiasma.View.State as Views (paneId)
 import Control.Monad.DeepError (MonadDeepError, throwHoist)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Control (MonadBaseControl, embed)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Path (Abs, File, Path)
 import Path.IO (doesFileExist)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
@@ -97,5 +97,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
     run (RunTaskDetails.UiShell _ paneIdent) = do
       paneId <- Views.paneId paneIdent
       runRiboTmux $ send paneId
+    run _ =
+      undefined
     send paneId =
       sendKeys paneId (toString <$> lines')

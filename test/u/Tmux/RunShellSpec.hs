@@ -3,35 +3,21 @@
 module Tmux.RunShellSpec (htf_thisModulesTests) where
 
 import Chiasma.Command.Pane (capturePane)
-import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
-import qualified Control.Lens as Lens (at, view)
-import Control.Monad.IO.Class (liftIO)
-import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
-import Ribosome.Data.Errors (ComponentName(ComponentName))
-import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
-import Ribosome.Error.Report (reportError)
-import Ribosome.System.Time (sleep)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Unit (withLog)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
-import Config (defaultVars)
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (running)
-import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRun)
-import Myo.Command.Runner (addRunner, mkRunner)
 import Myo.Command.RunningCommand (isCommandRunning)
 import Myo.Data.Env (MyoN)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
-import Unit (tmuxGuiSpecDef)
+import Unit (tmuxSpecDef)
 
 line1 :: Text
 line1 =
@@ -91,4 +77,4 @@ tmuxRunShellSpec = do
 
 test_tmuxRunShell :: IO ()
 test_tmuxRunShell =
-  tmuxGuiSpecDef (withLog tmuxRunShellSpec)
+  tmuxSpecDef tmuxRunShellSpec

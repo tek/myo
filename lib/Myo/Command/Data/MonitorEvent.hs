@@ -2,9 +2,6 @@ module Myo.Command.Data.MonitorEvent where
 
 import Chiasma.Data.Ident (Ident)
 import Data.ByteString (ByteString)
-import Data.Hourglass (Elapsed)
-
-import Myo.Command.Data.Pid (Pid)
 
 data MonitorEvent =
   CommandOutput {

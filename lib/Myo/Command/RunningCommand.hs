@@ -2,18 +2,14 @@ module Myo.Command.RunningCommand where
 
 import Chiasma.Data.Ident (Ident, identText, sameIdent)
 import Chiasma.Ui.Lens.Ident (matchIdentL)
-import Control.Exception.Lifted (catch)
-import Control.Lens (Lens')
 import qualified Control.Lens as Lens (preview)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Ribosome.Control.Monad.Ribo as Ribo (prepend)
-import System.Posix.Process (getProcessStatus)
 
-import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (pendingCommands, running)
-import Myo.Command.Data.PendingCommand (PendingCommand(PendingCommand))
-import Myo.Command.Data.Pid (Pid(Pid))
+import Myo.Command.Data.PendingCommand (PendingCommand)
+import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import qualified Myo.Log as Log
 import Myo.System.Proc (processExists)

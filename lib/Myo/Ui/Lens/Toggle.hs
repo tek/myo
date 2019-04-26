@@ -24,13 +24,13 @@ liftError ::
   ToggleResult UiState ->
   Either TreeModError UiState
 liftError missing ambiguous ident =
-  lift
+  lift'
   where
-    lift (ToggleResult.Success a) =
+    lift' (ToggleResult.Success a) =
       Right a
-    lift ToggleResult.NotFound =
+    lift' ToggleResult.NotFound =
       Left (missing ident)
-    lift (ToggleResult.Ambiguous n) =
+    lift' (ToggleResult.Ambiguous n) =
       Left (ambiguous ident n)
 
 liftPaneError ::

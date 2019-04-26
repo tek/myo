@@ -8,7 +8,6 @@ import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Plugin.Mapping (executeMapping)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Ribosome.Test.Ui (windowCountIs)
 import Test.Framework
 
