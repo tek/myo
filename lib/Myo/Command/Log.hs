@@ -8,7 +8,6 @@ import Control.Lens (Lens', (?~))
 import qualified Control.Lens as Lens (at, over)
 import Control.Monad.Base (MonadBase)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.Free (MonadFree)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
@@ -18,6 +17,7 @@ import Network.Socket (Socket)
 import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
 
 import Myo.Command.Command (mainCommand)
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
 import Myo.Command.Data.CommandState (CommandState, Logs)
 import qualified Myo.Command.Data.CommandState as CommandState (logPaths, logs)
@@ -30,7 +30,8 @@ logPathLens :: Ident -> Lens' CommandState (Maybe (Path Abs File))
 logPathLens ident = CommandState.logPaths . Lens.at ident
 
 logPathByIdent ::
-  (MonadDeepError e RunError m, MonadDeepState s CommandState m) =>
+  MonadDeepError e RunError m =>
+  MonadDeepState s CommandState m =>
   Ident ->
   m (Maybe (Path Abs File))
 logPathByIdent ident =
@@ -96,6 +97,7 @@ commandLogs =
   getL @CommandState CommandState.logs
 
 commandLog ::
+  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m (Maybe CommandLog)

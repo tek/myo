@@ -56,6 +56,7 @@ sanitizeOutput =
 
 commandOutput ::
   MonadDeepError e OutputError m =>
+  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m Text
@@ -89,7 +90,11 @@ parseWithLang lang output = do
     parse (OutputHandler parser) = parseWith parser output
 
 parseCommand ::
-  (MonadRibo m, MonadIO m, MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
+  MonadRibo m =>
+  MonadIO m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
   Command ->
   m [ParsedOutput]
 parseCommand (Command _ ident _ _ (Just lang)) = do

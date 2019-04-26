@@ -20,6 +20,7 @@ import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
 import Test.Framework
 
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Log (appendLog, commandLog)
@@ -36,6 +37,7 @@ line =
   "log line"
 
 getOutput ::
+  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   m ([ByteString], ByteString)
 getOutput =

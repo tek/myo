@@ -24,8 +24,8 @@ line1 = "line 1"
 line2 :: Text
 line2 = "line 2"
 
-runSpec :: MyoN ()
-runSpec = do
+runSysSpec :: MyoN ()
+runSysSpec = do
   addTmuxRunner
   initialize''
   myoAddSystemCommand $ AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing
@@ -38,6 +38,6 @@ runSpec = do
     ident = Str "cmd"
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
-test_tmuxRun :: IO ()
-test_tmuxRun =
-  tmuxGuiSpecDef runSpec
+test_tmuxRunSys :: IO ()
+test_tmuxRunSys =
+  tmuxGuiSpecDef runSysSpec

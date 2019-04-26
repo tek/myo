@@ -1,13 +1,13 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
 
-module Tmux.ParseSpec(
-  htf_thisModulesTests,
-) where
+module Tmux.ParseSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Test.Tmux (sleep)
 import qualified Data.ByteString.Char8 as ByteString (lines)
+import Data.Default (def)
 import Data.Text (Text)
+import qualified Data.Vector as Vector (fromList)
 import Test.Framework
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -21,11 +21,14 @@ import Myo.Command.Run (myoRun)
 import Myo.Data.Env (MyoN)
 import Myo.Init (initialize'')
 import Myo.Output.Data.OutputError (OutputError)
+import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
-import Myo.Output.Data.ParsedOutput (ParsedOutput)
+import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Tmux.Runner (addTmuxRunner)
-import Unit (tmuxSpecDef)
+import Unit (tmuxGuiSpecDef)
 
 line1 :: Text
 line1 = "line 1"
@@ -37,7 +40,12 @@ lang :: CommandLanguage
 lang = CommandLanguage "echo"
 
 parseEcho :: Text -> Either OutputError ParsedOutput
-parseEcho = undefined
+parseEcho text =
+  Right (ParsedOutput def (const report))
+  where
+    report =
+      ParseReport (Vector.fromList [OutputEvent Nothing 0]) (Vector.fromList (rline <$> lines text))
+    rline = ReportLine (EventIndex 0)
 
 parseTmuxSpec :: MyoN ()
 parseTmuxSpec = do
@@ -53,9 +61,10 @@ parseTmuxSpec = do
   sleep 2
   mayLog <- commandLog ident
   log' <- ByteString.lines . CommandLog._current <$> gassertJust mayLog
+  dbgs log'
   gassertBool $ encodeUtf8 line2 `elem` log'
   myoParse $ ParseOptions Nothing Nothing Nothing
 
 test_parseTmux :: IO ()
 test_parseTmux =
-  tmuxSpecDef parseTmuxSpec
+  tmuxGuiSpecDef parseTmuxSpec

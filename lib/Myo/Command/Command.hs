@@ -8,7 +8,7 @@ import Control.Monad.DeepState (MonadDeepState, gets)
 import Data.Foldable (find)
 import Ribosome.Control.Monad.Ribo (inspectHeadE)
 
-import Myo.Command.Data.Command (Command(Command), CommandLanguage)
+import Myo.Command.Data.Command (Command(Command, cmdInterpreter), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchCommand, NoCommands))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System, Shell))
@@ -28,7 +28,8 @@ mayCommandByIdent ident =
     f = Lens.views CommandState.commands (find $ sameIdent ident)
 
 commandByIdent ::
-  (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
   Ident ->
   m Command
 commandByIdent ident =
@@ -51,6 +52,15 @@ latestCommand =
     l :: Lens' CommandState [HistoryEntry]
     l = CommandState.history
 
-mainCommand :: Ident -> m Ident
-mainCommand =
-  undefined
+mainCommand ::
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m Ident
+mainCommand ident =
+  recurse =<< cmdInterpreter <$> commandByIdent ident
+  where
+    recurse (Shell target) =
+      mainCommand target
+    recurse _ =
+      return ident
