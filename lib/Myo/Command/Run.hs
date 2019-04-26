@@ -1,6 +1,6 @@
 module Myo.Command.Run where
 
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (Lens')
@@ -30,7 +30,7 @@ import Myo.Command.History (pushHistory)
 import Myo.Command.Log (pushCommandLog)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
-import Myo.Command.RunningCommand (isCommandRunning)
+import Myo.Command.RunningCommand (isCommandRunning, removePendingCommand, removeRunningCommand)
 import Myo.Data.Env (Env, Runner(Runner))
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
@@ -60,6 +60,7 @@ ensurePrerequisites _ =
   return ()
 
 executeRunner ::
+  MonadRibo m =>
   MonadIO m =>
   MonadDeepError e RunError m =>
   MonadDeepState s Env m =>
@@ -67,8 +68,11 @@ executeRunner ::
   RunTask ->
   m ()
 executeRunner (Runner _ _ run) task = do
+  logDebug $ "executing runner for command `" <> identText ident <> "`"
   r <- liftIO $ run task
   hoistEither r
+  where
+    ident = cmdIdent . RunTask.rtCommand $ task
 
 runCommand ::
   RunTmux m =>
@@ -88,9 +92,13 @@ runCommand cmd = do
   task <- runTask cmd
   ensurePrerequisites (RunTask.rtDetails task)
   runner <- findRunner task
-  pushCommandLog (cmdIdent cmd)
+  pushCommandLog ident
+  removePendingCommand ident
+  removeRunningCommand ident
   executeRunner runner task
   pushHistory cmd
+  where
+    ident = cmdIdent cmd
 
 myoRun ::
   RunTmux m =>

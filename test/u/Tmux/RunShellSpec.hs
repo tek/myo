@@ -76,13 +76,14 @@ tmuxRunShellSpec = do
   myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] (Just "tmux") (Just "make") Nothing
   myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines (Just "tmux") shellIdent Nothing
   myoRun cmdIdent
-  await firstCondition paneContent
   await gassertBool (isCommandRunning shellIdent)
+  await firstCondition paneContent
   myoRun cmdIdent
   await secondCondition paneContent
   killCommand shellIdent
   await (gassertBool . not) (isCommandRunning shellIdent)
   myoRun cmdIdent
+  await gassertBool (isCommandRunning shellIdent)
   await thirdCondition paneContent
   where
     paneContent =

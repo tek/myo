@@ -1,7 +1,4 @@
-module Myo.Command.Data.RunTask(
-  RunTaskDetails(..),
-  RunTask(..),
-) where
+module Myo.Command.Data.RunTask where
 
 import Chiasma.Data.Ident (Ident)
 import Myo.Command.Data.Command (Command)

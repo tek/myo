@@ -3,7 +3,7 @@ module Myo.Tmux.Run where
 import Chiasma.Codec.Data.PanePid (PanePid)
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
 import Chiasma.Command.Pane (panePid, sendKeys)
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Chiasma.Data.Views (Views, ViewsError)
@@ -86,6 +86,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
   run details
   where
     run (RunTaskDetails.UiSystem paneIdent) = do
+      logDebug $ "running tmux system task `" <> identText commandIdent <> "`"
       socket <- settingMaybe tmuxSocket
       paneId <- Views.paneId paneIdent
       monitorCommand commandIdent logPath (Just (findTmuxPid socket paneId))

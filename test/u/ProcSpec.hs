@@ -15,6 +15,5 @@ test_ppid = do
   assertBool (length pps > 2)
 
 test_childPids :: IO ()
-test_childPids = do
-  cps <- childPids (Pid 1)
-  print cps
+test_childPids =
+  assertNotEmpty =<< childPids (Pid 1)

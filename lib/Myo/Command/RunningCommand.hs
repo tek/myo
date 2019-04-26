@@ -11,7 +11,8 @@ import System.Posix.Process (getProcessStatus)
 
 import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (running)
+import qualified Myo.Command.Data.CommandState as CommandState (pendingCommands, running)
+import Myo.Command.Data.PendingCommand (PendingCommand(PendingCommand))
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import qualified Myo.Log as Log
@@ -41,10 +42,12 @@ storeRunningCommand ident pid = do
       RunningCommand ident pid : filter (not . sameIdent ident) rcs
 
 removeRunningCommand ::
+  MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m ()
-removeRunningCommand ident =
+removeRunningCommand ident = do
+  Log.debug @Text $ "removing running command `" <> identText ident <> "`"
   modifyL @CommandState CommandState.running update
   where
     update =
@@ -66,3 +69,19 @@ isCommandRunning ::
   m Bool
 isCommandRunning =
   maybe (return False) pidAlive <=< findRunningCommand
+
+addPendingCommand ::
+  MonadDeepState s CommandState m =>
+  PendingCommand ->
+  m ()
+addPendingCommand =
+  Ribo.prepend @CommandState CommandState.pendingCommands
+
+removePendingCommand ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m ()
+removePendingCommand ident = do
+  Log.debug @Text $ "removing pending command `" <> identText ident <> "`"
+  modifyL @CommandState CommandState.pendingCommands (filter (not . sameIdent ident))

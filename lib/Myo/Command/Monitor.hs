@@ -1,6 +1,6 @@
 module Myo.Command.Monitor where
 
-import Chiasma.Data.Ident (Ident, sameIdent)
+import Chiasma.Data.Ident (Ident, identText, sameIdent)
 import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
@@ -33,8 +33,7 @@ import Myo.Command.Data.PendingCommand (PendingCommand(PendingCommand))
 import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import Myo.Command.Log (appendLog)
-import Myo.Command.RunningCommand (removeRunningCommand, storeRunningCommand)
-import qualified Myo.Log as Log (debug)
+import Myo.Command.RunningCommand (addPendingCommand, removePendingCommand, removeRunningCommand, storeRunningCommand)
 import Myo.Network.Socket (socketBind)
 import Myo.System.Proc (processExists)
 
@@ -50,20 +49,6 @@ sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
   replace "\r\n" "\n"
 
-addPendingCommand ::
-  MonadDeepState s CommandState m =>
-  PendingCommand ->
-  m ()
-addPendingCommand =
-  prepend @CommandState CommandState.pendingCommands
-
-removePendingCommand ::
-  MonadDeepState s CommandState m =>
-  Ident ->
-  m ()
-removePendingCommand ident =
-  modifyL @CommandState CommandState.pendingCommands (filter (not . sameIdent ident))
-
 checkPid ::
   MonadRibo m =>
   MonadDeepState s CommandState m =>
@@ -75,7 +60,7 @@ checkPid (PendingCommand ident findPid started) = do
   when done (removePendingCommand ident)
   where
     check =
-      maybe (return False) ((True <$) . storeRunningCommand ident) =<< liftIO findPid
+      maybe (return False) ((False <$) . storeRunningCommand ident) =<< liftIO findPid
 
 checkRunning ::
   MonadRibo m =>
@@ -84,9 +69,8 @@ checkRunning ::
   m ()
 checkRunning (RunningCommand ident pid) = do
   exists <- processExists pid
-  when exists (removeRunningCommand ident)
+  unless exists (removeRunningCommand ident)
 
--- TODO check running commands for being alive
 handleEvent ::
   MonadRibo m =>
   MonadDeepState s CommandState m =>
@@ -97,10 +81,10 @@ handleEvent ::
 handleEvent (CommandOutput ident bytes) =
   appendLog ident (sanitizeOutput bytes)
 handleEvent Tick = do
-  pending <- getL @CommandState CommandState.pendingCommands
-  traverse_ checkPid pending
   running <- getL @CommandState CommandState.running
   traverse_ checkRunning running
+  pending <- getL @CommandState CommandState.pendingCommands
+  traverse_ checkPid pending
 
 listenerErrorReport :: IOException -> ErrorReport
 listenerErrorReport ex =
@@ -131,12 +115,13 @@ listen ::
   TMChan MonitorEvent ->
   m ()
 listen cmdIdent logPath findPid listenChan = do
-  Log.debug $ "listening on socket at " <> toFilePath logPath
+  logDebug $ "listening on socket at " <> toFilePath logPath
+  traverse_ enqueueCommandPid findPid
   try (socketBind logPath) >>= \case
     Right sock ->
-      forkListener sock *> traverse_ enqueueCommandPid findPid
+      void $ forkListener sock
     Left (_ :: IOException) ->
-      return ()
+      logDebug $ "could not bind tmux pane socket for `" <> identText cmdIdent <> "`"
   where
     forkListener sock =
       fork $ listener cmdIdent sock listenChan
