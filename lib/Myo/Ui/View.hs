@@ -23,7 +23,6 @@ import Control.Lens (Lens', Traversal', each, has, mapMOf, transformM)
 import Control.Lens.Setter ((%~), (<>~))
 import Control.Monad ((<=<))
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Control.Monad.DeepState (MonadDeepState(put), gets, modify)
 import Data.Foldable (traverse_)
 
 import Myo.Data.Env (Env)

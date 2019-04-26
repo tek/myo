@@ -1,6 +1,6 @@
 module Myo.Command.RunningCommand where
 
-import Chiasma.Data.Ident (Ident, sameIdent)
+import Chiasma.Data.Ident (Ident, identText, sameIdent)
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Exception.Lifted (catch)
 import Control.Lens (Lens')
@@ -34,18 +34,28 @@ storeRunningCommand ::
   Pid ->
   m ()
 storeRunningCommand ident pid = do
-  Log.debug @Text $ "storing running command `" <> show ident <> "` with pid " <> show pid
+  Log.debug @Text $ "storing running command `" <> identText ident <> "` with pid " <> show pid
   modifyL @CommandState CommandState.running update
   where
     update rcs =
       RunningCommand ident pid : filter (not . sameIdent ident) rcs
+
+removeRunningCommand ::
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m ()
+removeRunningCommand ident =
+  modifyL @CommandState CommandState.running update
+  where
+    update =
+      filter (not . sameIdent ident)
 
 pidAlive ::
   MonadIO m =>
   MonadBaseControl IO m =>
   RunningCommand ->
   m Bool
-pidAlive (RunningCommand _ (Pid pid)) =
+pidAlive (RunningCommand _ pid) =
   processExists pid
 
 isCommandRunning ::

@@ -27,14 +27,16 @@ import System.Hourglass (timeCurrent)
 import System.Log (Priority(NOTICE))
 
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (monitorChan, pendingCommands)
+import qualified Myo.Command.Data.CommandState as CommandState (monitorChan, pendingCommands, running)
 import Myo.Command.Data.MonitorEvent (MonitorEvent(CommandOutput, Tick))
 import Myo.Command.Data.PendingCommand (PendingCommand(PendingCommand))
 import Myo.Command.Data.Pid (Pid)
+import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
 import Myo.Command.Log (appendLog)
-import Myo.Command.RunningCommand (storeRunningCommand)
+import Myo.Command.RunningCommand (removeRunningCommand, storeRunningCommand)
 import qualified Myo.Log as Log (debug)
 import Myo.Network.Socket (socketBind)
+import Myo.System.Proc (processExists)
 
 strictByteString :: LB.ByteString -> ByteString
 strictByteString =
@@ -75,6 +77,15 @@ checkPid (PendingCommand ident findPid started) = do
     check =
       maybe (return False) ((True <$) . storeRunningCommand ident) =<< liftIO findPid
 
+checkRunning ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  RunningCommand ->
+  m ()
+checkRunning (RunningCommand ident pid) = do
+  exists <- processExists pid
+  when exists (removeRunningCommand ident)
+
 -- TODO check running commands for being alive
 handleEvent ::
   MonadRibo m =>
@@ -88,6 +99,8 @@ handleEvent (CommandOutput ident bytes) =
 handleEvent Tick = do
   pending <- getL @CommandState CommandState.pendingCommands
   traverse_ checkPid pending
+  running <- getL @CommandState CommandState.running
+  traverse_ checkRunning running
 
 listenerErrorReport :: IOException -> ErrorReport
 listenerErrorReport ex =

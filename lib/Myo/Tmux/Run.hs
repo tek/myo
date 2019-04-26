@@ -53,8 +53,8 @@ waitForSocket logPath =
     Left _ -> throwHoist RunError.SocketFailure
 
 firstChildPid :: Pid -> IO (Maybe Pid)
-firstChildPid (Pid pid) =
-  Pid <$$> listToMaybe <$> childPids pid
+firstChildPid pid =
+  listToMaybe <$> childPids pid
 
 findTmuxPid ::
   Maybe FilePath ->

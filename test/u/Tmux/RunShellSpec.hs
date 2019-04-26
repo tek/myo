@@ -13,6 +13,7 @@ import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
 import Ribosome.Error.Report (reportError)
 import Ribosome.System.Time (sleep)
 import Ribosome.Test.Await (await)
+import Ribosome.Test.Unit (withLog)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
@@ -89,4 +90,4 @@ tmuxRunShellSpec = do
 
 test_tmuxRunShell :: IO ()
 test_tmuxRunShell =
-  tmuxGuiSpecDef tmuxRunShellSpec
+  tmuxGuiSpecDef (withLog tmuxRunShellSpec)

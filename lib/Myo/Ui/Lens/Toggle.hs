@@ -3,6 +3,7 @@ module Myo.Ui.Lens.Toggle where
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
+import Chiasma.Ui.Data.View (ViewTree)
 import Chiasma.Ui.ViewTree (
   ToggleResult,
   ensurePaneOpenTraversal',
@@ -10,55 +11,72 @@ import Chiasma.Ui.ViewTree (
   togglePaneOpenTraversal',
   )
 import qualified Chiasma.Ui.ViewTree as ToggleResult (ToggleResult(..))
+import Control.Lens (Traversal')
+import Control.Monad.DeepState (modifyE)
 
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.View (uiTreesLens)
 
-convertError ::
-  MonadDeepError e TreeModError m =>
+liftError ::
   (Ident -> TreeModError) ->
   (Ident -> Int -> TreeModError) ->
   Ident ->
   ToggleResult UiState ->
-  m UiState
-convertError missing ambiguous ident =
-  convert
+  Either TreeModError UiState
+liftError missing ambiguous ident =
+  lift
   where
-    convert (ToggleResult.Success a) =
-      return a
-    convert ToggleResult.NotFound =
-      throwHoist (missing ident)
-    convert (ToggleResult.Ambiguous n) =
-      throwHoist (ambiguous ident n)
+    lift (ToggleResult.Success a) =
+      Right a
+    lift ToggleResult.NotFound =
+      Left (missing ident)
+    lift (ToggleResult.Ambiguous n) =
+      Left (ambiguous ident n)
 
-convertPaneError ::
-  MonadDeepError e TreeModError m =>
+liftPaneError ::
   Ident ->
   ToggleResult UiState ->
-  m UiState
-convertPaneError =
-  convertError TreeModError.PaneMissing TreeModError.AmbiguousPane
+  Either TreeModError UiState
+liftPaneError =
+  liftError TreeModError.PaneMissing TreeModError.AmbiguousPane
 
-convertLayoutError ::
-  MonadDeepError e TreeModError m =>
+liftLayoutError ::
   Ident ->
   ToggleResult UiState ->
-  m UiState
-convertLayoutError =
-  convertError TreeModError.LayoutMissing TreeModError.AmbiguousLayout
+  Either TreeModError UiState
+liftLayoutError =
+  liftError TreeModError.LayoutMissing TreeModError.AmbiguousLayout
+
+toggleOne ::
+  MonadDeepState s UiState m =>
+  MonadDeepError e TreeModError m =>
+  (Ident -> ToggleResult UiState -> Either TreeModError UiState) ->
+  (Traversal' UiState ViewTree -> Ident -> UiState -> ToggleResult UiState) ->
+  Ident ->
+  m ()
+toggleOne err trans ident =
+  traverse_ throwHoist =<< modifyE (err ident . trans uiTreesLens ident)
 
 toggleOnePane ::
+  MonadDeepState s UiState m =>
   MonadDeepError e TreeModError m =>
   Ident ->
-  UiState ->
-  m UiState
-toggleOnePane ident =
-  convertPaneError ident . togglePaneOpenTraversal' uiTreesLens ident
+  m ()
+toggleOnePane =
+  toggleOne liftPaneError togglePaneOpenTraversal'
 
-openOnePane :: MonadDeepError e TreeModError m => Ident -> UiState -> m UiState
-openOnePane ident =
-  convertPaneError ident . ensurePaneOpenTraversal' uiTreesLens ident
+openOnePane ::
+  MonadDeepState s UiState m =>
+  MonadDeepError e TreeModError m =>
+  Ident ->
+  m ()
+openOnePane =
+  toggleOne liftPaneError ensurePaneOpenTraversal'
 
-toggleOneLayout :: MonadDeepError e TreeModError m => Ident -> UiState -> m UiState
-toggleOneLayout ident =
-  convertLayoutError ident . toggleLayoutOpenTraversal' uiTreesLens ident
+toggleOneLayout ::
+  MonadDeepState s UiState m =>
+  MonadDeepError e TreeModError m =>
+  Ident ->
+  m ()
+toggleOneLayout =
+  toggleOne liftLayoutError toggleLayoutOpenTraversal'

@@ -2,7 +2,6 @@ module Myo.Ui.Toggle where
 
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Control.Monad.DeepState (modifyM)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Functor (void)
 import Ribosome.Tmux.Run (RunTmux)
@@ -13,24 +12,6 @@ import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Lens.Toggle (openOnePane, toggleOneLayout, toggleOnePane)
 import Myo.Ui.Render (MyoRender, myoRender)
 
-toggleView ::
-  MonadDeepError e ToggleError m =>
-  MonadDeepState s UiState m =>
-  (Ident -> UiState -> m UiState) ->
-  Ident ->
-  m ()
-toggleView toggle ident =
-  put =<< toggle ident =<< get
-
-togglePane ::
-  MonadDeepError e TreeModError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepState s UiState m =>
-  Ident ->
-  m ()
-togglePane =
-  toggleView toggleOnePane
-
 ensurePaneOpen ::
   MonadIO m =>
   MonadDeepError e TreeModError m =>
@@ -40,7 +21,7 @@ ensurePaneOpen ::
   Ident ->
   m ()
 ensurePaneOpen ident = do
-  modifyM $ openOnePane ident
+  openOnePane ident
   myoRender
 
 myoTogglePane ::
@@ -51,7 +32,7 @@ myoTogglePane ::
   Ident ->
   m ()
 myoTogglePane ident = do
-  togglePane ident
+  toggleOnePane ident
   void myoRender
 
 myoToggleLayout ::
@@ -62,5 +43,5 @@ myoToggleLayout ::
   Ident ->
   m ()
 myoToggleLayout ident = do
-  toggleView toggleOneLayout ident
+  toggleOneLayout ident
   void myoRender

@@ -22,7 +22,6 @@ import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
 import Control.Lens (findMOf)
 import qualified Control.Lens as Lens (each)
 import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState, modify, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -36,6 +35,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
+import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Orphans ()
 import qualified Myo.Settings as Settings (vimPaneGeometry)
 import Myo.System.Proc (ppids)
@@ -95,16 +95,16 @@ containsVimPid ::
   MonadIO m =>
   MonadBaseControl IO m =>
   Codec.PanePid ->
-  Int ->
+  Pid ->
   m Bool
 containsVimPid (Codec.PanePid _ panePid) =
-  (panePid `elem`) <$$> ppids
+  (Pid panePid `elem`) <$$> ppids
 
 detectVimPidPane ::
   MonadIO m =>
   Nvim m =>
   MonadBaseControl IO m =>
-  Int ->
+  Pid ->
   TmuxProg m Codec.PaneCoords
 detectVimPidPane vpid = do
   mainPids <- panePids
@@ -122,7 +122,7 @@ detectVimPane ::
   TmuxProg m Codec.PaneCoords
 detectVimPane = do
   result <- runExceptT @RpcError vimPid
-  either (fail . show) detectVimPidPane result
+  either (fail . show) detectVimPidPane (Pid <$> result)
 
 detectDefaultUi ::
   NvimE e m =>

@@ -22,27 +22,29 @@ import Text.Parser.Token (TokenParsing, decimal, parens)
 import Text.RE.PCRE.Text (RE, matchedText, re, (?=~))
 import UnliftIO.Directory (doesPathExist)
 
-procStatPpid :: (Alternative m, CharParsing m, TokenParsing m, Monad m) => m Int
+import Myo.Command.Data.Pid (Pid(Pid))
+
+procStatPpid :: (Alternative m, CharParsing m, TokenParsing m, Monad m) => m Pid
 procStatPpid = do
   pp <- skipMany decimal >> spaces >> parens (many (noneOf ")")) >> spaces >> anyChar >> spaces >> decimal
   skipMany anyChar
-  return $ fromIntegral pp
+  return . Pid $ fromIntegral pp
 
-parseProcStatPpid :: Text -> Either Text Int
+parseProcStatPpid :: Text -> Either Text Pid
 parseProcStatPpid =
   mapLeft toText . parseOnly procStatPpid
 
-procStatPath :: Int -> FilePath
-procStatPath pid =
+procStatPath :: Pid -> FilePath
+procStatPath (Pid pid) =
   "/proc" </> show pid </> "stat"
 
 ppid ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  Int ->
-  m (Maybe Int)
+  Pid ->
+  m (Maybe Pid)
 ppid =
-  parse . (first err) <$< try . readFile . procStatPath
+  parse . (first err) <$$> try . readFile . procStatPath
   where
     err (_ :: SomeException) =
       "failed to read procstat"
@@ -51,12 +53,12 @@ ppid =
 ppidsC ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  Int ->
-  ConduitT () Int m ()
+  Pid ->
+  ConduitT () Pid m ()
 ppidsC =
   unfoldM unfolder
   where
-    unfolder = fmap (\ a -> (a, a)) <$< ppid
+    unfolder = fmap (\ a -> (a, a)) <$$> ppid
 
 -- |Query /proc/$pid/stat and extract the parent PID
 -- recurse until PID 0 is hit
@@ -64,8 +66,8 @@ ppidsC =
 ppids ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  Int ->
-  m (NonEmpty Int)
+  Pid ->
+  m (NonEmpty Pid)
 ppids pid =
   (pid :|) <$> runConduit (ppidsC pid .| sinkList)
 
@@ -77,13 +79,13 @@ pidRegex =
 childPids ::
   MonadIO m =>
   MonadBaseControl IO m =>
-  Int ->
-  m [Int]
+  Pid ->
+  m [Pid]
 childPids pid = do
   (dirs, _) <- listDir [absdir|/proc|]
   let
     pidStrings = catMaybes ((\ a -> matchedText (a ?=~ pidRegex)) . toText . toFilePath <$> dirs)
-    pids = mapMaybe (rightToMaybe . readEither) pidStrings
+    pids = mapMaybe (rightToMaybe . (fmap Pid) . readEither) pidStrings
   mapMaybe matchParent <$> traverse withPpid pids
   where
     withPpid pid' =
@@ -95,7 +97,7 @@ childPids pid = do
 
 processExists ::
   MonadIO m =>
-  Int ->
+  Pid ->
   m Bool
 processExists =
   doesPathExist . procStatPath
