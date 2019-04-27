@@ -22,18 +22,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
-
-colon :: CharParsing m => m Char
-colon =
-  char ':'
-
-ws :: TokenParsing m => m ()
-ws =
-  skipOptional whiteSpace
-
-skipLine :: CharParsing m => m ()
-skipLine =
-  void $ manyTill anyChar newline
+import Myo.Text.Parser.Combinators (colon, emptyLine, skipLine, tillEol, tillInLine, ws)
 
 locationLine ::
   Monad m =>
@@ -51,10 +40,6 @@ locationLine = do
   skipOptional (brackets (many $ noneOf "]"))
   ws
   return (Location path (fromIntegral lineno - 1) (Just (fromIntegral colno - 1)), tpe)
-
-emptyLine :: Monad m => CharParsing m => m Char
-emptyLine =
-  newline *> newline
 
 dot :: CharParsing m => m Char
 dot =

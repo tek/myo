@@ -24,6 +24,7 @@ import Myo.Data.Env (Env(_instanceIdent, _tempDir), Myo, MyoN)
 import Myo.Orphans ()
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Lang.Haskell.Parser (haskellOutputParser)
+import Myo.Output.Lang.Scala.Parser (scalaOutputParser)
 import qualified Myo.Settings as Settings (detectUi)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (detectDefaultUi)
@@ -32,6 +33,7 @@ initialize'' :: MyoN ()
 initialize'' = do
   addTmuxRunner
   addHandler (CommandLanguage "haskell") (OutputHandler haskellOutputParser)
+  addHandler (CommandLanguage "scala") (OutputHandler scalaOutputParser)
   detect <- setting Settings.detectUi
   when detect detectDefaultUi
 

@@ -61,7 +61,6 @@ parseTmuxSpec = do
   sleep 2
   mayLog <- commandLog ident
   log' <- ByteString.lines . CommandLog._current <$> gassertJust mayLog
-  dbgs log'
   gassertBool $ encodeUtf8 line2 `elem` log'
   myoParse $ ParseOptions Nothing Nothing Nothing
 
