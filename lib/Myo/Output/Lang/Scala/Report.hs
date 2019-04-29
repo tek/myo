@@ -21,35 +21,16 @@ import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEv
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
-import Myo.Output.Data.String (lineNumber)
+import Myo.Output.Data.String (colMarker, lineNumber)
 import Myo.Output.Lang.Scala.Data.ScalaEvent (EventType, ScalaEvent(ScalaEvent))
 import qualified Myo.Output.Lang.Scala.Data.ScalaEvent as EventType (EventType(..))
-import Myo.Output.Lang.Scala.Syntax (scalaSyntax)
-
-colMarker :: Text
-colMarker =
-  "†"
-
-foundReqSeparator :: Text
-foundReqSeparator =
-  "|"
-
-foundMarker :: Text
-foundMarker =
-  "+"
-
-reqMarker :: Text
-reqMarker =
-  "-"
-
-separatorMarker :: Text
-separatorMarker =
-  "<"
+import Myo.Output.Lang.Scala.Syntax (foundMarker, reqMarker, scalaSyntax, separatorMarker)
 
 data ScalaMessage =
   ScalaMessage {
     smError :: Text,
     smInfo :: [Text],
+    smCodeIndent :: Int,
     smCode :: Text
   }
   deriving (Eq, Show)
@@ -93,7 +74,7 @@ bracketParser ::
   TokenParsing m =>
   m FRExpr
 bracketParser =
-  choice $ surrounded ++ [try foundreq, Plain <$> plain]
+  choice $ try foundreq : surrounded ++ [Plain <$> plain]
   where
     surrounded = [try bracketed, try parenthesized]
     plain = toText <$> many (noneOf "[]()|")
@@ -107,9 +88,8 @@ bracketParser =
       return $ Parenthesized before sub
     -- tuple =
     --   FRTuple <$> sepBy1 bracketParser (char ',')
-    foundreq = do
-      found <- part <* (char '|')
-      FR found <$> part
+    foundreq =
+      FR <$> part <* char '|' <*> part
       where
         part = choice $ surrounded ++ [Plain <$> plain]
 
@@ -123,22 +103,22 @@ formatInfo input =
     format (Parenthesized pre sub) =
       pre <> "(" <> format sub <> ")"
     format (FR found req) =
-      foundMarker <> (format found) <> separatorMarker <> "|" <> (format req) <> reqMarker
+      foundMarker <> format found <> separatorMarker <> "|" <> format req <> reqMarker
     parse = parseOnly bracketParser input
 
 indent :: Text -> Text
 indent =
   ("  " <>)
 
-formatCode :: Location -> Text -> Text
-formatCode (Location _ _ col) code =
+formatCode :: Location -> Int -> Text -> Text
+formatCode (Location _ _ col) codeIndent code =
   pre <> colMarker <> post
   where
-    num = fromMaybe 0 col
+    num = fromMaybe 0 ((\ x -> x - codeIndent) <$> col)
     (pre, post) = Text.splitAt num code
 
 formatReportLine :: Int -> Location -> ScalaMessage -> Vector ReportLine
-formatReportLine index location (ScalaMessage err info code) = do
+formatReportLine index location (ScalaMessage err info codeIndent code) =
   ReportLine (EventIndex index) <$> Vector.fromList lines'
   where
     lines' =
@@ -146,7 +126,7 @@ formatReportLine index location (ScalaMessage err info code) = do
     formattedInfo =
       indent . formatInfo <$> info
     formattedCode =
-      indent . formatCode location $ code
+      indent $ formatCode location codeIndent code
 
 formatEvent :: Location -> Int -> Int -> ScalaMessage -> (OutputEvent, Vector ReportLine)
 formatEvent location level index message =
@@ -165,8 +145,8 @@ eventLevel EventType.Warning = 1
 eventLevel EventType.Error = 0
 
 eventReport :: Int -> ScalaEvent -> Either OutputError ScalaOutputEvent
-eventReport index (ScalaEvent loc tpe msg info code) =
-  return $ ScalaOutputEvent (eventLevel tpe) index loc (ScalaMessage msg info code)
+eventReport index (ScalaEvent loc tpe msg info codeIndent code) =
+  return $ ScalaOutputEvent (eventLevel tpe) index loc (ScalaMessage msg info codeIndent code)
 
 scalaReport :: Vector ScalaEvent -> Either OutputError ParsedOutput
 scalaReport events =

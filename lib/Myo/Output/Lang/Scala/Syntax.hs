@@ -14,19 +14,32 @@ import Ribosome.Data.Syntax (
 
 import Myo.Output.Data.String (colMarker, lineNumber)
 
+foundReqSeparator :: Text
+foundReqSeparator =
+  "|"
+
+foundMarker :: Text
+foundMarker =
+  "+"
+
+reqMarker :: Text
+reqMarker =
+  "-"
+
+separatorMarker :: Text
+separatorMarker =
+  "<"
+
 errorEnd :: Text
 errorEnd = "\\ze.*\\(" <> lineNumber <> "\\|" <> colMarker <> "\\)"
 
-foundReqHead :: Text
-foundReqHead =
-  "type mismatch"
+foundreqSeparator :: Text
+foundreqSeparator =
+  "|"
 
 noInstanceMarker :: Text
 noInstanceMarker =
-  "\\s*!instance:"
-
-notInScopeMarker :: Text
-notInScopeMarker = "Variable not in scope:"
+  "\\s*!I"
 
 scalaInclude :: SyntaxItem
 scalaInclude =
@@ -38,133 +51,157 @@ location =
   where
     item = syntaxMatch "MyoLocation" ("^.*" <> lineNumber <> ".*$")
     options = ["skipwhite", "skipnl"]
-    params = Map.fromList [("contains", "MyoPath,MyoLineNumber"), ("nextgroup", "MyoHsError")]
+    params = Map.fromList [("contains", "MyoPath,MyoLineNumber"), ("nextgroup", "MyoError")]
 
 path :: SyntaxItem
 path =
-  item { siOptions = options, siParams = params }
+  item { siOptions = options }
   where
     item = syntaxMatch "MyoPath" ("^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=")
     options = ["contained"]
-    params = Map.fromList [("containedin", "MyoLocation")]
 
-lineNumberSymbol :: SyntaxItem
-lineNumberSymbol =
-  item { siOptions = options, siParams = params }
+lineNumberItem :: SyntaxItem
+lineNumberItem =
+  item { siOptions = options }
   where
     item = syntaxMatch "MyoLineNumber" ("\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze")
     options = ["contained"]
-    params = Map.fromList [("containedin", "MyoLocation")]
 
 errorMessage :: SyntaxItem
 errorMessage =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxRegion "MyoHsError" "^" errorEnd Nothing
+    item = syntaxRegion "MyoError" "." errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
-    params = Map.fromList [("contains", "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope")]
+    params = Map.fromList [("contains", "MyoSplain,MyoSplainFoundReq"), ("nextgroup", "MyoScalaCode")]
 
-foundReq :: SyntaxItem
-foundReq =
+colMarkerConceal :: SyntaxItem
+colMarkerConceal =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxRegion "MyoHsFoundReq" foundReqHead errorEnd Nothing
-    options = ["contained", "skipwhite", "skipnl"]
-    params = Map.fromList [("contains", "MyoHsFound")]
+    item = syntaxMatch "MyoColMarker" colMarker
+    options = ["conceal", "contained"]
+    params = Map.fromList [("nextgroup", "MyoCol"), ("containedin", "@scala")]
 
-found :: SyntaxItem
-found =
-  item { siOptions = options, siParams = params }
-  where
-    item = syntaxMatch "MyoHsFound" "^.*$"
-    options = ["contained", "skipnl"]
-    params = Map.fromList [("nextgroup", "MyoHsReq")]
-
-req :: SyntaxItem
-req =
+col :: SyntaxItem
+col =
   item { siOptions = options }
   where
-    item = syntaxMatch "MyoHsReq" "^.*$"
+    item = syntaxMatch "MyoCol" "."
     options = ["contained"]
 
 code :: SyntaxItem
 code =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsCode" ".*"
+    item = syntaxMatch "MyoScalaCode" "^.*$"
+    options = ["contained", "keepend"]
+    params = Map.fromList [("contains", "@scala,MyoColMarker")]
+
+splain :: SyntaxItem
+splain =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegion "MyoSplain" "\\s*!I" errorEnd Nothing
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoSplainParam,MyoSplainCandidate")]
+
+splainParam :: SyntaxItem
+splainParam =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoSplainParam" (noInstanceMarker <> ".*$")
     options = ["contained"]
-    params = Map.fromList [("contains", "@scala")]
+    params = Map.fromList [("contains", "MyoSplainParamMarker")]
 
-noInstance :: SyntaxItem
-noInstance =
+splainParamMarker :: SyntaxItem
+splainParamMarker =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxRegion "MyoHsNoInstance" noInstanceMarker errorEnd Nothing
+    item = syntaxMatch "MyoSplainParamMarker" "!I"
     options = ["contained"]
-    params = Map.fromList [("contains", "MyoHsNoInstanceHead")]
+    params = Map.fromList [("contains", "MyoSplainParamMarkerBang"), ("nextgroup", "MyoSplainParamName")]
 
-noInstanceHead :: SyntaxItem
-noInstanceHead =
+splainParamMarkerBang :: SyntaxItem
+splainParamMarkerBang =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsNoInstanceHead" ("\\s*" <> noInstanceMarker <> ".*$")
-    options = ["contained", "skipnl"]
-    params = Map.fromList [("contains", "MyoHsNoInstanceBang"), ("nextgroup", "MyoHsNoInstanceDesc")]
-
-noInstanceBang :: SyntaxItem
-noInstanceBang =
-  item { siOptions = options, siParams = params }
-  where
-    item = syntaxMatch "MyoHsNoInstanceBang" "!"
+    item = syntaxMatch "MyoSplainParamMarkerBang" "!"
     options = ["contained"]
-    params = Map.fromList [("nextgroup", "MyoHsNoInstanceKw")]
+    params = Map.fromList [("nextgroup", "MyoSplainParamMarkerI")]
 
-noInstanceKw :: SyntaxItem
-noInstanceKw =
+splainParamI :: SyntaxItem
+splainParamI =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsNoInstanceKw" "instance\\ze:"
+    item = syntaxMatch "MyoSplainParamMarkerI" "I"
     options = ["contained", "skipwhite"]
-    params = Map.fromList [("nextgroup", "MyoHsNoInstanceTrigger")]
+    params = Map.fromList [("nextgroup", "MyoSplainParamName")]
 
-noInstanceTrigger :: SyntaxItem
-noInstanceTrigger =
+splainParamName :: SyntaxItem
+splainParamName =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoSplainParamName" "[^:]\\+\\ze:"
+    options = ["contained"]
+    params = Map.fromList [("nextgroup", "MyoSplainParamType")]
+
+splainParamType :: SyntaxItem
+splainParamType =
   item { siOptions = options }
   where
-    item = syntaxMatch "MyoHsNoInstanceTrigger" ".*"
+    item = syntaxRegion "MyoSplainParamType" "." ("\\ze.*\\(invalid because\\|" <> colMarker <> "\\)") Nothing
     options = ["contained"]
 
-noInstanceDesc :: SyntaxItem
-noInstanceDesc =
-  item { siOptions = options, siParams = params }
+splainCandidate :: SyntaxItem
+splainCandidate =
+  item { siOptions = options }
   where
-    item = syntaxMatch "MyoHsNoInstanceDesc" ".*"
-    options = ["contained", "skipnl"]
-    params = Map.fromList [("contains", "@scala"), ("nextgroup", "MyoLocation")]
-
-notInScope :: SyntaxItem
-notInScope =
-  item { siOptions = options, siParams = params }
-  where
-    item = syntaxRegion "MyoHsNotInScope" notInScopeMarker errorEnd Nothing
+    item = syntaxMatch "MyoSplainCandidate" "\\S\\+\\ze invalid because"
     options = ["contained"]
-    params = Map.fromList [("contains", "MyoHsNotInScopeHead")]
 
-notInScopeHead :: SyntaxItem
-notInScopeHead =
+splainFoundReq :: SyntaxItem
+splainFoundReq =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsNotInScopeHead" ("\\s*" <> notInScopeMarker)
-    options = ["contained", "skipnl"]
-    params = Map.fromList [("nextgroup", "MyoHsCode")]
+    item = syntaxMatch "MyoSplainFoundReq" rex
+    rex = "^.*" <> foundMarker <> ".\\{-}" <> separatorMarker <> foundreqSeparator <> ".\\{-}" <> reqMarker <> ".*$"
+    options = ["contained"]
+    params = Map.fromList [("contains", "MyoSplainFound,MyoSplainReq")]
+
+splainFound :: SyntaxItem
+splainFound =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoSplainFound" rex
+    rex = "\\zs" <> foundMarker <> ".\\{-}" <> separatorMarker <> "\\ze"
+    options = ["contained"]
+    params = Map.fromList [("contains", "MyoSplainFoundReqMarker"), ("nextgroup", "MyoSplainReq")]
+
+splainReq :: SyntaxItem
+splainReq =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoSplainReq" rex
+    rex = foundreqSeparator <> "\\zs.\\{-}" <> reqMarker <> "\\ze"
+    options = ["contained"]
+    params = Map.fromList [("contains", "MyoSplainFoundReqMarker")]
+
+splainFoundReqMarker :: SyntaxItem
+splainFoundReqMarker =
+  item { siOptions = options }
+  where
+    item = syntaxMatch "MyoSplainFoundReqMarker" rex
+    rex = foundMarker <> "\\|" <> separatorMarker <> "\\|" <> reqMarker
+    options = ["conceal", "contained"]
 
 hiReq :: Highlight
 hiReq =
-  syntaxHighlight "MyoHsReq" [("ctermfg", "2"), ("guifg", "#719e07")]
+  syntaxHighlight "MyoSplainReq" [("ctermfg", "2"), ("guifg", "#719e07")]
 
-hiTrigger :: Highlight
-hiTrigger =
-  syntaxHighlight "MyoHsNoInstanceTrigger" [("ctermfg", "3")]
+hlError :: HiLink
+hlError =
+  HiLink "MyoError" "Error"
 
 hlPath :: HiLink
 hlPath =
@@ -174,35 +211,75 @@ hlLineNumber :: HiLink
 hlLineNumber =
   HiLink "MyoLineNumber" "Directory"
 
-hlFoundReq :: HiLink
-hlFoundReq =
-  HiLink "MyoHsFoundReq" "Title"
+hlCol :: HiLink
+hlCol =
+  HiLink "MyoCol" "Search"
 
-hlFound :: HiLink
-hlFound =
-  HiLink "MyoHsFound" "Error"
+hlSplainParamMarkerBang :: HiLink
+hlSplainParamMarkerBang =
+  HiLink "MyoSplainParamMarkerBang" "Error"
 
-hlBang :: HiLink
-hlBang =
-  HiLink "MyoHsNoInstanceBang" "Error"
+hlSplainParamMarkerI :: HiLink
+hlSplainParamMarkerI =
+  HiLink "MyoSplainParamMarkerI" "Directory"
 
-hlKw :: HiLink
-hlKw =
-  HiLink "MyoHsNoInstanceKw" "Directory"
+hlSplainParamName :: HiLink
+hlSplainParamName =
+  HiLink "MyoSplainParamName" "Type"
 
-hlNotInScope :: HiLink
-hlNotInScope =
-  HiLink "MyoHsNotInScopeHead" "Error"
+hlSplainParamType :: HiLink
+hlSplainParamType =
+  HiLink "MyoSplainParamType" "Statement"
+
+hlSplainCandidate :: HiLink
+hlSplainCandidate =
+  HiLink "MyoSplainCandidate" "Error"
+
+hlSplainFoundReq :: HiLink
+hlSplainFoundReq =
+  HiLink "MyoSplainFoundReq" "Normal"
+
+hlSplainFound :: HiLink
+hlSplainFound =
+  HiLink "MyoSplainFound" "Error"
 
 scalaSyntax :: Syntax
 scalaSyntax =
   Syntax items highlights hilinks
   where
-    items =
-      [
-        scalaInclude, location, path, lineNumberSymbol, errorMessage, foundReq, found, req, code,
-        noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
-        notInScopeHead
+    items = [
+      scalaInclude,
+      location,
+      path,
+      lineNumberItem,
+      errorMessage,
+      colMarkerConceal,
+      col,
+      code,
+      splain,
+      splainParam,
+      splainParamMarker,
+      splainParamMarkerBang,
+      splainParamI,
+      splainParamName,
+      splainParamType,
+      splainCandidate,
+      splainFoundReq,
+      splainFound,
+      splainReq,
+      splainFoundReqMarker
       ]
-    highlights = [hiReq, hiTrigger]
-    hilinks = [hlPath, hlLineNumber, hlFoundReq, hlFound, hlBang, hlKw, hlNotInScope]
+    highlights = [hiReq]
+    hilinks = [
+      hlError,
+      hlPath,
+      hlLineNumber,
+      hlCol,
+      hlSplainParamMarkerBang,
+      hlSplainParamMarkerI,
+      hlSplainParamName,
+      hlSplainParamType,
+      hlSplainCandidate,
+      hlSplainFoundReq,
+      hlSplainFound
+      ]

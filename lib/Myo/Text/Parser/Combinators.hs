@@ -1,7 +1,7 @@
 module Myo.Text.Parser.Combinators where
 
 import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
-import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
+import Text.Parser.Combinators (choice, many, manyTill, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
 
@@ -18,13 +18,13 @@ ws =
 tillInLine ::
   CharParsing m =>
   m a ->
-  m [Char]
+  m String
 tillInLine =
   manyTill (noneOf ['\n'])
 
 tillEol ::
   CharParsing m =>
-  m [Char]
+  m String
 tillEol =
   tillInLine newline
 

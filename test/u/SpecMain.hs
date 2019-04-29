@@ -13,6 +13,7 @@ import {-@ HTF_TESTS @-} Output.ParseHaskellSpec
 import {-@ HTF_TESTS @-} Output.ParseScalaSpec
 import {-@ HTF_TESTS @-} Output.QuitSpec
 import {-@ HTF_TESTS @-} Output.SanitizeSpec
+import {-@ HTF_TESTS @-} Output.ScalaRenderSpec
 import {-@ HTF_TESTS @-} Output.SelectSpec
 import {-@ HTF_TESTS @-} ProcSpec
 import {-@ HTF_TESTS @-} RunSpec

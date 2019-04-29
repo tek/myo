@@ -16,6 +16,7 @@ data ScalaEvent =
      _eventType :: EventType,
      _errorMessage :: Text,
      _errorInfo :: [Text],
+     _codeIndent :: Int,
      _code :: Text
   }
   deriving (Eq, Show)

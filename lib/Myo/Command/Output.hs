@@ -7,10 +7,12 @@ import Control.Monad.IO.Class (MonadIO)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
+import Ribosome.Data.Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
+import Ribosome.Nvim.Api.IO (windowSetOption)
 import Ribosome.Scratch (killScratch, showInScratch)
 
 import Myo.Command.Data.CommandState (CommandState)
@@ -49,8 +51,11 @@ renderReport ::
   ParseReport ->
   [Syntax] ->
   m ()
-renderReport (ParseReport _ lines') syntax =
-  void $ showInScratch (render <$> lines') options
+renderReport (ParseReport _ lines') syntax = do
+  win <- scratchWindow <$> showInScratch (render <$> lines') options
+  windowSetOption win "conceallevel" (toMsgpack (3 :: Int))
+  windowSetOption win "concealcursor" (toMsgpack ("n" :: Text))
+  windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
   where
     render (ReportLine _ text) =
       text

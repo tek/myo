@@ -2,6 +2,7 @@ module Myo.Output.Lang.Scala.Parser where
 
 import Control.Monad ((<=<))
 import Data.Attoparsec.Text (parseOnly)
+import Data.Char (isSpace)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
 import Data.List.NonEmpty (NonEmpty((:|)))
@@ -9,8 +10,8 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
-import Text.Parser.Combinators (choice, eof, many, manyTill, notFollowedBy, skipMany, skipOptional, try)
+import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, satisfy, string)
+import Text.Parser.Combinators (choice, eof, many, manyTill, notFollowedBy, skipMany, skipOptional)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
 
@@ -57,6 +58,16 @@ infoLine ::
 infoLine =
   eventTag *> (toText <$> tillEol)
 
+codeLine ::
+  Monad m =>
+  CharParsing m =>
+  TokenParsing m =>
+  m (Int, Text)
+codeLine = do
+  w <- char '[' *> eventType *> char ']' *> many (satisfy isSpace)
+  t <- (toText <$> tillEol)
+  return (length w - 1, t)
+
 colMarkerLine ::
   CharParsing m =>
   TokenParsing m =>
@@ -69,12 +80,12 @@ errorInfo ::
   CharParsing m =>
   TokenParsing m =>
   LookAheadParsing m =>
-  m ([Text], Text)
+  m ([Text], Int, Text)
 errorInfo = do
-  info <- many (infoLine <* notFollowedBy colMarkerLine)
-  code <- infoLine
-  void colMarkerLine
-  return (info, code)
+  info <- many (infoLine <* notFollowedBy (choice [colMarkerLine, void locationLine]))
+  (indent, code) <- codeLine
+  skipOptional colMarkerLine
+  return (info, indent, code)
 
 event ::
   Monad m =>
@@ -84,7 +95,8 @@ event ::
   m ScalaEvent
 event = do
   (location, eventType, message) <- locationLine
-  uncurry (ScalaEvent location eventType message) <$> errorInfo
+  (info, indent, code) <- errorInfo
+  return (ScalaEvent location eventType message info indent code)
 
 parseScalaErrors ::
   Monad m =>
@@ -93,7 +105,7 @@ parseScalaErrors ::
   LookAheadParsing m =>
   m (Vector ScalaEvent)
 parseScalaErrors =
-  Vector.fromList . catMaybes <$> manyTill (choice [Just <$> event, Nothing <$ skipLine]) (ws *> eof)
+  Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
 
 parseScala :: Text -> Either OutputError ParsedOutput
 parseScala =

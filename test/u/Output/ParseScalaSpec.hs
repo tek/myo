@@ -14,8 +14,9 @@ import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
+import Myo.Output.Data.String (colMarker)
 import Myo.Output.Lang.Scala.Parser hiding (parseScala)
-import Myo.Output.Lang.Scala.Report (colMarker, foundMarker, reqMarker, separatorMarker)
+import Myo.Output.Lang.Scala.Syntax (foundMarker, reqMarker, separatorMarker)
 
 scalaOutput :: Text
 scalaOutput =
@@ -24,16 +25,16 @@ scalaOutput =
     "[error] /path/to/file.scala:3:1: expected class or object definition",
     "[error] name",
     "[error] ^",
-    "[error] /path/to/other_file.scala:7:1: terrible mistake",
+    "[error] /path/to/other_file.scala:7:3: terrible mistake",
     "[error] !I param: Type",
     "[error] Foo.bar invalid because",
     "[error] !I param2: Class",
     "[error]   implicitly[Class]",
     "[error]   ^",
-    "[error] /path/to/third_file.scala:3:6: type mismatch",
+    "[error] /path/to/third_file.scala:3:10: type mismatch",
     "[error]   Type[Int | List[String]]",
-    "[error]   func(param)",
-    "[error]        ^",
+    "[error]     func(param)",
+    "[error]          ^",
     "[error] one error found",
     ""
     ]
