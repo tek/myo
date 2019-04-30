@@ -1,5 +1,6 @@
 module Myo.Command.History where
 
+import Chiasma.Data.Ident (Ident, sameIdent)
 import Control.Monad.DeepState (MonadDeepState)
 import Ribosome.Control.Monad.Ribo (prepend)
 
@@ -13,4 +14,6 @@ pushHistory ::
   Command ->
   m ()
 pushHistory cmd =
-  prepend @CommandState CommandState.history (HistoryEntry cmd)
+  modifyL @CommandState CommandState.history prep
+  where
+    prep es = (HistoryEntry cmd) : (filter (not . sameIdent cmd) es)
