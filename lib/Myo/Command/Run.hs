@@ -17,7 +17,7 @@ import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask, RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
-import Myo.Command.History (pushHistory)
+import Myo.Command.History (lookupHistory, pushHistory)
 import Myo.Command.Log (pushCommandLog)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
@@ -107,3 +107,20 @@ myoRun ::
   m ()
 myoRun =
   runCommand <=< commandByIdent
+
+myoReRun ::
+  RunTmux m =>
+  MonadRibo m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s Env m =>
+  MonadDeepState s CommandState m =>
+  MonadThrow m =>
+  Int ->
+  m ()
+myoReRun =
+  runCommand <=< lookupHistory

@@ -20,7 +20,7 @@ import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoReRun, myoRun)
 import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env, MyoN)
 import Myo.Data.Error (Error)
@@ -45,6 +45,7 @@ rpcHandlers =
     $(rpcHandlerDef 'myoTogglePane),
     $(rpcHandlerDef 'myoToggleLayout),
     $(rpcHandler (cmd []) 'myoRun),
+    $(rpcHandlerDef 'myoReRun),
     $(rpcHandlerDef 'myoParse),
     $(rpcHandler (cmd []) 'myoParseLatest),
     $(rpcHandlerDef 'myoPrev),

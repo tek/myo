@@ -1,8 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Myo.Command.Data.CommandError(
-  CommandError(..),
-) where
+module Myo.Command.Data.CommandError where
 
 import Chiasma.Data.Ident (Ident, identText)
 import Data.DeepPrisms (deepPrisms)
@@ -16,6 +14,8 @@ data CommandError =
   NoSuchCommand Ident
   |
   NoCommands
+  |
+  NoSuchHistoryIndex Int
   deriving (Eq, Show)
 
 deepPrisms ''CommandError
@@ -33,3 +33,7 @@ instance ReportError CommandError where
     ErrorReport err [err] NOTICE
     where
       err = "no commands have been created yet"
+  errorReport (NoSuchHistoryIndex index) =
+    ErrorReport err [err] NOTICE
+    where
+      err = "no history entry at index " <> show index
