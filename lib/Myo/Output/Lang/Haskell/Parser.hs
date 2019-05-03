@@ -22,7 +22,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
-import Myo.Text.Parser.Combinators (colon, emptyLine, skipLine, tillEol, tillInLine, ws)
+import Myo.Text.Parser.Combinators (colon, emptyLine, skipLine, ws)
 
 locationLine ::
   Monad m =>

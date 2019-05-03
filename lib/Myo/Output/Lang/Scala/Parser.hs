@@ -5,15 +5,14 @@ import Data.Attoparsec.Text (parseOnly)
 import Data.Char (isSpace)
 import Data.Either.Combinators (mapLeft)
 import Data.Functor (void)
-import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, satisfy, string)
-import Text.Parser.Combinators (choice, eof, many, manyTill, notFollowedBy, skipMany, skipOptional)
-import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
-import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
+import Text.Parser.Char (CharParsing, char, newline, satisfy, string)
+import Text.Parser.Combinators (choice, many, notFollowedBy, skipOptional)
+import Text.Parser.LookAhead (LookAheadParsing)
+import Text.Parser.Token (TokenParsing, brackets, natural)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -23,7 +22,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Scala.Data.ScalaEvent (EventType, ScalaEvent(ScalaEvent))
 import qualified Myo.Output.Lang.Scala.Data.ScalaEvent as EventType (EventType(..))
 import Myo.Output.Lang.Scala.Report (scalaReport)
-import Myo.Text.Parser.Combinators (colon, emptyLine, skipLine, tillEol, tillInLine, ws)
+import Myo.Text.Parser.Combinators (colon, skipLine, tillEol, tillInLine, ws)
 
 eventType ::
   TokenParsing m =>
@@ -94,9 +93,9 @@ event ::
   LookAheadParsing m =>
   m ScalaEvent
 event = do
-  (location, eventType, message) <- locationLine
+  (location, eventType', message) <- locationLine
   (info, indent, code) <- errorInfo
-  return (ScalaEvent location eventType message info indent code)
+  return (ScalaEvent location eventType' message info indent code)
 
 parseScalaErrors ::
   Monad m =>

@@ -12,7 +12,7 @@ import Chiasma.Ui.ViewTree (
   )
 import qualified Chiasma.Ui.ViewTree as ToggleResult (ToggleResult(..))
 import Control.Lens (Traversal')
-import Control.Monad.DeepState (modifyE)
+import Control.Monad.DeepState (modifyM)
 
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.View (uiTreesLens)
@@ -55,7 +55,7 @@ toggleOne ::
   Ident ->
   m ()
 toggleOne err trans ident =
-  traverse_ throwHoist =<< modifyE (err ident . trans uiTreesLens ident)
+  modifyM $ hoistEither . err ident . trans uiTreesLens ident
 
 toggleOnePane ::
   MonadDeepState s UiState m =>

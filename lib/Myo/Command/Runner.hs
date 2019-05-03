@@ -6,18 +6,19 @@ import Control.Monad.DeepError (MonadDeepError, catchAt, hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState, gets)
 import Control.Monad.Trans.Control (MonadBaseControl, embed)
 import Data.Foldable (find)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, RiboE, prepend)
+import Ribosome.Control.Monad.Ribo (Ribo, prepend)
 
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..))
+import Myo.Command.Monitor (monitorCommand)
 import Myo.Data.Env (CanRun, Env, Runner(Runner))
 import qualified Myo.Data.Env as Env (runners)
 
-class MonadBaseControl IO m => RunInIO m where
+class RunInIO m where
   runInIOSE :: (RunTask -> m (Either RunError a)) -> m (RunTask -> IO (Either RunError a))
 
-instance Show e => RunInIO (RiboE s e (ConcNvimS s)) where
+instance Show e => RunInIO (Ribo s e) where
   runInIOSE =
     fmap catch . embed
     where
@@ -40,7 +41,9 @@ findRunner task = do
   hoistMaybe (RunError.NoRunner task) mayRunner
 
 addRunner ::
-  (MonadBaseControl IO m, MonadDeepState s Env m, RunInIO m) =>
+  MonadBaseControl IO m =>
+  MonadDeepState s Env m =>
+  RunInIO m =>
   Ident ->
   (RunTask -> m (Either RunError ())) ->
   CanRun ->
@@ -49,6 +52,10 @@ addRunner ident run can = do
   er <- runInIOSE run
   prepend @Env Env.runners (Runner ident can er)
 
-mkRunner :: MonadDeepError e RunError m => (RunTask -> m ()) -> RunTask -> m (Either RunError ())
+mkRunner ::
+  MonadDeepError e RunError m =>
+  (RunTask -> m ()) ->
+  RunTask ->
+  m (Either RunError ())
 mkRunner run =
   catchAt (return . Left) . (fmap Right . run)

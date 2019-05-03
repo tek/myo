@@ -19,7 +19,7 @@ import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
@@ -111,7 +111,7 @@ myoSyntax = do
     parse = Text.dropWhileEnd (' ' ==) <$$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"
 
-haskellRenderSpec :: MyoN ()
+haskellRenderSpec :: Myo ()
 haskellRenderSpec = do
   initialize''
   setupHighlights

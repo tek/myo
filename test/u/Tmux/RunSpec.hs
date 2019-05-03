@@ -13,7 +13,7 @@ import Test.Framework
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Tmux.Runner (addTmuxRunner)
 import Unit (tmuxGuiSpecDef)
@@ -24,7 +24,7 @@ line1 = "line 1"
 line2 :: Text
 line2 = "line 2"
 
-runSysSpec :: MyoN ()
+runSysSpec :: Myo ()
 runSysSpec = do
   addTmuxRunner
   initialize''

@@ -13,15 +13,16 @@ import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask, RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
+import Myo.Command.Execution (isCommandRunning, pushExecution)
 import Myo.Command.History (lookupHistory, pushHistory)
 import Myo.Command.Log (pushCommandLog)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
-import Myo.Command.RunningCommand (isCommandRunning, removePendingCommand, removeRunningCommand)
 import Myo.Data.Env (Env, Runner(Runner))
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
@@ -83,9 +84,7 @@ runCommand cmd = do
   task <- runTask cmd
   ensurePrerequisites (RunTask.rtDetails task)
   runner <- findRunner task
-  pushCommandLog ident
-  removePendingCommand ident
-  removeRunningCommand ident
+  pushExecution ident (const (return ExecutionState.Unknown))
   executeRunner runner task
   pushHistory cmd
   where

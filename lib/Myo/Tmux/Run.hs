@@ -22,6 +22,7 @@ import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
 import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.Execution (ExecutionState)
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(SocketFailure))
@@ -89,7 +90,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
       logDebug $ "running tmux system task `" <> identText commandIdent <> "`"
       socket <- settingMaybe tmuxSocket
       paneId <- Views.paneId paneIdent
-      monitorCommand commandIdent logPath (Just (findTmuxPid socket paneId))
+      monitorCommand commandIdent logPath
       waitForSocket logPath
       runRiboTmux $ do
         pipePaneToSocket paneId logPath
@@ -101,3 +102,10 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
       undefined
     send paneId =
       sendKeys paneId (toString <$> lines')
+
+tmuxCheckPending ::
+  Maybe FilePath ->
+  Ident ->
+  IO ExecutionState
+tmuxCheckPending =
+  undefined

@@ -12,10 +12,10 @@ import Ribosome.Test.Tmux (tmuxGuiSpecDef)
 import Test.Framework
 
 import Myo.Command.Output (renderParseResult)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 
-emptyOutputSpec :: MyoN ()
+emptyOutputSpec :: Myo ()
 emptyOutputSpec = do
   initialize''
   catchAt catchNoEvents $ renderParseResult (Ident.Str "test") []

@@ -14,10 +14,9 @@ import qualified Text.Show (Show(show))
 
 import Myo.Command.Data.Command (Command, CommandLanguage)
 import Myo.Command.Data.CommandLog (CommandLog)
+import Myo.Command.Data.Execution (Execution)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.MonitorEvent (MonitorEvent)
-import Myo.Command.Data.PendingCommand (PendingCommand)
-import Myo.Command.Data.RunningCommand (RunningCommand)
 import Myo.Output.Data.OutputEvent (EventIndex)
 import Myo.Output.Data.OutputHandler (OutputHandler)
 import Myo.Output.Data.ParseReport (ParseReport)
@@ -32,18 +31,18 @@ data CommandState =
     _history :: [HistoryEntry],
     _logPaths :: LogPaths,
     _logs :: Logs,
-    _running :: [RunningCommand],
     _parseResult :: Maybe ParseResult,
     _parseReport :: Maybe ParseReport,
     _currentEvent :: EventIndex,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _monitorChan :: Maybe (TMChan MonitorEvent),
-    _pendingCommands :: [PendingCommand]
+    _executing :: Map Ident Execution,
+    _executionLog :: [Execution]
   }
   deriving (Generic, Default)
 
 deepLenses ''CommandState
 
 instance Text.Show.Show CommandState where
-  show (CommandState cmds hist lps ls rn _ prprt ce han _ pc) =
-    "CommandState" ++ show (cmds, hist, lps, ls, rn, prprt, ce, han, pc)
+  show (CommandState cmds hist lps lgs _ prprt ce han _ _ _) =
+    "CommandState" ++ show (cmds, hist, lps, lgs, prprt, ce, han)

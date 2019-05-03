@@ -1,0 +1,115 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
+module Myo.Command.Test where
+
+import Chiasma.Data.Ident (Ident)
+import Chiasma.Ui.Data.TreeModError (TreeModError)
+import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.MessagePack (Object)
+import Ribosome.Api.Window (currentCursor)
+import Ribosome.Config.Setting (setting, settingMaybe)
+import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Msgpack.Decode (MsgpackDecode)
+import Ribosome.Msgpack.Encode (MsgpackEncode)
+import Ribosome.Nvim.Api.IO (vimCallFunction)
+import Ribosome.Tmux.Run (RunTmux)
+
+import Myo.Command.Data.Command (Command(Command))
+import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter(Shell, System))
+import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Run (runCommand)
+import Myo.Data.Env (Env)
+import Myo.Settings (testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
+import Myo.Ui.Data.ToggleError (ToggleError)
+import Myo.Ui.Render (MyoRender)
+
+data VimTestPosition =
+  VimTestPosition {
+    vtpFile :: Text,
+    vtpLine :: Int,
+    vtpCol :: Int
+  }
+  deriving (Eq, Show, Generic, MsgpackEncode)
+
+testIdent :: Ident
+testIdent =
+  "<test>"
+
+vimTestPosition ::
+  MonadDeepError e SettingError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  m VimTestPosition
+vimTestPosition = do
+  fnMod <- setting vimTestFileNameModifier
+  file <- vimCallFunction "expand" [toMsgpack ("%" <> fnMod)]
+  (line, col) <- currentCursor
+  return (VimTestPosition file line col)
+
+vimTestCallWrap ::
+  MsgpackDecode a =>
+  NvimE e m =>
+  Text ->
+  [Object] ->
+  m a
+vimTestCallWrap fun =
+  vimCallFunction ("MyoTest" <> fun)
+
+assembleVimTestLine ::
+  NvimE e m =>
+  VimTestPosition ->
+  m Text
+assembleVimTestLine position@(VimTestPosition file line col) = do
+  runner <- vimTestCallWrap @Text "DetermineRunner" [toMsgpack file]
+  exe <- vimTestCallWrap @Text "Executable" [toMsgpack runner]
+  preArgs <- vimTestCallWrap @[Text] "BuildPosition" [toMsgpack runner, toMsgpack position]
+  args <- vimTestCallWrap "BuildArgs" [toMsgpack runner, toMsgpack preArgs]
+  return $ unwords (exe : args)
+
+vimTestLine ::
+  MonadDeepError e SettingError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  m Text
+vimTestLine =
+  assembleVimTestLine =<< vimTestPosition
+
+testInterpreter :: Ident -> Maybe Ident -> CommandInterpreter
+testInterpreter _ (Just shell) =
+  Shell shell
+testInterpreter target _ =
+  System (Just target)
+
+updateTestCommand ::
+  MonadDeepError e SettingError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  Text ->
+  m Command
+updateTestCommand testLine = do
+  runner <- setting testRunner
+  shell <- settingMaybe testShell
+  target <- setting testPane
+  lang <- settingMaybe testLang
+  return (Command (testInterpreter target shell) testIdent [testLine] (Just runner) lang)
+
+myoVimTest ::
+  MonadDeepError e SettingError m =>
+  MonadRibo m =>
+  NvimE e m =>
+  RunTmux m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s Env m =>
+  MonadDeepState s CommandState m =>
+  MonadThrow m =>
+  m ()
+myoVimTest =
+  runCommand =<< updateTestCommand =<< vimTestLine

@@ -13,7 +13,7 @@ import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
@@ -41,7 +41,7 @@ parsedOutput :: ParsedOutput
 parsedOutput =
   ParsedOutput haskellSyntax (const $ ParseReport events reportLines)
 
-outputQuitSpec :: MyoN ()
+outputQuitSpec :: Myo ()
 outputQuitSpec = do
   initialize''
   renderParseResult (Ident.Str "test") [parsedOutput]

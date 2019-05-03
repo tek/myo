@@ -1,10 +1,9 @@
 module Myo.Command.History where
 
-import Chiasma.Data.Ident (Ident, sameIdent)
-import qualified Control.Lens as Lens (element, firstOf, ix)
+import Chiasma.Data.Ident (sameIdent)
+import qualified Control.Lens as Lens (element, firstOf)
 import Control.Monad.DeepError (hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState)
-import Ribosome.Control.Monad.Ribo (prepend)
 
 import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.CommandError (CommandError)
@@ -21,7 +20,7 @@ pushHistory ::
 pushHistory cmd =
   modifyL @CommandState CommandState.history prep
   where
-    prep es = (HistoryEntry cmd) : (filter (not . sameIdent cmd) es)
+    prep es = HistoryEntry cmd : filter (not . sameIdent cmd) es
 
 lookupHistory ::
   MonadDeepState s CommandState m =>

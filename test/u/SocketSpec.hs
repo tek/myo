@@ -20,7 +20,7 @@ import Test.Framework
 
 import Config (defaultVars)
 import Myo.Command.Log (commandLogPath)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Network.Socket (socketBind, unixSocket)
 import Unit (specWithDef)
 
@@ -40,7 +40,7 @@ listen ::
 listen listenChan sock =
   void $ fork $ runConduit $ sourceSocket sock .| sinkTBMChan listenChan
 
-logSocketPath :: Text -> MyoN (Path Abs File)
+logSocketPath :: Text -> Myo (Path Abs File)
 logSocketPath =
   commandLogPath . Str . toString
 
@@ -53,7 +53,7 @@ chanResult chan = do
       return (a : rec)
     _ -> return []
 
-socketSpec :: MyoN ()
+socketSpec :: Myo ()
 socketSpec = do
   sockPath1 <- logSocketPath "s1"
   sockPath2 <- logSocketPath "r2"

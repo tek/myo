@@ -5,11 +5,12 @@ module DiagSpec (htf_thisModulesTests) where
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Class (lift)
 import Ribosome.Api.Buffer (currentBufferContent)
+import Ribosome.Test.Unit (withLog)
 import Test.Framework
 
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Diag (myoDiag)
-import Unit (tmuxSpecDef)
+import Unit (specDef)
 
 target :: [Text]
 target = [
@@ -24,12 +25,12 @@ target = [
   "## Errors"
   ]
 
-diagSpec :: MyoN ()
+diagSpec :: Myo ()
 diagSpec = do
   myoDiag
-  content <- lift currentBufferContent
+  content <- currentBufferContent
   liftIO $ assertEqual target content
 
 test_diag :: IO ()
 test_diag =
-  tmuxSpecDef diagSpec
+  specDef (withLog diagSpec)

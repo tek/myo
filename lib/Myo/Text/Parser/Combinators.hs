@@ -1,9 +1,8 @@
 module Myo.Text.Parser.Combinators where
 
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
-import Text.Parser.Combinators (choice, many, manyTill, skipMany, skipOptional, try)
-import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
-import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
+import Text.Parser.Char (CharParsing, char, newline, noneOf)
+import Text.Parser.Combinators (manyTill, skipOptional)
+import Text.Parser.Token (TokenParsing, whiteSpace)
 
 colon :: CharParsing m => m Char
 colon =

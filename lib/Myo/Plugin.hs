@@ -8,7 +8,7 @@ import Data.MessagePack (Object)
 import Myo.Output.Data.OutputError (OutputError)
 import Neovim (Neovim, NeovimPlugin, Plugin(..), wrapPlugin)
 import Path (Abs, Dir, Path)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
+import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, Ribo)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError)
@@ -22,7 +22,7 @@ import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoReRun, myoRun)
 import Myo.Command.Update (updateCommands)
-import Myo.Data.Env (Env, MyoN)
+import Myo.Data.Env (Env, Myo)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
 import Myo.Init (initialize)
@@ -32,11 +32,11 @@ import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 import Myo.Ui.Update (updateUi)
 
-handleError :: Error -> MyoN ()
+handleError :: Error -> Myo ()
 handleError =
   reportError "myo"
 
-rpcHandlers :: [[RpcDef MyoN]]
+rpcHandlers :: [[RpcDef (Ribo Env Error)]]
 rpcHandlers =
   [
     $(rpcHandler (cmd []) 'myoDiag),

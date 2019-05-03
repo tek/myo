@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Myo.Data.Env where
 
@@ -6,7 +7,7 @@ import Chiasma.Data.Ident (Ident(Str))
 import Data.DeepLenses (deepLenses)
 import Data.Default (Default(def))
 import Path (Abs, Dir, Path, absdir)
-import Ribosome.Control.Monad.Ribo (ConcNvimS, Ribo, RiboE, RiboN)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Orphans ()
 import qualified Text.Show (Show(show))
 
@@ -16,16 +17,19 @@ import Myo.Command.Data.RunTask (RunTask)
 import Myo.Data.Error (Error)
 import Myo.Ui.Data.UiState (UiState)
 
-type EnvN = ConcNvimS Env
-type Myo a = Ribo Env EnvN a
-type MyoE e m a = RiboE Env e m a
-type MyoN = RiboN Env Error
+type Myo a = Ribo Env Error a
 
 type CanRun = RunTask -> Bool
 type RunF = RunTask -> IO (Either RunError ())
 
 data Runner =
-  Runner Ident CanRun RunF
+  Runner {
+    runnerIdent :: Ident,
+    runnerEligible :: CanRun,
+    runnerRun :: RunF
+  }
+
+class Runner1 a where
 
 instance Text.Show.Show Runner where
   show (Runner ident _ _) =

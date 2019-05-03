@@ -18,7 +18,7 @@ import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (parseResult)
 import Myo.Command.Output (renderParseResult)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
@@ -47,7 +47,7 @@ parsedOutput :: FilePath -> ParsedOutput
 parsedOutput file =
   ParsedOutput haskellSyntax (const $ ParseReport (events file) (reportLines file))
 
-outputSelectSpec :: MyoN ()
+outputSelectSpec :: Myo ()
 outputSelectSpec = do
   file <- fixture $ "output" </> "select" </> "File.hs"
   let po = [parsedOutput file]

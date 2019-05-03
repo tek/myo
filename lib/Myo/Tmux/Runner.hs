@@ -5,6 +5,7 @@ import Chiasma.Data.Views (Views, ViewsError)
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Functor (void)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Tmux.Run (RunTmux)
@@ -19,6 +20,7 @@ addTmuxRunner ::
   MonadRibo m =>
   MonadIO m =>
   RunTmux m =>
+  MonadBaseControl IO m =>
   MonadDeepState s Env m =>
   MonadDeepState s Views m =>
   MonadDeepError e RunError m =>

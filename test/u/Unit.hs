@@ -11,15 +11,15 @@ import Ribosome.Test.Unit (unitSpec)
 import UnliftIO (throwString)
 
 import Config (defaultTestConfig, defaultTestConfigWith, testConf)
-import Myo.Data.Env (Env(_tempDir), MyoN)
+import Myo.Data.Env (Env(_tempDir), Myo)
 import Myo.Env (bracketMyoTempDir)
 import qualified Myo.Settings as Settings (detectUi)
 
-specConfig :: TestConfig -> Env -> MyoN () -> IO ()
+specConfig :: TestConfig -> Env -> Myo () -> IO ()
 specConfig =
   unitSpec
 
-spec :: Env -> MyoN () -> IO ()
+spec :: Env -> Myo () -> IO ()
 spec =
   specConfig defaultTestConfig
 
@@ -30,46 +30,46 @@ withTempDir env thunk =
     run tempdir =
       thunk env { _tempDir = tempdir }
 
-specWith :: Env -> MyoN () -> Vars -> IO ()
+specWith :: Env -> Myo () -> Vars -> IO ()
 specWith env thunk vars =
   withTempDir env run
   where
     run env' =
       unitSpec (defaultTestConfigWith vars) env' thunk
 
-specWithDef :: MyoN () -> Vars -> IO ()
+specWithDef :: Myo () -> Vars -> IO ()
 specWithDef =
   specWith def
 
-specDef :: MyoN () -> IO ()
+specDef :: Myo () -> IO ()
 specDef thunk =
   specWithDef thunk def
 
-withTmux :: MyoN () -> TmuxNative -> MyoN ()
+withTmux :: Myo () -> TmuxNative -> Myo ()
 withTmux thunk (TmuxNative (Just socket)) = do
   _ <- updateSetting Settings.detectUi True
   _ <- updateSetting tmuxSocket socket
   thunk
 withTmux _ _ = throwString "no socket in test tmux"
 
-tmuxSpec :: (TestConfig -> TestConfig) -> MyoN () -> IO ()
+tmuxSpec :: (TestConfig -> TestConfig) -> Myo () -> IO ()
 tmuxSpec reconf thunk =
   withTempDir def run
   where
     run env =
       Ribosome.tmuxSpec (testConf reconf) env thunk
 
-tmuxGuiSpec :: (TestConfig -> TestConfig) -> MyoN () -> IO ()
+tmuxGuiSpec :: (TestConfig -> TestConfig) -> Myo () -> IO ()
 tmuxGuiSpec reconf thunk =
   withTempDir def run
   where
     run env =
       Ribosome.tmuxGuiSpec (testConf reconf) env thunk
 
-tmuxSpecDef :: MyoN () -> IO ()
+tmuxSpecDef :: Myo () -> IO ()
 tmuxSpecDef =
   tmuxSpec def
 
-tmuxGuiSpecDef :: MyoN () -> IO ()
+tmuxGuiSpecDef :: Myo () -> IO ()
 tmuxGuiSpecDef =
   tmuxGuiSpec def

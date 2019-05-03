@@ -108,12 +108,11 @@ myoParse ::
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e RpcError m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
   MonadIO m =>
   MonadRibo m =>
-  Nvim m =>
+  NvimE e m =>
   ParseOptions ->
   m ()
 myoParse (ParseOptions _ ident _) = do
@@ -127,12 +126,11 @@ myoParseLatest ::
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e RpcError m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
   MonadIO m =>
   MonadRibo m =>
-  Nvim m =>
+  NvimE e m =>
   m ()
 myoParseLatest =
   myoParse (ParseOptions Nothing Nothing Nothing)

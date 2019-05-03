@@ -18,7 +18,7 @@ import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
 import Myo.Command.Log (commandLog)
 import Myo.Command.Parse (addHandler, myoParse)
 import Myo.Command.Run (myoRun)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
@@ -47,7 +47,7 @@ parseEcho text =
       ParseReport (Vector.fromList [OutputEvent Nothing 0]) (Vector.fromList (rline <$> lines text))
     rline = ReportLine (EventIndex 0)
 
-parseTmuxSpec :: MyoN ()
+parseTmuxSpec :: Myo ()
 parseTmuxSpec = do
   let
     ident = Str "cmd"

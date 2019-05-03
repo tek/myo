@@ -45,10 +45,11 @@ dependencies:
 - path
 - path-io
 - prettyprinter
+- process
 - regex-with-pcre
 - relude
 - resourcet
-- ribosome >= 0.1.2
+- ribosome >= 0.3
 - split
 - stm-chans
 - stm-conduit

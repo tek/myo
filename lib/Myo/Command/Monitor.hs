@@ -27,13 +27,14 @@ import System.Hourglass (timeCurrent)
 import System.Log (Priority(NOTICE))
 
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (monitorChan, pendingCommands, running)
+import qualified Myo.Command.Data.CommandState as CommandState (executing, monitorChan)
+import Myo.Command.Data.Execution (Execution(Execution), ExecutionMonitor(ExecutionMonitor), ExecutionState(..))
 import Myo.Command.Data.MonitorEvent (MonitorEvent(CommandOutput, Tick))
 import Myo.Command.Data.PendingCommand (PendingCommand(PendingCommand))
 import Myo.Command.Data.Pid (Pid)
 import Myo.Command.Data.RunningCommand (RunningCommand(RunningCommand))
+import Myo.Command.Execution (removeExecution, setExecutionState)
 import Myo.Command.Log (appendLog)
-import Myo.Command.RunningCommand (addPendingCommand, removePendingCommand, removeRunningCommand, storeRunningCommand)
 import Myo.Network.Socket (socketBind)
 import Myo.System.Proc (processExists)
 
@@ -49,27 +50,47 @@ sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
   replace "\r\n" "\n"
 
-checkPid ::
+checkTracked ::
   MonadRibo m =>
   MonadDeepState s CommandState m =>
-  PendingCommand ->
+  Ident ->
+  Pid ->
   m ()
-checkPid (PendingCommand ident findPid started) = do
-  now <- liftIO timeCurrent
-  done <- if now - started < Elapsed (Seconds 3) then check else return True
-  when done (removePendingCommand ident)
-  where
-    check =
-      maybe (return False) ((False <$) . storeRunningCommand ident) =<< liftIO findPid
-
-checkRunning ::
-  MonadRibo m =>
-  MonadDeepState s CommandState m =>
-  RunningCommand ->
-  m ()
-checkRunning (RunningCommand ident pid) = do
+checkTracked ident pid = do
   exists <- processExists pid
-  unless exists (removeRunningCommand ident)
+  unless exists (removeExecution ident)
+
+updatePending ::
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  Elapsed ->
+  ExecutionState ->
+  m ()
+updatePending ident started Pending = do
+  now <- liftIO timeCurrent
+  when (timedOut now) (setExecutionState Unknown ident)
+  where
+    timedOut now =
+      now - started < Elapsed (Seconds 3)
+updatePending ident started a =
+  setExecutionState a ident
+
+checkExecuting ::
+  MonadIO m =>
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  Execution ->
+  m ()
+checkExecuting (Execution ident _ _ (ExecutionMonitor state started checkPending)) =
+  check state
+  where
+    check Pending =
+      updatePending ident started =<< liftIO (checkPending ident)
+    check (Tracked pid) =
+      checkTracked ident pid
+    check _ =
+      return ()
 
 handleEvent ::
   MonadRibo m =>
@@ -80,11 +101,8 @@ handleEvent ::
   m ()
 handleEvent (CommandOutput ident bytes) =
   appendLog ident (sanitizeOutput bytes)
-handleEvent Tick = do
-  running <- getL @CommandState CommandState.running
-  traverse_ checkRunning running
-  pending <- getL @CommandState CommandState.pendingCommands
-  traverse_ checkPid pending
+handleEvent Tick =
+  traverse_ checkExecuting =<< getL @CommandState CommandState.executing
 
 listenerErrorReport :: IOException -> ErrorReport
 listenerErrorReport ex =
@@ -111,23 +129,18 @@ listen ::
   MonadBaseControl IO m =>
   Ident ->
   Path Abs File ->
-  Maybe (IO (Maybe Pid)) ->
   TMChan MonitorEvent ->
   m ()
-listen cmdIdent logPath findPid listenChan = do
+listen cmdIdent logPath listenChan = do
   logDebug $ "listening on socket at " <> toFilePath logPath
-  traverse_ enqueueCommandPid findPid
   try (socketBind logPath) >>= \case
     Right sock ->
       void $ forkListener sock
-    Left (_ :: IOException) ->
-      logDebug $ "could not bind tmux pane socket for `" <> identText cmdIdent <> "`"
+    Left (_ :: SomeException) ->
+      logDebug $ "could not bind command output socket for `" <> identText cmdIdent <> "`"
   where
     forkListener sock =
       fork $ listener cmdIdent sock listenChan
-    enqueueCommandPid fp = do
-      now <- liftIO timeCurrent
-      addPendingCommand (PendingCommand cmdIdent fp now)
 
 runMonitor ::
   MonadRibo m =>
@@ -187,7 +200,6 @@ monitorCommand ::
   MonadDeepState s CommandState m =>
   Ident ->
   Path Abs File ->
-  Maybe (IO (Maybe Pid)) ->
   m ()
-monitorCommand cmdIdent logPath findPid =
-  listen cmdIdent logPath findPid =<< ensureMonitor
+monitorCommand cmdIdent logPath =
+  listen cmdIdent logPath =<< ensureMonitor

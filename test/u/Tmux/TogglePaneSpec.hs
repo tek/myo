@@ -16,7 +16,7 @@ import Test.Framework
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Default (setupDefaultTestUi)
@@ -33,13 +33,13 @@ pane1 = consPane (Ident.Str "p1")
 pane2 :: View Pane
 pane2 = consPane (Ident.Str "p2")
 
-setupTree :: MyoN ()
+setupTree :: Myo ()
 setupTree = do
   insertLayout (viewCoords "s" "w" "wroot") layout
   insertPane (viewCoords "s" "w" "l") pane1
   insertPane (viewCoords "s" "w" "l") pane2
 
-togglePaneSpec :: MyoN ()
+togglePaneSpec :: Myo ()
 togglePaneSpec = do
   _ <- createSpace (Ident.Str "s")
   _ <- createWindow (viewCoords "s" "w" "wroot")
@@ -53,7 +53,7 @@ test_togglePane :: IO ()
 test_togglePane =
   tmuxSpecDef togglePaneSpec
 
-shellPanePinSpec :: MyoN ()
+shellPanePinSpec :: Myo ()
 shellPanePinSpec = do
   setupDefaultTestUi
   addTmuxRunner

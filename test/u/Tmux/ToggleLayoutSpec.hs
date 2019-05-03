@@ -9,7 +9,7 @@ import Chiasma.Ui.Data.View (Layout, Pane, View, consLayout, consPane)
 import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
 
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Toggle (myoToggleLayout)
 import Myo.Ui.View
@@ -21,12 +21,12 @@ layout = consLayout (Ident.Str "l")
 pane1 :: View Pane
 pane1 = consPane (Ident.Str "p1")
 
-setupTree :: MyoN ()
+setupTree :: Myo ()
 setupTree = do
   insertLayout (viewCoords "s" "w" "wroot") layout
   insertPane (viewCoords "s" "w" "l") pane1
 
-toggleLayoutSpec :: MyoN ()
+toggleLayoutSpec :: Myo ()
 toggleLayoutSpec = do
   _ <- createSpace (Ident.Str "s")
   _ <- createWindow (viewCoords "s" "w" "wroot")

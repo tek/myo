@@ -1,7 +1,7 @@
 module Myo.Command.Output where
 
 import Chiasma.Data.Ident (Ident)
-import Control.Monad (void, when)
+import Control.Monad (when)
 import Control.Monad.DeepState (MonadDeepState, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Ribosome.Config.Setting (setting)

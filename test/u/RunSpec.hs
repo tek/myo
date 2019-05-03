@@ -16,7 +16,7 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSyst
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
 import Myo.Command.Runner (addRunner, mkRunner)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Unit (specDef)
 
 testError :: Text
@@ -25,11 +25,11 @@ testError = "error"
 cname :: Text
 cname = "test"
 
-runDummy :: RunTask -> MyoN ()
+runDummy :: RunTask -> Myo ()
 runDummy _ =
   reportError cname [testError]
 
-runSystemSpec :: MyoN ()
+runSystemSpec :: Myo ()
 runSystemSpec = do
   let ident = Str "cmd"
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing

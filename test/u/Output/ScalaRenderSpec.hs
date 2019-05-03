@@ -19,7 +19,7 @@ import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
@@ -124,7 +124,7 @@ myoSyntax = do
     parse = Text.dropWhileEnd (' ' ==) <$$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"
 
-scalaRenderSpec :: MyoN ()
+scalaRenderSpec :: Myo ()
 scalaRenderSpec = do
   initialize''
   setupHighlights

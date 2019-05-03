@@ -35,6 +35,10 @@ data RunError =
   SocketFailure
   |
   InvalidShell Cmd.Command
+  |
+  InvalidCmdline Text
+  |
+  Unsupported Text Text
   deriving Show
 
 deepPrisms ''RunError
@@ -50,9 +54,21 @@ instance ReportError RunError where
   errorReport (Views e) = viewsErrorReport e
   errorReport (Tmux e) = tmuxErrorReport e
   errorReport (Rpc e) = errorReport e
-  errorReport (IOEmbed e) = ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
-  errorReport SocketFailure = ErrorReport "internal error" ["could not create listener socket"] ERROR
+  errorReport (IOEmbed e) =
+    ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
+  errorReport SocketFailure =
+    ErrorReport "internal error" ["could not create listener socket"] ERROR
   errorReport (InvalidShell command@(Cmd.Command _ ident _ _ _)) =
     ErrorReport msg ["RunError.InvalidShell:", show command] ERROR
     where
       msg = "invalid command for shell: " <> show ident
+  errorReport (InvalidCmdline err) =
+    ErrorReport msg [msg] NOTICE
+    where
+      msg =
+        "invalid command line: " <> err
+  errorReport (Unsupported runner tpe) =
+    ErrorReport msg [msg] NOTICE
+    where
+      msg =
+        "runner `" <> runner <> "` does not support " <> tpe <> " commands"

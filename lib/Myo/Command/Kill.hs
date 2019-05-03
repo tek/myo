@@ -8,8 +8,7 @@ import qualified System.Posix.Signals as Signal (killProcess, signalProcess)
 
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Pid (Pid, pidNum)
-import Myo.Command.Data.RunningCommand (runningCommandPid)
-import Myo.Command.RunningCommand (findRunningCommand)
+import Myo.Command.Execution (executionPid, findExecution)
 
 signalPid ::
   MonadBaseControl IO m =>
@@ -35,4 +34,4 @@ killCommand ::
   Ident ->
   m ()
 killCommand =
-  traverse_ (killPid . runningCommandPid) <=< findRunningCommand
+  traverse_ killPid <=< (>>= executionPid) <$$> findExecution

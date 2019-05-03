@@ -11,10 +11,10 @@ import Test.Framework
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Execution (isCommandRunning)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRun)
-import Myo.Command.RunningCommand (isCommandRunning)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Unit (tmuxSpecDef)
@@ -53,7 +53,7 @@ thirdCondition ::
 thirdCondition output =
   gassertEqual (cmdLines ++ cmdLines) (drop 12 output)
 
-tmuxRunShellSpec :: MyoN ()
+tmuxRunShellSpec :: Myo ()
 tmuxRunShellSpec = do
   let shellIdent = "cat"
   let cmdIdent = "text"

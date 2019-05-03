@@ -47,10 +47,7 @@ latestCommand ::
   (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>
   m Command
 latestCommand =
-  HistoryEntry.command <$> inspectHeadE CommandError.NoCommands l
-  where
-    l :: Lens' CommandState [HistoryEntry]
-    l = CommandState.history
+  HistoryEntry.command <$> inspectHeadE @CommandState CommandError.NoCommands CommandState.history
 
 mainCommand ::
   MonadDeepError e CommandError m =>
@@ -58,9 +55,9 @@ mainCommand ::
   Ident ->
   m Ident
 mainCommand ident =
-  recurse =<< cmdInterpreter <$> commandByIdent ident
+  recurse =<< cmdInterpreter <$$> mayCommandByIdent ident
   where
-    recurse (Shell target) =
+    recurse (Just (Shell target)) =
       mainCommand target
     recurse _ =
       return ident

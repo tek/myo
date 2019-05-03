@@ -18,7 +18,7 @@ import Test.Framework
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (parseResult)
 import Myo.Command.Output (myoNext, myoPrev, renderParseResult)
-import Myo.Data.Env (MyoN)
+import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
@@ -51,7 +51,7 @@ parsedOutput :: FilePath -> ParsedOutput
 parsedOutput file =
   ParsedOutput haskellSyntax (const $ ParseReport (events file) (reportLines file))
 
-cycleSpecRender :: MyoN Window
+cycleSpecRender :: Myo Window
 cycleSpecRender = do
   file <- fixture $ "output" </> "select" </> "File.hs"
   let po = [parsedOutput file]
@@ -61,7 +61,7 @@ cycleSpecRender = do
   windowCountIs 2
   outputWindow
 
-outputPrevSpec :: MyoN ()
+outputPrevSpec :: Myo ()
 outputPrevSpec = do
   updateSetting Settings.outputSelectFirst False
   ow <- cycleSpecRender
@@ -75,7 +75,7 @@ test_outputPrev :: IO ()
 test_outputPrev =
   tmuxGuiSpecDef outputPrevSpec
 
-outputNextSpec :: MyoN ()
+outputNextSpec :: Myo ()
 outputNextSpec = do
   updateSetting Settings.outputSelectFirst True
   ow <- cycleSpecRender
