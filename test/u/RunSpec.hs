@@ -13,7 +13,6 @@ import Test.Framework
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Execution (ExecutionState)
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)

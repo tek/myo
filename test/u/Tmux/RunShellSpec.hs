@@ -19,7 +19,6 @@ import Myo.Data.Env (Myo)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
-import Ribosome.Test.Unit (fixture, withLog)
 import Unit (tmuxSpecDef)
 
 line1 :: Text
@@ -81,4 +80,4 @@ tmuxRunShellSpec = do
 
 test_tmuxRunShell :: IO ()
 test_tmuxRunShell =
-  tmuxSpecDef (withLog tmuxRunShellSpec)
+  tmuxSpecDef tmuxRunShellSpec

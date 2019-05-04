@@ -8,6 +8,7 @@ import qualified Data.ByteString.Char8 as ByteString (lines)
 import Data.Default (def)
 import Data.Text (Text)
 import qualified Data.Vector as Vector (fromList)
+import Ribosome.Test.Await (await)
 import Test.Framework
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -24,8 +25,8 @@ import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
-import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Tmux.Runner (addTmuxRunner)
 import Unit (tmuxGuiSpecDef)
@@ -59,8 +60,7 @@ parseTmuxSpec = do
   myoAddSystemCommand opts
   myoRun ident
   sleep 2
-  mayLog <- commandLog ident
-  log' <- ByteString.lines . CommandLog._current <$> gassertJust mayLog
+  log' <- await gassertJust (ByteString.lines . CommandLog._current <$$> commandLog ident)
   gassertBool $ encodeUtf8 line2 `elem` log'
   myoParse $ ParseOptions Nothing Nothing Nothing
 

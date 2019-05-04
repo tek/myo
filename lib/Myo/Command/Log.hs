@@ -14,7 +14,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (null)
 import qualified Data.Map as Map (keys)
 import Network.Socket (Socket)
-import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
+import Path (Abs, Dir, File, parseRelFile, Path, toFilePath, (</>))
 
 import Myo.Command.Command (mainCommand)
 import Myo.Command.Data.CommandError (CommandError)

@@ -62,7 +62,7 @@ instance ReportError OutputError where
     where
       msg = "command `" <> identText ident <> "` has not generated any output"
   errorReport NoLocation =
-    ErrorReport "this event is not associated with a location" [] NOTICE
+    ErrorReport "this event is not associated with a location" ["OutputError.NoLocation"] NOTICE
   errorReport (Internal msg) =
     ErrorReport "internal error" ["OutputError.Internal:", msg] ERROR
   errorReport NotParsed =

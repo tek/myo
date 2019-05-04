@@ -2,17 +2,16 @@ module Myo.Command.Runner where
 
 import Chiasma.Data.Ident (Ident)
 import qualified Control.Lens as Lens (views)
-import Control.Monad.DeepError (MonadDeepError, catchAt, hoistMaybe)
-import Control.Monad.DeepState (MonadDeepState, gets)
-import Control.Monad.Trans.Control (MonadBaseControl, embed)
+import Control.Monad.DeepError (catchAt, hoistMaybe, MonadDeepError)
+import Control.Monad.DeepState (gets, MonadDeepState)
+import Control.Monad.Trans.Control (embed, MonadBaseControl)
 import Data.Foldable (find)
-import Ribosome.Control.Monad.Ribo (Ribo, prepend)
+import Ribosome.Control.Monad.Ribo (prepend, Ribo)
 
 import Myo.Command.Data.Execution (ExecutionState)
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..))
-import Myo.Command.Monitor (monitorCommand)
 import Myo.Data.Env (CanRun, Env, Runner(Runner))
 import qualified Myo.Data.Env as Env (runners)
 

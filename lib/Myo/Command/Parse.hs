@@ -10,12 +10,10 @@ import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
 import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Log as Log
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
+import Text.RE.PCRE.Text (ed, RE, SearchReplace, (*=~/))
 
 import Myo.Command.Command (commandByIdent, latestCommand)
 import Myo.Command.Data.Command (Command(Command, cmdIdent), CommandLanguage)

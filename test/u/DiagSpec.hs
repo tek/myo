@@ -3,7 +3,6 @@
 module DiagSpec (htf_thisModulesTests) where
 
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Class (lift)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Test.Unit (withLog)
 import Test.Framework

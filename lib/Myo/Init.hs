@@ -1,18 +1,15 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module Myo.Init where
 
 import Chiasma.Data.Ident (generateIdent)
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Class (lift)
 import Data.Default (Default(def))
 import Neovim (Neovim)
-import Neovim.Context.Internal (Config(customConfig), asks')
+import Neovim.Context.Internal (asks', Config(customConfig))
 import Path (Abs, Dir, Path)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (RNeovim, runRibo)
-import Ribosome.Control.Ribosome (Ribosome, newRibosome)
+import Ribosome.Control.Ribosome (newRibosome, Ribosome)
 import Ribosome.Error.Report (reportError')
 import Ribosome.Internal.IO (retypeNeovim)
 import Ribosome.Orphans ()

@@ -9,14 +9,14 @@ import qualified Chiasma.Data.View as Tmux (View(View))
 import Chiasma.Data.Views (Views(Views))
 import Chiasma.Monad.Stream (TmuxProg)
 import Chiasma.Ui.Data.View (
+  consLayout,
+  consLayoutVertical,
+  consPane,
   Pane(..),
   Tree(..),
   TreeSub(..),
   View(..),
   ViewTree,
-  consLayout,
-  consLayoutVertical,
-  consPane,
   )
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
 import Control.Lens (findMOf)
@@ -33,7 +33,7 @@ import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
+import Ribosome.Tmux.Run (runRiboTmux, RunTmux)
 
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Orphans ()

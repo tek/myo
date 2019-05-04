@@ -11,7 +11,6 @@ import Ribosome.Api.Window (currentCursor)
 import Ribosome.Config.Setting (setting, settingMaybe)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
-import Ribosome.Msgpack.Encode (MsgpackEncode)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.Tmux.Run (RunTmux)
 
@@ -95,7 +94,7 @@ assembleVimTestLine ::
   NvimE e m =>
   VimTestPosition ->
   m Text
-assembleVimTestLine position@(VimTestPosition file line col) = do
+assembleVimTestLine position@(VimTestPosition file _ _) = do
   runner <- vimTestCallWrap @Text "DetermineRunner" [toMsgpack file]
   exe <- vimTestCallWrap @Text "Executable" [toMsgpack runner]
   preArgs <- vimTestCallWrap @[Text] "BuildPosition" [toMsgpack runner, toMsgpack position]

@@ -58,7 +58,7 @@ rpcHandlers =
     $(rpcHandler sync 'myoTestBuildPosition),
     $(rpcHandler sync 'myoTestBuildArgs),
     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
-    $(rpcHandler (autocmd "BufWritePre" . sync) 'myoSave)
+    $(rpcHandler (autocmd "BufWritePre") 'myoSave)
     ]
 
 mappingOutputQuit ::

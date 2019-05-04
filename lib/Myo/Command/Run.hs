@@ -3,8 +3,8 @@ module Myo.Command.Run where
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.DeepError (hoistEither, MonadDeepError)
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.DeepError (MonadDeepError, hoistEither)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Data.SettingError (SettingError)
@@ -14,20 +14,18 @@ import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.Data.Execution (ExecutionState)
-import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask(RunTask), RunTaskDetails)
+import Myo.Command.Data.RunTask (RunTask(RunTask))
 import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Execution (closeOutputSocket, isCommandActive, pushExecution)
 import Myo.Command.History (lookupHistory, pushHistory)
-import Myo.Command.Log (pushCommandLog)
 import Myo.Command.Monitor (monitorCommand)
-import Myo.Command.Runner (findRunner)
 import Myo.Command.RunTask (runTask)
+import Myo.Command.Runner (findRunner)
 import Myo.Data.Env (Env, Runner(Runner, runnerCheckPending))
 import Myo.Orphans ()
+import Myo.Save (preCommandSave)
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
 import Myo.Ui.Toggle (ensurePaneOpen)
@@ -68,7 +66,7 @@ postRun ::
   MonadDeepState s CommandState m =>
   RunTask ->
   m ()
-postRun (RunTask cmd@(Command _ ident _ _ _) log (RunTaskDetails.UiSystem _)) =
+postRun (RunTask cmd _ (RunTaskDetails.UiSystem _)) =
   pushHistory cmd
 postRun _ =
   return ()
@@ -87,6 +85,12 @@ executeRunner (Runner _ _ run _) task = do
   where
     ident = cmdIdent . RunTask.rtCommand $ task
 
+-- |Main entry point for running commands that ensures consistency.
+-- Saves all buffers, updating the 'lastSave' timestamp.
+-- Selects the proper runner for the task, e.g. tmux.
+-- Sets up the output watcher threads that connect to a socket; the implementation of the runner is expected to ensure
+-- that output is redirected to this socket.
+-- Pushes the command into the history.
 runCommand ::
   RunTmux m =>
   MonadRibo m =>
@@ -103,6 +107,7 @@ runCommand ::
   Command ->
   m ()
 runCommand cmd = do
+  preCommandSave
   task <- runTask cmd
   runner <- findRunner task
   preRun task runner

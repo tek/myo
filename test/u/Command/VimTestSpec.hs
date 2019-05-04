@@ -4,8 +4,7 @@ module Command.VimTestSpec (htf_thisModulesTests) where
 
 import qualified Data.Text as Text (intercalate)
 import Ribosome.Config.Setting (updateSetting)
-import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand)
-import Ribosome.System.Time (sleep)
+import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Unit (fixture, withLog)
 import Test.Framework
