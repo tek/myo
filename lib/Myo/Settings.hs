@@ -67,3 +67,7 @@ testPane =
 testLang :: Setting CommandLanguage
 testLang =
   Setting "test_lang" True Nothing
+
+processTimeout :: Setting Int
+processTimeout =
+  Setting "process_timeout" True (Just 10)

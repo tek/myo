@@ -26,12 +26,13 @@ import System.Process.Typed (
   )
 
 import Myo.Command.Data.Command (Command(..))
+import Myo.Command.Data.Execution (ExecutionState)
+import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(..))
 import Myo.Command.Monitor (monitorCommand)
-import Myo.Command.Runner (mkRunner)
 import Myo.Data.Env (CanRun, Env, Runner(Runner))
 import qualified Myo.Data.Env as Env (runners)
 import Myo.Network.Socket (socketBind, unixSocket)
@@ -69,7 +70,6 @@ runSubproc ::
   m ()
 runSubproc line logPath commandIdent = do
   pidVar <- liftIO $ newTVarIO Nothing
-  monitorCommand commandIdent logPath
   void . fork $ subprocess pidVar logPath (Text.words line)
 
 runSubprocTask ::

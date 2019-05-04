@@ -2,6 +2,7 @@ module Myo.Tmux.Run where
 
 import Chiasma.Codec.Data.PanePid (PanePid)
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
+import Chiasma.Command.Pane (pipePane)
 import Chiasma.Command.Pane (panePid, sendKeys)
 import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
@@ -15,14 +16,16 @@ import Control.Monad.DeepState (MonadDeepState)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Path (Abs, File, Path)
-import Path.IO (doesFileExist)
+import Path.IO (doesFileExist, removeFile)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
+import Ribosome.Control.Exception (tryAny)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
+import Ribosome.Tmux.Run (runRiboTmux, RunTmux)
 
 import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Execution (ExecutionState)
+import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Running, Starting, Pending, Unknown))
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(SocketFailure))
@@ -32,7 +35,7 @@ import Myo.Command.Log (pipePaneToSocket)
 import Myo.Command.Monitor (monitorCommand)
 import Myo.System.Proc (childPids)
 import Ribosome.Config.Setting (settingMaybe)
-import Ribosome.Config.Settings (tmuxSocket)
+import qualified Ribosome.Config.Settings as Settings (tmuxSocket)
 
 tmuxCanRun :: RunTask -> Bool
 tmuxCanRun (RunTask _ _ details) =
@@ -72,6 +75,28 @@ findTmuxPid socket paneId =
     commandPid =
       join <$$> traverse firstChildPid
 
+tmuxCheckPending ::
+  MonadBaseControl IO m =>
+  MonadRibo m =>
+  RunTmux m =>
+  MonadDeepState s Views m =>
+  MonadDeepError e ViewsError m =>
+  RunTask ->
+  m (IO ExecutionState)
+tmuxCheckPending (RunTask (Command _ commandIdent lines' _ _) logPath (RunTaskDetails.UiSystem paneIdent)) = do
+  tmuxSocket <- settingMaybe Settings.tmuxSocket
+  paneId <- Views.paneId paneIdent
+  runRiboTmux $ pipePane paneId ""
+  tryAny $ removeFile logPath
+  return $ state <$> findTmuxPid tmuxSocket paneId
+  where
+    state (Just pid) =
+      ExecutionState.Starting pid
+    state _ =
+      ExecutionState.Pending
+tmuxCheckPending _ =
+  return (return ExecutionState.Unknown)
+
 tmuxRun ::
   MonadRibo m =>
   MonadIO m =>
@@ -88,24 +113,17 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
   where
     run (RunTaskDetails.UiSystem paneIdent) = do
       logDebug $ "running tmux system task `" <> identText commandIdent <> "`"
-      socket <- settingMaybe tmuxSocket
+      tmuxSocket <- settingMaybe Settings.tmuxSocket
       paneId <- Views.paneId paneIdent
-      monitorCommand commandIdent logPath
       waitForSocket logPath
       runRiboTmux $ do
         pipePaneToSocket paneId logPath
         send paneId
     run (RunTaskDetails.UiShell _ paneIdent) = do
+      logDebug $ "running tmux shell task `" <> identText commandIdent <> "`"
       paneId <- Views.paneId paneIdent
       runRiboTmux $ send paneId
     run _ =
       undefined
     send paneId =
       sendKeys paneId (toString <$> lines')
-
-tmuxCheckPending ::
-  Maybe FilePath ->
-  Ident ->
-  IO ExecutionState
-tmuxCheckPending =
-  undefined

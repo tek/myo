@@ -2,8 +2,12 @@ module Myo.Command.Execution where
 
 import Chiasma.Data.Ident (Ident)
 import Control.Lens (Lens')
-import qualified Control.Lens as Lens (_Just, at, over, set, view)
+import qualified Control.Lens as Lens (_Just, at, mapMOf, over, set, view)
+import Control.Monad.DeepState (modifyM)
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Network.Socket (Socket)
+import qualified Network.Socket as Socket (close)
+import Ribosome.Control.Exception (tryAny)
 import qualified Ribosome.Control.Monad.Ribo as Ribo (prepend)
 import System.Hourglass (timeCurrent)
 
@@ -11,13 +15,19 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (executing, executionLog)
 import Myo.Command.Data.Execution (Execution(Execution), ExecutionMonitor(ExecutionMonitor), ExecutionState(..))
 import qualified Myo.Command.Data.Execution as Execution (monitor)
-import qualified Myo.Command.Data.Execution as ExecutionMonitor (state)
+import qualified Myo.Command.Data.Execution as ExecutionMonitor (socket, state)
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(..))
 import Myo.Command.Data.Pid (Pid)
 import Myo.System.Proc (processExists)
 
 executionLens :: Ident -> Lens' CommandState (Maybe Execution)
 executionLens ident = CommandState.executing . Lens.at ident
+
+executions ::
+  MonadDeepState s CommandState m =>
+  m (Map Ident Execution)
+executions =
+  getL @CommandState CommandState.executing
 
 archiveExecution ::
   MonadRibo m =>
@@ -28,7 +38,7 @@ archiveExecution ident =
   traverse_ archive =<< getL (executionLens ident)
   where
     archive execution = do
-      logDebug @Text $ "removing execution `" <> identText ident <> "`"
+      logDebug $ "removing execution `" <> identText ident <> "`"
       Ribo.prepend @CommandState CommandState.executionLog (stopped execution)
     stopped =
       Lens.set (Execution.monitor . ExecutionMonitor.state) Stopped
@@ -42,20 +52,30 @@ removeExecution ident = do
   archiveExecution ident
   setL @CommandState (executionLens ident) Nothing
 
+killExecution ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m ()
+killExecution ident = do
+  logDebug $ "killing execution `" <> identText ident <> "`"
+  closeOutputSocket ident
+  removeExecution ident
+
 pushExecution ::
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
-  (Ident -> IO ExecutionState) ->
+  IO ExecutionState ->
   m ()
 pushExecution ident checkPending = do
-  logDebug @Text $ "pushing execution `" <> identText ident <> "`"
+  logDebug $ "pushing execution `" <> identText ident <> "`"
   archiveExecution ident
   now <- liftIO timeCurrent
   setL @CommandState (executionLens ident) (Just (Execution ident "" [] (monitor now)))
   where
     monitor now =
-      ExecutionMonitor ExecutionState.Pending now checkPending
+      ExecutionMonitor ExecutionState.Pending now Nothing checkPending
 
 findExecution ::
   MonadDeepState s CommandState m =>
@@ -64,25 +84,47 @@ findExecution ::
 findExecution ident =
   gets $ Lens.view $ executionLens ident
 
-setExecutionRunning ::
-  MonadRibo m =>
-  Ident ->
-  m ()
-setExecutionRunning ident = do
-  logDebug @Text $ "marking execution `" <> identText ident <> "` as running"
-  undefined
-
 executionRunning ::
   MonadIO m =>
   MonadBaseControl IO m =>
   Execution ->
   m Bool
-executionRunning (Execution _ _ _ (ExecutionMonitor (Tracked pid) _ _)) =
-  processExists pid
-executionRunning (Execution _ _ _ (ExecutionMonitor Running _ _)) =
-  return True
-executionRunning _ =
-  return False
+executionRunning (Execution _ _ _ (ExecutionMonitor state _ _ _)) =
+  check state
+  where
+    check (Tracked pid) =
+      processExists pid
+    check (Starting _) =
+      return False
+    check Running =
+      return True
+    check Pending =
+      return False
+    check Unknown =
+      return False
+    check Stopped =
+      return False
+
+executionActive ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  Execution ->
+  m Bool
+executionActive (Execution _ _ _ (ExecutionMonitor state _ _ _)) =
+  check state
+  where
+    check (Tracked pid) =
+      processExists pid
+    check (Starting pid) =
+      processExists pid
+    check Running =
+      return True
+    check Pending =
+      return True
+    check Unknown =
+      return False
+    check Stopped =
+      return False
 
 isCommandRunning ::
   MonadIO m =>
@@ -93,26 +135,75 @@ isCommandRunning ::
 isCommandRunning =
   maybe (return False) executionRunning <=< findExecution
 
+isCommandActive ::
+  MonadIO m =>
+  MonadBaseControl IO m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m Bool
+isCommandActive =
+  maybe (return False) executionActive <=< findExecution
+
 executionPid ::
   Execution ->
   Maybe Pid
-executionPid (Execution _ _ _ (ExecutionMonitor (Tracked pid) _ _)) =
+executionPid (Execution _ _ _ (ExecutionMonitor (Tracked pid) _ _ _)) =
   Just pid
 executionPid _ =
   Nothing
 
-modifyExecutionState ::
+modifyExecution ::
   MonadDeepState s CommandState m =>
-  (ExecutionState -> ExecutionState) ->
+  (Execution -> m Execution) ->
   Ident ->
   m ()
-modifyExecutionState f ident =
-  modifyL (executionLens ident) (Lens.over (Lens._Just . Execution.monitor . ExecutionMonitor.state) f)
+modifyExecution f ident =
+  modifyM $ Lens.mapMOf (executionLens ident . Lens._Just) f
+
+modifyExecutionState ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  (ExecutionState -> m ExecutionState) ->
+  m ()
+modifyExecutionState ident f =
+  modifyExecution (Lens.mapMOf (Execution.monitor . ExecutionMonitor.state) update) ident
+  where
+    update previous = do
+      new <- f previous
+      when (previous /= new) (logDebug (message previous new))
+      return new
+    message previous new =
+      "changing execution state of `" <> identText ident <> "` from " <> show previous <> " to " <> show new
 
 setExecutionState ::
+  MonadRibo m =>
   MonadDeepState s CommandState m =>
+  Ident ->
   ExecutionState ->
+  m ()
+setExecutionState ident =
+  modifyExecutionState ident . const . return
+
+storeOutputSocket ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  Socket ->
   Ident ->
   m ()
-setExecutionState =
-  modifyExecutionState . const
+storeOutputSocket socket ident = do
+  logDebug $ "storing output socket for `" <> identText ident <> "`"
+  modifyExecution (Lens.mapMOf (Execution.monitor . ExecutionMonitor.socket) (const (return $ Just socket))) ident
+
+closeOutputSocket ::
+  MonadRibo m =>
+  MonadIO m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m ()
+closeOutputSocket ident = do
+  logDebug $ "closing output socket for `" <> identText ident <> "`"
+  modifyM (Lens.mapMOf (executionLens ident . Lens._Just . Execution.monitor . ExecutionMonitor.socket) close)
+  where
+    close socket =
+      Nothing <$ liftIO (tryAny $ traverse_ Socket.close socket)

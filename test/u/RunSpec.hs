@@ -13,9 +13,11 @@ import Test.Framework
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Data.Execution (ExecutionState)
+import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Command.Run (myoRun)
-import Myo.Command.Runner (addRunner, mkRunner)
+import Myo.Command.Runner (addRunner, extractRunError)
 import Myo.Data.Env (Myo)
 import Unit (specDef)
 
@@ -33,11 +35,14 @@ runSystemSpec :: Myo ()
 runSystemSpec = do
   let ident = Str "cmd"
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing
-  addRunner (Str "dummy") (mkRunner runDummy) (const True)
+  addRunner (Str "dummy") (extractRunError runDummy) (extractRunError checkDummy) (const True)
   myoRun ident
   loggedError <- inspectErrors $ Lens.view $ Errors.componentErrors . Lens.at (ComponentName cname)
   let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError
   liftIO $ assertEqual (Just [testError]) errorReport
+  where
+    checkDummy _ =
+      return $ return ExecutionState.Unknown
 
 test_runSystem :: IO ()
 test_runSystem =

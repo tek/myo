@@ -12,6 +12,7 @@ import Ribosome.Orphans ()
 import qualified Text.Show (Show(show))
 
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.Execution (ExecutionState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Data.Error (Error)
@@ -21,18 +22,20 @@ type Myo a = Ribo Env Error a
 
 type CanRun = RunTask -> Bool
 type RunF = RunTask -> IO (Either RunError ())
+type CheckPending = RunTask -> IO (Either RunError (IO ExecutionState))
 
 data Runner =
   Runner {
     runnerIdent :: Ident,
     runnerEligible :: CanRun,
-    runnerRun :: RunF
+    runnerRun :: RunF,
+    runnerCheckPending :: CheckPending
   }
 
 class Runner1 a where
 
 instance Text.Show.Show Runner where
-  show (Runner ident _ _) =
+  show (Runner ident _ _ _) =
     "Runner(" <> show ident <> ")"
 
 data Env =

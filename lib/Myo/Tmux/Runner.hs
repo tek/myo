@@ -12,9 +12,9 @@ import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Runner (RunInIO, addRunner, mkRunner)
+import Myo.Command.Runner (RunInIO, addRunner, extractRunError)
 import Myo.Data.Env (Env)
-import Myo.Tmux.Run (tmuxCanRun, tmuxRun)
+import Myo.Tmux.Run (tmuxCanRun, tmuxCheckPending, tmuxRun)
 
 addTmuxRunner ::
   MonadRibo m =>
@@ -29,4 +29,4 @@ addTmuxRunner ::
   RunInIO m =>
   m ()
 addTmuxRunner =
-  void $ addRunner (Str "tmux") (mkRunner tmuxRun) tmuxCanRun
+  void $ addRunner (Str "tmux") (extractRunError tmuxRun) (extractRunError tmuxCheckPending) tmuxCanRun

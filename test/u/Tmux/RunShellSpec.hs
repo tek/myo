@@ -4,6 +4,7 @@ module Tmux.RunShellSpec (htf_thisModulesTests) where
 
 import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Test.Await (await)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
@@ -15,8 +16,10 @@ import Myo.Command.Execution (isCommandRunning)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Myo)
+import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
+import Ribosome.Test.Unit (fixture, withLog)
 import Unit (tmuxSpecDef)
 
 line1 :: Text
@@ -57,6 +60,7 @@ tmuxRunShellSpec :: Myo ()
 tmuxRunShellSpec = do
   let shellIdent = "cat"
   let cmdIdent = "text"
+  updateSetting Settings.processTimeout 2
   addTmuxRunner
   setupDefaultTestUi
   myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] (Just "tmux") (Just "make") Nothing
@@ -77,4 +81,4 @@ tmuxRunShellSpec = do
 
 test_tmuxRunShell :: IO ()
 test_tmuxRunShell =
-  tmuxSpecDef tmuxRunShellSpec
+  tmuxSpecDef (withLog tmuxRunShellSpec)

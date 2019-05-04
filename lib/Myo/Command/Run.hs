@@ -3,35 +3,40 @@ module Myo.Command.Run where
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.DeepError (hoistEither, MonadDeepError)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
+import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.Execution (ExecutionState)
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask, RunTaskDetails)
+import Myo.Command.Data.RunTask (RunTask(RunTask), RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
-import Myo.Command.Execution (isCommandRunning, pushExecution)
+import Myo.Command.Execution (closeOutputSocket, isCommandActive, pushExecution)
 import Myo.Command.History (lookupHistory, pushHistory)
 import Myo.Command.Log (pushCommandLog)
-import Myo.Command.RunTask (runTask)
+import Myo.Command.Monitor (monitorCommand)
 import Myo.Command.Runner (findRunner)
-import Myo.Data.Env (Env, Runner(Runner))
+import Myo.Command.RunTask (runTask)
+import Myo.Data.Env (Env, Runner(Runner, runnerCheckPending))
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
 import Myo.Ui.Toggle (ensurePaneOpen)
 
-ensurePrerequisites ::
+preRun ::
   RunTmux m =>
   MonadRibo m =>
+  NvimE e m =>
+  MonadDeepError e SettingError m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
   MonadDeepError e ToggleError m =>
@@ -41,14 +46,31 @@ ensurePrerequisites ::
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadThrow m =>
-  RunTaskDetails ->
+  RunTask ->
+  Runner ->
   m ()
-ensurePrerequisites (RunTaskDetails.UiSystem ident) =
+preRun task@(RunTask (Command _ cmdIdent _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
   ensurePaneOpen ident
-ensurePrerequisites (RunTaskDetails.UiShell shellIdent _) = do
-  running <- isCommandRunning shellIdent
-  unless running (myoRun shellIdent)
-ensurePrerequisites _ =
+  checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
+  closeOutputSocket cmdIdent
+  pushExecution cmdIdent checkPending
+  monitorCommand cmdIdent log
+preRun (RunTask _ _ (RunTaskDetails.UiShell shellIdent _)) _ = do
+  active <- isCommandActive shellIdent
+  unless active $ do
+    logDebug $ "starting inactive shell command `" <> identText shellIdent <> "`"
+    myoRun shellIdent
+preRun _ _ =
+  return ()
+
+postRun ::
+  MonadRibo m =>
+  MonadDeepState s CommandState m =>
+  RunTask ->
+  m ()
+postRun (RunTask cmd@(Command _ ident _ _ _) log (RunTaskDetails.UiSystem _)) =
+  pushHistory cmd
+postRun _ =
   return ()
 
 executeRunner ::
@@ -59,10 +81,9 @@ executeRunner ::
   Runner ->
   RunTask ->
   m ()
-executeRunner (Runner _ _ run) task = do
+executeRunner (Runner _ _ run _) task = do
   logDebug $ "executing runner for command `" <> identText ident <> "`"
-  r <- liftIO $ run task
-  hoistEither r
+  hoistEither =<< liftIO (run task)
   where
     ident = cmdIdent . RunTask.rtCommand $ task
 
@@ -77,18 +98,16 @@ runCommand ::
   MonadDeepError e CommandError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
+  MonadDeepError e SettingError m =>
   MonadThrow m =>
   Command ->
   m ()
 runCommand cmd = do
   task <- runTask cmd
-  ensurePrerequisites (RunTask.rtDetails task)
   runner <- findRunner task
-  pushExecution ident (const (return ExecutionState.Unknown))
+  preRun task runner
   executeRunner runner task
-  pushHistory cmd
-  where
-    ident = cmdIdent cmd
+  void $ postRun task
 
 myoRun ::
   RunTmux m =>
@@ -101,6 +120,7 @@ myoRun ::
   MonadDeepError e CommandError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
+  MonadDeepError e SettingError m =>
   MonadThrow m =>
   Ident ->
   m ()
@@ -118,6 +138,7 @@ myoReRun ::
   MonadDeepError e CommandError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
+  MonadDeepError e SettingError m =>
   MonadThrow m =>
   Int ->
   m ()

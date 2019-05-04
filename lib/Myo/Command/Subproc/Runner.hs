@@ -3,9 +3,11 @@ module Myo.Command.Subproc.Runner where
 import Control.Monad.Trans.Control (MonadBaseControl)
 
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.Execution (ExecutionState)
+import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(System, UiSystem))
-import Myo.Command.Runner (addRunner, mkRunner, RunInIO)
+import Myo.Command.Runner (RunInIO, addRunner, extractRunError)
 import Myo.Command.Subproc.Run (runSubprocTask)
 import Myo.Data.Env (Env)
 
@@ -17,6 +19,13 @@ subprocCanRun (RunTask _ _ (UiSystem _)) =
 subprocCanRun _ =
   False
 
+subprocCheckPending ::
+  Monad m =>
+  RunTask ->
+  m (Either RunError (IO ExecutionState))
+subprocCheckPending _ =
+  return . Right . return $ ExecutionState.Unknown
+
 addSubprocessRunner ::
   MonadRibo m =>
   MonadBaseControl IO m =>
@@ -26,4 +35,4 @@ addSubprocessRunner ::
   RunInIO m =>
   m ()
 addSubprocessRunner =
-  addRunner "proc" (mkRunner runSubprocTask) subprocCanRun
+  addRunner "proc" (extractRunError runSubprocTask) subprocCheckPending subprocCanRun
