@@ -21,6 +21,7 @@ import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoReRun, myoRun)
+import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env, Myo)
 import Myo.Data.Error (Error)
@@ -51,6 +52,11 @@ rpcHandlers =
     $(rpcHandlerDef 'myoPrev),
     $(rpcHandlerDef 'myoNext),
     $(rpcHandlerDef 'myoSave),
+    $(rpcHandlerDef 'myoVimTest),
+    $(rpcHandler sync 'myoTestDetermineRunner),
+    $(rpcHandler sync 'myoTestExecutable),
+    $(rpcHandler sync 'myoTestBuildPosition),
+    $(rpcHandler sync 'myoTestBuildArgs),
     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
     $(rpcHandler (autocmd "BufWritePre" . sync) 'myoSave)
     ]

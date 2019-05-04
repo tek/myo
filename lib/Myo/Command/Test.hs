@@ -20,19 +20,13 @@ import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter(Shell, System))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Command.Data.RunError as RunError (RunError(VimTest))
+import Myo.Command.Data.VimTestPosition (VimTestPosition(VimTestPosition))
 import Myo.Command.Run (runCommand)
 import Myo.Data.Env (Env)
 import Myo.Settings (testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
-
-data VimTestPosition =
-  VimTestPosition {
-    vtpFile :: Text,
-    vtpLine :: Int,
-    vtpCol :: Int
-  }
-  deriving (Eq, Show, Generic, MsgpackEncode)
 
 testIdent :: Ident
 testIdent =
@@ -48,6 +42,45 @@ vimTestPosition = do
   file <- vimCallFunction "expand" [toMsgpack ("%" <> fnMod)]
   (line, col) <- currentCursor
   return (VimTestPosition file line col)
+
+vimTestCall ::
+  MsgpackDecode a =>
+  NvimE e m =>
+  Text ->
+  [Object] ->
+  m a
+vimTestCall name =
+  vimCallFunction ("test#" <> name)
+
+myoTestDetermineRunner ::
+  NvimE e m =>
+  Text ->
+  m Text
+myoTestDetermineRunner file =
+  vimTestCall "determine_runner" [toMsgpack file]
+
+myoTestExecutable ::
+  NvimE e m =>
+  Text ->
+  m Text
+myoTestExecutable runner =
+  vimTestCall (runner <> "#executable") []
+
+myoTestBuildPosition ::
+  NvimE e m =>
+  Text ->
+  VimTestPosition ->
+  m [Text]
+myoTestBuildPosition runner pos =
+  vimTestCall (runner <> "#build_position") [toMsgpack ("nearest" :: Text), toMsgpack pos]
+
+myoTestBuildArgs ::
+  NvimE e m =>
+  Text ->
+  [Text] ->
+  m [Text]
+myoTestBuildArgs runner args =
+  vimTestCall (runner <> "#build_args") [toMsgpack args]
 
 vimTestCallWrap ::
   MsgpackDecode a =>
@@ -71,11 +104,12 @@ assembleVimTestLine position@(VimTestPosition file line col) = do
 
 vimTestLine ::
   MonadDeepError e SettingError m =>
+  MonadDeepError e RunError m =>
   MonadRibo m =>
   NvimE e m =>
   m Text
 vimTestLine =
-  assembleVimTestLine =<< vimTestPosition
+  catchAt (throwHoist . RunError.VimTest) . assembleVimTestLine =<< vimTestPosition
 
 testInterpreter :: Ident -> Maybe Ident -> CommandInterpreter
 testInterpreter _ (Just shell) =

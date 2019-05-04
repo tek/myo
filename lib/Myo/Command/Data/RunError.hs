@@ -28,8 +28,6 @@ data RunError =
   |
   Tmux TmuxError
   |
-  Rpc RpcError
-  |
   IOEmbed Text
   |
   SocketFailure
@@ -39,6 +37,8 @@ data RunError =
   InvalidCmdline Text
   |
   Unsupported Text Text
+  |
+  VimTest RpcError
   deriving Show
 
 deepPrisms ''RunError
@@ -53,7 +53,6 @@ instance ReportError RunError where
     errorReport e
   errorReport (Views e) = viewsErrorReport e
   errorReport (Tmux e) = tmuxErrorReport e
-  errorReport (Rpc e) = errorReport e
   errorReport (IOEmbed e) =
     ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
   errorReport SocketFailure =
@@ -72,3 +71,5 @@ instance ReportError RunError where
     where
       msg =
         "runner `" <> runner <> "` does not support " <> tpe <> " commands"
+  errorReport (VimTest e) =
+    ErrorReport "vim-test failed" ["RunError.VimTest:", show e] ERROR
