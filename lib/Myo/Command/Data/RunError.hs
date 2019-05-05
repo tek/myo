@@ -8,7 +8,6 @@ import Chiasma.Data.Views (ViewsError)
 import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import System.Log (Priority(NOTICE, DEBUG, ERROR))
 
 import qualified Myo.Command.Data.Command as Cmd (Command(Command))
@@ -38,7 +37,7 @@ data RunError =
   |
   Unsupported Text Text
   |
-  VimTest RpcError
+  VimTest Text
   deriving Show
 
 deepPrisms ''RunError
@@ -72,4 +71,4 @@ instance ReportError RunError where
       msg =
         "runner `" <> runner <> "` does not support " <> tpe <> " commands"
   errorReport (VimTest e) =
-    ErrorReport "vim-test failed" ["RunError.VimTest:", show e] ERROR
+    ErrorReport "vim-test failed" ["RunError.VimTest:", e] ERROR

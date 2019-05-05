@@ -6,6 +6,7 @@ import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Error (DecodeError)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.RunError (RunError)
@@ -21,6 +22,8 @@ data Error =
   Mapping MappingError
   |
   Decode DecodeError
+  |
+  Rpc RpcError
   deriving Show
 
 deepPrisms ''Error
@@ -31,3 +34,4 @@ instance ReportError Error where
   errorReport (Output e) = errorReport e
   errorReport (Mapping e) = errorReport e
   errorReport (Decode e) = errorReport e
+  errorReport (Rpc e) = errorReport e

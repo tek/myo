@@ -37,11 +37,27 @@ loc =
 
 events :: Vector OutputEvent
 events =
-  Vector.fromList [OutputEvent (Just loc) 0, OutputEvent (Just loc) 1]
+  Vector.fromList $ OutputEvent (Just loc) <$> [0..4]
+
+line0 :: Vector ReportLine
+line0 =
+  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB")
+
+line1 :: Vector ReportLine
+line1 =
+  formatReportLine 1 loc (NoMethod "fmap")
+
+line2 :: Vector ReportLine
+line2 =
+  formatReportLine 2 loc (ModuleImport "Data.Structure.Strict")
+
+line3 :: Vector ReportLine
+line3 =
+  formatReportLine 3 loc (NamesImport "Data.Structure.Strict" ["NameA", "NameB(Ctor1, fun)", "NameC"])
 
 reportLines :: Vector ReportLine
 reportLines =
-  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB") <> formatReportLine 1 loc (NoMethod "fmap")
+  line0 <> line1 <> line2 <> line3
 
 parsedOutput :: ParsedOutput
 parsedOutput =
@@ -56,51 +72,66 @@ target = [
   "",
   "/path/to/File.hs \57505 11",
   "method not implemented: fmap",
+  "",
+  "/path/to/File.hs \57505 11",
+  "redundant module import",
+  "Data.Structure.Strict",
+  "",
+  "/path/to/File.hs \57505 11",
+  "redundant name imports",
+  "NameA, NameB(Ctor1, fun), NameC",
+  "Data.Structure.Strict",
   ""
   ]
 
 syntaxTarget :: [Text]
 syntaxTarget = [
-  "MyoPath        xxx match /^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=/  contained containedin=MyoLocation",
-  "MyoLineNumber  xxx match /\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze/  contained containedin=MyoLocation",
-  "MyoHsError     xxx start=/^/ end=/\\ze.*\\(" <> lineNumber <> "\\|†\\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope",
-  "MyoLocation    xxx match /^.*" <> lineNumber <> ".*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
-  "MyoHsFoundReq  xxx start=/type mismatch/ end=/\\ze.*\\(" <> lineNumber <> "\\|†\\)/  contained contains=MyoHsFound",
-  "MyoHsNoInstance xxx start=/\\s*!instance:/ end=/\\ze.*\\(" <> lineNumber <> "\\|†\\)/  contained contains=MyoHsNoInstanceHead",
-  "MyoHsNotInScope xxx start=/Variable not in scope:/ end=/\\ze.*\\(" <> lineNumber <> "\\|†\\)/  contained contains=MyoHsNotInScopeHead",
-  "MyoHsFound     xxx match /^.*$/  contained nextgroup=MyoHsReq skipnl",
-  "MyoHsReq       xxx match /^.*$/  contained",
-  "MyoHsCode      xxx match /.*/  contained contains=@haskell",
-  "MyoHsNoInstanceHead xxx match /\\s*\\s*!instance:.*$/  contained contains=MyoHsNoInstanceBang nextgroup=MyoHsNoInstanceDesc skipnl",
-  "MyoHsNoInstanceBang xxx match /!/  contained nextgroup=MyoHsNoInstanceKw",
-  "MyoHsNoInstanceDesc xxx match /.*/  contained contains=@haskell nextgroup=MyoLocation skipnl",
-  "MyoHsNoInstanceKw xxx match /instance\\ze:/  contained nextgroup=MyoHsNoInstanceTrigger skipwhite",
-  "MyoHsNoInstanceTrigger xxx match /.*/  contained",
-  "MyoHsNotInScopeHead xxx match /\\s*Variable not in scope:/  contained nextgroup=MyoHsCode skipnl",
-  "MyoPath        xxx links to Directory",
-  "MyoLineNumber  xxx links to Directory",
-  "MyoHsError     xxx cleared",
-  "MyoLocation    xxx cleared",
-  "MyoHsFoundReq  xxx links to Title",
-  "MyoHsNoInstance xxx cleared",
-  "MyoHsNotInScope xxx cleared",
-  "MyoHsFound     xxx links to Error",
-  "MyoHsReq       xxx ctermfg=2 guifg=#719e07",
-  "MyoHsCode      xxx cleared",
-  "MyoHsNoInstanceHead xxx cleared",
-  "MyoHsNoInstanceBang xxx links to Error",
-  "MyoHsNoInstanceDesc xxx cleared",
-  "MyoHsNoInstanceKw xxx links to Directory",
-  "MyoHsNoInstanceTrigger xxx ctermfg=3",
-  "MyoHsNotInScopeHead xxx links to Error"
+    "MyoPath        xxx match /^.*\\ze\\( \57505.*$\\)\\@=/  contained containedin=MyoLocation",
+    "MyoLineNumber  xxx match /\\(\57505 \\)\\@<=\\zs\\d\\+\\ze/  contained containedin=MyoLocation",
+    "MyoHsError     xxx start=/^/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports",
+    "MyoLocation    xxx match /^.*\57505.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
+    "MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFound",
+    "MyoHsNoInstance xxx start=/\\s*!instance:/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNoInstanceHead",
+    "MyoHsNotInScope xxx start=/Variable not in scope:/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNotInScopeHead",
+    "MyoHsModuleImport xxx start=/redundant module import/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsModule",
+    "MyoHsNameImports xxx start=/redundant name imports/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNames",
+    "MyoHsFound     xxx match /^.*$/  contained nextgroup=MyoHsReq skipnl",
+    "MyoHsReq       xxx match /^.*$/  contained",
+    "MyoHsCode      xxx match /.*/  contained contains=@haskell",
+    "MyoHsNoInstanceHead xxx match /\\s*\\s*!instance:.*$/  contained contains=MyoHsNoInstanceBang nextgroup=MyoHsNoInstanceDesc skipnl",
+    "MyoHsNoInstanceBang xxx match /!/  contained nextgroup=MyoHsNoInstanceKw",
+    "MyoHsNoInstanceDesc xxx match /.*/  contained contains=@haskell nextgroup=MyoLocation skipnl",
+    "MyoHsNoInstanceKw xxx match /instance\\ze:/  contained nextgroup=MyoHsNoInstanceTrigger skipwhite",
+    "MyoHsNoInstanceTrigger xxx match /.*/  contained",
+    "MyoHsNotInScopeHead xxx match /\\s*Variable not in scope:/  contained nextgroup=MyoHsCode skipnl",
+    "MyoHsModule    xxx match /^.*$/  contained",
+    "MyoHsNames     xxx match /^.*$/  contained contains=MyoHsName nextgroup=MyoHsModule skipnl",
+    "MyoHsName      xxx match /\\w\\+/  contained",
+    "MyoPath        xxx links to Directory",
+    "MyoLineNumber  xxx links to Directory",
+    "MyoHsError     xxx links to Error", "MyoLocation    xxx cleared",
+    "MyoHsFoundReq  xxx cleared", "MyoHsNoInstance xxx cleared",
+    "MyoHsNotInScope xxx cleared", "MyoHsModuleImport xxx cleared",
+    "MyoHsNameImports xxx cleared",
+    "MyoHsFound     xxx ctermfg=1 guifg=#dc322f",
+    "MyoHsReq       xxx ctermfg=2 guifg=#719e07",
+    "MyoHsCode      xxx cleared", "MyoHsNoInstanceHead xxx cleared",
+    "MyoHsNoInstanceBang xxx links to Error",
+    "MyoHsNoInstanceDesc xxx cleared",
+    "MyoHsNoInstanceKw xxx links to Directory",
+    "MyoHsNoInstanceTrigger xxx ctermfg=3",
+    "MyoHsNotInScopeHead xxx links to Error",
+    "MyoHsModule    xxx links to Type", "MyoHsNames     xxx cleared",
+    "MyoHsName      xxx ctermfg=5 guifg=#d33682"
   ]
 
 setupHighlights ::
   MonadDeepError e DecodeError m =>
   NvimE e m =>
   m ()
-setupHighlights =
+setupHighlights = do
   void $ executeSyntax (Syntax [] [syntaxHighlight "Error" [("ctermfg", "1"), ("cterm", "bold")]] [])
+  void $ executeSyntax (Syntax [] [syntaxHighlight "Type" [("ctermfg", "3")]] [])
 
 myoSyntax :: NvimE e m => m [Text]
 myoSyntax = do

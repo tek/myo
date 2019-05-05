@@ -1,4 +1,9 @@
-module Myo.Output.Lang.Haskell.Syntax where
+module Myo.Output.Lang.Haskell.Syntax (
+  haskellSyntax,
+  moduleImportMarker,
+  nameImportsMarker,
+  foundReqMarker,
+) where
 
 import qualified Data.Map as Map (fromList)
 import Ribosome.Data.Syntax (
@@ -9,6 +14,7 @@ import Ribosome.Data.Syntax (
   syntaxHighlight,
   syntaxMatch,
   syntaxRegion,
+  syntaxRegionOffset,
   syntaxVerbatim,
   )
 
@@ -17,8 +23,8 @@ import Myo.Output.Data.String (colMarker, lineNumber)
 errorEnd :: Text
 errorEnd = "\\ze.*\\(" <> lineNumber <> "\\|" <> colMarker <> "\\)"
 
-foundReqHead :: Text
-foundReqHead =
+foundReqMarker :: Text
+foundReqMarker =
   "type mismatch"
 
 noInstanceMarker :: Text
@@ -27,6 +33,14 @@ noInstanceMarker =
 
 notInScopeMarker :: Text
 notInScopeMarker = "Variable not in scope:"
+
+moduleImportMarker :: Text
+moduleImportMarker =
+  "redundant module import"
+
+nameImportsMarker :: Text
+nameImportsMarker =
+  "redundant name imports"
 
 haskellInclude :: SyntaxItem
 haskellInclude =
@@ -62,13 +76,14 @@ errorMessage =
   where
     item = syntaxRegion "MyoHsError" "^" errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
-    params = Map.fromList [("contains", "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope")]
+    params = Map.fromList [("contains", contains)]
+    contains = "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports"
 
 foundReq :: SyntaxItem
 foundReq =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxRegion "MyoHsFoundReq" foundReqHead errorEnd Nothing
+    item = syntaxRegionOffset "MyoHsFoundReq" foundReqMarker errorEnd Nothing "ms=e+1" ""
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsFound")]
 
@@ -158,29 +173,71 @@ notInScopeHead =
     options = ["contained", "skipnl"]
     params = Map.fromList [("nextgroup", "MyoHsCode")]
 
+moduleImport :: SyntaxItem
+moduleImport =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegionOffset "MyoHsModuleImport" moduleImportMarker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsModule")]
+
+nameImports :: SyntaxItem
+nameImports =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegionOffset "MyoHsNameImports" nameImportsMarker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsNames")]
+
+names :: SyntaxItem
+names =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsNames" "^.*$"
+    options = ["contained", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsName"), ("nextgroup", "MyoHsModule")]
+
+name :: SyntaxItem
+name =
+  item { siOptions = options }
+  where
+    item = syntaxMatch "MyoHsName" "\\w\\+"
+    options = ["contained"]
+
+moduleLine :: SyntaxItem
+moduleLine =
+  item { siOptions = options }
+  where
+    item = syntaxMatch "MyoHsModule" "^.*$"
+    options = ["contained", "skipnl"]
+
 hiReq :: Highlight
 hiReq =
   syntaxHighlight "MyoHsReq" [("ctermfg", "2"), ("guifg", "#719e07")]
+
+hiFound :: Highlight
+hiFound =
+  syntaxHighlight "MyoHsFound" [("ctermfg", "1"), ("guifg", "#dc322f")]
 
 hiTrigger :: Highlight
 hiTrigger =
   syntaxHighlight "MyoHsNoInstanceTrigger" [("ctermfg", "3")]
 
+hiName :: Highlight
+hiName =
+  syntaxHighlight "MyoHsName" [("ctermfg", "5"), ("guifg", "#d33682")]
+
 hlPath :: HiLink
 hlPath =
   HiLink "MyoPath" "Directory"
 
+hlError :: HiLink
+hlError =
+  HiLink "MyoHsError" "Error"
+
 hlLineNumber :: HiLink
 hlLineNumber =
   HiLink "MyoLineNumber" "Directory"
-
-hlFoundReq :: HiLink
-hlFoundReq =
-  HiLink "MyoHsFoundReq" "Title"
-
-hlFound :: HiLink
-hlFound =
-  HiLink "MyoHsFound" "Error"
 
 hlBang :: HiLink
 hlBang =
@@ -194,6 +251,10 @@ hlNotInScope :: HiLink
 hlNotInScope =
   HiLink "MyoHsNotInScopeHead" "Error"
 
+hlModule :: HiLink
+hlModule =
+  HiLink "MyoHsModule" "Type"
+
 haskellSyntax :: Syntax
 haskellSyntax =
   Syntax items highlights hilinks
@@ -202,7 +263,10 @@ haskellSyntax =
       [
         haskellInclude, location, path, lineNumberSymbol, errorMessage, foundReq, found, req, code,
         noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
-        notInScopeHead
+        notInScopeHead, moduleImport, nameImports, moduleLine, names, name
       ]
-    highlights = [hiReq, hiTrigger]
-    hilinks = [hlPath, hlLineNumber, hlFoundReq, hlFound, hlBang, hlKw, hlNotInScope]
+    highlights = [hiReq, hiFound, hiTrigger, hiName]
+    hilinks =
+      [
+        hlError, hlPath, hlLineNumber, hlBang, hlKw, hlNotInScope, hlModule
+      ]

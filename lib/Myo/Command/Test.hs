@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-
 module Myo.Command.Test where
 
 import Chiasma.Data.Ident (Ident)
@@ -12,6 +10,7 @@ import Ribosome.Config.Setting (setting, settingMaybe)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
+import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Data.Command (Command(Command))
@@ -108,7 +107,7 @@ vimTestLine ::
   NvimE e m =>
   m Text
 vimTestLine =
-  catchAt (throwHoist . RunError.VimTest) . assembleVimTestLine =<< vimTestPosition
+  catchAt @RpcError (throwHoist . RunError.VimTest . show) . assembleVimTestLine =<< vimTestPosition
 
 testInterpreter :: Ident -> Maybe Ident -> CommandInterpreter
 testInterpreter _ (Just shell) =

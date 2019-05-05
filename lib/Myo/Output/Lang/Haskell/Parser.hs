@@ -30,6 +30,7 @@ locationLine ::
   TokenParsing m =>
   m (Location, EventType)
 locationLine = do
+  ws
   path <- manyTill anyChar (try $ choice [newline, colon])
   lineno <- natural <* colon
   colno <- natural <* colon

@@ -4,12 +4,12 @@ import Control.Lens (ifolded, withIndex)
 import Control.Monad (join)
 import Data.Attoparsec.Text (parseOnly)
 import Data.Either.Combinators (mapLeft)
-import qualified Data.List as List (unwords)
 import Data.List.NonEmpty (NonEmpty((:|)))
+import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, unzip)
 import Data.Vector.Lens (toVectorOf)
-import Text.Parser.Char (CharParsing, anyChar, char, noneOf, string)
+import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, many, sepBy1, skipMany, skipOptional, some)
 import Text.Parser.Token (TokenParsing, whiteSpace)
 
@@ -23,7 +23,7 @@ import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
-import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
+import Myo.Output.Lang.Haskell.Syntax (foundReqMarker, haskellSyntax, moduleImportMarker, nameImportsMarker)
 
 data HaskellMessage =
   FoundReq1 Text Text
@@ -35,11 +35,19 @@ data HaskellMessage =
   Verbatim Text
   |
   NoMethod Text
+  |
+  ModuleImport Text
+  |
+  NamesImport Text [Text]
   deriving (Eq, Show)
+
+qnames :: TokenParsing m => m Char -> m () -> m [Text]
+qnames wordChar separator =
+  toText <$$> between (char '‘') (char '’') (sepBy1 (some wordChar) separator)
 
 qname :: TokenParsing m => m Text
 qname =
-  toText . List.unwords <$> between (char '‘') (char '’') (sepBy1 (some (noneOf "\n ’")) whiteSpace)
+  unwords <$> qnames (noneOf "\n ’") whiteSpace
 
 ws :: TokenParsing m => m ()
 ws =
@@ -56,14 +64,13 @@ foundReq1 =
     found = string "with actual type" *> ws *> qname <* skipMany anyChar
 
 foundReq2 ::
-  Monad m =>
   TokenParsing m =>
   m HaskellMessage
-foundReq2 = do
-  found <- string "Couldn't match type " *> qname
-  req <- string " with " *> skipOptional (string "actual type ") *> qname
-  skipMany anyChar
-  return $ FoundReq2 found req
+foundReq2 =
+  FoundReq2 <$> found <*> req <* skipMany anyChar
+  where
+    found = string "Couldn't match type " *> qname
+    req = string " with " *> skipOptional (string "actual type ") *> qname
 
 typeNotInScope ::
   TokenParsing m =>
@@ -77,6 +84,21 @@ noMethod ::
 noMethod =
   string "No explicit implementation for" *> ws *> (NoMethod <$> qname) <* skipMany anyChar
 
+moduleImport ::
+  TokenParsing m =>
+  m HaskellMessage
+moduleImport =
+  ModuleImport <$> (string "The import of" *> ws *> qname <* ws <* string "is redundant")
+
+namesImport ::
+  TokenParsing m =>
+  m HaskellMessage
+namesImport =
+  flip NamesImport <$> names <*> module'
+  where
+    names = string "The import of" *> ws *> qnames (noneOf "\n, ’") (void $ many $ oneOf "\n, ") <* ws
+    module' = string "from module" *> ws *> qname <* ws <* string "is redundant"
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -86,7 +108,7 @@ parseMessage ::
   Monad m =>
   m HaskellMessage
 parseMessage =
-  choice [foundReq1, foundReq2, typeNotInScope, noMethod, verbatim]
+  choice [foundReq1, foundReq2, typeNotInScope, noMethod, moduleImport, namesImport, verbatim]
 
 data HaskellOutputEvent =
   HaskellOutputEvent {
@@ -99,15 +121,19 @@ data HaskellOutputEvent =
 
 formatMessage :: HaskellMessage -> [Text]
 formatMessage (FoundReq1 found req) =
-  ["type mismatch", found, req]
+  [foundReqMarker, found, req]
 formatMessage (FoundReq2 found req) =
-  ["type mismatch", found, req]
+  [foundReqMarker, found, req]
 formatMessage (TypeNotInScope tpe) =
   ["type not in scope: " <> tpe]
 formatMessage (NoMethod meth) =
   ["method not implemented: " <> meth]
+formatMessage (ModuleImport name) =
+  [moduleImportMarker, name]
+formatMessage (NamesImport module' names) =
+  [nameImportsMarker, Text.intercalate ", " names,  module']
 formatMessage (Verbatim text) =
-  [text]
+  Text.lines text
 
 formatLocation :: Location -> Text
 formatLocation (Location path line _) =

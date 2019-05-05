@@ -70,7 +70,7 @@ testLang =
 
 processTimeout :: Setting Int
 processTimeout =
-  Setting "process_timeout" True (Just 10)
+  Setting "process_timeout" True (Just 3)
 
 saveBeforeRun :: Setting Bool
 saveBeforeRun =

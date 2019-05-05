@@ -66,7 +66,22 @@ haskellOutput =
     "  |",
     "5 |   mapM_ end",
     "  |   ^^^^^^^^^",
-    ""
+    "",
+    "    /path/to/file:17:1: error: [-Wunused-imports, -Werror=unused-imports]",
+    "        The import of ‘ComposeSt, captureT, control, defaultLiftBaseWith,",
+    "                       defaultRestoreM, embed, embed_’",
+    "        from module ‘Control.Monad.Trans.Control’ is redundant",
+    "       |",
+    "    17 | import Control.Monad.Trans.Control (ComposeSt, MonadBaseControl(..), defaultRestoreM)",
+    "       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "",
+    "    /path/to/file:24:1: error: [-Wunused-imports, -Werror=unused-imports]",
+    "        The import of ‘Data.Either.Combinators’ is redundant",
+    "          except perhaps to import instances from ‘Data.Either.Combinators’",
+    "        To import instances alone, use: import Data.Either.Combinators()",
+    "       |",
+    "    24 | import Data.Either.Combinators (swapEither)",
+    "       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
     ]
 
 target :: Vector Text
@@ -86,6 +101,15 @@ target = Vector.fromList [
   "type mismatch",
   "t0 Data1 -> StateT (ReaderT e0) ()",
   "StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0",
+  "",
+  "/path/to/file \57505 17",
+  "redundant name imports",
+  "ComposeSt, captureT, control, defaultLiftBaseWith, defaultRestoreM, embed, embed_",
+  "Control.Monad.Trans.Control",
+  "",
+  "/path/to/file \57505 24",
+  "redundant module import",
+  "Data.Either.Combinators",
   ""
   ]
 

@@ -5,7 +5,7 @@ import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (try)
-import Control.Monad.DeepState (getL, MonadDeepState, setL)
+import Control.Monad.DeepState (MonadDeepState, getL, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.ByteString (ByteString)
@@ -14,7 +14,7 @@ import qualified Data.ByteString.Lazy as LB (ByteString, toChunks)
 import qualified Data.ByteString.Search as ByteString (replace)
 import Data.Conduit.List (unfoldM)
 import Data.Conduit.Network.Unix (sourceSocket)
-import Data.Conduit.TMChan (newTMChan, sinkTMChan, sourceTMChan, TMChan)
+import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan)
 import Data.Functor (void)
 import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Network.Socket (Socket)
@@ -120,15 +120,21 @@ checkExecuting (Execution ident _ _ (ExecutionMonitor state started _ checkPendi
   promoteTimedOutExecution ident started state
   where
     check Pending =
-      update
+      update =<< query
     check (Starting _) =
-      update
+      updateStarting =<< query
     check (Tracked pid) =
       checkTracked ident pid
     check _ =
       return ()
+    query =
+      liftIO checkPending
+    updateStarting s@(Starting _) =
+      update s
+    updateStarting _ =
+      return ()
     update =
-      setExecutionState ident =<< liftIO checkPending
+      setExecutionState ident
 
 handleEvent ::
   MonadRibo m =>

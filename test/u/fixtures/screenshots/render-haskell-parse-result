@@ -1,23 +1,23 @@
 [38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11[39m
 [1m[31mtype mismatch
-[0m[32m[49mTypeA
-[1m[31mTypeB
+[0m[31m[49mTypeA
+[32mTypeB
+
+[38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11
+[1m[31mmethod not implemented: fmap
 
 [0m[38;5;159m[49m/path/to/File.hs[39m î¡ [38;5;159m11
-[39mmethod not implemented: fmap
+[1m[31mredundant module import
+[0m[33m[49mData.Structure.Strict
 
-[94m~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
+[38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11
+[1m[31mredundant name imports
+[0m[35m[49mNameA[39m, [35mNameB[39m([35mCtor1[39m, [35mfun[39m), [35mNameC
+[33mData.Structure.Strict
+
+[1;7m[39mmyo-report 1,1 All
+
+[0m[94m[49m~
 ~
 ~
 ~
@@ -27,9 +27,9 @@
 ~[39m [94m [39m
 [94m~[39m [94m [39m
 [94m~
-[1;7m[39mmyo-report 1,1 All
-
-[0m[94m[49m~[39m [94m [39m
+~
+~
+~[39m [94m [39m
 [94m~[39m [94m [39m
 [94m~
 ~[39m [94m [39m

@@ -35,4 +35,4 @@ skipLine =
 
 emptyLine :: Monad m => CharParsing m => m ()
 emptyLine =
-  void $ newline *> newline
+  void $ newline *> many (char ' ') *> newline
