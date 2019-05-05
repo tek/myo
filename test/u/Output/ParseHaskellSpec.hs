@@ -13,8 +13,8 @@ import Test.Framework
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 
@@ -89,6 +89,18 @@ haskellOutput =
     "       |",
     "    36 | xyzabcd",
     "       | ^^^^^^^",
+    "",
+    "    /path/to/File.hs:36:1: error:",
+    "        • No instance for (MonadIO (t m)) arising from a use of ‘func’",
+    "          Possible fix:",
+    "            add (MonadIO (t m)) to the context of",
+    "              the type signature for:",
+    "                func :: forall a (m :: * -> *). a -> m ()",
+    "        • In the expression: func",
+    "          In an equation for ‘func’: func = liftIO",
+    "       |",
+    "    70 |   func",
+    "       |   ^^^^",
     ""
     ]
 
@@ -121,6 +133,9 @@ target = Vector.fromList [
   "",
   "/path/to/File.hs \57505 36",
   "syntax error",
+  "",
+  "/path/to/File.hs \57505 36",
+  "!instance: MonadIO (t m)",
   ""
   ]
 

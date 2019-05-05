@@ -1,8 +1,11 @@
 module Myo.Text.Parser.Combinators where
 
-import Text.Parser.Char (CharParsing, char, newline, noneOf)
-import Text.Parser.Combinators (manyTill, skipOptional)
-import Text.Parser.Token (TokenParsing, whiteSpace)
+import Data.Char (isSpace)
+import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
+import Text.Parser.Char (CharParsing, alphaNum, char, newline, noneOf, satisfy)
+import Text.Parser.Combinators (choice, manyTill, skipOptional, try)
+import Text.Parser.Token (TokenParsing, brackets, parens, someSpace, token, whiteSpace)
+import qualified Text.Show
 
 colon :: CharParsing m => m Char
 colon =
@@ -36,3 +39,25 @@ skipLine =
 emptyLine :: Monad m => CharParsing m => m ()
 emptyLine =
   void $ newline *> many (char ' ') *> newline
+
+data Expr =
+  Plain Text
+  |
+  Parenthesized Text Expr
+  deriving Eq
+
+instance Text.Show.Show Expr where
+  show (Plain t) =
+    toString t
+  show (Parenthesized before sub) =
+    toString before <> "(" <> show sub <> ")"
+
+parensExpr ::
+  TokenParsing m =>
+  m Expr
+parensExpr =
+  choice [try parenthesized, Plain <$> plain]
+  where
+    plain = toText <$> many (alphaNum <|> satisfy isSpace)
+    parenthesized =
+      Parenthesized <$> plain <*> parens parensExpr

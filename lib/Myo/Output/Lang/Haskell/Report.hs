@@ -9,21 +9,22 @@ import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, unzip)
 import Data.Vector.Lens (toVectorOf)
-import Text.Parser.Char (anyChar, char, CharParsing, noneOf, oneOf, string)
+import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, many, sepBy1, skipMany, skipOptional, some)
-import Text.Parser.Token (TokenParsing, whiteSpace)
+import Text.Parser.Token (TokenParsing, parens, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Syntax (foundReqMarker, haskellSyntax, moduleImportMarker, nameImportsMarker)
+import Myo.Text.Parser.Combinators (parensExpr)
 
 data HaskellMessage =
   FoundReq1 Text Text
@@ -41,11 +42,20 @@ data HaskellMessage =
   NamesImport Text [Text]
   |
   ParseError
+  |
+  NoInstance Text Text
   deriving (Eq, Show)
+
+lq :: Char
+lq =
+  '‘'
+rq :: Char
+rq =
+  '’'
 
 qnames :: TokenParsing m => m Char -> m () -> m [Text]
 qnames wordChar separator =
-  toText <$$> between (char '‘') (char '’') (sepBy1 (some wordChar) separator)
+  toText <$$> between (char lq) (char rq) (sepBy1 (some wordChar) separator)
 
 qname :: TokenParsing m => m Text
 qname =
@@ -107,6 +117,12 @@ parseError ::
 parseError =
   ParseError <$ (string "Parse error:" *> many anyChar)
 
+noInstance ::
+  TokenParsing m =>
+  m HaskellMessage
+noInstance =
+  NoInstance . show <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf [lq]) *> qname)
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -116,7 +132,12 @@ parseMessage ::
   Monad m =>
   m HaskellMessage
 parseMessage =
-  choice [foundReq1, foundReq2, typeNotInScope, noMethod, moduleImport, namesImport, parseError, verbatim]
+  choice msgs <* skipMany anyChar
+  where
+    msgs =
+      [
+        foundReq1, foundReq2, typeNotInScope, noMethod, moduleImport, namesImport, parseError, noInstance, verbatim
+      ]
 
 data HaskellOutputEvent =
   HaskellOutputEvent {
@@ -142,6 +163,8 @@ formatMessage (NamesImport module' names) =
   [nameImportsMarker, Text.intercalate ", " names,  module']
 formatMessage ParseError =
   ["syntax error"]
+formatMessage (NoInstance tpe trigger) =
+  ["!instance: " <> trigger, tpe]
 formatMessage (Verbatim text) =
   Text.lines text
 

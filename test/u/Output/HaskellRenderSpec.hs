@@ -39,29 +39,40 @@ events :: Vector OutputEvent
 events =
   Vector.fromList $ OutputEvent (Just loc) <$> [0..4]
 
-line0 :: Vector ReportLine
-line0 =
-  formatReportLine 0 loc (FoundReq1 "TypeA" "TypeB")
+msg0 :: HaskellMessage
+msg0 =
+  FoundReq1 "TypeA" "TypeB"
 
-line1 :: Vector ReportLine
-line1 =
-  formatReportLine 1 loc (NoMethod "fmap")
+msg1 :: HaskellMessage
+msg1 =
+  NoMethod "fmap"
 
-line2 :: Vector ReportLine
-line2 =
-  formatReportLine 2 loc (ModuleImport "Data.Structure.Strict")
+msg2 :: HaskellMessage
+msg2 =
+  ModuleImport "Data.Structure.Strict"
 
-line3 :: Vector ReportLine
-line3 =
-  formatReportLine 3 loc (NamesImport "Data.Structure.Strict" ["NameA", "NameB(Ctor1, fun)", "NameC"])
+msg3 :: HaskellMessage
+msg3 =
+  NamesImport "Data.Structure.Strict" ["NameA", "NameB(Ctor1, fun)", "NameC"]
 
-reportLines :: Vector ReportLine
-reportLines =
-  line0 <> line1 <> line2 <> line3
+msg4 :: HaskellMessage
+msg4 =
+  NoInstance "MonadIO (t m)" "run"
+
+reportMsgs :: [HaskellMessage]
+reportMsgs =
+  [msg0, msg1, msg2, msg3, msg4]
+
+reportLine :: Int -> HaskellMessage -> Vector ReportLine
+reportLine index =
+  formatReportLine index loc
 
 parsedOutput :: ParsedOutput
 parsedOutput =
-  ParsedOutput haskellSyntax (const $ ParseReport events reportLines)
+  ParsedOutput haskellSyntax (const $ ParseReport events lines')
+  where
+    lines' =
+      uncurry reportLine =<< Vector.fromList (zip [0..] reportMsgs)
 
 target :: [Text]
 target = [
@@ -81,6 +92,10 @@ target = [
   "redundant name imports",
   "NameA, NameB(Ctor1, fun), NameC",
   "Data.Structure.Strict",
+  "",
+  "/path/to/File.hs \57505 11",
+  "!instance: run",
+  "MonadIO (t m)",
   ""
   ]
 
@@ -100,9 +115,9 @@ syntaxTarget = [
     "MyoHsCode      xxx match /.*/  contained contains=@haskell",
     "MyoHsNoInstanceHead xxx match /\\s*\\s*!instance:.*$/  contained contains=MyoHsNoInstanceBang nextgroup=MyoHsNoInstanceDesc skipnl",
     "MyoHsNoInstanceBang xxx match /!/  contained nextgroup=MyoHsNoInstanceKw",
-    "MyoHsNoInstanceDesc xxx match /.*/  contained contains=@haskell nextgroup=MyoLocation skipnl",
+    "MyoHsNoInstanceDesc xxx match /.*/  contained keepend contains=@haskell",
     "MyoHsNoInstanceKw xxx match /instance\\ze:/  contained nextgroup=MyoHsNoInstanceTrigger skipwhite",
-    "MyoHsNoInstanceTrigger xxx match /.*/  contained",
+    "MyoHsNoInstanceTrigger xxx match /.*/  contained keepend contains=@haskell nextgroup=MyoHsNoInstanceDesc skipnl",
     "MyoHsNotInScopeHead xxx match /\\s*Variable not in scope:/  contained nextgroup=MyoHsCode skipnl",
     "MyoHsModule    xxx match /^.*$/  contained",
     "MyoHsNames     xxx match /^.*$/  contained contains=MyoHsName nextgroup=MyoHsModule skipnl",

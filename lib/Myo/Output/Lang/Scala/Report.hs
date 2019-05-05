@@ -61,8 +61,6 @@ data FRExpr =
   Parenthesized Text FRExpr
   |
   FR FRExpr FRExpr
-  -- |
-  -- FRTuple [FRExpr]
   deriving (Eq, Show)
 
 bracketParser ::
@@ -83,8 +81,6 @@ bracketParser =
       before <- plain
       sub <- parens bracketParser
       return $ Parenthesized before sub
-    -- tuple =
-    --   FRTuple <$> sepBy1 bracketParser (char ',')
     foundreq =
       FR <$> part <* char '|' <*> part
       where

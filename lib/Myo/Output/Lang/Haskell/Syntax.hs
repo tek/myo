@@ -144,18 +144,19 @@ noInstanceKw =
 
 noInstanceTrigger :: SyntaxItem
 noInstanceTrigger =
-  item { siOptions = options }
+  item { siOptions = options, siParams = params }
   where
     item = syntaxMatch "MyoHsNoInstanceTrigger" ".*"
-    options = ["contained"]
+    options = ["contained", "skipnl", "keepend"]
+    params = Map.fromList [("contains", "@haskell"), ("nextgroup", "MyoHsNoInstanceDesc")]
 
 noInstanceDesc :: SyntaxItem
 noInstanceDesc =
   item { siOptions = options, siParams = params }
   where
     item = syntaxMatch "MyoHsNoInstanceDesc" ".*"
-    options = ["contained", "skipnl"]
-    params = Map.fromList [("contains", "@haskell"), ("nextgroup", "MyoLocation")]
+    options = ["contained", "skipnl", "keepend"]
+    params = Map.fromList [("contains", "@haskell")]
 
 notInScope :: SyntaxItem
 notInScope =
@@ -243,8 +244,8 @@ hlBang :: HiLink
 hlBang =
   HiLink "MyoHsNoInstanceBang" "Error"
 
-hlKw :: HiLink
-hlKw =
+hlNoInstanceKw :: HiLink
+hlNoInstanceKw =
   HiLink "MyoHsNoInstanceKw" "Directory"
 
 hlNotInScope :: HiLink
@@ -268,5 +269,5 @@ haskellSyntax =
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =
       [
-        hlError, hlPath, hlLineNumber, hlBang, hlKw, hlNotInScope, hlModule
+        hlError, hlPath, hlLineNumber, hlBang, hlNoInstanceKw, hlNotInScope, hlModule
       ]
