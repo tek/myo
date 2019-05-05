@@ -3,8 +3,8 @@ module Myo.Command.Run where
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.DeepError (hoistEither, MonadDeepError)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Data.SettingError (SettingError)
@@ -20,9 +20,10 @@ import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Execution (closeOutputSocket, isCommandActive, pushExecution)
 import Myo.Command.History (lookupHistory, pushHistory)
+import Myo.Command.Log (pushCommandLog)
 import Myo.Command.Monitor (monitorCommand)
-import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
+import Myo.Command.RunTask (runTask)
 import Myo.Data.Env (Env, Runner(Runner, runnerCheckPending))
 import Myo.Orphans ()
 import Myo.Save (preCommandSave)
@@ -108,6 +109,7 @@ runCommand ::
   m ()
 runCommand cmd = do
   preCommandSave
+  pushCommandLog (cmdIdent cmd)
   task <- runTask cmd
   runner <- findRunner task
   preRun task runner

@@ -8,6 +8,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.IO (vimCommand)
 import Time.System (timeCurrent)
 
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Log (pushCommandLogs)
 import Myo.Data.Env (Env(Env, _lastSave))
@@ -32,7 +33,7 @@ sensibleSave state@Env{ _lastSave = last, .. } = do
     shouldSave now =
       last - now > Elapsed (Seconds 1)
     save =
-      pushCommandLogs *> updateLastSave
+      runExceptT @CommandError pushCommandLogs *> updateLastSave
 
 myoSave ::
   NvimE e m =>

@@ -117,11 +117,13 @@ appendLog ident bytes =
     append Nothing = Just (CommandLog [] bytes)
 
 pushCommandLog ::
+  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m ()
-pushCommandLog ident =
-  modifyL (logLens ident) (fmap push)
+pushCommandLog ident = do
+  logIdent <- mainCommand ident
+  modifyL (logLens logIdent) (fmap push)
   where
     push (CommandLog prev cur) | ByteString.null cur =
       CommandLog prev cur
@@ -129,6 +131,7 @@ pushCommandLog ident =
       CommandLog (cur : prev) ""
 
 pushCommandLogs ::
+  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   m ()
 pushCommandLogs = do

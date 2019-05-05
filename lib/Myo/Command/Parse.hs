@@ -13,7 +13,7 @@ import Ribosome.Config.Setting (setting)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Log as Log
 import Ribosome.Msgpack.Error (DecodeError)
-import Text.RE.PCRE.Text (ed, RE, SearchReplace, (*=~/))
+import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
 
 import Myo.Command.Command (commandByIdent, latestCommand)
 import Myo.Command.Data.Command (Command(Command, cmdIdent), CommandLanguage)
@@ -58,11 +58,13 @@ commandOutput ::
   MonadDeepState s CommandState m =>
   Ident ->
   m Text
-commandOutput ident = do
-  clog <- commandLog ident
-  maybe (throwHoist (OutputError.NoOutput ident)) convert clog
+commandOutput ident =
+  maybe err convert =<< commandLog ident
   where
-    convert = return . sanitizeOutput . decodeUtf8 . CommandLog._current
+    convert =
+      return . sanitizeOutput . decodeUtf8 . CommandLog._current
+    err =
+      throwHoist (OutputError.NoOutput ident)
 
 handlersForLang ::
   (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>

@@ -13,8 +13,8 @@ import Test.Framework
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 
@@ -47,7 +47,7 @@ haskellOutput =
     "31 | instance Closs Int where",
     "   |          ^^^^^^^^^",
     "",
-    "/path/to/file.hs:5:5: error:",
+    "/path/to/File.hs:5:5: error:",
     "    • Couldn't match expected type ‘StateT",
     "                                      (ReaderT",
     "                                         (GHC.Conc.Sync.TVar Data))",
@@ -67,7 +67,7 @@ haskellOutput =
     "5 |   mapM_ end",
     "  |   ^^^^^^^^^",
     "",
-    "    /path/to/file:17:1: error: [-Wunused-imports, -Werror=unused-imports]",
+    "    /path/to/File.hs:17:1: error: [-Wunused-imports, -Werror=unused-imports]",
     "        The import of ‘ComposeSt, captureT, control, defaultLiftBaseWith,",
     "                       defaultRestoreM, embed, embed_’",
     "        from module ‘Control.Monad.Trans.Control’ is redundant",
@@ -75,13 +75,21 @@ haskellOutput =
     "    17 | import Control.Monad.Trans.Control (ComposeSt, MonadBaseControl(..), defaultRestoreM)",
     "       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
     "",
-    "    /path/to/file:24:1: error: [-Wunused-imports, -Werror=unused-imports]",
+    "    /path/to/File.hs:24:1: error: [-Wunused-imports, -Werror=unused-imports]",
     "        The import of ‘Data.Either.Combinators’ is redundant",
     "          except perhaps to import instances from ‘Data.Either.Combinators’",
     "        To import instances alone, use: import Data.Either.Combinators()",
     "       |",
     "    24 | import Data.Either.Combinators (swapEither)",
-    "       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+    "       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
+    "",
+    "    /path/to/File.hs:36:1: error:",
+    "        Parse error: module header, import declaration",
+    "        or top-level declaration expected.",
+    "       |",
+    "    36 | xyzabcd",
+    "       | ^^^^^^^",
+    ""
     ]
 
 target :: Vector Text
@@ -97,19 +105,22 @@ target = Vector.fromList [
   "/path/to/Module/File.hs \57505 2",
   "method not implemented: meth",
   "",
-  "/path/to/file.hs \57505 5",
+  "/path/to/File.hs \57505 5",
   "type mismatch",
   "t0 Data1 -> StateT (ReaderT e0) ()",
   "StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0",
   "",
-  "/path/to/file \57505 17",
+  "/path/to/File.hs \57505 17",
   "redundant name imports",
   "ComposeSt, captureT, control, defaultLiftBaseWith, defaultRestoreM, embed, embed_",
   "Control.Monad.Trans.Control",
   "",
-  "/path/to/file \57505 24",
+  "/path/to/File.hs \57505 24",
   "redundant module import",
   "Data.Either.Combinators",
+  "",
+  "/path/to/File.hs \57505 36",
+  "syntax error",
   ""
   ]
 

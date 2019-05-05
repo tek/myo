@@ -9,7 +9,7 @@ import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, unzip)
 import Data.Vector.Lens (toVectorOf)
-import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
+import Text.Parser.Char (anyChar, char, CharParsing, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, many, sepBy1, skipMany, skipOptional, some)
 import Text.Parser.Token (TokenParsing, whiteSpace)
 
@@ -17,8 +17,8 @@ import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
-import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
@@ -39,6 +39,8 @@ data HaskellMessage =
   ModuleImport Text
   |
   NamesImport Text [Text]
+  |
+  ParseError
   deriving (Eq, Show)
 
 qnames :: TokenParsing m => m Char -> m () -> m [Text]
@@ -99,6 +101,12 @@ namesImport =
     names = string "The import of" *> ws *> qnames (noneOf "\n, ’") (void $ many $ oneOf "\n, ") <* ws
     module' = string "from module" *> ws *> qname <* ws <* string "is redundant"
 
+parseError ::
+  TokenParsing m =>
+  m HaskellMessage
+parseError =
+  ParseError <$ (string "Parse error:" *> many anyChar)
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -108,7 +116,7 @@ parseMessage ::
   Monad m =>
   m HaskellMessage
 parseMessage =
-  choice [foundReq1, foundReq2, typeNotInScope, noMethod, moduleImport, namesImport, verbatim]
+  choice [foundReq1, foundReq2, typeNotInScope, noMethod, moduleImport, namesImport, parseError, verbatim]
 
 data HaskellOutputEvent =
   HaskellOutputEvent {
@@ -132,6 +140,8 @@ formatMessage (ModuleImport name) =
   [moduleImportMarker, name]
 formatMessage (NamesImport module' names) =
   [nameImportsMarker, Text.intercalate ", " names,  module']
+formatMessage ParseError =
+  ["syntax error"]
 formatMessage (Verbatim text) =
   Text.lines text
 
