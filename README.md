@@ -206,6 +206,7 @@ Using the functions `MyoPrev` and `MyoNext`, you can cycle through the error lis
 [Neovim]: https://github.com/neovim/neovim
 [Haskell]: https://www.haskell.org
 [ribosome]: https://github.com/tek/ribosome-hs
+[chromatin]: https://github.com/tek/chromatin-hs
 [nvim-hs]: https://github.com/neovimhaskell/nvim-hs
 [tmux]: https://github.com/tmux/tmux
 [proteome]: https://github.com/tek/proteome-hs
