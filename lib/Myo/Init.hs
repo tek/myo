@@ -16,6 +16,7 @@ import Ribosome.Orphans ()
 import System.Log.Logger (Priority(ERROR), setLevel, updateGlobalLogger)
 
 import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
+import Myo.Command.History (loadHistory)
 import Myo.Command.Parse (addHandler)
 import Myo.Data.Env (Env(_instanceIdent, _tempDir), Myo)
 import Myo.Orphans ()
@@ -33,6 +34,7 @@ initialize'' = do
   addHandler (CommandLanguage "scala") (OutputHandler scalaOutputParser)
   detect <- setting Settings.detectUi
   when detect detectDefaultUi
+  loadHistory
 
 initialize' :: RNeovim Env (Ribosome Env)
 initialize' = do

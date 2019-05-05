@@ -89,7 +89,7 @@ The library used for interacting with tmux is [chiasma].
 
 ### Pane Fields
 
-* `layout` is the name of the parent layout of the pane
+* `layout` is the name of the parent layout of the pane.
 * `pin` causes this pane to be opened whenever its layout becomes visible, i.e. when another pane in it is opened.
    The default `make` pane has this set.
 * `position` is a value that orders panes in a layout. It can have any numerical value.

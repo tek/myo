@@ -7,6 +7,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.MessagePack (Object)
 import Ribosome.Api.Window (currentCursor)
 import Ribosome.Config.Setting (setting, settingMaybe)
+import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
@@ -139,6 +140,7 @@ myoVimTest ::
   MonadDeepError e TreeModError m =>
   MonadDeepError e RunError m =>
   MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadThrow m =>

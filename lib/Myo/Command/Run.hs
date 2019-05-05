@@ -3,10 +3,11 @@ module Myo.Command.Run where
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.DeepError (hoistEither, MonadDeepError)
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.DeepError (MonadDeepError, hoistEither)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
+import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
 
@@ -22,8 +23,8 @@ import Myo.Command.Execution (closeOutputSocket, isCommandActive, pushExecution)
 import Myo.Command.History (lookupHistory, pushHistory)
 import Myo.Command.Log (pushCommandLog)
 import Myo.Command.Monitor (monitorCommand)
-import Myo.Command.Runner (findRunner)
 import Myo.Command.RunTask (runTask)
+import Myo.Command.Runner (findRunner)
 import Myo.Data.Env (Env, Runner(Runner, runnerCheckPending))
 import Myo.Orphans ()
 import Myo.Save (preCommandSave)
@@ -35,15 +36,16 @@ preRun ::
   RunTmux m =>
   MonadRibo m =>
   NvimE e m =>
-  MonadDeepError e SettingError m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
+  MonadDeepState s Env m =>
   MonadThrow m =>
   RunTask ->
   Runner ->
@@ -63,8 +65,13 @@ preRun _ _ =
   return ()
 
 postRun ::
+  NvimE e m =>
   MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e PersistError m =>
+  MonadThrow m =>
   RunTask ->
   m ()
 postRun (RunTask cmd _ (RunTaskDetails.UiSystem _)) =
@@ -97,13 +104,14 @@ runCommand ::
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
+  MonadDeepState s Env m =>
   MonadThrow m =>
   Command ->
   m ()
@@ -121,13 +129,14 @@ myoRun ::
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
+  MonadDeepState s Env m =>
   MonadThrow m =>
   Ident ->
   m ()
@@ -139,13 +148,14 @@ myoReRun ::
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
+  MonadDeepState s Env m =>
   MonadThrow m =>
   Int ->
   m ()

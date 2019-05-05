@@ -75,3 +75,11 @@ processTimeout =
 saveBeforeRun :: Setting Bool
 saveBeforeRun =
   Setting "save_before_run" True (Just True)
+
+proteomeMainType :: Setting Text
+proteomeMainType =
+  Setting "proteome_main_type" False Nothing
+
+proteomeMainName :: Setting Text
+proteomeMainName =
+  Setting "proteome_main_name" False Nothing
