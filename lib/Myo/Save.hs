@@ -9,7 +9,6 @@ import Ribosome.Nvim.Api.IO (vimCommand)
 import Time.System (timeCurrent)
 
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Log (pushCommandLogs)
 import Myo.Data.Env (Env(Env, _lastSave))
 import qualified Myo.Data.Env as Env (lastSave)
@@ -26,12 +25,12 @@ sensibleSave ::
   MonadIO m =>
   Env ->
   m Env
-sensibleSave state@Env{ _lastSave = last, .. } = do
+sensibleSave state@Env{ _lastSave = last', .. } = do
   now <- liftIO timeCurrent
   execStateT (when (shouldSave now) save) state
   where
     shouldSave now =
-      last - now > Elapsed (Seconds 1)
+      last' - now > Elapsed (Seconds 1)
     save =
       runExceptT @CommandError pushCommandLogs *> updateLastSave
 

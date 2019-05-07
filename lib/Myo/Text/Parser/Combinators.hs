@@ -1,10 +1,9 @@
 module Myo.Text.Parser.Combinators where
 
 import Data.Char (isSpace)
-import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
 import Text.Parser.Char (CharParsing, alphaNum, char, newline, noneOf, satisfy)
 import Text.Parser.Combinators (choice, manyTill, skipOptional, try)
-import Text.Parser.Token (TokenParsing, brackets, parens, someSpace, token, whiteSpace)
+import Text.Parser.Token (TokenParsing, parens, whiteSpace)
 import qualified Text.Show
 
 colon :: CharParsing m => m Char

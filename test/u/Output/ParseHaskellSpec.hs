@@ -135,7 +135,8 @@ target = Vector.fromList [
   "syntax error",
   "",
   "/path/to/File.hs \57505 36",
-  "!instance: MonadIO (t m)",
+  "!instance: func",
+  "MonadIO (t m)",
   ""
   ]
 

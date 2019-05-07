@@ -11,7 +11,7 @@ import qualified Data.Vector as Vector (fromList, unzip)
 import Data.Vector.Lens (toVectorOf)
 import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, many, sepBy1, skipMany, skipOptional, some)
-import Text.Parser.Token (TokenParsing, parens, whiteSpace)
+import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -100,7 +100,12 @@ moduleImport ::
   TokenParsing m =>
   m HaskellMessage
 moduleImport =
-  ModuleImport <$> (string "The import of" *> ws *> qname <* ws <* string "is redundant")
+  ModuleImport <$> (pre *> qname <* post)
+  where
+    pre =
+      token (string "The") *> skipOptional (token $ string "qualified") *> token (string "import of") *> ws
+    post =
+      ws <* string "is redundant"
 
 namesImport ::
   TokenParsing m =>
