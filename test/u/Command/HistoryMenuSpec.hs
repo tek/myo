@@ -12,6 +12,7 @@ import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
+import Ribosome.Menu.Prompt.Nvim (promptBlocker)
 import Ribosome.Menu.Simple (menuQuit)
 import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand, vimInput)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
@@ -24,11 +25,6 @@ import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
 import Myo.Command.HistoryMenu (historyMenu)
 import Myo.Data.Env (Myo)
-
-defineLoopFunction :: Myo ()
-defineLoopFunction = do
-  setVar "looping" True
-  vimCommand $ Text.unlines ["function! Loop()", "while g:looping", "sleep 100m", "endwhile", "endfunction"]
 
 nativeChars :: [Text]
 nativeChars =
@@ -56,18 +52,13 @@ exec var m@(Menu _ items _ selected _) _ =
 historyMenuSpec :: Myo ()
 historyMenuSpec = do
   setL @CommandState CommandState.history history
-  defineLoopFunction
-  () <- vimCommand "call feedkeys(\":call Loop()\\<cr>\")"
   var <- newMVar Nothing
-  bracket (fork input) cleanup (const (historyMenu (exec var)))
+  promptBlocker $ bracket (fork input) killThread (const (historyMenu (exec var)))
   gassertEqual (Just "[c2] <no command line>") =<< liftIO (readMVar var)
   where
     input = do
       sleep 0.1
       traverse_ vimInput nativeChars
-    cleanup inputThreadId =
-      setVar "looping" False *>
-      killThread inputThreadId
 
 test_historyMenu :: IO ()
 test_historyMenu =

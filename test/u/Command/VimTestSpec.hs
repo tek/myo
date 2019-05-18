@@ -3,6 +3,7 @@
 module Command.VimTestSpec (htf_thisModulesTests) where
 
 import qualified Data.Text as Text (intercalate)
+import Ribosome.Api.Function (defineFunction)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.Test.Await (await)
@@ -15,18 +16,6 @@ import Myo.Command.Test (myoVimTest, testIdent)
 import Myo.Data.Env (Myo)
 import Myo.Settings (testRunner)
 import Unit (specDef)
-
-defineFunction ::
-  NvimE e m =>
-  Text ->
-  [Text] ->
-  [Text] ->
-  m ()
-defineFunction name params body =
-  vimCommand $ unlines $ sig : body ++ ["endfunction"]
-  where
-    sig =
-      "function! " <> name <> "(" <> Text.intercalate ", " params <> ")"
 
 mockVimTestFunctions :: FilePath -> Myo ()
 mockVimTestFunctions fname = do

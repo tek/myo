@@ -16,7 +16,7 @@ import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
 import Ribosome.Menu.Prompt.Nvim (getCharC, nvimRenderPrompt)
 import Ribosome.Menu.Prompt.Run (basicTransition)
-import Ribosome.Menu.Run (nvimMenu)
+import Ribosome.Menu.Run (foregroundNvimMenu)
 import Ribosome.Menu.Simple (defaultMenu, menuQuit, menuQuitWith)
 import Ribosome.Msgpack.Error (DecodeError)
 
@@ -83,11 +83,13 @@ historyMenu ::
   MonadDeepError e CommandError m =>
   (Menu -> Prompt -> m (MenuConsumerAction m (), Menu)) ->
   m ()
-historyMenu execute = do
-  entries <- history
-  when (null entries) $ throwHoist CommandError.NoHistory
-  void $ nvimMenu def (items entries) handler promptConfig
+historyMenu execute =
+  run =<< history
   where
+    run [] =
+      throwHoist CommandError.NoHistory
+    run entries =
+      void $ foregroundNvimMenu def (items entries) handler promptConfig
     items entries =
       yieldMany (menuItem <$> entries)
     menuItem (HistoryEntry (Command _ ident lines _ _)) =
