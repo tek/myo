@@ -3,7 +3,6 @@
 module SocketSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (Ident(Str))
-import Chiasma.Test.Tmux (sleep)
 import Conduit (runConduit, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Monad.IO.Class (MonadIO, liftIO)

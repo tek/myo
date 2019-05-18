@@ -16,6 +16,8 @@ data CommandError =
   NoCommands
   |
   NoSuchHistoryIndex Int
+  |
+  NoHistory
   deriving (Eq, Show)
 
 deepPrisms ''CommandError
@@ -37,3 +39,7 @@ instance ReportError CommandError where
     ErrorReport err [err] NOTICE
     where
       err = "no history entry at index " <> show index
+  errorReport NoHistory =
+    ErrorReport err ["CommandError.NoHistory"] NOTICE
+    where
+      err = "no history yet"

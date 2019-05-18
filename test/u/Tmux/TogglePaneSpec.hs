@@ -7,7 +7,6 @@ module Tmux.TogglePaneSpec(
 import qualified Chiasma.Codec.Data as Codec (Pane)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Chiasma.Monad.Tmux as Tmux (read)
-import Chiasma.Test.Tmux (sleep)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
 import Ribosome.Orphans ()
 import Ribosome.Tmux.Run (runTmuxE)

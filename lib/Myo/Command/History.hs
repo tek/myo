@@ -14,9 +14,9 @@ import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Persist (mayPersistLoad, persistStore)
 
-import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchHistoryIndex))
+import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchHistoryIndex, NoHistory))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
@@ -49,6 +49,12 @@ subPath ::
 subPath =
   (</> [relfile|history|]) <$> (maybe fsPath return =<< proteomePath)
 
+history ::
+  MonadDeepState s CommandState m =>
+  m [HistoryEntry]
+history =
+  getL @CommandState CommandState.history
+
 storeHistoryAt ::
   NvimE e m =>
   MonadRibo m =>
@@ -58,7 +64,7 @@ storeHistoryAt ::
   Path Rel File ->
   m ()
 storeHistoryAt path =
-  persistStore path =<< getL @CommandState CommandState.history
+  persistStore path =<< history
 
 storeHistory ::
   NvimE e m =>

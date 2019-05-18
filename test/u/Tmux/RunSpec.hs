@@ -5,7 +5,6 @@ module Tmux.RunSpec (htf_thisModulesTests) where
 import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
-import Chiasma.Test.Tmux (sleep)
 import Data.Text (Text)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework

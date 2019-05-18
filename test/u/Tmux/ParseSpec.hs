@@ -3,7 +3,6 @@
 module Tmux.ParseSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (Ident(Str))
-import Chiasma.Test.Tmux (sleep)
 import qualified Data.ByteString.Char8 as ByteString (lines)
 import Data.Default (def)
 import Data.Text (Text)
@@ -25,8 +24,8 @@ import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Tmux.Runner (addTmuxRunner)
 import Unit (tmuxGuiSpecDef)
