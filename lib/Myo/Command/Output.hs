@@ -13,7 +13,7 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (windowSetOption)
-import Ribosome.Scratch (killScratch, showInScratch)
+import Ribosome.Scratch (killScratchByName, showInScratch)
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
@@ -90,7 +90,7 @@ outputQuit ::
   NvimE e m =>
   m ()
 outputQuit =
-  killScratch scratchName
+  killScratchByName scratchName
 
 outputSelect ::
   MonadDeepError e OutputError m =>

@@ -55,7 +55,7 @@ runHistoryEntry ::
   MonadThrow m =>
   Menu ->
   Prompt ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m (), Menu)
 runHistoryEntry menu@(Menu _ items _ selected _) prompt =
   maybe (menuQuit menu) runQuit (MenuItem.ident <$> item)
   where
@@ -67,7 +67,7 @@ runHistoryEntry menu@(Menu _ items _ selected _) prompt =
 
 menuItemIdent :: Ident -> Text
 menuItemIdent ident =
-  "[" <> (text ident) <> "]"
+  "[" <> text ident <> "]"
   where
     text (Ident.Str a) =
       toText a
@@ -81,14 +81,12 @@ historyMenu ::
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>
-  (Menu -> Prompt -> m (MenuConsumerAction m, Menu)) ->
+  (Menu -> Prompt -> m (MenuConsumerAction m (), Menu)) ->
   m ()
 historyMenu execute = do
   entries <- history
   when (null entries) $ throwHoist CommandError.NoHistory
-  r <- nvimMenu def (items entries) handler promptConfig
-  dbgs r
-  return ()
+  void $ nvimMenu def (items entries) handler promptConfig
   where
     items entries =
       yieldMany (menuItem <$> entries)

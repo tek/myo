@@ -46,7 +46,7 @@ exec ::
   MVar (Maybe Text) ->
   Menu ->
   Prompt ->
-  m (MenuConsumerAction m, Menu)
+  m (MenuConsumerAction m (), Menu)
 exec var m@(Menu _ items _ selected _) _ =
   swapMVar var (MenuItem.text <$> item) *> menuQuit m
   where
