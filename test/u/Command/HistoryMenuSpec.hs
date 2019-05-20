@@ -7,15 +7,18 @@ import Control.Exception.Lifted (bracket)
 import Control.Lens ((^?))
 import qualified Control.Lens as Lens (element)
 import qualified Data.Text as Text (unlines)
+import Ribosome.Api.Input (syntheticInput)
 import Ribosome.Api.Variable (setVar)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(text))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem, text)
+import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(Return))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Nvim (promptBlocker)
-import Ribosome.Menu.Simple (menuQuit)
+import Ribosome.Menu.Simple (menuReturn)
 import Ribosome.Nvim.Api.IO (vimCallFunction, vimCommand, vimInput)
 import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Test.Unit (withLog)
 import Test.Framework
 
 import Myo.Command.Data.Command (Command(Command))
@@ -28,38 +31,35 @@ import Myo.Data.Env (Myo)
 
 nativeChars :: [Text]
 nativeChars =
-  ["k", "<cr>"]
+  ["i", "l", "i", "n", "e", "<esc>", "k", "<cr>"]
 
 history :: [HistoryEntry]
 history =
-  [entry "c1", entry "c2", entry "c3"]
+  [entry "c1", entry "c2", entry "c3", entry "c4", entry "c4", entry "c4", entry "c4", entry "c4"]
   where
     entry n =
       HistoryEntry (Command (CommandInterpreter.System Nothing) n def def def)
 
 exec ::
   MonadIO m =>
-  MVar (Maybe Text) ->
   Menu ->
   Prompt ->
-  m (MenuConsumerAction m (), Menu)
-exec var m@(Menu _ items _ selected _) _ =
-  swapMVar var (MenuItem.text <$> item) *> menuQuit m
+  m (MenuConsumerAction m (Maybe Text), Menu)
+exec m@(Menu _ items _ selected _) _ =
+  menuReturn item m
   where
     item =
-      items ^? Lens.element selected
+      reverse items ^? Lens.element selected . MenuItem.text
 
 historyMenuSpec :: Myo ()
 historyMenuSpec = do
   setL @CommandState CommandState.history history
-  var <- newMVar Nothing
-  promptBlocker $ bracket (fork input) killThread (const (historyMenu (exec var)))
-  gassertEqual (Just "[c2] <no command line>") =<< liftIO (readMVar var)
+  entry <- bracket (fork input) killThread (const (historyMenu exec))
+  gassertEqual (MenuResult.Return (Just "[c2] <no command line>")) entry
   where
-    input = do
-      sleep 0.1
-      traverse_ vimInput nativeChars
+    input =
+      syntheticInput (Just 0.1) nativeChars
 
 test_historyMenu :: IO ()
 test_historyMenu =
-  tmuxGuiSpecDef historyMenuSpec
+  tmuxGuiSpecDef (withLog historyMenuSpec)

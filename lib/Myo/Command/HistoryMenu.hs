@@ -11,12 +11,13 @@ import qualified Data.UUID as UUID (toText)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem(ident))
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem, ident)
+import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
-import Ribosome.Menu.Prompt.Nvim (getCharC, nvimRenderPrompt)
+import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
 import Ribosome.Menu.Prompt.Run (basicTransition)
-import Ribosome.Menu.Run (foregroundNvimMenu)
+import Ribosome.Menu.Run (nvimMenu)
 import Ribosome.Menu.Simple (defaultMenu, menuQuit, menuQuitWith)
 import Ribosome.Msgpack.Error (DecodeError)
 
@@ -57,10 +58,10 @@ runHistoryEntry ::
   Prompt ->
   m (MenuConsumerAction m (), Menu)
 runHistoryEntry menu@(Menu _ items _ selected _) prompt =
-  maybe (menuQuit menu) runQuit (MenuItem.ident <$> item)
+  maybe (menuQuit menu) runQuit item
   where
     item =
-      items ^? Lens.element selected
+      items ^? Lens.element selected . MenuItem.ident
     runQuit ident =
       menuQuitWith (myoRun (Ident.Str (toString ident))) menu
 
@@ -81,25 +82,25 @@ historyMenu ::
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>
-  (Menu -> Prompt -> m (MenuConsumerAction m (), Menu)) ->
-  m ()
+  (Menu -> Prompt -> m (MenuConsumerAction m a, Menu)) ->
+  m (MenuResult a)
 historyMenu execute =
   run =<< history
   where
     run [] =
       throwHoist CommandError.NoHistory
     run entries =
-      void $ foregroundNvimMenu def (items entries) handler promptConfig
+      nvimMenu def (items entries) handler promptConfig
     items entries =
       yieldMany (menuItem <$> entries)
     menuItem (HistoryEntry (Command _ ident lines _ _)) =
       MenuItem (identText ident) (menuItemText ident lines)
     menuItemText ident lines =
-      Text.unwords [menuItemIdent ident, Text.take 30 . fromMaybe "<no command line>" $ listToMaybe lines]
+      Text.unwords [menuItemIdent ident, Text.take 50 . fromMaybe "<no command line>" $ listToMaybe lines]
     handler =
       defaultMenu (Map.fromList [("cr", execute)])
     promptConfig =
-      PromptConfig (getCharC 0.1) basicTransition nvimRenderPrompt False
+      PromptConfig (getCharC 0.1) basicTransition nvimPromptRenderer False
 
 myoHistory ::
   NvimE e m =>
@@ -119,4 +120,4 @@ myoHistory ::
   MonadThrow m =>
   m ()
 myoHistory =
-  historyMenu runHistoryEntry
+  void $ historyMenu runHistoryEntry
