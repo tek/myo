@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Tmux.UpdateSpec (htf_thisModulesTests) where
 

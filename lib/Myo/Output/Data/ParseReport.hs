@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 
 module Myo.Output.Data.ParseReport where
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 
 module Myo.Command.Data.RunError where
 

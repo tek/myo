@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 
 module Myo.Ui.Data.ToggleError(
   ToggleError(..),
