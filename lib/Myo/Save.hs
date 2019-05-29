@@ -1,6 +1,5 @@
 module Myo.Save where
 
-import qualified Control.Lens as Lens (set)
 import Control.Monad.DeepState (modifyM)
 import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Ribosome.Config.Setting (setting)

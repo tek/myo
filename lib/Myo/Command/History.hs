@@ -16,12 +16,12 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Log (showDebug, showDebugM)
 import Ribosome.Persist (mayPersistLoad, persistStore)
 
-import Myo.Command.Command (commandBy, mayCommandBy)
-import Myo.Command.Data.Command (Command(Command))
+import Myo.Command.Command (mayCommandBy)
+import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.Command as Command (displayName, ident)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (
-  CommandError(NoSuchHistoryIndex, NoHistory, NoSuchHistoryIdent, NoSuchCommand),
+  CommandError(NoSuchHistoryIndex, NoSuchHistoryIdent, NoSuchCommand),
   )
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)

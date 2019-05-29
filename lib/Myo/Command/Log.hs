@@ -16,7 +16,7 @@ import qualified Data.Map as Map (keys)
 import Network.Socket (Socket)
 import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
 
-import Myo.Command.Command (commandBy, mainCommand)
+import Myo.Command.Command (mainCommand)
 import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.Command as Command (displayName, ident, interpreter)
 import Myo.Command.Data.CommandError (CommandError)

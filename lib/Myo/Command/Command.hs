@@ -1,12 +1,10 @@
 module Myo.Command.Command where
 
-import Chiasma.Data.Ident (Ident, sameIdent)
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+import Chiasma.Data.Ident (Ident)
 import Control.Lens (Lens')
-import qualified Control.Lens as Lens (element, filtered, firstOf, folded, preuse, preview, view, views)
+import qualified Control.Lens as Lens (filtered, firstOf, folded, view, views)
 import Control.Monad.DeepError (MonadDeepError, hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState, gets)
-import Data.Foldable (find)
 import Ribosome.Control.Monad.Ribo (inspectHeadE)
 
 import Myo.Command.Data.Command (Command(Command), CommandLanguage)

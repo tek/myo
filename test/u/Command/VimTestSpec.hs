@@ -2,16 +2,12 @@
 
 module Command.VimTestSpec (htf_thisModulesTests) where
 
-import qualified Data.Text as Text (intercalate)
 import Ribosome.Api.Function (defineFunction)
 import Ribosome.Config.Setting (updateSetting)
-import Ribosome.Nvim.Api.IO (vimCommand)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Unit (fixture, withLog)
 import Test.Framework
 
-import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (logs)
 import Myo.Command.Parse (commandOutputByName)
 import Myo.Command.Subproc.Runner (addSubprocessRunner)
 import Myo.Command.Test (myoVimTest, testName)
@@ -33,7 +29,6 @@ vimTestSpec = do
   mockVimTestFunctions fname
   addSubprocessRunner
   myoVimTest
-  cmds <- getL @CommandState CommandState.logs
   await (gassertEqual "content\n") (commandOutputByName testName)
 
 test_vimTest :: IO ()

@@ -1,7 +1,6 @@
 
 module Myo.Command.Data.CommandError where
 
-import Chiasma.Data.Ident (Ident, identText)
 import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))

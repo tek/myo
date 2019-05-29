@@ -4,7 +4,6 @@ module Myo.Command.Data.Command where
 import Chiasma.Data.Ident (Ident, Identifiable(..))
 import Control.Lens (makeClassy)
 import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
-import Data.Maybe (maybeToList)
 import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
 import Prelude hiding (lines)
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
@@ -39,15 +38,15 @@ instance Identifiable Command where
   identify = _ident
 
 instance Pretty Command where
-  pretty (Command iprt ident lines' runner lang name) =
+  pretty (Command iprt ident' lines' runner' lang' name) =
     nest 2 . vsep $ header : info
     where
       header =
-        "*" <+> pretty ident
+        "*" <+> pretty ident'
       info =
-        prettyIprt : prettyLines : optional
-      optional =
-        maybeToList (prettyRunner <$> runner) <> maybeToList (prettyLang <$> lang) <> maybeToList (prettyName <$> name)
+        prettyIprt : prettyLines : opt
+      opt =
+        catMaybes [prettyRunner <$> runner', prettyLang <$> lang', prettyName <$> name]
       prettyIprt = "interpreter:" <+> pretty iprt
       prettyRunner r = "runner:" <+> pretty r
       prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> lines')
