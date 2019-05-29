@@ -16,6 +16,7 @@ data AddShellCommandOptions =
     lines :: [Text],
     runner :: Maybe Ident,
     target :: Ident,
-    lang :: Maybe CommandLanguage
+    lang :: Maybe CommandLanguage,
+    displayName :: Maybe Text
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)

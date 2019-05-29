@@ -8,12 +8,14 @@ import Myo.Command.Data.Command (Command)
 
 newtype HistoryEntry =
   HistoryEntry {
-    command :: Command
+    _command :: Command
   }
   deriving (Eq, Show, Generic)
 
+makeClassy ''HistoryEntry
+
 instance Identifiable HistoryEntry where
-  identify = identify . command
+  identify = identify . _command
 
 instance ToJSON HistoryEntry where
   toEncoding = genericToEncoding defaultOptions

@@ -11,11 +11,13 @@ import System.Log (Priority(ERROR, NOTICE))
 data CommandError =
   Misc Text
   |
-  NoSuchCommand Ident
+  NoSuchCommand Text Text
   |
   NoCommands
   |
   NoSuchHistoryIndex Int
+  |
+  NoSuchHistoryIdent Text
   |
   NoHistory
   deriving (Eq, Show)
@@ -27,10 +29,10 @@ instance ReportError CommandError where
     ErrorReport (pre <> " " <> err) [pre, err] ERROR
     where
       pre = "command error:"
-  errorReport (NoSuchCommand ident) =
-    ErrorReport err [err] NOTICE
+  errorReport (NoSuchCommand context ident) =
+    ErrorReport err ["In context `" <> context <>"`:", err] NOTICE
     where
-      err = "no command with ident `" <> (toText . identText) ident <> "`"
+      err = "no command with ident `" <> ident <> "`"
   errorReport NoCommands =
     ErrorReport err [err] NOTICE
     where
@@ -39,6 +41,10 @@ instance ReportError CommandError where
     ErrorReport err [err] NOTICE
     where
       err = "no history entry at index " <> show index
+  errorReport (NoSuchHistoryIdent ident) =
+    ErrorReport err [err] NOTICE
+    where
+      err = "no history entry with ident `" <> ident <> "`"
   errorReport NoHistory =
     ErrorReport err ["CommandError.NoHistory"] NOTICE
     where

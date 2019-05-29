@@ -1,6 +1,7 @@
 module Myo.Command.RunTask where
 
 import Chiasma.Ui.Data.TreeModError (TreeModError)
+import qualified Control.Lens as Lens (view)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (MonadDeepError)
 import Control.Monad.DeepState (MonadDeepState)
@@ -9,6 +10,7 @@ import Myo.Command.Data.CommandError (CommandError)
 import Myo.Ui.Render (MyoRender)
 
 import Myo.Command.Data.Command (Command(..))
+import qualified Myo.Command.Data.Command as Command (ident)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask(..))
@@ -31,5 +33,5 @@ runTask ::
   m RunTask
 runTask cmd = do
   details <- runDetails cmd
-  cmdLog <- commandLogPath (cmdIdent cmd)
+  cmdLog <- commandLogPath (Lens.view Command.ident cmd)
   return $ RunTask cmd cmdLog details

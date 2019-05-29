@@ -52,7 +52,7 @@ parseTmuxSpec = do
   let
     ident = Str "cmd"
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
-    opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) (Just lang)
+    opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) (Just lang) Nothing
   initialize''
   addHandler lang (OutputHandler (OutputParser parseEcho))
   addTmuxRunner

@@ -34,7 +34,6 @@ initialize'' = do
   addHandler (CommandLanguage "scala") (OutputHandler scalaOutputParser)
   detect <- setting Settings.detectUi
   when detect detectDefaultUi
-  loadHistory
 
 initialize' :: RNeovim Env (Ribosome Env)
 initialize' = do
@@ -48,3 +47,9 @@ initialize tmpdir = do
   iid <- generateIdent
   ribo <- newRibosome "myo" def { _instanceIdent = iid, _tempDir = tmpdir }
   retypeNeovim (const ribo) initialize'
+
+-- |depends on proteome
+myoStage4 ::
+  Myo ()
+myoStage4 =
+  loadHistory

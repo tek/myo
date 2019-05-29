@@ -3,7 +3,7 @@
 module Myo.Command.Parse where
 
 import Chiasma.Data.Ident (Ident)
-import qualified Control.Lens as Lens (at, over)
+import qualified Control.Lens as Lens (at, over, view)
 import Control.Monad (when)
 import Control.Monad.DeepError (hoistMaybe)
 import Control.Monad.IO.Class (MonadIO)
@@ -16,13 +16,16 @@ import Ribosome.Msgpack.Error (DecodeError)
 import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
 
 import Myo.Command.Command (commandByIdent, latestCommand)
-import Myo.Command.Data.Command (Command(Command, cmdIdent), CommandLanguage)
+import Myo.Command.Data.Command (Command(Command), CommandLanguage)
+import qualified Myo.Command.Data.Command as Command (ident)
 import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.CommandLog (CommandLog)
 import qualified Myo.Command.Data.CommandLog as CommandLog (CommandLog(_current))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (outputHandlers, parseResult)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
-import Myo.Command.Log (commandLog)
+import Myo.Command.History (displayNameByIdent)
+import Myo.Command.Log (commandLog, commandLogByName)
 import Myo.Command.Output (renderParseResult)
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(NoLang, NoHandler, NoOutput))
@@ -37,7 +40,7 @@ selectCommand ::
   MonadDeepState s CommandState m =>
   Maybe Ident ->
   m Command
-selectCommand (Just ident) = commandByIdent ident
+selectCommand (Just ident) = commandByIdent "selectCommand" ident
 selectCommand Nothing = latestCommand
 
 removeTerminalCodesRE :: SearchReplace RE Text
@@ -52,19 +55,37 @@ sanitizeOutput :: Text -> Text
 sanitizeOutput =
   (*=~/ removeTerminalCodesRE) . (*=~/ removeLineFeedRE)
 
+commandOutputResult ::
+  MonadDeepError e OutputError m =>
+  Text ->
+  Maybe CommandLog ->
+  m Text
+commandOutputResult ident =
+  maybe err convert
+  where
+    convert =
+      return . sanitizeOutput . decodeUtf8 . CommandLog._current
+    err =
+      throwHoist $ OutputError.NoOutput ident
+
 commandOutput ::
   MonadDeepError e OutputError m =>
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m Text
-commandOutput ident =
-  maybe err convert =<< commandLog ident
-  where
-    convert =
-      return . sanitizeOutput . decodeUtf8 . CommandLog._current
-    err =
-      throwHoist (OutputError.NoOutput ident)
+commandOutput ident = do
+  name <- displayNameByIdent ident
+  commandOutputResult name =<< commandLog ident
+
+commandOutputByName ::
+  MonadDeepError e OutputError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Text ->
+  m Text
+commandOutputByName name =
+  commandOutputResult name =<< commandLogByName name
 
 handlersForLang ::
   (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
@@ -97,11 +118,11 @@ parseCommand ::
   MonadDeepState s CommandState m =>
   Command ->
   m [ParsedOutput]
-parseCommand (Command _ ident _ _ (Just lang)) = do
+parseCommand (Command _ ident _ _ (Just lang) _) = do
   output <- commandOutput ident
   Log.debugShow output
   parseWithLang lang output
-parseCommand (Command _ ident _ _ _) =
+parseCommand (Command _ ident _ _ _ _) =
   throwHoist $ OutputError.NoLang ident
 
 myoParse ::
@@ -118,9 +139,9 @@ myoParse ::
 myoParse (ParseOptions _ ident _) = do
   cmd <- selectCommand ident
   parsedOutput <- parseCommand cmd
-  setL @CommandState CommandState.parseResult (Just (ParseResult (cmdIdent cmd) parsedOutput))
+  setL @CommandState CommandState.parseResult (Just (ParseResult (Lens.view Command.ident cmd) parsedOutput))
   display <- setting Settings.displayResult
-  when display $ renderParseResult (cmdIdent cmd) parsedOutput
+  when display $ renderParseResult (Lens.view Command.ident cmd) parsedOutput
 
 myoParseLatest ::
   MonadDeepError e CommandError m =>

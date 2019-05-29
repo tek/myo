@@ -5,7 +5,7 @@ import Control.Monad.DeepError (hoistMaybe)
 import Data.Vector ((!?))
 import qualified Data.Vector as Vector (findIndex)
 import Ribosome.Api.Buffer (bufferForFile, edit)
-import Ribosome.Api.Window (setCursor, setLine, windowLine)
+import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
@@ -60,6 +60,7 @@ findWindow =
 selectEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Window ->
@@ -73,13 +74,14 @@ selectEvent mainWindow (OutputEvent (Just (Location path line col)) _) = do
   maybe (edit path) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
-  vimCommand "redraw!"
+  redraw
 selectEvent _ _ =
   throwHoist OutputError.NoLocation
 
 selectMaybeEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Window ->
@@ -94,6 +96,7 @@ selectEventByIndexFromReport ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadRibo m =>
+  MonadIO m =>
   NvimE e m =>
   ParseReport ->
   EventIndex ->
@@ -106,6 +109,7 @@ selectCurrentLineEventFrom ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadRibo m =>
+  MonadIO m =>
   NvimE e m =>
   ParseReport ->
   Window ->
@@ -166,6 +170,7 @@ navigateToEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadRibo m =>
+  MonadIO m =>
   NvimE e m =>
   Bool ->
   EventIndex ->
@@ -184,6 +189,7 @@ navigateToCurrentEvent ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Bool ->

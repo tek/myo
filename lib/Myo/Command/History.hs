@@ -1,7 +1,8 @@
 module Myo.Command.History where
 
 import Chiasma.Data.Ident (sameIdent)
-import qualified Control.Lens as Lens (element, firstOf)
+import Control.Lens (Lens')
+import qualified Control.Lens as Lens (element, filtered, firstOf, folded, view, views)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState)
@@ -12,19 +13,25 @@ import Ribosome.Config.Setting (settingMaybe)
 import Ribosome.Control.Lock (lockOrSkip)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Log (showDebug, showDebugM)
 import Ribosome.Persist (mayPersistLoad, persistStore)
 
+import Myo.Command.Command (commandBy, mayCommandBy)
 import Myo.Command.Data.Command (Command(Command))
+import qualified Myo.Command.Data.Command as Command (displayName, ident)
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchHistoryIndex, NoHistory))
+import qualified Myo.Command.Data.CommandError as CommandError (
+  CommandError(NoSuchHistoryIndex, NoHistory, NoSuchHistoryIdent, NoSuchCommand),
+  )
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
-import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (HistoryEntry(command))
+import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (command)
 import qualified Myo.Settings as Settings (proteomeMainName, proteomeMainType)
 
 proteomePath ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   m (Maybe (Path Rel Dir))
@@ -32,7 +39,7 @@ proteomePath =
   runMaybeT ((</>) <$> fetch Settings.proteomeMainType <*> fetch Settings.proteomeMainName)
   where
     fetch s =
-      MaybeT $ traverse (parseRelDir . toString) =<< settingMaybe s
+      MaybeT $ traverse (parseRelDir . toString) =<< showDebugM "setting" (settingMaybe s)
 
 fsPath ::
   MonadIO m =>
@@ -43,6 +50,7 @@ fsPath = do
 
 subPath ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   m (Path Rel File)
@@ -57,6 +65,7 @@ history =
 
 storeHistoryAt ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   MonadDeepState s CommandState m =>
@@ -68,6 +77,7 @@ storeHistoryAt path =
 
 storeHistory ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   MonadBaseControl IO m =>
@@ -79,6 +89,7 @@ storeHistory =
 
 loadHistoryFrom ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e SettingError m =>
@@ -91,6 +102,7 @@ loadHistoryFrom path =
 
 loadHistory ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
@@ -98,11 +110,13 @@ loadHistory ::
   MonadDeepError e PersistError m =>
   MonadThrow m =>
   m ()
-loadHistory =
+loadHistory = do
+  showDebug "myo-persist-subpath" =<< subPath
   lockOrSkip "load-history" . loadHistoryFrom =<< subPath
 
 pushHistory ::
   NvimE e m =>
+  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
@@ -117,12 +131,105 @@ pushHistory cmd = do
   where
     prep es = HistoryEntry cmd : filter (not . sameIdent cmd) es
 
-lookupHistory ::
+lookupHistoryIndex ::
   MonadDeepState s CommandState m =>
   MonadDeepError e CommandError m =>
   Int ->
   m Command
-lookupHistory index =
-  HistoryEntry.command <$> (err =<< gets @CommandState (Lens.firstOf (CommandState.history . Lens.element index)))
+lookupHistoryIndex index =
+  Lens.view HistoryEntry.command <$> (err =<< gets @CommandState (Lens.firstOf (CommandState.history . Lens.element index)))
   where
     err = hoistMaybe (CommandError.NoSuchHistoryIndex index)
+
+lookupHistoryIdent ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Ident ->
+  m Command
+lookupHistoryIdent ident =
+  Lens.view HistoryEntry.command <$> (err =<< gets @CommandState lens)
+  where
+    lens =
+      Lens.firstOf (CommandState.history . Lens.folded . Lens.filtered (sameIdent ident))
+    err =
+      hoistMaybe (CommandError.NoSuchHistoryIdent (show ident))
+
+lookupHistory ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  (Either Ident Int) ->
+  m Command
+lookupHistory =
+  either lookupHistoryIdent lookupHistoryIndex
+
+mayHistoryBy ::
+  Eq a =>
+  MonadDeepState s CommandState m =>
+  Lens' Command a ->
+  a ->
+  m (Maybe Command)
+mayHistoryBy lens a =
+  (fmap (Lens.view HistoryEntry.command)) <$> (gets @CommandState entryLens)
+  where
+    entryLens =
+      Lens.firstOf (CommandState.history . Lens.folded . Lens.filtered (Lens.views (HistoryEntry.command . lens) (a ==)))
+
+historyBy ::
+  Eq a =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Text ->
+  Lens' Command a ->
+  a ->
+  m Command
+historyBy ident lens =
+  err <=< mayHistoryBy lens
+  where
+    err =
+      hoistMaybe (CommandError.NoSuchHistoryIdent ident)
+
+mayCommandOrHistoryBy ::
+  Eq a =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Lens' Command a ->
+  a ->
+  m (Maybe Command)
+mayCommandOrHistoryBy lens a =
+  hist =<< (mayCommandBy lens a)
+  where
+    hist =
+      maybe (mayHistoryBy lens a) (return . Just)
+
+commandOrHistoryBy ::
+  Eq a =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Text ->
+  Lens' Command a ->
+  a ->
+  m Command
+commandOrHistoryBy ident lens a =
+  err =<< mayCommandOrHistoryBy lens a
+  where
+    err =
+      hoistMaybe (CommandError.NoSuchCommand "commandOrHistoryBy" ident)
+
+commandOrHistoryByIdent ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Ident ->
+  m Command
+commandOrHistoryByIdent ident =
+  commandOrHistoryBy (show ident) Command.ident ident
+
+displayNameByIdent ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Ident ->
+  m Text
+displayNameByIdent ident =
+  select <$> mayCommandOrHistoryBy Command.ident ident
+  where
+    select =
+      fromMaybe (show ident) . (>>= Lens.view Command.displayName)

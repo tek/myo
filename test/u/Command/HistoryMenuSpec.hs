@@ -38,7 +38,7 @@ history =
   [entry "c1", entry "c2", entry "c3", entry "c4", entry "c4", entry "c4", entry "c4", entry "c4"]
   where
     entry n =
-      HistoryEntry (Command (CommandInterpreter.System Nothing) n def def def)
+      HistoryEntry (Command (CommandInterpreter.System Nothing) n def def def def)
 
 exec ::
   MonadIO m =>
@@ -62,4 +62,4 @@ historyMenuSpec = do
 
 test_historyMenu :: IO ()
 test_historyMenu =
-  tmuxGuiSpecDef (withLog historyMenuSpec)
+  tmuxGuiSpecDef historyMenuSpec

@@ -27,7 +27,7 @@ runSysSpec :: Myo ()
 runSysSpec = do
   addTmuxRunner
   initialize''
-  myoAddSystemCommand $ AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing Nothing
   myoRun ident
   sleep 1
   output <- runTmux $ capturePane (PaneId 1)

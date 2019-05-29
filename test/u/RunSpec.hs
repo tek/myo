@@ -33,7 +33,7 @@ runDummy _ =
 runSystemSpec :: Myo ()
 runSystemSpec = do
   let ident = Str "cmd"
-  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just (Str "dummy")) Nothing Nothing Nothing
   addRunner (Str "dummy") (extractRunError runDummy) (extractRunError checkDummy) (const True)
   myoRun ident
   loggedError <- inspectErrors $ Lens.view $ Errors.componentErrors . Lens.at (ComponentName cname)

@@ -5,7 +5,7 @@ import Control.Monad.Base (MonadBase)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text (words)
 import Myo.Command.Data.CommandState (CommandState)
-import Network.Socket (connect, SockAddr(SockAddrUnix), socketToHandle)
+import Network.Socket (SockAddr(SockAddrUnix), connect, socketToHandle)
 import Path (Abs, File, Path, toFilePath)
 import qualified System.IO as IOMode (IOMode(WriteMode))
 import System.Process (getPid)
@@ -67,7 +67,7 @@ runSubprocTask ::
   MonadDeepState s CommandState m =>
   RunTask ->
   m ()
-runSubprocTask (RunTask (Command _ _ lines' _ _) logPath details) =
+runSubprocTask (RunTask (Command _ _ lines' _ _ _) logPath details) =
   case details of
     System -> run lines'
     UiSystem _ -> run lines'

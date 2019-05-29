@@ -16,6 +16,7 @@ data AddSystemCommandOptions =
     lines :: [Text],
     runner :: Maybe Ident,
     target :: Maybe Ident,
-    lang :: Maybe CommandLanguage
+    lang :: Maybe CommandLanguage,
+    displayName :: Maybe Text
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)

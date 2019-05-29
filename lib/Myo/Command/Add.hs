@@ -13,16 +13,16 @@ myoAddSystemCommand ::
   MonadDeepState s CommandState m =>
   AddSystemCommandOptions ->
   m ()
-myoAddSystemCommand (AddSystemCommandOptions ident lines' runner target lang) =
+myoAddSystemCommand (AddSystemCommandOptions ident lines' runner target lang name) =
   Ribo.prepend @CommandState CommandState.commands cmd
   where
-    cmd = systemCommand target ident lines' runner lang
+    cmd = systemCommand target ident lines' runner lang name
 
 myoAddShellCommand ::
   MonadDeepState s CommandState m =>
   AddShellCommandOptions ->
   m ()
-myoAddShellCommand (AddShellCommandOptions ident lines' runner target lang) =
+myoAddShellCommand (AddShellCommandOptions ident lines' runner target lang name) =
   Ribo.prepend @CommandState CommandState.commands cmd
   where
-    cmd = shellCommand target ident lines' runner lang
+    cmd = shellCommand target ident lines' runner lang name

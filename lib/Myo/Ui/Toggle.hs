@@ -27,6 +27,7 @@ ensurePaneOpen ident = do
 myoTogglePane ::
   MonadDeepError e TreeModError m =>
   MonadDeepError e ToggleError m =>
+  MonadIO m =>
   RunTmux m =>
   MyoRender s e m =>
   Ident ->
@@ -38,6 +39,7 @@ myoTogglePane ident = do
 myoToggleLayout ::
   MonadDeepError e TreeModError m =>
   MonadDeepError e ToggleError m =>
+  MonadIO m =>
   RunTmux m =>
   MyoRender s e m =>
   Ident ->

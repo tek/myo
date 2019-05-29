@@ -2,6 +2,7 @@ module Myo.Command.Run where
 
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
+import qualified Control.Lens as Lens (view)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -13,6 +14,7 @@ import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
+import qualified Myo.Command.Data.Command as Command (ident)
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
@@ -50,7 +52,7 @@ preRun ::
   RunTask ->
   Runner ->
   m ()
-preRun task@(RunTask (Command _ cmdIdent _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
+preRun task@(RunTask (Command _ cmdIdent _ _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
   ensurePaneOpen ident
   checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
   closeOutputSocket cmdIdent
@@ -76,6 +78,8 @@ postRun ::
   m ()
 postRun (RunTask cmd _ (RunTaskDetails.UiSystem _)) =
   pushHistory cmd
+postRun (RunTask cmd _ (RunTaskDetails.UiShell _ _)) =
+  pushHistory cmd
 postRun _ =
   return ()
 
@@ -91,7 +95,7 @@ executeRunner (Runner _ _ run _) task = do
   logDebug $ "executing runner for command `" <> identText ident <> "`"
   hoistEither =<< liftIO (run task)
   where
-    ident = cmdIdent . RunTask.rtCommand $ task
+    ident = Lens.view Command.ident . RunTask.rtCommand $ task
 
 -- |Main entry point for running commands that ensures consistency.
 -- Saves all buffers, updating the 'lastSave' timestamp.
@@ -117,7 +121,7 @@ runCommand ::
   m ()
 runCommand cmd = do
   preCommandSave
-  pushCommandLog (cmdIdent cmd)
+  pushCommandLog (Lens.view Command.ident cmd)
   task <- runTask cmd
   runner <- findRunner task
   preRun task runner
@@ -141,7 +145,7 @@ myoRun ::
   Ident ->
   m ()
 myoRun =
-  runCommand <=< commandByIdent
+  runCommand <=< commandByIdent "run"
 
 myoReRun ::
   RunTmux m =>
@@ -157,7 +161,7 @@ myoReRun ::
   MonadDeepState s CommandState m =>
   MonadDeepState s Env m =>
   MonadThrow m =>
-  Int ->
+  Either Ident Int ->
   m ()
 myoReRun =
   runCommand <=< lookupHistory

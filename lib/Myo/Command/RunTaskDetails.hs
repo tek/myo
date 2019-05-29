@@ -1,10 +1,12 @@
 module Myo.Command.RunTaskDetails where
 
 import Chiasma.Data.Ident (Ident)
+import qualified Control.Lens as Lens (view)
 import Control.Monad.DeepError (MonadDeepError)
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))
+import qualified Myo.Command.Data.Command as Command (interpreter)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter (CommandInterpreter(..))
 import Myo.Command.Data.CommandState (CommandState)
@@ -26,14 +28,15 @@ uiShellTaskDetails ::
   MonadDeepError e RunError m =>
   Ident ->
   m RunTaskDetails
-uiShellTaskDetails shellIdent = do
-  target <- extractTarget =<< cmdInterpreter <$> commandByIdent shellIdent
-  return $ RunTaskDetails.UiShell shellIdent target
+uiShellTaskDetails shellIdent =
+  RunTaskDetails.UiShell shellIdent <$> (extractTarget =<< interpreter)
   where
+    interpreter =
+      Lens.view Command.interpreter <$> commandByIdent "uiShellTaskDetails-interpreter" shellIdent
     extractTarget (CommandInterpreter.System (Just target)) =
       return target
     extractTarget _ = do
-      shell <- commandByIdent shellIdent
+      shell <- commandByIdent "uiShellTaskDetails-target" shellIdent
       throwHoist (RunError.InvalidShell shell)
 
 vimTaskDetails :: RunTaskDetails
@@ -45,7 +48,7 @@ runDetails ::
   MonadDeepError e RunError m =>
   Command ->
   m RunTaskDetails
-runDetails (Command interpreter _ _ _ _) = analyze interpreter
+runDetails (Command interpreter _ _ _ _ _) = analyze interpreter
   where
     analyze (CommandInterpreter.System Nothing) = return systemTaskDetails
     analyze (CommandInterpreter.System (Just paneIdent)) = return $ uiSystemTaskDetails paneIdent

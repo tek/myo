@@ -10,9 +10,11 @@ import Ribosome.Test.Await (await)
 import Ribosome.Test.Unit (fixture, withLog)
 import Test.Framework
 
-import Myo.Command.Parse (commandOutput)
+import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.CommandState as CommandState (logs)
+import Myo.Command.Parse (commandOutputByName)
 import Myo.Command.Subproc.Runner (addSubprocessRunner)
-import Myo.Command.Test (myoVimTest, testIdent)
+import Myo.Command.Test (myoVimTest, testName)
 import Myo.Data.Env (Myo)
 import Myo.Settings (testRunner)
 import Unit (specDef)
@@ -31,7 +33,8 @@ vimTestSpec = do
   mockVimTestFunctions fname
   addSubprocessRunner
   myoVimTest
-  await (gassertEqual "content\n") (commandOutput testIdent)
+  cmds <- getL @CommandState CommandState.logs
+  await (gassertEqual "content\n") (commandOutputByName testName)
 
 test_vimTest :: IO ()
 test_vimTest =

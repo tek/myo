@@ -23,9 +23,9 @@ data OutputError =
   |
   Parse Text
   |
-  NoEvents Ident
+  NoEvents Text
   |
-  NoOutput Ident
+  NoOutput Text
   |
   NoLocation
   |
@@ -56,11 +56,11 @@ instance ReportError OutputError where
   errorReport (NoEvents ident) =
     ErrorReport msg [msg] NOTICE
     where
-      msg = "no events in output of command `" <> identText ident <> "`"
+      msg = "no events in output of command `" <> ident <> "`"
   errorReport (NoOutput ident) =
     ErrorReport msg [msg] NOTICE
     where
-      msg = "command `" <> identText ident <> "` has not generated any output"
+      msg = "command `" <> ident <> "` has not generated any output"
   errorReport NoLocation =
     ErrorReport "this event is not associated with a location" ["OutputError.NoLocation"] NOTICE
   errorReport (Internal msg) =

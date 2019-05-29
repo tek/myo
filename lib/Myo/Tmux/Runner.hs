@@ -18,6 +18,7 @@ import Myo.Tmux.Run (tmuxCanRun, tmuxCheckPending, tmuxRun)
 
 addTmuxRunner ::
   MonadRibo m =>
+  NvimE e m =>
   MonadIO m =>
   RunTmux m =>
   MonadBaseControl IO m =>

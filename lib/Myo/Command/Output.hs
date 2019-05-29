@@ -15,8 +15,10 @@ import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (windowSetOption)
 import Ribosome.Scratch (killScratchByName, showInScratch)
 
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
+import Myo.Command.History (displayNameByIdent)
 import Myo.Output.Data.OutputError (OutputError(NoEvents))
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
@@ -68,13 +70,15 @@ renderParseResult ::
   NvimE e m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
+  MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   Ident ->
   [ParsedOutput] ->
   m ()
 renderParseResult ident output = do
-  when (noEventsInReport report) (throwHoist (NoEvents ident))
+  name <- displayNameByIdent ident
+  when (noEventsInReport report) (throwHoist (NoEvents name))
   setL @CommandState CommandState.parseReport (Just report)
   jumpFirst <- setting Settings.outputSelectFirst
   setL @CommandState CommandState.currentEvent (EventIndex (first' jumpFirst))
@@ -96,6 +100,7 @@ outputSelect ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   m ()
@@ -111,6 +116,7 @@ cycleAndNavigate ::
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Int ->
@@ -124,6 +130,7 @@ myoPrev ::
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   m ()
@@ -135,6 +142,7 @@ myoNext ::
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
+  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   m ()

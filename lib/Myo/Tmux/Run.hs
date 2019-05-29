@@ -2,8 +2,7 @@ module Myo.Tmux.Run where
 
 import Chiasma.Codec.Data.PanePid (PanePid)
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
-import Chiasma.Command.Pane (pipePane)
-import Chiasma.Command.Pane (panePid, sendKeys)
+import Chiasma.Command.Pane (panePid, pipePane, sendKeys)
 import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId)
@@ -20,7 +19,7 @@ import Path.IO (doesFileExist, removeFile)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Exception (tryAny)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Tmux.Run (runRiboTmux, RunTmux)
+import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
 import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandState (CommandState)
@@ -77,6 +76,8 @@ findTmuxPid socket paneId =
 tmuxCheckPending ::
   MonadBaseControl IO m =>
   MonadRibo m =>
+  NvimE e m =>
+  MonadIO m =>
   RunTmux m =>
   MonadDeepState s Views m =>
   MonadDeepError e ViewsError m =>
@@ -107,7 +108,7 @@ tmuxRun ::
   MonadDeepError e RunError m =>
   RunTask ->
   m ()
-tmuxRun (RunTask (Command _ commandIdent lines' _ _) logPath details) =
+tmuxRun (RunTask (Command _ commandIdent lines' _ _ _) logPath details) =
   run details
   where
     run (RunTaskDetails.UiSystem paneIdent) = do

@@ -1,10 +1,13 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Myo.Command.Data.Command where
 
 import Chiasma.Data.Ident (Ident, Identifiable(..))
-import Chiasma.Data.Text.Pretty (prettyS)
+import Control.Lens (makeClassy)
 import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
 import Data.Maybe (maybeToList)
 import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
+import Prelude hiding (lines)
 import Ribosome.Msgpack.Decode (MsgpackDecode(..))
 import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 
@@ -22,27 +25,35 @@ instance FromJSON CommandLanguage
 
 data Command =
   Command {
-    cmdInterpreter :: CommandInterpreter,
-    cmdIdent :: Ident,
-    cmdLines :: [Text],
-    cmdRunner :: Maybe Ident,
-    lang :: Maybe CommandLanguage
+    _interpreter :: CommandInterpreter,
+    _ident :: Ident,
+    _lines :: [Text],
+    _runner :: Maybe Ident,
+    _lang :: Maybe CommandLanguage,
+    _displayName :: Maybe Text
   }
   deriving (Eq, Show, Generic)
 
+makeClassy ''Command
+
 instance Identifiable Command where
-  identify = cmdIdent
+  identify = _ident
 
 instance Pretty Command where
-  pretty (Command iprt ident lines' runner lang) =
+  pretty (Command iprt ident lines' runner lang name) =
     nest 2 . vsep $ header : info
     where
-      header = prettyS "*" <+> pretty ident
-      info = prettyIprt : prettyLines : maybeToList (prettyRunner <$> runner) <> maybeToList (prettyLang <$> lang)
-      prettyIprt = prettyS "interpreter:" <+> pretty iprt
-      prettyRunner _ = prettyS "runner"
-      prettyLines = nest 2 . vsep $ prettyS "lines:" : (pretty <$> lines')
-      prettyLang (CommandLanguage a) = prettyS "language:" <+> pretty a
+      header =
+        "*" <+> pretty ident
+      info =
+        prettyIprt : prettyLines : optional
+      optional =
+        maybeToList (prettyRunner <$> runner) <> maybeToList (prettyLang <$> lang) <> maybeToList (prettyName <$> name)
+      prettyIprt = "interpreter:" <+> pretty iprt
+      prettyRunner r = "runner:" <+> pretty r
+      prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> lines')
+      prettyLang (CommandLanguage a) = "language:" <+> pretty a
+      prettyName n = "name:" <+> pretty n
 
 instance ToJSON Command where
   toEncoding = genericToEncoding defaultOptions

@@ -148,6 +148,7 @@ Its command line is `test:compile`, which is the text sent to `sbt`.
 * `target` points to a pane or shell in which the command will be run.
 * `lang` is used to find the appropriate parser for command output. Currently supported: `scala`, `haskell`.
 * `runner` may be `tmux` or `proc` (simple subprocess).
+* `displayName` is an optional override for the text to be displayed to the user instead of the `ident`.
 
 ## MyoRun
 
@@ -172,6 +173,12 @@ For example, to run the previous command again:
 ```vim
 call MyoReRun(0)
 ```
+
+## MyoHistory
+
+This command displays the history in a scratch buffer with a prompt for substring searching.
+Selecting one of the entries with `<cr>` will rerun the command.
+The prompt starts in normal mode, where you can navigate with `j`/`k`, switch to insert mode with `i`, `a`, `I` and `A`, and abort with `q`, `<esc>` and `<c-c>`.
 
 ## MyoVimTest
 

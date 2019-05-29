@@ -27,7 +27,7 @@ import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env, Myo)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
-import Myo.Init (initialize)
+import Myo.Init (initialize, myoStage4)
 import Myo.Quit (myoQuit)
 import Myo.Save (myoSave)
 import Myo.Ui.Data.UiState (UiState)
@@ -55,6 +55,7 @@ rpcHandlers =
     $(rpcHandlerDef 'myoSave),
     $(rpcHandlerDef 'myoVimTest),
     $(rpcHandlerDef 'myoHistory),
+    $(rpcHandlerDef 'myoStage4),
     $(rpcHandler sync 'myoTestDetermineRunner),
     $(rpcHandler sync 'myoTestExecutable),
     $(rpcHandler sync 'myoTestBuildPosition),

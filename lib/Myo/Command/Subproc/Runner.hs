@@ -27,6 +27,7 @@ subprocCheckPending _ =
   return . Right . return $ ExecutionState.Unknown
 
 addSubprocessRunner ::
+  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepError e RunError m =>

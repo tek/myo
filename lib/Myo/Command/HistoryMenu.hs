@@ -1,13 +1,15 @@
 module Myo.Command.HistoryMenu where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(..))
-import Conduit (yieldMany)
+import Conduit (awaitForever, sinkNull, yield, yieldMany, (.|))
 import Control.Lens ((^?))
-import qualified Control.Lens as Lens (element)
+import qualified Control.Lens as Lens (view)
 import Control.Monad.Catch (MonadThrow)
 import qualified Data.Map as Map (fromList)
 import qualified Data.Text as Text (take, unwords)
 import qualified Data.UUID as UUID (toText)
+import Ribosome.Data.Conduit.Composition (ccMap, runCConduit)
+import Ribosome.Log (showDebug)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
@@ -15,10 +17,10 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (MenuItem, ident)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
-import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
-import Ribosome.Menu.Prompt.Run (basicTransition)
+import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer, promptBlocker)
+import Ribosome.Menu.Prompt.Run (basicTransition, promptC)
 import Ribosome.Menu.Run (nvimMenu)
-import Ribosome.Menu.Simple (defaultMenu, menuQuit, menuQuitWith)
+import Ribosome.Menu.Simple (defaultMenu, menuQuit, menuQuitWith, selectedMenuItem)
 import Ribosome.Msgpack.Error (DecodeError)
 
 import Chiasma.Ui.Data.TreeModError (TreeModError)
@@ -28,10 +30,9 @@ import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoH
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
-import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (HistoryEntry(command))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.History (history)
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoReRun)
 import Myo.Data.Env (Env)
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
@@ -57,18 +58,16 @@ runHistoryEntry ::
   Menu ->
   Prompt ->
   m (MenuConsumerAction m (), Menu)
-runHistoryEntry menu@(Menu _ items _ selected _) prompt =
-  maybe (menuQuit menu) runQuit item
+runHistoryEntry menu prompt =
+  maybe (menuQuit menu) runQuit (Lens.view MenuItem.ident <$> selectedMenuItem menu)
   where
-    item =
-      items ^? Lens.element selected . MenuItem.ident
     runQuit ident =
-      menuQuitWith (myoRun (Ident.Str (toString ident))) menu
+      menuQuitWith (myoReRun (Left (Ident.Str (toString ident)))) menu
 
 
-menuItemIdent :: Ident -> Text
-menuItemIdent ident =
-  "[" <> text ident <> "]"
+menuItemName :: Ident -> Maybe Text -> Text
+menuItemName ident displayName =
+  "[" <> fromMaybe (text ident) displayName <> "]"
   where
     text (Ident.Str a) =
       toText a
@@ -93,14 +92,14 @@ historyMenu execute =
       nvimMenu def (items entries) handler promptConfig
     items entries =
       yieldMany (menuItem <$> entries)
-    menuItem (HistoryEntry (Command _ ident lines _ _)) =
-      MenuItem (identText ident) (menuItemText ident lines)
-    menuItemText ident lines =
-      Text.unwords [menuItemIdent ident, Text.take 50 . fromMaybe "<no command line>" $ listToMaybe lines]
+    menuItem (HistoryEntry (Command _ ident lines _ _ displayName)) =
+      MenuItem (identText ident) (menuItemText ident lines displayName)
+    menuItemText ident lines displayName =
+      Text.unwords [menuItemName ident displayName, Text.take 50 . fromMaybe "<no command line>" $ listToMaybe lines]
     handler =
       defaultMenu (Map.fromList [("cr", execute)])
     promptConfig =
-      PromptConfig (getCharC 0.1) basicTransition nvimPromptRenderer False
+      PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer False
 
 myoHistory ::
   NvimE e m =>

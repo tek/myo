@@ -30,6 +30,7 @@ executions =
   getL @CommandState CommandState.executing
 
 archiveExecution ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
@@ -44,6 +45,7 @@ archiveExecution ident =
       Lens.set (Execution.monitor . ExecutionMonitor.state) Stopped
 
 removeExecution ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
@@ -53,6 +55,7 @@ removeExecution ident = do
   setL @CommandState (executionLens ident) Nothing
 
 killExecution ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
@@ -63,6 +66,7 @@ killExecution ident = do
   removeExecution ident
 
 pushExecution ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
@@ -161,6 +165,7 @@ modifyExecution f ident =
   modifyM $ Lens.mapMOf (executionLens ident . Lens._Just) f
 
 modifyExecutionState ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
@@ -177,6 +182,7 @@ modifyExecutionState ident f =
       "changing execution state of `" <> identText ident <> "` from " <> show previous <> " to " <> show new
 
 setExecutionState ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Ident ->
@@ -186,6 +192,7 @@ setExecutionState ident =
   modifyExecutionState ident . const . return
 
 storeOutputSocket ::
+  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   Socket ->
