@@ -1,8 +1,8 @@
 resolver: lts-12.26
 packages:
 - .
-- ../ribosome/modules/core
-- ../ribosome/modules/test
+# - ../ribosome/modules/core
+# - ../ribosome/modules/test
 # - ../chiasma
 # - ../cornea
 # - ../nvim-hs
@@ -17,8 +17,8 @@ extra-deps:
   commit: 90ce914ac80f4ea38c7963046857e5a14e07432c
 - github: tek/chiasma-hs
   commit: 970bfacabc2fe06754375dcdb932cc4824dcda7b
-# - github: tek/ribosome-hs
-#   commit: 8e2941bc4195120d1b37a0fec4526b3e1eea7bda
-#   subdirs:
-#   - modules/core
-#   - modules/test
+- github: tek/ribosome-hs
+  commit: a713387e214f66d906b713263d152fbc7436ba53
+  subdirs:
+  - modules/core
+  - modules/test
