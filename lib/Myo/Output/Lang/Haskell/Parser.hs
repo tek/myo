@@ -9,10 +9,11 @@ import Data.Maybe (catMaybes)
 import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
+import Text.Parser.Char (anyChar, char, CharParsing, newline, noneOf, string)
 import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
-import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
-import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
+import Text.Parser.LookAhead (lookAhead, LookAheadParsing)
+import Text.Parser.Token (brackets, natural, TokenParsing, whiteSpace)
+import Text.RE.PCRE.Text (ed, RE, SearchReplace, (*=~/))
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -87,9 +88,21 @@ parseHaskellErrors ::
 parseHaskellErrors =
   Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
 
+removeProgressIndicatorRE :: (SearchReplace RE Text)
+removeProgressIndicatorRE =
+  [ed|^Progress \d+/\d+///|]
+
+removeControlCharsRE :: (SearchReplace RE Text)
+removeControlCharsRE =
+  [ed|\010+(\s+\010+)?///|]
+
+sanitizeHaskellOutput :: Text -> Text
+sanitizeHaskellOutput =
+  (*=~/ removeControlCharsRE) . (*=~/ removeProgressIndicatorRE)
+
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =
-  haskellReport <=< mapLeft (OutputError.Parse . toText) . parseOnly parseHaskellErrors
+  haskellReport <=< mapLeft (OutputError.Parse . toText) . parseOnly parseHaskellErrors . sanitizeHaskellOutput
 
 haskellOutputParser :: OutputParser
 haskellOutputParser =

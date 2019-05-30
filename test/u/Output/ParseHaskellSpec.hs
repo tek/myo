@@ -9,12 +9,13 @@ import Data.Text (Text)
 import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
+import Ribosome.Test.Unit (fixtureContent)
 import Test.Framework
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 
@@ -152,3 +153,28 @@ test_parseHaskell = do
     report = cons 0
     lines' = ReportLine._text <$> ParseReport._lines report
   assertEqual target lines'
+
+parseHaskellGarbage :: IO (Either OutputError ParsedOutput)
+parseHaskellGarbage = do
+  output <- fixtureContent "output/parse/haskell-garbage"
+  runExceptT $ parseWith haskellOutputParser (toText output)
+
+garbageTarget :: Vector Text
+garbageTarget =
+  Vector.fromList [
+    "/path/to/File.hs \57505 1",
+    "Variable not in scope: var :: IO a0",
+    "   |",
+    "77 |   var",
+    "   |   ^^^",
+    ""
+    ]
+
+test_parseGarbage :: IO ()
+test_parseGarbage = do
+  outputE <- parseHaskellGarbage
+  ParsedOutput _ cons <- assertRight outputE
+  let
+    report = cons 0
+    lines' = ReportLine._text <$> ParseReport._lines report
+  assertEqual garbageTarget lines'
