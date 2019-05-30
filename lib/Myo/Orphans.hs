@@ -5,7 +5,6 @@ module Myo.Orphans where
 
 import Chiasma.Data.Ident (Ident(..))
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
-import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
 import Data.ByteString.Internal (unpackChars)
 import Data.MessagePack (Object(ObjectString))
 import qualified Data.UUID as UUID (toString)
@@ -22,8 +21,3 @@ instance MsgpackEncode Ident where
   toMsgpack (Uuid u) = Util.string (UUID.toString u)
 
 deriving instance MsgpackDecode ViewGeometry
-
-instance ToJSON Ident where
-  toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON Ident
