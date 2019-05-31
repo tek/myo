@@ -102,6 +102,13 @@ haskellOutput =
     "       |",
     "    70 |   func",
     "       |   ^^^^",
+    "",
+    "    /path/to/File.hs:36:1: error:",
+    "      Variable not in scope: var",
+    "        :: IO a0",
+    "       |",
+    "    77 |   var",
+    "       |   ^^^",
     ""
     ]
 
@@ -138,6 +145,10 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "!instance: func",
   "MonadIO (t m)",
+  "",
+  "/path/to/File.hs \57505 36",
+  "variable not in scope",
+  "var :: IO a0",
   ""
   ]
 
@@ -145,8 +156,8 @@ parseHaskell :: IO (Either OutputError ParsedOutput)
 parseHaskell =
   runExceptT $ parseWith haskellOutputParser haskellOutput
 
-test_parseHaskell :: IO ()
-test_parseHaskell = do
+test_parseHaskellErrors :: IO ()
+test_parseHaskellErrors = do
   outputE <- parseHaskell
   ParsedOutput _ cons <- assertRight outputE
   let

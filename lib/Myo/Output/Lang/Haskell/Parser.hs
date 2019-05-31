@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Myo.Output.Lang.Haskell.Parser where
 
 import Control.Monad ((<=<))
@@ -14,7 +16,7 @@ import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
 import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
-import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
+import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -48,16 +50,21 @@ dot :: CharParsing m => m Char
 dot =
   char '•'
 
+codeSnippet ::
+  TokenParsing m =>
+  m ()
+codeSnippet =
+  void (newline *> ws *> char '|')
+
 singleMessage ::
   Monad m =>
-  CharParsing m =>
+  TokenParsing m =>
   m (NonEmpty Text)
 singleMessage =
-  pure . toText <$> manyTill anyChar (choice [void emptyLine, eof])
+  pure . toText <$> manyTill anyChar (choice [void emptyLine, codeSnippet, eof])
 
 multiMessage ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   LookAheadParsing m =>
   m (NonEmpty Text)
@@ -66,7 +73,7 @@ multiMessage = do
   tail' <- many part
   return $ toText <$> head' :| tail'
   where
-    part = ws *> dot *> ws *> manyTill anyChar (choice [void $ lookAhead dot, void emptyLine, eof])
+    part = ws *> dot *> ws *> manyTill anyChar (choice [void $ lookAhead dot, void emptyLine, codeSnippet, eof])
 
 event ::
   Monad m =>
@@ -89,13 +96,13 @@ parseHaskellErrors ::
 parseHaskellErrors =
   Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
 
-removeProgressIndicatorRE :: (SearchReplace RE Text)
+removeProgressIndicatorRE :: SearchReplace RE Text
 removeProgressIndicatorRE =
   [ed|Progress \d+/\d+\s*///|]
 
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
-  (*=~/ removeProgressIndicatorRE) . (Text.filter ('\b' /=))
+  searchReplaceAll removeProgressIndicatorRE . Text.filter ('\b' /=)
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =

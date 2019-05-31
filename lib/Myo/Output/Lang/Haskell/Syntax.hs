@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Myo.Output.Lang.Haskell.Syntax (
   haskellSyntax,
   moduleImportMarker,
@@ -17,6 +19,7 @@ import Ribosome.Data.Syntax (
   syntaxRegionOffset,
   syntaxVerbatim,
   )
+import Text.RawString.QQ (r)
 
 import Myo.Output.Data.String (colMarker, lineNumber)
 
@@ -32,7 +35,7 @@ noInstanceMarker =
   "\\s*!instance:"
 
 notInScopeMarker :: Text
-notInScopeMarker = "Variable not in scope:"
+notInScopeMarker = [r|\%(variable\|type\) not in scope|]
 
 moduleImportMarker :: Text
 moduleImportMarker =

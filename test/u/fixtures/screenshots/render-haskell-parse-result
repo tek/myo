@@ -1,5 +1,34 @@
-[38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11[39m
-[1m[31mtype mismatch
+
+[94m~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~[39m [94m [39m
+[94m~
+~[39m [94m [39m
+[94m~[39m [94m [39m
+[7m[No Name] 0,0-1 All
+[0;4m[38;5;159m[49m/path/to/File.hs[39m î¡ [38;5;159m11[39m
+[0;1m[31m[49mtype mismatch
 [0m[31m[49mTypeA
 [32mTypeB
 
@@ -19,41 +48,12 @@
 [1m[31m![0m[38;5;159m[49minstance[39m:[33m [39mrun
 MonadIO (t m)
 
-[1;7mmyo-report 1,1 All
+[38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11
+[1m[31mtype not in scope
+[0m[39m[49mUnknown.Type
 
-[0m[94m[49m~
-~[39m [94m [39m
-[94m~
-~[39m [94m [39m
-[94m~[39m [94m [39m
-[94m~
-~
-~
-~[39m [94m [39m
-[94m~[39m [94m [39m
-[94m~
-~[39m [94m [39m
-[94m~[39m [94m [39m
-[94m~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-~
-[7m[39m[No Name] 0,0-1 All
+[38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11
+[1m[31mvariable not in scope
+[0m[39m[49mvar :: IO a0
+
+[1;7mmyo-report 1,1 All

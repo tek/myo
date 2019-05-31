@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Output.HaskellRenderSpec (htf_thisModulesTests) where
 
@@ -28,6 +29,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
+import Text.RawString.QQ (r)
 import Unit (tmuxSpec)
 
 loc :: Location
@@ -58,9 +60,17 @@ msg4 :: HaskellMessage
 msg4 =
   NoInstance "MonadIO (t m)" "run"
 
+msg5 :: HaskellMessage
+msg5 =
+  TypeNotInScope "Unknown.Type"
+
+msg6 :: HaskellMessage
+msg6 =
+  VariableNotInScope "var" "IO a0"
+
 reportMsgs :: [HaskellMessage]
 reportMsgs =
-  [msg0, msg1, msg2, msg3, msg4]
+  [msg0, msg1, msg2, msg3, msg4, msg5, msg6]
 
 reportLine :: Int -> HaskellMessage -> Vector ReportLine
 reportLine index =
@@ -95,32 +105,40 @@ target = [
   "/path/to/File.hs \57505 11",
   "!instance: run",
   "MonadIO (t m)",
+  "",
+  "/path/to/File.hs \57505 11",
+  "type not in scope",
+  "Unknown.Type",
+  "",
+  "/path/to/File.hs \57505 11",
+  "variable not in scope",
+  "var :: IO a0",
   ""
   ]
 
 syntaxTarget :: [Text]
 syntaxTarget = [
-    "MyoPath        xxx match /^.*\\ze\\( \57505.*$\\)\\@=/  contained containedin=MyoLocation",
-    "MyoLineNumber  xxx match /\\(\57505 \\)\\@<=\\zs\\d\\+\\ze/  contained containedin=MyoLocation",
-    "MyoHsError     xxx start=/^/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports",
+    [r|MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation|],
+    [r|MyoLineNumber  xxx match /\( \)\@<=\zs\d\+\ze/  contained containedin=MyoLocation|],
+    [r|MyoHsError     xxx start=/^/ end=/\ze.*\(\|†\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports|],
     "MyoLocation    xxx match /^.*\57505.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
-    "MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFound",
-    "MyoHsNoInstance xxx start=/\\s*!instance:/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNoInstanceHead",
-    "MyoHsNotInScope xxx start=/Variable not in scope:/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNotInScopeHead",
-    "MyoHsModuleImport xxx start=/redundant module import/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsModule",
-    "MyoHsNameImports xxx start=/redundant name imports/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNames",
+    [r|MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsFound|],
+    [r|MyoHsNoInstance xxx start=/\s*!instance:/ end=/\ze.*\(\|†\)/  contained contains=MyoHsNoInstanceHead|],
+    [r|MyoHsNotInScope xxx start=/\%(variable\|type\) not in scope/ end=/\ze.*\(\|†\)/  contained contains=MyoHsNotInScopeHead|],
+    [r|MyoHsModuleImport xxx start=/redundant module import/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsModule|],
+    [r|MyoHsNameImports xxx start=/redundant name imports/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsNames|],
     "MyoHsFound     xxx match /^.*$/  contained nextgroup=MyoHsReq skipnl",
     "MyoHsReq       xxx match /^.*$/  contained",
     "MyoHsCode      xxx match /.*/  contained contains=@haskell",
-    "MyoHsNoInstanceHead xxx match /\\s*\\s*!instance:.*$/  contained contains=MyoHsNoInstanceBang nextgroup=MyoHsNoInstanceDesc skipnl",
+    [r|MyoHsNoInstanceHead xxx match /\s*\s*!instance:.*$/  contained contains=MyoHsNoInstanceBang nextgroup=MyoHsNoInstanceDesc skipnl|],
     "MyoHsNoInstanceBang xxx match /!/  contained nextgroup=MyoHsNoInstanceKw",
     "MyoHsNoInstanceDesc xxx match /.*/  contained keepend contains=@haskell",
     "MyoHsNoInstanceKw xxx match /instance\\ze:/  contained nextgroup=MyoHsNoInstanceTrigger skipwhite",
     "MyoHsNoInstanceTrigger xxx match /.*/  contained keepend contains=@haskell nextgroup=MyoHsNoInstanceDesc skipnl",
-    "MyoHsNotInScopeHead xxx match /\\s*Variable not in scope:/  contained nextgroup=MyoHsCode skipnl",
+    [r|MyoHsNotInScopeHead xxx match /\s*\%(variable\|type\) not in scope/  contained nextgroup=MyoHsCode skipnl|],
     "MyoHsModule    xxx match /^.*$/  contained",
     "MyoHsNames     xxx match /^.*$/  contained contains=MyoHsName nextgroup=MyoHsModule skipnl",
-    "MyoHsName      xxx match /\\w\\+/  contained",
+    [r|MyoHsName      xxx match /\w\+/  contained|],
     "MyoPath        xxx links to Directory",
     "MyoLineNumber  xxx links to Directory",
     "MyoHsError     xxx links to Error", "MyoLocation    xxx cleared",

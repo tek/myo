@@ -47,6 +47,7 @@ dependencies:
 - path-io
 - prettyprinter
 - process
+- raw-strings-qq
 - regex-with-pcre
 - relude
 - resourcet

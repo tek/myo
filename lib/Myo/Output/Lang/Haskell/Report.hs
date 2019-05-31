@@ -10,7 +10,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, unzip)
 import Data.Vector.Lens (toVectorOf)
 import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
-import Text.Parser.Combinators (between, choice, many, sepBy1, skipMany, skipOptional, some)
+import Text.Parser.Combinators (between, choice, many, manyTill, sepBy1, skipMany, skipOptional, some, try)
 import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))
@@ -24,7 +24,7 @@ import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Syntax (foundReqMarker, haskellSyntax, moduleImportMarker, nameImportsMarker)
-import Myo.Text.Parser.Combinators (parensExpr)
+import Myo.Text.Parser.Combinators (parensExpr, tillEol)
 
 data HaskellMessage =
   FoundReq1 Text Text
@@ -32,6 +32,8 @@ data HaskellMessage =
   FoundReq2 Text Text
   |
   TypeNotInScope Text
+  |
+  VariableNotInScope Text Text
   |
   Verbatim Text
   |
@@ -59,7 +61,7 @@ qnames wordChar separator =
 
 qname :: TokenParsing m => m Text
 qname =
-  unwords <$> qnames (noneOf "\n ’") whiteSpace
+  unwords <$> qnames (noneOf ['\n', ' ', rq]) whiteSpace
 
 ws :: TokenParsing m => m ()
 ws =
@@ -89,6 +91,18 @@ typeNotInScope ::
   m HaskellMessage
 typeNotInScope =
   string "Not in scope: type constructor or class" *> ws *> (TypeNotInScope <$> qname)
+
+variableNotInScope ::
+  Monad m =>
+  TokenParsing m =>
+  m HaskellMessage
+variableNotInScope = do
+  string "Variable not in scope:" *> ws *> (VariableNotInScope <$> name <*> tpe)
+  where
+    name =
+      toText <$> manyTill anyChar (try (ws *> string "::"))
+    tpe =
+      toText <$> (ws *> tillEol)
 
 noMethod ::
   TokenParsing m =>
@@ -141,7 +155,16 @@ parseMessage =
   where
     msgs =
       [
-        foundReq1, foundReq2, typeNotInScope, noMethod, moduleImport, namesImport, parseError, noInstance, verbatim
+        foundReq1,
+        foundReq2,
+        typeNotInScope,
+        noMethod,
+        moduleImport,
+        namesImport,
+        parseError,
+        noInstance,
+        variableNotInScope,
+        verbatim
       ]
 
 data HaskellOutputEvent =
@@ -159,7 +182,7 @@ formatMessage (FoundReq1 found req) =
 formatMessage (FoundReq2 found req) =
   [foundReqMarker, found, req]
 formatMessage (TypeNotInScope tpe) =
-  ["type not in scope: " <> tpe]
+  ["type not in scope", tpe]
 formatMessage (NoMethod meth) =
   ["method not implemented: " <> meth]
 formatMessage (ModuleImport name) =
@@ -170,6 +193,8 @@ formatMessage ParseError =
   ["syntax error"]
 formatMessage (NoInstance tpe trigger) =
   ["!instance: " <> trigger, tpe]
+formatMessage (VariableNotInScope name tpe) =
+  ["variable not in scope", name <> " :: " <> tpe]
 formatMessage (Verbatim text) =
   Text.lines text
 
