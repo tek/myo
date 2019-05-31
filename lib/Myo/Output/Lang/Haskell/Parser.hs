@@ -7,13 +7,14 @@ import Data.Functor (void)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Data.Maybe (catMaybes)
 import Data.Text (Text)
+import qualified Data.Text as Text (filter)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (anyChar, char, CharParsing, newline, noneOf, string)
+import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
 import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
-import Text.Parser.LookAhead (lookAhead, LookAheadParsing)
-import Text.Parser.Token (brackets, natural, TokenParsing, whiteSpace)
-import Text.RE.PCRE.Text (ed, RE, SearchReplace, (*=~/))
+import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
+import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
+import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -90,15 +91,11 @@ parseHaskellErrors =
 
 removeProgressIndicatorRE :: (SearchReplace RE Text)
 removeProgressIndicatorRE =
-  [ed|^Progress \d+/\d+///|]
-
-removeControlCharsRE :: (SearchReplace RE Text)
-removeControlCharsRE =
-  [ed|\010+(\s+\010+)?///|]
+  [ed|Progress \d+/\d+\s*///|]
 
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
-  (*=~/ removeControlCharsRE) . (*=~/ removeProgressIndicatorRE)
+  (*=~/ removeProgressIndicatorRE) . (Text.filter ('\b' /=))
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =

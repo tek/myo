@@ -14,8 +14,8 @@ import Test.Framework
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
 
@@ -164,9 +164,9 @@ garbageTarget =
   Vector.fromList [
     "/path/to/File.hs \57505 1",
     "Variable not in scope: var :: IO a0",
-    "   |",
+    "|",
     "77 |   var",
-    "   |   ^^^",
+    "|   ^^^",
     ""
     ]
 
