@@ -96,13 +96,13 @@ variableNotInScope ::
   Monad m =>
   TokenParsing m =>
   m HaskellMessage
-variableNotInScope = do
-  string "Variable not in scope:" *> ws *> (VariableNotInScope <$> name <*> tpe)
+variableNotInScope =
+  ws *> string "Variable not in scope:" *> ws *> (VariableNotInScope <$> name <*> tpe)
   where
     name =
       toText <$> manyTill anyChar (try (ws *> string "::"))
     tpe =
-      toText <$> (ws *> tillEol)
+      toText <$> (ws *> many (noneOf "\n"))
 
 noMethod ::
   TokenParsing m =>

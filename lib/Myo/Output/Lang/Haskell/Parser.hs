@@ -98,7 +98,7 @@ parseHaskellErrors =
 
 removeProgressIndicatorRE :: SearchReplace RE Text
 removeProgressIndicatorRE =
-  [ed|Progress \d+/\d+\s*///|]
+  [ed|Progress \d+/\d+///|]
 
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
