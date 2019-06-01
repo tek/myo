@@ -1,5 +1,6 @@
 module Myo.Command.HistoryMenu where
 
+import Chiasma.Data.Ident (parseIdent)
 import qualified Chiasma.Data.Ident as Ident (Ident(..))
 import Conduit (yieldMany)
 import qualified Control.Lens as Lens (view)
@@ -58,7 +59,7 @@ runHistoryEntry menu _ =
   maybe (menuQuit menu) runQuit (Lens.view MenuItem.ident <$> selectedMenuItem menu)
   where
     runQuit ident =
-      menuQuitWith (myoReRun (Left (Ident.Str (toString ident)))) menu
+      menuQuitWith (myoReRun (Left (parseIdent ident))) menu
 
 
 menuItemName :: Ident -> Maybe Text -> Text
