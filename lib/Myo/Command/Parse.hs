@@ -120,7 +120,7 @@ parseCommand ::
   m [ParsedOutput]
 parseCommand (Command _ ident _ _ (Just lang) _) = do
   output <- commandOutput ident
-  Log.debugShow output
+  Log.showDebug "parse output:" output
   parseWithLang lang output
 parseCommand (Command _ ident _ _ _ _) =
   throwHoist $ OutputError.NoLang ident

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Myo.Data.Error where
 
@@ -26,15 +27,6 @@ data Error =
   Rpc RpcError
   |
   Persist PersistError
-  deriving Show
+  deriving (Show, Generic, ReportError)
 
 deepPrisms ''Error
-
-instance ReportError Error where
-  errorReport (Run e) = errorReport e
-  errorReport (Command e) = errorReport e
-  errorReport (Output e) = errorReport e
-  errorReport (Mapping e) = errorReport e
-  errorReport (Decode e) = errorReport e
-  errorReport (Rpc e) = errorReport e
-  errorReport (Persist e) = errorReport e

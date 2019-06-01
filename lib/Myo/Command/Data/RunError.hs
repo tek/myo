@@ -7,13 +7,13 @@ import Chiasma.Data.Views (ViewsError)
 import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
+import Ribosome.Orphans ()
 import System.Log (Priority(NOTICE, DEBUG, ERROR))
 
 import qualified Myo.Command.Data.Command as Cmd (Command(Command))
 import Myo.Command.Data.CommandError (CommandError(..))
 import Myo.Command.Data.RunTask (RunTask(RunTask))
 import Myo.Ui.Data.ToggleError (ToggleError)
-import Myo.Ui.Error (tmuxErrorReport, viewsErrorReport)
 
 data RunError =
   Command CommandError
@@ -49,8 +49,8 @@ instance ReportError RunError where
       user = "no runner available for command `" <> identText ident <> "`"
   errorReport (Toggle e) =
     errorReport e
-  errorReport (Views e) = viewsErrorReport e
-  errorReport (Tmux e) = tmuxErrorReport e
+  errorReport (Views e) = errorReport e
+  errorReport (Tmux e) = errorReport e
   errorReport (IOEmbed e) =
     ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
   errorReport SocketFailure =
