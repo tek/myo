@@ -15,10 +15,10 @@ extra-deps:
   commit: 63e7ef2fc40110e23240a6d0109a8bae2e29c4fa
 - github: tek/cornea
   commit: 90ce914ac80f4ea38c7963046857e5a14e07432c
-- github: tek/chiasma-hs
-  commit: 9571744596af36b46dc31b40c6f767b5c035800c
-- github: tek/ribosome-hs
-  commit: 152027a2b9019c1a559e39cea88addcbe4cee6f5
+- github: tek/chiasma
+  commit: 3f224bb9cac08e0ca6b7a2bc75ba7a36b954b668
+- github: tek/ribosome
+  commit: 0e9014ed5a76ad78ae646dce21d0f3a835dc6430
   subdirs:
   - modules/core
   - modules/test
