@@ -202,9 +202,9 @@ Running the command
 MyoParse
 ```
 
-will run the appropriate parser, read from the command option `pane` or the variable `g:myo_test_lang` (currently only
+Will run the appropriate parser, read from the command option `pane` or the variable `g:myo_test_lang` (currently only
 `haskell or ``scala`), and display its result in a scratch window, as showcased in the screenshot at the top of the
-Readme.
+readme.
 
 After parsing, the cursor will be set to the last of first error (depending on the values of `g:myo_output_jump_first`
 and `g:myo_output_auto_jump`).
@@ -212,13 +212,14 @@ Using the functions `MyoPrev` and `MyoNext`, you can cycle through the error lis
 
 [Neovim]: https://github.com/neovim/neovim
 [Haskell]: https://www.haskell.org
-[ribosome]: https://github.com/tek/ribosome-hs
-[chromatin]: https://github.com/tek/chromatin-hs
+[ribosome]: https://github.com/tek/ribosome
+[chromatin]: https://github.com/tek/chromatin
 [nvim-hs]: https://github.com/neovimhaskell/nvim-hs
 [tmux]: https://github.com/tmux/tmux
-[proteome]: https://github.com/tek/proteome-hs
+[proteome]: https://github.com/tek/proteome
 [nvim-hs.vim]: https://github.com/neovimhaskell/nvim-hs.vim
 [Scala]: https://scala-lang.org
 [sbt]: https://scala-sbt.org
-[chiasma]: https://github.com/tek/chiasma-hs
+[chiasma]: https://github.com/tek/chiasma
 [vim-test]: https://github.com/janko/vim-test
+[stack]: https://docs.haskellstack.org/en/stable/README
