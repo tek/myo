@@ -68,9 +68,13 @@ msg6 :: HaskellMessage
 msg6 =
   VariableNotInScope "var" "IO a0"
 
+msg7 :: HaskellMessage
+msg7 =
+  DoNotationResultDiscarded "IO (Maybe Int)"
+
 reportMsgs :: [HaskellMessage]
 reportMsgs =
-  [msg0, msg1, msg2, msg3, msg4, msg5, msg6]
+  [msg0, msg1, msg2, msg3, msg4, msg5, msg6, msg7]
 
 reportLine :: Int -> HaskellMessage -> Vector ReportLine
 reportLine index =
@@ -113,6 +117,10 @@ target = [
   "/path/to/File.hs \57505 11",
   "variable not in scope",
   "var :: IO a0",
+  "",
+  "/path/to/File.hs \57505 11",
+  "do-notation result discarded",
+  "IO (Maybe Int)",
   ""
   ]
 
@@ -120,13 +128,14 @@ syntaxTarget :: [Text]
 syntaxTarget = [
     [r|MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation|],
     [r|MyoLineNumber  xxx match /\( \)\@<=\zs\d\+\ze/  contained containedin=MyoLocation|],
-    [r|MyoHsError     xxx start=/^/ end=/\ze.*\(\|†\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports|],
+    [r|MyoHsError     xxx start=/^/ end=/\ze.*\(\|†\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard|],
     "MyoLocation    xxx match /^.*\57505.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
     [r|MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsFound|],
     [r|MyoHsNoInstance xxx start=/\s*!instance:/ end=/\ze.*\(\|†\)/  contained contains=MyoHsNoInstanceHead|],
     [r|MyoHsNotInScope xxx start=/\%(variable\|type\) not in scope/ end=/\ze.*\(\|†\)/  contained contains=MyoHsNotInScopeHead|],
     [r|MyoHsModuleImport xxx start=/redundant module import/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsModule|],
     [r|MyoHsNameImports xxx start=/redundant name imports/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsNames|],
+    "MyoHsDoResDiscard xxx start=/do-notation result discarded/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsDoResDiscardHead",
     "MyoHsFound     xxx match /^.*$/  contained nextgroup=MyoHsReq skipnl",
     "MyoHsReq       xxx match /^.*$/  contained",
     "MyoHsCode      xxx match /.*/  contained contains=@haskell",
@@ -139,12 +148,14 @@ syntaxTarget = [
     "MyoHsModule    xxx match /^.*$/  contained",
     "MyoHsNames     xxx match /^.*$/  contained contains=MyoHsName nextgroup=MyoHsModule skipnl",
     [r|MyoHsName      xxx match /\w\+/  contained|],
+    "MyoHsDoResDiscardHead xxx match /\\s*do-notation result discarded/  contained nextgroup=MyoHsCode skipnl",
     "MyoPath        xxx links to Directory",
     "MyoLineNumber  xxx links to Directory",
     "MyoHsError     xxx links to Error", "MyoLocation    xxx cleared",
     "MyoHsFoundReq  xxx cleared", "MyoHsNoInstance xxx cleared",
     "MyoHsNotInScope xxx cleared", "MyoHsModuleImport xxx cleared",
     "MyoHsNameImports xxx cleared",
+    "MyoHsDoResDiscard xxx cleared",
     "MyoHsFound     xxx ctermfg=1 guifg=#dc322f",
     "MyoHsReq       xxx ctermfg=2 guifg=#719e07",
     "MyoHsCode      xxx cleared", "MyoHsNoInstanceHead xxx cleared",
@@ -154,7 +165,8 @@ syntaxTarget = [
     "MyoHsNoInstanceTrigger xxx ctermfg=3",
     "MyoHsNotInScopeHead xxx links to Error",
     "MyoHsModule    xxx links to Type", "MyoHsNames     xxx cleared",
-    "MyoHsName      xxx ctermfg=5 guifg=#d33682"
+    "MyoHsName      xxx ctermfg=5 guifg=#d33682",
+    "MyoHsDoResDiscardHead xxx cleared"
   ]
 
 setupHighlights ::
@@ -180,6 +192,7 @@ haskellRenderSpec = do
   setupHighlights
   renderParseResult (Ident.Str "test") [parsedOutput]
   vimCommand "wincmd w"
+  vimCommand "wincmd o"
   content <- currentBufferContent
   gassertEqual target content
   syntax <- myoSyntax

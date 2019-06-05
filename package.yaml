@@ -48,6 +48,7 @@ dependencies:
 - prettyprinter
 - process
 - raw-strings-qq
+- rawstring-qm
 - regex-with-pcre
 - relude
 - resourcet

@@ -1,13 +1,9 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Myo.Output.Lang.Haskell.Syntax (
-  haskellSyntax,
-  moduleImportMarker,
-  nameImportsMarker,
-  foundReqMarker,
-) where
+module Myo.Output.Lang.Haskell.Syntax where
 
 import qualified Data.Map as Map (fromList)
+import Data.String.QM (qt)
 import Ribosome.Data.Syntax (
   HiLink(..),
   Highlight(..),
@@ -24,7 +20,8 @@ import Text.RawString.QQ (r)
 import Myo.Output.Data.String (colMarker, lineNumber)
 
 errorEnd :: Text
-errorEnd = "\\ze.*\\(" <> lineNumber <> "\\|" <> colMarker <> "\\)"
+errorEnd =
+  [qt|\\ze.*\\(${lineNumber}\\|${colMarker}\\)|]
 
 foundReqMarker :: Text
 foundReqMarker =
@@ -44,6 +41,10 @@ moduleImportMarker =
 nameImportsMarker :: Text
 nameImportsMarker =
   "redundant name imports"
+
+doResDiscardMarker :: Text
+doResDiscardMarker =
+  "do-notation result discarded"
 
 haskellInclude :: SyntaxItem
 haskellInclude =
@@ -80,7 +81,7 @@ errorMessage =
     item = syntaxRegion "MyoHsError" "^" errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", contains)]
-    contains = "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports"
+    contains = "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard"
 
 foundReq :: SyntaxItem
 foundReq =
@@ -215,6 +216,22 @@ moduleLine =
     item = syntaxMatch "MyoHsModule" "^.*$"
     options = ["contained", "skipnl"]
 
+doNotationResultDiscarded :: SyntaxItem
+doNotationResultDiscarded =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegionOffset "MyoHsDoResDiscard" doResDiscardMarker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsDoResDiscardHead")]
+
+doNotationResultDiscardedHead :: SyntaxItem
+doNotationResultDiscardedHead =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsDoResDiscardHead" ("\\s*" <> doResDiscardMarker)
+    options = ["contained", "skipnl"]
+    params = Map.fromList [("nextgroup", "MyoHsCode")]
+
 hiReq :: Highlight
 hiReq =
   syntaxHighlight "MyoHsReq" [("ctermfg", "2"), ("guifg", "#719e07")]
@@ -267,7 +284,8 @@ haskellSyntax =
       [
         haskellInclude, location, path, lineNumberSymbol, errorMessage, foundReq, found, req, code,
         noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
-        notInScopeHead, moduleImport, nameImports, moduleLine, names, name
+        notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
+        doNotationResultDiscardedHead
       ]
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =

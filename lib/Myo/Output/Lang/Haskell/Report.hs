@@ -23,7 +23,13 @@ import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
-import Myo.Output.Lang.Haskell.Syntax (foundReqMarker, haskellSyntax, moduleImportMarker, nameImportsMarker)
+import Myo.Output.Lang.Haskell.Syntax (
+  doResDiscardMarker,
+  foundReqMarker,
+  haskellSyntax,
+  moduleImportMarker,
+  nameImportsMarker,
+  )
 import Myo.Text.Parser.Combinators (parensExpr, tillEol)
 
 data HaskellMessage =
@@ -46,6 +52,8 @@ data HaskellMessage =
   ParseError
   |
   NoInstance Text Text
+  |
+  DoNotationResultDiscarded Text
   deriving (Eq, Show)
 
 lq :: Char
@@ -110,14 +118,18 @@ noMethod ::
 noMethod =
   string "No explicit implementation for" *> ws *> (NoMethod <$> qname) <* skipMany anyChar
 
+importIntro ::
+  TokenParsing m =>
+  m ()
+importIntro =
+  token (string "The") *> skipOptional (token $ string "qualified") *> token (string "import of") *> ws
+
 moduleImport ::
   TokenParsing m =>
   m HaskellMessage
 moduleImport =
-  ModuleImport <$> (pre *> qname <* post)
+  ModuleImport <$> (importIntro *> qname <* post)
   where
-    pre =
-      token (string "The") *> skipOptional (token $ string "qualified") *> token (string "import of") *> ws
     post =
       ws <* string "is redundant"
 
@@ -127,7 +139,7 @@ namesImport ::
 namesImport =
   flip NamesImport <$> names <*> module'
   where
-    names = string "The import of" *> ws *> qnames (noneOf "\n, ’") (void $ many $ oneOf "\n, ") <* ws
+    names = importIntro *> qnames (noneOf "\n, ’") (void $ many $ oneOf "\n, ") <* ws
     module' = string "from module" *> ws *> qname <* ws <* string "is redundant"
 
 parseError ::
@@ -141,6 +153,12 @@ noInstance ::
   m HaskellMessage
 noInstance =
   NoInstance . show <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf [lq]) *> qname)
+
+doNotationResultDiscarded ::
+  TokenParsing m =>
+  m HaskellMessage
+doNotationResultDiscarded =
+  DoNotationResultDiscarded <$> (string "A do-notation statement discarded a result of type" *> ws *> qname)
 
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
@@ -164,6 +182,7 @@ parseMessage =
         parseError,
         noInstance,
         variableNotInScope,
+        doNotationResultDiscarded,
         verbatim
       ]
 
@@ -195,6 +214,8 @@ formatMessage (NoInstance tpe trigger) =
   ["!instance: " <> trigger, tpe]
 formatMessage (VariableNotInScope name tpe) =
   ["variable not in scope", name <> " :: " <> tpe]
+formatMessage (DoNotationResultDiscarded tpe) =
+  [doResDiscardMarker, tpe]
 formatMessage (Verbatim text) =
   Text.lines text
 

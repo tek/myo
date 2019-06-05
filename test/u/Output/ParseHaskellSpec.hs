@@ -109,6 +109,18 @@ haskellOutput =
     "       |",
     "    77 |   var",
     "       |   ^^^",
+    "    /path/to/File.hs:36:1: error:",
+    "        The qualified import of ‘Name’",
+    "        from module ‘Module’ is redundant",
+    "       |",
+    "    14 | import qualified Module as M (",
+    "       | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...",
+    "",
+    "    /path/to/File.hs:36:1: error:",
+    "    A do-notation statement discarded a result of type",
+    "      ‘m ()’",
+    "    Suppress this warning by saying",
+    "      ‘_ <- expr’",
     ""
     ]
 
@@ -150,6 +162,15 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "variable not in scope",
   "var :: IO a0",
+  "",
+  "/path/to/File.hs \57505 36",
+  "redundant name imports",
+  "Name",
+  "Module",
+  "",
+  "/path/to/File.hs \57505 36",
+  "do-notation result discarded",
+  "m ()",
   ""
   ]
 
