@@ -25,7 +25,7 @@ import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec(CommandSettingCodec))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands)
-import Myo.Data.Env (Env(_tempDir))
+import Myo.Data.Env (Env(_tempDir), Myo)
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, variables)
 
@@ -63,7 +63,7 @@ getCmdData ::
 getCmdData =
   vimCallFunction "CmdData" []
 
-updateCommandsSpec :: ExceptT RpcError (Neovim ()) ()
+updateCommandsSpec :: Myo ()
 updateCommandsSpec = do
   setVar "myo_commands" (codec commands1)
   doautocmd "CmdlineLeave"

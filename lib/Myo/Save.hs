@@ -5,31 +5,35 @@ import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Ribosome.Config.Setting (setting)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.IO (vimCommand)
-import Time.System (timeCurrent)
+import Ribosome.System.Time (secondsP)
+import Time.System (timeCurrentP)
 
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Log (pushCommandLogs)
 import Myo.Data.Env (Env(Env, _lastSave))
 import qualified Myo.Data.Env as Env (lastSave)
-import qualified Myo.Settings as Settings (resetOnSave, saveBeforeRun)
+import qualified Myo.Settings as Settings (resetOnSave, saveBeforeRun, saveInterval)
 
 updateLastSave ::
   MonadIO m =>
   MonadDeepState s Env m =>
   m ()
 updateLastSave =
-  setL @Env Env.lastSave =<< liftIO timeCurrent
+  setL @Env Env.lastSave =<< liftIO timeCurrentP
 
 sensibleSave ::
-  MonadIO m =>
+  NvimE e m =>
+  MonadRibo m =>
+  MonadDeepError e SettingError m =>
   Env ->
   m Env
 sensibleSave state@Env{ _lastSave = last', .. } = do
-  now <- liftIO timeCurrent
-  execStateT (when (shouldSave now) save) state
+  saveTimeout <- secondsP <$> setting Settings.saveInterval
+  now <- liftIO timeCurrentP
+  execStateT (when (shouldSave now saveTimeout) save) state
   where
-    shouldSave now =
-      last' - now > Elapsed (Seconds 1)
+    shouldSave now saveTimeout =
+      now - last' > saveTimeout
     save =
       runExceptT @CommandError pushCommandLogs *> updateLastSave
 
@@ -49,7 +53,7 @@ saveAll ::
   m ()
 saveAll = do
   updateLastSave
-  vimCommand "wall"
+  vimCommand "noautocmd wall"
 
 preCommandSave ::
   NvimE e m =>

@@ -13,7 +13,6 @@ import Ribosome.Config.Setting (settingMaybe)
 import Ribosome.Control.Lock (lockOrSkip)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Log (showDebug, showDebugM)
 import Ribosome.Persist (mayPersistLoad, persistStore)
 
 import Myo.Command.Command (mayCommandBy)
@@ -39,7 +38,7 @@ proteomePath =
   runMaybeT ((</>) <$> fetch Settings.proteomeMainType <*> fetch Settings.proteomeMainName)
   where
     fetch s =
-      MaybeT $ traverse (parseRelDir . toString) =<< showDebugM "setting" (settingMaybe s)
+      MaybeT $ traverse (parseRelDir . toString) =<< settingMaybe s
 
 fsPath ::
   MonadIO m =>

@@ -121,6 +121,29 @@ haskellOutput =
     "      ‘m ()’",
     "    Suppress this warning by saying",
     "      ‘_ <- expr’",
+    "",
+    "    /path/to/File.hs:36:1: error:",
+    "    Module ‘Mod.Ule’ does not export ‘NoSuchName’",
+    "    File name does not match module name:",
+    "    Saw: ‘Wrong.Module’",
+    "    Expected: ‘Correct.Module’",
+    "",
+    "    /path/to/File.hs:36:1: error:",
+    "    Could not find module ‘Non.Existing.Module’",
+    "    Use -v to see a list of the files searched for.",
+    "    /path/to/File.hs:36:1: error:",
+    "      • Could not deduce (Class t m)",
+    "        arising from a use of ‘constraintedFun’",
+    "      from the context: (MonadIO m, MonadTrans t)",
+    "    /path/to/File.hs:36:1: error:",
+    "    • Couldn't match type ‘Path.Internal.Path Path.Abs Path.Dir’",
+    "                     with ‘[Char]’",
+    "      Expected type: ProjectConfig -> [FilePath]",
+    "        Actual type: ProjectConfig",
+    "                     -> [Path.Internal.Path Path.Abs Path.Dir]",
+    "    • Could not deduce (MonadThrow m)",
+    "        arising from a use of ‘projectFromNameIn’",
+    "      from the context: MonadIO m",
     ""
     ]
 
@@ -171,6 +194,11 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "do-notation result discarded",
   "m ()",
+  "",
+  "/path/to/File.hs \57505 36",
+  "invalid import name",
+  "NoSuchName",
+  "Mod.Ule",
   ""
   ]
 

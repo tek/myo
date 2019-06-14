@@ -5,9 +5,9 @@ import Control.Monad ((<=<))
 import qualified Data.Map as Map (fromList)
 import Data.MessagePack (Object)
 import Myo.Output.Data.OutputError (OutputError)
-import Neovim (Neovim, NeovimPlugin, Plugin(..), wrapPlugin)
+import Neovim (Neovim, NeovimPlugin, Plugin, wrapPlugin)
 import Path (Abs, Dir, Path)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, Ribo)
+import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError)
@@ -20,7 +20,7 @@ import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.HistoryMenu (myoHistory)
 import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
-import Myo.Command.Run (myoReRun, myoRun)
+import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env, Myo)
@@ -47,6 +47,8 @@ rpcHandlers =
     $(rpcHandlerDef 'myoToggleLayout),
     $(rpcHandler (cmd []) 'myoRun),
     $(rpcHandlerDef 'myoReRun),
+    $(rpcHandlerDef 'myoLine),
+    $(rpcHandler (cmd []) 'myoLineCmd),
     $(rpcHandlerDef 'myoParse),
     $(rpcHandler (cmd []) 'myoParseLatest),
     $(rpcHandlerDef 'myoPrev),

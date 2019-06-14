@@ -9,14 +9,14 @@ import Control.Monad.DeepError (hoistMaybe)
 import Control.Monad.IO.Class (MonadIO)
 import Data.Text (Text)
 import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
-import Ribosome.Config.Setting (setting)
+import Ribosome.Config.Setting (setting, settingMaybe)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Log as Log
 import Ribosome.Msgpack.Error (DecodeError)
 import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
 
 import Myo.Command.Command (commandByIdent, latestCommand)
-import Myo.Command.Data.Command (Command(Command), CommandLanguage)
+import Myo.Command.Data.Command (Command(Command), CommandLanguage(CommandLanguage))
 import qualified Myo.Command.Data.Command as Command (ident)
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandLog (CommandLog)
@@ -32,7 +32,7 @@ import qualified Myo.Output.Data.OutputError as OutputError (OutputError(NoLang,
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
-import qualified Myo.Settings as Settings (displayResult)
+import qualified Myo.Settings as Settings (displayResult, proteomeMainType)
 
 selectCommand ::
   MonadDeepError e OutputError m =>
@@ -110,20 +110,40 @@ parseWithLang lang output = do
   where
     parse (OutputHandler parser) = parseWith parser output
 
-parseCommand ::
+parseCommandWithLang ::
   MonadRibo m =>
   MonadIO m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
-  Command ->
+  CommandLanguage ->
+  Ident ->
   m [ParsedOutput]
-parseCommand (Command _ ident _ _ (Just lang) _) = do
+parseCommandWithLang lang ident = do
   output <- commandOutput ident
   Log.showDebug "parse output:" output
   parseWithLang lang output
-parseCommand (Command _ ident _ _ _ _) =
-  throwHoist $ OutputError.NoLang ident
+
+projectLanguage ::
+  NvimE e m =>
+  MonadRibo m =>
+  m (Maybe CommandLanguage)
+projectLanguage =
+  CommandLanguage <$$> settingMaybe Settings.proteomeMainType
+
+parseCommand ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Command ->
+  m [ParsedOutput]
+parseCommand (Command _ ident _ _ (Just lang) _) =
+  parseCommandWithLang lang ident
+parseCommand (Command _ ident _ _ Nothing _) = do
+  lang <- hoistMaybe (OutputError.NoLang ident) =<< projectLanguage
+  parseCommandWithLang lang ident
 
 myoParse ::
   MonadDeepError e CommandError m =>

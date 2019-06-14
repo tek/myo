@@ -37,6 +37,8 @@ data RunError =
   Unsupported Text Text
   |
   VimTest Text
+  |
+  NoLinesSpecified
   deriving Show
 
 deepPrisms ''RunError
@@ -71,3 +73,5 @@ instance ReportError RunError where
         "runner `" <> runner <> "` does not support " <> tpe <> " commands"
   errorReport (VimTest e) =
     ErrorReport "vim-test failed" ["RunError.VimTest:", e] ERROR
+  errorReport NoLinesSpecified =
+    ErrorReport "no lines specified for command" ["RunError.NoLinesSpecified"] NOTICE

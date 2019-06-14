@@ -83,3 +83,7 @@ proteomeMainType =
 proteomeMainName :: Setting Text
 proteomeMainName =
   Setting "proteome_main_name" False Nothing
+
+saveInterval :: Setting Double
+saveInterval =
+  Setting "save_interval" True (Just 1.0)

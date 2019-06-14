@@ -22,7 +22,7 @@ import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
 import Test.Framework
 
-import Myo.Data.Env (Env(_tempDir))
+import Myo.Data.Env (Env(_tempDir), Myo)
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, variables)
 import qualified Myo.Ui.Data.AddLayoutOptions as AddLayoutOptions (AddLayoutOptions(layout, ident))
@@ -66,7 +66,7 @@ getUiData ::
 getUiData =
   vimCallFunction "PaneData" []
 
-updateUiSpec :: ExceptT RpcError (Neovim ()) ()
+updateUiSpec :: Myo ()
 updateUiSpec = do
   setVar "myo_ui" ui1
   doautocmd "CmdlineLeave"

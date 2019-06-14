@@ -1,6 +1,7 @@
 module Myo.Command.Run where
 
-import Chiasma.Data.Ident (Ident, identText)
+import Chiasma.Data.Ident (generateIdent, identText)
+import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Control.Lens as Lens (view)
 import Control.Monad.Catch (MonadThrow)
@@ -8,16 +9,19 @@ import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
+import Ribosome.Data.Maybe (orElse)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
 
-import Myo.Command.Command (commandByIdent)
+import Myo.Command.Command (commandByIdent, mayCommandByIdent, shellCommand, systemCommand)
 import Myo.Command.Data.Command (Command(..))
 import qualified Myo.Command.Data.Command as Command (ident)
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Command.Data.RunError as RunError (RunError(NoLinesSpecified))
+import Myo.Command.Data.RunLineOptions (RunLineOptions(RunLineOptions))
 import Myo.Command.Data.RunTask (RunTask(RunTask))
 import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
@@ -165,3 +169,55 @@ myoReRun ::
   m ()
 myoReRun =
   runCommand <=< lookupHistory
+
+defaultTarget :: Ident
+defaultTarget =
+  Ident.Str "make"
+
+myoLine ::
+  RunTmux m =>
+  MonadRibo m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepState s Env m =>
+  MonadThrow m =>
+  RunLineOptions ->
+  m ()
+myoLine (RunLineOptions mayLine mayLines mayTarget runner lang) = do
+  ident <- generateIdent
+  lines' <- hoistMaybe RunError.NoLinesSpecified (orElse mayLines (pure <$> mayLine))
+  target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
+  runCommand $ cmd ident target lines'
+  where
+    cmd ident target lines' =
+      cons target ident lines' runner lang Nothing
+    cons =
+      either shellCommand (systemCommand . Just)
+    findTarget target =
+      maybe (Right target) (Left . Lens.view Command.ident) <$> mayCommandByIdent target
+
+myoLineCmd ::
+  RunTmux m =>
+  MonadRibo m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepState s Env m =>
+  MonadThrow m =>
+  Text ->
+  m ()
+myoLineCmd line' =
+  myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing)

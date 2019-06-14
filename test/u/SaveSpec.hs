@@ -9,8 +9,9 @@ import Data.Default (def)
 import Neovim (Neovim, Plugin(..))
 import Path (Abs, Dir, Path)
 import Ribosome.Api.Autocmd (doautocmd)
+import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Control.Ribosome (newRibosome, Ribosome)
+import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
@@ -19,13 +20,16 @@ import Ribosome.Test.Embed (integrationSpecDef)
 import Ribosome.Test.Orphans ()
 import Test.Framework
 
+import Myo.Command.Add (myoAddSystemCommand)
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Log (appendLog, commandLog)
-import Myo.Data.Env (Env(_tempDir))
+import Myo.Data.Env (Env(_tempDir), Myo)
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, rpcHandlers, variables)
+import qualified Myo.Settings as Settings (saveInterval)
 
 ident :: Ident
 ident =
@@ -39,8 +43,8 @@ getOutput ::
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   m ([ByteString], ByteString)
-getOutput =
-  extract <$> commandLog ident
+getOutput = do
+  extract <$> catchAs @CommandError Nothing (commandLog ident)
   where
     extract (Just (CommandLog prev cur)) =
       (prev, cur)
@@ -68,8 +72,10 @@ outputLog ::
 outputLog =
   vimCallFunction "GetOutput" []
 
-saveSpec :: ExceptT RpcError (Neovim ()) ()
+saveSpec :: Myo ()
 saveSpec = do
+  updateSetting Settings.saveInterval 0.0
+  myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing
   doautocmd "BufWritePre"
   await (gassertEqual ([], "")) outputLog
   () <- vimCallFunction "PushOutput" []

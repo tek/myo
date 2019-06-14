@@ -1,14 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Myo.Data.Env where
 
 import Chiasma.Data.Ident (Ident(Str))
 import Data.DeepLenses (deepLenses)
 import Data.Default (Default(def))
-import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
+import Data.Hourglass (ElapsedP(ElapsedP))
 import Path (Abs, Dir, Path, absdir)
 import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Orphans ()
+import Ribosome.System.Time (secondsP)
 import qualified Text.Show (Show(show))
 
 import Myo.Command.Data.CommandState (CommandState)
@@ -45,13 +47,13 @@ data Env =
     _runners :: [Runner],
     _instanceIdent :: Ident,
     _tempDir :: Path Abs Dir,
-    _lastSave :: Elapsed
+    _lastSave :: ElapsedP
   }
 
 deepLenses ''Env
 
 instance Default Env where
-  def = Env def def def (Str "myo") [absdir|/tmp/myo|] (Elapsed (Seconds 0))
+  def = Env def def def (Str "myo") [absdir|/tmp/myo|] (secondsP 0.0)
 
 instance Text.Show.Show Env where
   show (Env cmds ui' _ ii td ls) = "Env" ++ show (cmds, ui', ii, td, ls)

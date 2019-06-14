@@ -74,6 +74,7 @@ selectEvent mainWindow (OutputEvent (Just (Location path line col)) _) = do
   maybe (edit path) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
+  vimCommand "normal! zz"
   redraw
 selectEvent _ _ =
   throwHoist OutputError.NoLocation

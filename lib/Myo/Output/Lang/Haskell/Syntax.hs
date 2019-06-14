@@ -232,6 +232,10 @@ doNotationResultDiscardedHead =
     options = ["contained", "skipnl"]
     params = Map.fromList [("nextgroup", "MyoHsCode")]
 
+sync :: SyntaxItem
+sync =
+  syntaxVerbatim "syntax sync match MyoHsSync grouphere MyoLocation /^$/"
+
 hiReq :: Highlight
 hiReq =
   syntaxHighlight "MyoHsReq" [("ctermfg", "2"), ("guifg", "#719e07")]
@@ -285,7 +289,7 @@ haskellSyntax =
         haskellInclude, location, path, lineNumberSymbol, errorMessage, foundReq, found, req, code,
         noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
         notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
-        doNotationResultDiscardedHead
+        doNotationResultDiscardedHead, sync
       ]
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =

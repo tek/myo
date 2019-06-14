@@ -30,7 +30,7 @@ import Myo.Output.Lang.Haskell.Syntax (
   moduleImportMarker,
   nameImportsMarker,
   )
-import Myo.Text.Parser.Combinators (parensExpr, tillEol)
+import Myo.Text.Parser.Combinators (parensExpr)
 
 data HaskellMessage =
   FoundReq1 Text Text
