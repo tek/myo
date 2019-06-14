@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Myo.Data.Env where
@@ -6,7 +5,7 @@ module Myo.Data.Env where
 import Chiasma.Data.Ident (Ident(Str))
 import Data.DeepLenses (deepLenses)
 import Data.Default (Default(def))
-import Data.Hourglass (ElapsedP(ElapsedP))
+import Data.Hourglass (ElapsedP)
 import Path (Abs, Dir, Path, absdir)
 import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Orphans ()

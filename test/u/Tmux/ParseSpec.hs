@@ -28,7 +28,7 @@ import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Tmux.Runner (addTmuxRunner)
-import Unit (tmuxGuiSpecDef)
+import Unit (tmuxSpecDef)
 
 line1 :: Text
 line1 = "line 1"
@@ -65,4 +65,4 @@ parseTmuxSpec = do
 
 test_parseTmux :: IO ()
 test_parseTmux =
-  tmuxGuiSpecDef parseTmuxSpec
+  tmuxSpecDef parseTmuxSpec

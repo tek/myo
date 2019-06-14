@@ -8,7 +8,7 @@ import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Control.Monad.DeepError (catchAt, throwHoist)
 import Myo.Output.Data.OutputError (OutputError(NoEvents))
 import Ribosome.Nvim.Api.IO (nvimListWins)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Test.Tmux (tmuxSpecDef)
 import Test.Framework
 
 import Myo.Command.Output (renderParseResult)
@@ -27,4 +27,4 @@ emptyOutputSpec = do
 
 test_emptyOutput :: IO ()
 test_emptyOutput =
-  tmuxGuiSpecDef emptyOutputSpec
+  tmuxSpecDef emptyOutputSpec

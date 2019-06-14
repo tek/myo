@@ -15,7 +15,7 @@ import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Tmux.Runner (addTmuxRunner)
-import Unit (tmuxGuiSpecDef)
+import Unit (tmuxSpecDef)
 
 line1 :: Text
 line1 = "line 1"
@@ -39,4 +39,4 @@ runSysSpec = do
 
 test_tmuxRunSys :: IO ()
 test_tmuxRunSys =
-  tmuxGuiSpecDef runSysSpec
+  tmuxSpecDef runSysSpec

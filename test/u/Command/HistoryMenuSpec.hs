@@ -13,7 +13,7 @@ import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(Return))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Simple (menuReturn)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Test.Tmux (tmuxSpecDef)
 import Test.Framework
 
 import Myo.Command.Data.Command (Command(Command))
@@ -57,4 +57,4 @@ historyMenuSpec = do
 
 test_historyMenu :: IO ()
 test_historyMenu =
-  tmuxGuiSpecDef historyMenuSpec
+  tmuxSpecDef historyMenuSpec

@@ -151,7 +151,7 @@ appendLog ::
 appendLog ident bytes =
   modify $ Lens.over (logLens ident) append
   where
-    append (Just l@(CommandLog prev cur)) =
+    append (Just (CommandLog prev cur)) =
       Just (CommandLog prev (cur <> bytes))
     append Nothing =
       Just (CommandLog [] bytes)

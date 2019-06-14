@@ -4,16 +4,13 @@ module Command.UpdateSpec (htf_thisModulesTests) where
 
 import Chiasma.Data.Ident (identText)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Control.Monad.Trans.Except (ExceptT)
-import Data.Default (def)
-import Neovim (Neovim, Plugin(..))
+import Neovim (Plugin(..))
 import Path (Abs, Dir, Path)
 import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Api.Variable (setVar)
 import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
 import Ribosome.Test.Await (await)
 import Ribosome.Test.Embed (integrationSpecDef)
@@ -53,8 +50,8 @@ cmdData =
 $(return [])
 
 plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
-plugin tempDir = do
-  ribo <- newRibosome "myo" def { _tempDir = tempDir }
+plugin tmp = do
+  ribo <- newRibosome "myo" def { _tempDir = tmp }
   return $ riboPlugin "myo" ribo [$(rpcHandler sync 'cmdData)] [] handleError variables
 
 getCmdData ::
@@ -76,6 +73,6 @@ test_updateCommands :: IO ()
 test_updateCommands =
   bracketMyoTempDir run
   where
-    run tempDir = do
-      plug <- plugin tempDir
+    run tmp = do
+      plug <- plugin tmp
       integrationSpecDef plug updateCommandsSpec

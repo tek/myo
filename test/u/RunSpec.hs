@@ -16,12 +16,11 @@ import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.Command (Command(Command))
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
-import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (RunLineOptions(RunLineOptions))
 import Myo.Command.Data.RunTask (RunTask(RunTask))
 import Myo.Command.Run (myoLine, myoRun)
 import Myo.Command.Runner (addRunner, extractRunError)
-import Myo.Data.Env (Myo, RunF)
+import Myo.Data.Env (Myo)
 import Unit (intSpecDef, specDef)
 
 testError :: Text
@@ -69,12 +68,11 @@ cmdline :: Text
 cmdline = "echo 'hello"
 
 lineRunner :: RunTask -> Myo ()
-lineRunner (RunTask (Command _ _ lines _ _ _) _ _) =
-  reportError cname lines
+lineRunner (RunTask (Command _ _ lines' _ _ _) _ _) =
+  reportError cname lines'
 
 runLineSingleSpec :: Myo ()
 runLineSingleSpec = do
-  let ident = Str "cmd"
   addDummyRunner lineRunner
   myoLine (RunLineOptions (Just cmdline) Nothing Nothing (Just runnerIdent) Nothing)
   check [cmdline]

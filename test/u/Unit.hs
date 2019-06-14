@@ -103,7 +103,7 @@ intSpecDef ::
 intSpecDef thunk =
   bracketMyoTempDir run
   where
-    run tempDir = do
+    run _ = do
       ribo <- newRibosome "myo" def
       intSpec pure (plugin' ribo) (disableTmux *> initialize'' *> thunk)
     disableTmux =

@@ -1,7 +1,6 @@
 module Myo.Save where
 
 import Control.Monad.DeepState (modifyM)
-import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Ribosome.Config.Setting (setting)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.IO (vimCommand)

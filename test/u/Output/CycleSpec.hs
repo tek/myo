@@ -9,7 +9,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Test.Tmux (tmuxSpecDef)
 import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
 import Ribosome.Test.Unit (fixture)
 import System.FilePath ((</>))
@@ -73,7 +73,7 @@ outputPrevSpec = do
 
 test_outputPrev :: IO ()
 test_outputPrev =
-  tmuxGuiSpecDef outputPrevSpec
+  tmuxSpecDef outputPrevSpec
 
 outputNextSpec :: Myo ()
 outputNextSpec = do
@@ -87,4 +87,4 @@ outputNextSpec = do
 
 test_outputNext :: IO ()
 test_outputNext =
-  tmuxGuiSpecDef outputNextSpec
+  tmuxSpecDef outputNextSpec
