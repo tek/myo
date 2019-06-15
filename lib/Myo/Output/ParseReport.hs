@@ -10,7 +10,15 @@ import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Window)
-import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimWinSetBuf, vimCommand, vimSetCurrentWindow, windowIsValid)
+import Ribosome.Nvim.Api.IO (
+  nvimBufIsLoaded,
+  nvimWinSetBuf,
+  vimCommand,
+  vimGetCurrentWindow,
+  vimGetWindows,
+  vimSetCurrentWindow,
+  windowIsValid,
+  )
 import Ribosome.Scratch (scratchPreviousWindow, scratchWindow)
 
 import Myo.Command.Data.CommandState (CommandState)
@@ -53,10 +61,20 @@ lineNumberByEventIndex (ParseReport _ lines') eventIndex =
   where
     matchEventIndex (ReportLine ei _) = ei == eventIndex
 
--- TODO
-findWindow :: m Window
-findWindow =
-  undefined
+findWindow ::
+  NvimE e m =>
+  Window ->
+  m Window
+findWindow outputWindow' =
+  choose =<< filter (/= outputWindow') <$> vimGetWindows
+  where
+    choose [] = do
+      vimCommand "aboveleft new"
+      win <- vimGetCurrentWindow
+      vimCommand "wincmd K"
+      return win
+    choose (a : _) =
+      return a
 
 filterUnloaded ::
   NvimE e m =>
@@ -68,7 +86,6 @@ filterUnloaded buffer =
     filt True = Just buffer
     filt False = Nothing
 
-
 selectEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
@@ -76,11 +93,12 @@ selectEvent ::
   MonadRibo m =>
   NvimE e m =>
   Window ->
+  Window ->
   OutputEvent ->
   m ()
-selectEvent mainWindow (OutputEvent (Just (Location path line col)) _) = do
+selectEvent mainWindow outputWindow' (OutputEvent (Just (Location path line col)) _) = do
   previousExists <- windowIsValid mainWindow
-  window <- if previousExists then return mainWindow else findWindow
+  window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
   existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
   maybe (edit path) (nvimWinSetBuf window) existingBuffer
@@ -88,7 +106,7 @@ selectEvent mainWindow (OutputEvent (Just (Location path line col)) _) = do
   vimCommand "normal! zv"
   vimCommand "normal! zz"
   redraw
-selectEvent _ _ =
+selectEvent _ _ _ =
   throwHoist OutputError.NoLocation
 
 selectMaybeEvent ::
@@ -98,10 +116,11 @@ selectMaybeEvent ::
   MonadRibo m =>
   NvimE e m =>
   Window ->
+  Window ->
   Maybe OutputEvent ->
   m ()
-selectMaybeEvent mainWindow =
-  maybe err (selectEvent mainWindow)
+selectMaybeEvent mainWindow outputWindow' =
+  maybe err (selectEvent mainWindow outputWindow')
   where
     err = throwHoist (OutputError.Internal "cursor line has no data")
 
@@ -114,9 +133,10 @@ selectEventByIndexFromReport ::
   ParseReport ->
   EventIndex ->
   Window ->
+  Window ->
   m ()
-selectEventByIndexFromReport report eventIndex window =
-  selectMaybeEvent window $ eventByIndex report eventIndex
+selectEventByIndexFromReport report eventIndex window outputWindow' =
+  selectMaybeEvent window outputWindow' $ eventByIndex report eventIndex
 
 selectCurrentLineEventFrom ::
   MonadDeepError e OutputError m =>
@@ -129,7 +149,7 @@ selectCurrentLineEventFrom ::
   Window ->
   m ()
 selectCurrentLineEventFrom report outputWindow' mainWindow =
-  selectMaybeEvent mainWindow =<< eventByLine report <$> windowLine outputWindow'
+  selectMaybeEvent mainWindow outputWindow' =<< eventByLine report <$> windowLine outputWindow'
 
 currentReport ::
   MonadDeepState s CommandState m =>
@@ -194,7 +214,7 @@ navigateToEvent jump eventIndex = do
   mainWindow <- outputMainWindow
   line <- hoistMaybe indexErr $ lineNumberByEventIndex report eventIndex
   setLine window line
-  when jump (selectEventByIndexFromReport report eventIndex mainWindow)
+  when jump (selectEventByIndexFromReport report eventIndex mainWindow window)
   where
     indexErr = OutputError.Internal $ "invalid event index " <> show eventIndex
 

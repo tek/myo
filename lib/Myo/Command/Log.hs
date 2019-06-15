@@ -16,7 +16,7 @@ import qualified Data.Map as Map (keys, toList)
 import qualified Data.Text as Text (lines)
 import Network.Socket (Socket)
 import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
-import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
+import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (showInScratch)
 
