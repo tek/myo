@@ -60,19 +60,17 @@ location =
 
 path :: SyntaxItem
 path =
-  item { siOptions = options, siParams = params }
+  item { siOptions = options }
   where
     item = syntaxMatch "MyoPath" ("^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=")
     options = ["contained"]
-    params = Map.fromList [("containedin", "MyoLocation")]
 
 lineNumberSymbol :: SyntaxItem
 lineNumberSymbol =
-  item { siOptions = options, siParams = params }
+  item { siOptions = options }
   where
     item = syntaxMatch "MyoLineNumber" ("\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze")
     options = ["contained"]
-    params = Map.fromList [("containedin", "MyoLocation")]
 
 errorMessage :: SyntaxItem
 errorMessage =
@@ -234,7 +232,7 @@ doNotationResultDiscardedHead =
 
 sync :: SyntaxItem
 sync =
-  syntaxVerbatim "syntax sync match MyoHsSync grouphere MyoLocation /^$/"
+  syntaxVerbatim "syntax sync minlines=10"
 
 hiReq :: Highlight
 hiReq =

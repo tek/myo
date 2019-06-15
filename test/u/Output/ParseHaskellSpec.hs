@@ -224,10 +224,8 @@ garbageTarget :: Vector Text
 garbageTarget =
   Vector.fromList [
     "/path/to/File.hs \57505 1",
-    "Variable not in scope: var :: IO a0",
-    "|",
-    "77 |   var",
-    "|   ^^^",
+    "variable not in scope",
+    "var :: IO a0",
     ""
     ]
 

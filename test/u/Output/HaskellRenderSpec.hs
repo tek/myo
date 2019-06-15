@@ -126,8 +126,8 @@ target = [
 
 syntaxTarget :: [Text]
 syntaxTarget = [
-    [r|MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained containedin=MyoLocation|],
-    [r|MyoLineNumber  xxx match /\( \)\@<=\zs\d\+\ze/  contained containedin=MyoLocation|],
+    [r|MyoPath        xxx match /^.*\ze\( .*$\)\@=/  contained|],
+    [r|MyoLineNumber  xxx match /\( \)\@<=\zs\d\+\ze/  contained|],
     [r|MyoHsError     xxx start=/^/ end=/\ze.*\(\|†\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard|],
     "MyoLocation    xxx match /^.*\57505.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
     [r|MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\ze.*\(\|†\)/  contained contains=MyoHsFound|],
