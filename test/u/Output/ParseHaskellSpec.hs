@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
+{-# LANGUAGE QuasiQuotes #-}
 
-module Output.ParseHaskellSpec(
-  htf_thisModulesTests,
-) where
+module Output.ParseHaskellSpec (htf_thisModulesTests) where
 
 import Control.Monad.Trans.Except (runExceptT)
 import Data.Text (Text)
@@ -229,6 +228,11 @@ garbageTarget =
     "/path/to/File.hs \57505 1",
     "variable not in scope",
     "var :: IO a0",
+    "",
+    "/path/to/File.hs \57505 1",
+    "redundant name imports",
+    "foo",
+    "Mod",
     ""
     ]
 

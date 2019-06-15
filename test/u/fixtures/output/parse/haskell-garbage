@@ -5,3 +5,11 @@ Progress 0/2            77 |   var
 Progress 0/2               |   ^^^
 Progress 0/2            
 Progress 0/2            Progress 1/2
+
+Progress 1/2: myo-0.1.1.0    [0m/path/to/[;1mFile.hs:1:1: [;1m[31merror:[0m[0m[;1m [[;1m[31m-Wunused-imports, -Werror=unused-imports[0m[0m[;1m][0m[0m[;1m[0m
+Progress 1/2: myo-0.1.1.0    [0m    The import of ‘foo’[0m
+Progress 1/2: myo-0.1.1.0    [0m    from module ‘Mod’ is redundant[0m[0m[0m
+Progress 1/2: myo-0.1.1.0    [0m[;1m[34m   |[0m[0m[0m
+Progress 1/2: myo-0.1.1.0    [0m[;1m[34m1  |[0m[0m [;1m[31mimport Mod (foo)[0m[0m[0m
+Progress 1/2: myo-0.1.1.0    [0m[;1m[34m   |[0m[0m[;1m[31m ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m[0m
+Progress 1/2: myo-0.1.1.0    [0m[0m[0m[0m[0m

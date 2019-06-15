@@ -96,13 +96,24 @@ parseHaskellErrors ::
 parseHaskellErrors =
   Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
 
-removeProgressIndicatorRE :: SearchReplace RE Text
-removeProgressIndicatorRE =
+removeProgressIndicator1RE :: SearchReplace RE Text
+removeProgressIndicator1RE =
+  [ed|Progress \d+/\d+: [^ ]+///|]
+
+removeProgressIndicator2RE :: SearchReplace RE Text
+removeProgressIndicator2RE =
   [ed|Progress \d+/\d+///|]
+
+removeControlCharsRE :: SearchReplace RE Text
+removeControlCharsRE =
+  [ed|(\x9b|\x1b\[)[0-?]*[ -\/]*[@-~]///|]
 
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
-  searchReplaceAll removeProgressIndicatorRE . Text.filter ('\b' /=)
+  flip (foldl (flip searchReplaceAll)) regexes . Text.filter ('\b' /=)
+  where
+    regexes =
+      [removeControlCharsRE, removeProgressIndicator1RE, removeProgressIndicator2RE]
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =
