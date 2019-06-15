@@ -1,8 +1,4 @@
-
 module Myo.Command.Data.CommandLog where
-
-import Data.ByteString (ByteString)
-import Data.DeepLenses (deepLenses)
 
 data CommandLog =
   CommandLog {

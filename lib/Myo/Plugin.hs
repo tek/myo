@@ -18,6 +18,7 @@ import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.HistoryMenu (myoHistory)
+import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
@@ -42,6 +43,7 @@ rpcHandlers :: [[RpcDef (Ribo Env Error)]]
 rpcHandlers =
   [
     $(rpcHandler (cmd []) 'myoDiag),
+    $(rpcHandler (cmd []) 'myoLogs),
     $(rpcHandlerDef 'myoAddSystemCommand),
     $(rpcHandlerDef 'myoAddShellCommand),
     $(rpcHandlerDef 'myoTogglePane),

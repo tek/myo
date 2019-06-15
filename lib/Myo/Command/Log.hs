@@ -12,9 +12,13 @@ import Control.Monad.Free (MonadFree)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (null)
-import qualified Data.Map as Map (keys)
+import qualified Data.Map as Map (keys, toList)
+import qualified Data.Text as Text (lines)
 import Network.Socket (Socket)
 import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
+import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
+import Ribosome.Msgpack.Error (DecodeError)
+import Ribosome.Scratch (showInScratch)
 
 import Myo.Command.Command (mainCommand)
 import Myo.Command.Data.Command (Command)
@@ -177,3 +181,22 @@ pushCommandLogs ::
 pushCommandLogs = do
   idents <- getsL @CommandState CommandState.logs Map.keys
   traverse_ pushCommandLog idents
+
+myoLogs ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepState s CommandState m =>
+  m ()
+myoLogs = do
+  logs <- commandLogs
+  void $ showInScratch ("# Command Logs" : "" : intercalate [""] (logLines logs)) options
+  where
+    options =
+      scratchFocus $ defaultScratchOptions "myo-command-logs"
+    logLines logs =
+      uncurry formatLog <$> Map.toList logs
+    formatLog ident (CommandLog previous current) =
+      ("## " <> identText ident) : "" : split current ++ intercalate [""] (split <$> previous)
+    split =
+      Text.lines . decodeUtf8

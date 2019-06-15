@@ -144,6 +144,9 @@ haskellOutput =
     "    • Could not deduce (MonadThrow m)",
     "        arising from a use of ‘projectFromNameIn’",
     "      from the context: MonadIO m",
+    "",
+    "    • Ambiguous type variable ‘a0’ arising from a use of ‘funky’",
+    "      prevents the constraint ‘(Classy a0)’ from being solved.",
     ""
     ]
 
