@@ -108,6 +108,10 @@ call MyoToggle('sbt')
 will open the pane `sbt` in the lower right corner, or, if it is open already, minimize it to a size of two cells in the
 direction of its parent layout (in this case, vertically).
 
+## MyoFocus
+
+This command takes a pane name and will set it as the active pane in tmux.
+
 # Commands
 
 A command consists of a list of shell commands and some optional values:

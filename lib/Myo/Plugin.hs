@@ -30,6 +30,7 @@ import Myo.Init (initialize, myoStage4)
 import Myo.Quit (myoQuit)
 import Myo.Save (myoSave)
 import Myo.Ui.Data.UiState (UiState)
+import Myo.Ui.Focus (myoFocus)
 import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 import Myo.Ui.Update (updateUi)
 
@@ -45,6 +46,7 @@ rpcHandlers =
     $(rpcHandlerDef 'myoAddShellCommand),
     $(rpcHandlerDef 'myoTogglePane),
     $(rpcHandlerDef 'myoToggleLayout),
+    $(rpcHandler (cmd []) 'myoFocus),
     $(rpcHandler (cmd []) 'myoRun),
     $(rpcHandlerDef 'myoReRun),
     $(rpcHandlerDef 'myoLine),
