@@ -9,8 +9,8 @@ import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Nvim.Api.IO (nvimWinSetBuf, vimCommand, vimSetCurrentWindow, windowIsValid)
+import Ribosome.Nvim.Api.Data (Buffer, Window)
+import Ribosome.Nvim.Api.IO (nvimBufIsLoaded, nvimWinSetBuf, vimCommand, vimSetCurrentWindow, windowIsValid)
 import Ribosome.Scratch (scratchPreviousWindow, scratchWindow)
 
 import Myo.Command.Data.CommandState (CommandState)
@@ -53,9 +53,21 @@ lineNumberByEventIndex (ParseReport _ lines') eventIndex =
   where
     matchEventIndex (ReportLine ei _) = ei == eventIndex
 
+-- TODO
 findWindow :: m Window
 findWindow =
   undefined
+
+filterUnloaded ::
+  NvimE e m =>
+  Buffer ->
+  m (Maybe Buffer)
+filterUnloaded buffer =
+  filt <$> nvimBufIsLoaded buffer
+  where
+    filt True = Just buffer
+    filt False = Nothing
+
 
 selectEvent ::
   MonadDeepError e OutputError m =>
@@ -70,7 +82,7 @@ selectEvent mainWindow (OutputEvent (Just (Location path line col)) _) = do
   previousExists <- windowIsValid mainWindow
   window <- if previousExists then return mainWindow else findWindow
   vimSetCurrentWindow window
-  existingBuffer <- bufferForFile (toText path)
+  existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
   maybe (edit path) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
