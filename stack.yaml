@@ -18,7 +18,7 @@ extra-deps:
 - github: tek/chiasma
   commit: a15987575a5da2606d4cea110a8e8d7aa9ce8446
 - github: tek/ribosome
-  commit: 351c02856aef8132fb7c07d0be1be5b8b49790b1
+  commit: fa46ca9414f192c5a33c4f1a720017c3a2c9bc11
   subdirs:
   - modules/core
   - modules/test
