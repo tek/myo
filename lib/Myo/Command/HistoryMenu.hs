@@ -1,6 +1,5 @@
 module Myo.Command.HistoryMenu where
 
-import Chiasma.Data.Ident (parseIdent)
 import qualified Chiasma.Data.Ident as Ident (Ident(..))
 import Conduit (yieldMany)
 import qualified Control.Lens as Lens (view)
@@ -11,7 +10,7 @@ import qualified Data.UUID as UUID (toText)
 import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem (ident)
+import qualified Ribosome.Menu.Data.MenuItem as MenuItem (meta)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
@@ -51,14 +50,14 @@ runHistoryEntry ::
   MonadDeepState s CommandState m =>
   MonadDeepState s Env m =>
   MonadThrow m =>
-  Menu ->
+  Menu Ident ->
   Prompt ->
-  m (MenuConsumerAction m (), Menu)
+  m (MenuConsumerAction m (), Menu Ident)
 runHistoryEntry menu _ =
-  maybe (menuQuit menu) runQuit (Lens.view MenuItem.ident <$> selectedMenuItem menu)
+  maybe (menuQuit menu) runQuit (Lens.view MenuItem.meta <$> selectedMenuItem menu)
   where
     runQuit ident =
-      menuQuitWith (myoReRun (Left (parseIdent ident))) menu
+      menuQuitWith (myoReRun (Left ident)) menu
 
 
 menuItemName :: Ident -> Maybe Text -> Text
@@ -77,7 +76,7 @@ historyMenu ::
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>
-  (Menu -> Prompt -> m (MenuConsumerAction m a, Menu)) ->
+  (Menu Ident -> Prompt -> m (MenuConsumerAction m a, Menu Ident)) ->
   m (MenuResult a)
 historyMenu execute =
   run =<< history
@@ -89,7 +88,7 @@ historyMenu execute =
     items entries =
       yieldMany (menuItem <$> entries)
     menuItem (HistoryEntry (Command _ ident lines' _ _ displayName)) =
-      MenuItem (identText ident) (menuItemText ident lines' displayName)
+      MenuItem ident (menuItemText ident lines' displayName)
     menuItemText ident lines' displayName =
       Text.unwords [menuItemName ident displayName, Text.take 50 . fromMaybe "<no command line>" $ listToMaybe lines']
     handler =
