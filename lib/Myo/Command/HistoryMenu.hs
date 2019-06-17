@@ -38,7 +38,6 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
 
 runHistoryEntry ::
-  Monad m =>
   MonadRibo m =>
   RunTmux m =>
   MyoRender s e m =>

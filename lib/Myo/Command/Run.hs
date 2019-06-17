@@ -9,7 +9,6 @@ import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Data.Maybe (orElse)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
@@ -192,7 +191,7 @@ myoLine ::
   m ()
 myoLine (RunLineOptions mayLine mayLines mayTarget runner lang) = do
   ident <- generateIdent
-  lines' <- hoistMaybe RunError.NoLinesSpecified (orElse mayLines (pure <$> mayLine))
+  lines' <- hoistMaybe RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
   target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
   runCommand $ cmd ident target lines'
   where
