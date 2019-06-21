@@ -7,6 +7,7 @@ import Control.Monad.Catch (MonadThrow)
 import qualified Data.Map as Map (fromList)
 import qualified Data.Text as Text (take, unwords)
 import qualified Data.UUID as UUID (toText)
+import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchSize)
 import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import Ribosome.Menu.Data.MenuItem (MenuItem(MenuItem))
@@ -84,17 +85,20 @@ historyMenu execute =
     run [] =
       throwHoist CommandError.NoHistory
     run entries =
-      nvimMenu def (items entries) handler promptConfig Nothing
+      nvimMenu (scratchOptions (length entries)) (items entries) handler promptConfig Nothing
     items entries =
       yield (menuItem <$> entries)
     menuItem (HistoryEntry (Command _ ident lines' _ _ displayName)) =
       MenuItem ident (menuItemText ident lines' displayName)
     menuItemText ident lines' displayName =
-      Text.unwords [menuItemName ident displayName, Text.take 50 . fromMaybe "<no command line>" $ listToMaybe lines']
+      Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']
     handler =
       defaultMenu (Map.fromList [("cr", execute)])
     promptConfig =
       PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer False
+    scratchOptions count =
+      scratchSize count $ defaultScratchOptions "myo-history"
+
 
 myoHistory ::
   NvimE e m =>
