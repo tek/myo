@@ -66,10 +66,10 @@ getUiData =
 updateUiSpec :: Myo ()
 updateUiSpec = do
   setVar "myo_ui" ui1
-  doautocmd "CmdlineLeave"
+  doautocmd False "CmdlineLeave"
   await (gassertEqual ["main", "vim", "test", "vim", "make", "make"]) getUiData
   setVar "myo_ui" ui2
-  doautocmd "BufWinEnter"
+  doautocmd False "BufWinEnter"
   await (gassertEqual ["main", "vim", "vim", "make", "test", "pane", "make"]) getUiData
 
 test_updateUi :: IO ()

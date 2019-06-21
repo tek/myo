@@ -73,17 +73,17 @@ saveSpec :: Myo ()
 saveSpec = do
   updateSetting Settings.saveInterval 0.0
   myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing
-  doautocmd "BufWritePre"
+  doautocmd False "BufWritePre"
   await (gassertEqual ([], "")) outputLog
   () <- vimCallFunction "PushOutput" []
   await (gassertEqual ([], line)) outputLog
-  doautocmd "BufWritePre"
+  doautocmd False "BufWritePre"
   await (gassertEqual ([line], "")) outputLog
-  doautocmd "BufWritePre"
+  doautocmd False "BufWritePre"
   await (gassertEqual ([line], "")) outputLog
   () <- vimCallFunction "PushOutput" []
   await (gassertEqual ([line], line)) outputLog
-  doautocmd "BufWritePre"
+  doautocmd False "BufWritePre"
   await (gassertEqual ([line, line], "")) outputLog
 
 test_save :: IO ()

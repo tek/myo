@@ -37,14 +37,14 @@ history =
 
 exec ::
   MonadIO m =>
-  Menu ->
+  Menu Ident ->
   Prompt ->
-  m (MenuConsumerAction m (Maybe Text), Menu)
+  m (MenuConsumerAction m (Maybe Text), Menu Ident)
 exec m@(Menu _ items _ selected _) _ =
   menuReturn item m
   where
     item =
-      reverse items ^? Lens.element selected . MenuItem.text
+      items ^? Lens.element selected . MenuItem.text
 
 historyMenuSpec :: Myo ()
 historyMenuSpec = do

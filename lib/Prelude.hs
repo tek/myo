@@ -1,7 +1,5 @@
 module Prelude (
-  module Ribosome.PreludeExport,
-  module Chiasma.Data.Ident,
+  module Myo.Prelude,
 ) where
 
-import Chiasma.Data.Ident (Ident, identText)
-import Ribosome.PreludeExport
+import Myo.Prelude

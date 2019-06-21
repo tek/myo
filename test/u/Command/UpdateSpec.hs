@@ -63,10 +63,10 @@ getCmdData =
 updateCommandsSpec :: Myo ()
 updateCommandsSpec = do
   setVar "myo_commands" (codec commands1)
-  doautocmd "CmdlineLeave"
+  doautocmd False "CmdlineLeave"
   await (gassertEqual [("c1", ["tail"])]) getCmdData
   setVar "myo_commands" (codec commands2)
-  doautocmd "BufWinEnter"
+  doautocmd False "BufWinEnter"
   await (gassertEqual [("c1", ["tails"]), ("c2", ["echo"])]) getCmdData
 
 test_updateCommands :: IO ()

@@ -7,7 +7,7 @@ import Chiasma.Codec (TmuxCodec)
 import Chiasma.Command.Pane (panesAs)
 import Chiasma.Data.TmuxId (PaneId)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Tmux (tmuxGuiSpecDef)
+import Ribosome.Test.Tmux (tmuxSpecDef)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
@@ -15,7 +15,6 @@ import Myo.Data.Env (Myo)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Myo.Ui.Focus (myoFocus)
 import Myo.Ui.Toggle (myoTogglePane)
-import Unit (tmuxSpecDef)
 
 data PaneSelected =
   PaneSelected {
@@ -33,4 +32,4 @@ focusPaneSpec = do
 
 test_focusPane :: IO ()
 test_focusPane =
-  tmuxGuiSpecDef focusPaneSpec
+  tmuxSpecDef focusPaneSpec

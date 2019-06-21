@@ -1,7 +1,7 @@
 module Myo.Command.HistoryMenu where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(..))
-import Conduit (yieldMany)
+import Conduit (yield)
 import qualified Control.Lens as Lens (view)
 import Control.Monad.Catch (MonadThrow)
 import qualified Data.Map as Map (fromList)
@@ -86,7 +86,7 @@ historyMenu execute =
     run entries =
       nvimMenu def (items entries) handler promptConfig
     items entries =
-      yieldMany (menuItem <$> entries)
+      yield (menuItem <$> entries)
     menuItem (HistoryEntry (Command _ ident lines' _ _ displayName)) =
       MenuItem ident (menuItemText ident lines' displayName)
     menuItemText ident lines' displayName =
