@@ -84,7 +84,7 @@ historyMenu execute =
     run [] =
       throwHoist CommandError.NoHistory
     run entries =
-      nvimMenu def (items entries) handler promptConfig
+      nvimMenu def (items entries) handler promptConfig Nothing
     items entries =
       yield (menuItem <$> entries)
     menuItem (HistoryEntry (Command _ ident lines' _ _ displayName)) =

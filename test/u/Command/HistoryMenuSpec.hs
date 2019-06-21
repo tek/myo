@@ -40,7 +40,7 @@ exec ::
   Menu Ident ->
   Prompt ->
   m (MenuConsumerAction m (Maybe Text), Menu Ident)
-exec m@(Menu _ items _ selected _) _ =
+exec m@(Menu _ items _ selected _ _) _ =
   menuReturn item m
   where
     item =
