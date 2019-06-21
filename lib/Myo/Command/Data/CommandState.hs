@@ -9,6 +9,7 @@ import Data.Default (Default)
 import Data.Map (Map)
 import GHC.Generics (Generic)
 import Path (Abs, File, Path)
+import Ribosome.Data.Syntax (Syntax)
 import qualified Text.Show (Show(show))
 
 import Myo.Command.Data.Command (Command, CommandLanguage)
@@ -31,7 +32,7 @@ data CommandState =
     _logPaths :: LogPaths,
     _logs :: Logs,
     _parseResult :: Maybe ParseResult,
-    _parseReport :: Maybe ParseReport,
+    _parseReport :: Maybe (ParseReport, [Syntax]),
     _currentEvent :: EventIndex,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _monitorChan :: Maybe (TMChan MonitorEvent),

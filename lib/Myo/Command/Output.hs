@@ -6,14 +6,9 @@ import Control.Monad.DeepState (MonadDeepState, setL)
 import Control.Monad.IO.Class (MonadIO)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
-import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
-import Ribosome.Data.Scratch (scratchWindow)
-import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (windowSetOption)
-import Ribosome.Scratch (killScratchByName, showInScratch)
+import Ribosome.Scratch (killScratchByName)
 
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
@@ -23,7 +18,6 @@ import Myo.Output.Data.OutputError (OutputError(NoEvents))
 import Myo.Output.Data.OutputEvent (EventIndex(EventIndex))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
-import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.ParseReport (
   compileReport,
   currentReport,
@@ -31,38 +25,11 @@ import Myo.Output.ParseReport (
   navigateToCurrentEvent,
   outputMainWindow,
   outputWindow,
+  renderReport,
   scratchName,
   selectCurrentLineEventFrom,
   )
 import qualified Myo.Settings as Settings (outputAutoJump, outputSelectFirst)
-
-mappings :: [Mapping]
-mappings =
-  [
-    Mapping (MappingIdent "output-quit") "q" "n" False True,
-    Mapping (MappingIdent "output-select") "<cr>" "n" False True
-    ]
-
-renderReport ::
-  MonadRibo m =>
-  MonadIO m =>
-  NvimE e m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e DecodeError m =>
-  MonadDeepError e SettingError m =>
-  ParseReport ->
-  [Syntax] ->
-  m ()
-renderReport (ParseReport _ lines') syntax = do
-  win <- scratchWindow <$> showInScratch (render <$> lines') options
-  windowSetOption win "conceallevel" (toMsgpack (3 :: Int))
-  windowSetOption win "concealcursor" (toMsgpack ("n" :: Text))
-  windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
-  where
-    render (ReportLine _ text) =
-      text
-    options =
-      scratchMappings mappings . scratchSyntax syntax . defaultScratchOptions $ scratchName
 
 renderParseResult ::
   MonadRibo m =>
@@ -79,7 +46,7 @@ renderParseResult ::
 renderParseResult ident output = do
   name <- displayNameByIdent ident
   when (noEventsInReport report) (throwHoist (NoEvents name))
-  setL @CommandState CommandState.parseReport (Just report)
+  setL @CommandState CommandState.parseReport (Just (report, syntax))
   jumpFirst <- setting Settings.outputSelectFirst
   setL @CommandState CommandState.currentEvent (EventIndex (first' jumpFirst))
   renderReport report syntax
@@ -107,8 +74,7 @@ outputSelect ::
 outputSelect = do
   mainWindow <- outputMainWindow
   window <- outputWindow
-  -- (ParseResult ident _) <- hoistMaybe NotParsed =<< getL @CommandState CommandState.parseResult
-  report <- currentReport id
+  report <- currentReport fst
   selectCurrentLineEventFrom report window mainWindow
 
 cycleAndNavigate ::

@@ -146,6 +146,12 @@ haskellOutput =
     "",
     "    • Ambiguous type variable ‘a0’ arising from a use of ‘funky’",
     "      prevents the constraint ‘(Classy a0)’ from being solved.",
+    "",
+    "/path/to/File.hs:1:1: error:",
+    "    Not in scope: ‘Conduit.mapMaybeM’",
+    "    Module ‘Conduit’ does not export ‘mapMaybeM’.",
+    "",
+    "assertEqual failed at test/u/Command/HistoryMenuSpec.hs:53",
     ""
     ]
 

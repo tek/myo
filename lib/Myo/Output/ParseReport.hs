@@ -1,12 +1,16 @@
 module Myo.Output.ParseReport where
 
-import qualified Control.Lens as Lens (views)
+import qualified Control.Lens as Lens (_1, views)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.Vector ((!?))
 import qualified Data.Vector as Vector (findIndex)
 import Ribosome.Api.Buffer (bufferForFile, edit)
 import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
+import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
+import qualified Ribosome.Data.Scratch as Scratch (scratchWindow)
+import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)
+import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Window)
@@ -18,8 +22,9 @@ import Ribosome.Nvim.Api.IO (
   vimGetWindows,
   vimSetCurrentWindow,
   windowIsValid,
+  windowSetOption,
   )
-import Ribosome.Scratch (scratchPreviousWindow, scratchWindow)
+import Ribosome.Scratch (lookupScratch, scratchPreviousWindow, scratchWindow, showInScratch)
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
@@ -154,7 +159,7 @@ selectCurrentLineEventFrom report outputWindow' mainWindow =
 currentReport ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
-  (ParseReport -> a) ->
+  ((ParseReport, [Syntax]) -> a) ->
   m a
 currentReport f =
   f <$> (hoistMaybe OutputError.NotParsed =<< getL @CommandState CommandState.parseReport)
@@ -172,7 +177,7 @@ cycleIndex ::
   m Bool
 cycleIndex offset = do
   (EventIndex current) <- currentEvent
-  total <- currentReport (Lens.views ParseReport.events length)
+  total <- currentReport (Lens.views (Lens._1 . ParseReport.events) length)
   let new = (current + offset) `mod` total
   setL @CommandState CommandState.currentEvent (EventIndex new)
   return (new /= current)
@@ -198,10 +203,63 @@ outputWindow ::
 outputWindow =
   scratchErrorMaybe =<< scratchWindow scratchName
 
+mappings :: [Mapping]
+mappings =
+  [
+    Mapping (MappingIdent "output-quit") "q" "n" False True,
+    Mapping (MappingIdent "output-select") "<cr>" "n" False True
+    ]
+
+renderReport ::
+  MonadRibo m =>
+  MonadIO m =>
+  NvimE e m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
+  ParseReport ->
+  [Syntax] ->
+  m ()
+renderReport (ParseReport _ lines') syntax = do
+  win <- Scratch.scratchWindow <$> showInScratch (render <$> lines') options
+  windowSetOption win "conceallevel" (toMsgpack (3 :: Int))
+  windowSetOption win "concealcursor" (toMsgpack ("n" :: Text))
+  windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
+  where
+    render (ReportLine _ text) =
+      text
+    options =
+      scratchMappings mappings . scratchSyntax syntax . defaultScratchOptions $ scratchName
+
+renderCurrentReport ::
+  MonadRibo m =>
+  MonadIO m =>
+  NvimE e m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e OutputError m =>
+  m ()
+renderCurrentReport =
+  uncurry renderReport =<< currentReport id
+
+ensureReportScratch ::
+  MonadRibo m =>
+  MonadIO m =>
+  NvimE e m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e OutputError m =>
+  m ()
+ensureReportScratch =
+  whenM (isNothing <$> lookupScratch scratchName) renderCurrentReport
+
 navigateToEvent ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
   MonadRibo m =>
   MonadIO m =>
   NvimE e m =>
@@ -209,7 +267,8 @@ navigateToEvent ::
   EventIndex ->
   m ()
 navigateToEvent jump eventIndex = do
-  report <- currentReport id
+  ensureReportScratch
+  report <- currentReport fst
   window <- outputWindow
   mainWindow <- outputMainWindow
   line <- hoistMaybe indexErr $ lineNumberByEventIndex report eventIndex
@@ -222,6 +281,7 @@ navigateToCurrentEvent ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
+  MonadDeepError e SettingError m =>
   MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
