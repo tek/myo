@@ -38,8 +38,9 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
 
 runHistoryEntry ::
-  MonadRibo m =>
   RunTmux m =>
+  MonadRibo m =>
+  MonadThrow m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
   MonadDeepError e CommandError m =>
@@ -50,7 +51,6 @@ runHistoryEntry ::
   MonadDeepError e TreeModError m =>
   MonadDeepState s CommandState m =>
   MonadDeepState s Env m =>
-  MonadThrow m =>
   Menu Ident ->
   Prompt ->
   m (MenuConsumerAction m (), Menu Ident)
