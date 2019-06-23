@@ -73,12 +73,13 @@ diagnosticsData = do
     headline = "# Diagnostics"
 
 myoDiag ::
+  NvimE e m =>
   MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadDeepState s UiState m =>
   MonadDeepError e DecodeError m =>
-  NvimE e m =>
   m ()
 myoDiag = do
   content <- diagnosticsData

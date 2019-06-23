@@ -211,9 +211,9 @@ mappings =
     ]
 
 renderReport ::
-  MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
@@ -232,9 +232,9 @@ renderReport (ParseReport _ lines') syntax = do
       scratchMappings mappings . scratchSyntax syntax . defaultScratchOptions $ scratchName
 
 renderCurrentReport ::
-  MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
@@ -244,9 +244,9 @@ renderCurrentReport =
   uncurry renderReport =<< currentReport id
 
 ensureReportScratch ::
-  MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
@@ -256,13 +256,13 @@ ensureReportScratch =
   whenM (isNothing <$> lookupScratch scratchName) renderCurrentReport
 
 navigateToEvent ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
-  MonadRibo m =>
-  MonadIO m =>
-  NvimE e m =>
   Bool ->
   EventIndex ->
   m ()
@@ -278,13 +278,13 @@ navigateToEvent jump eventIndex = do
     indexErr = OutputError.Internal $ "invalid event index " <> show eventIndex
 
 navigateToCurrentEvent ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   Bool ->
   m ()
 navigateToCurrentEvent jump =

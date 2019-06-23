@@ -146,14 +146,14 @@ parseCommand (Command _ ident _ _ Nothing _) = do
   parseCommandWithLang lang ident
 
 myoParse ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   ParseOptions ->
   m ()
 myoParse (ParseOptions _ ident _) = do
@@ -164,14 +164,14 @@ myoParse (ParseOptions _ ident _) = do
   when display $ renderParseResult (Lens.view Command.ident cmd) parsedOutput
 
 myoParseLatest ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   m ()
 myoParseLatest =
   myoParse (ParseOptions Nothing Nothing Nothing)

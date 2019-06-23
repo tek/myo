@@ -185,6 +185,7 @@ pushCommandLogs = do
 myoLogs ::
   NvimE e m =>
   MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
   m ()

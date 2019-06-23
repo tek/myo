@@ -3,7 +3,6 @@ module Myo.Command.Output where
 import Chiasma.Data.Ident (Ident)
 import Control.Monad (when)
 import Control.Monad.DeepState (MonadDeepState, setL)
-import Control.Monad.IO.Class (MonadIO)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.SettingError (SettingError)
@@ -32,9 +31,11 @@ import Myo.Output.ParseReport (
 import qualified Myo.Settings as Settings (outputAutoJump, outputSelectFirst)
 
 renderParseResult ::
-  MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>
@@ -64,12 +65,12 @@ outputQuit =
   killScratchByName scratchName
 
 outputSelect ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   m ()
 outputSelect = do
   mainWindow <- outputMainWindow
@@ -78,13 +79,13 @@ outputSelect = do
   selectCurrentLineEventFrom report window mainWindow
 
 cycleAndNavigate ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   Int ->
   m ()
 cycleAndNavigate offset = do
@@ -92,25 +93,25 @@ cycleAndNavigate offset = do
   when changed (navigateToCurrentEvent True)
 
 myoPrev ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   m ()
 myoPrev =
   cycleAndNavigate (-1)
 
 myoNext ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
-  MonadIO m =>
-  MonadRibo m =>
-  NvimE e m =>
   m ()
 myoNext =
   cycleAndNavigate 1

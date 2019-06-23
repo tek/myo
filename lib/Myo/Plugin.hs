@@ -77,21 +77,23 @@ mappingOutputQuit =
   mappingHandler "output-quit" outputQuit
 
 mappingOutputSelect ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e OutputError m =>
-  MonadRibo m =>
-  NvimE e m =>
   MappingHandler m
 mappingOutputSelect =
   mappingHandler "output-select" outputSelect
 
 mappings ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e OutputError m =>
-  MonadRibo m =>
-  NvimE e m =>
   [MappingHandler m]
 mappings =
   [mappingOutputQuit, mappingOutputSelect]
