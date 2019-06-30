@@ -2,7 +2,7 @@ module Myo.Tmux.Run where
 
 import Chiasma.Codec.Data.PanePid (PanePid)
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
-import Chiasma.Command.Pane (panePid, pipePane, sendKeys)
+import Chiasma.Command.Pane (panePid, pipePane, quitCopyMode, sendKeys)
 import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId)
@@ -117,6 +117,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _) logPath details) =
       waitForSocket logPath
       runRiboTmux $ do
         pipePaneToSocket paneId logPath
+        quitCopyMode paneId
         send paneId
     run (RunTaskDetails.UiShell _ paneIdent) = do
       logDebug $ "running tmux shell task `" <> identText commandIdent <> "`"

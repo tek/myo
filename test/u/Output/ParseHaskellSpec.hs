@@ -158,6 +158,8 @@ haskellOutput =
     "  error, called at libraries/base/GHC/Err.hs:79:14 in base:GHC.Err",
     "  undefined, called at lib/Proteome/Buffers.hs:76:34 in proteome-0.3.17.0-3aWDX6lhwZX6HSvyq8M2Mq:Proteome.Buffers",
     "user error (test exceeded timeout of 10 seconds)",
+    "",
+    "lib/Ribosome/Menu/Simple.hs:(105,5)-(114,43): Non-exhaustive patterns in function menuAction",
     ""
     ]
 
