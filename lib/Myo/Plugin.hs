@@ -6,13 +6,14 @@ import qualified Data.Map as Map (fromList)
 import Data.MessagePack (Object)
 import Myo.Output.Data.OutputError (OutputError)
 import Neovim (Neovim, NeovimPlugin, Plugin, wrapPlugin)
+import Neovim.Plugin.Classes (AutocmdOptions(AutocmdOptions))
 import Path (Abs, Dir, Path)
 import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Control.Ribosome (Ribosome)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (reportError)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Plugin (RpcDef, autocmd, cmd, riboPlugin, rpcHandler, rpcHandlerDef, sync)
+import Ribosome.Plugin (RpcDef, autocmd, autocmdOptions, cmd, riboPlugin, rpcHandler, rpcHandlerDef, sync)
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
@@ -68,7 +69,8 @@ rpcHandlers =
     $(rpcHandler sync 'myoTestBuildArgs),
     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
     $(rpcHandler (autocmd "BufWritePre") 'myoSave),
-    $(rpcHandler (autocmd "ProteomeMainProject") 'myoProteomeLoaded)
+    $(rpcHandler (
+    autocmd "User" . autocmdOptions (AutocmdOptions "ProteomeMainProject" False Nothing)) 'myoProteomeLoaded)
     ]
 
 mappingOutputQuit ::
