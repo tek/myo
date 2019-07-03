@@ -75,7 +75,7 @@ haskellConfig ::
   m ()
 haskellConfig = do
   pro <- fromMaybe "" <$> settingMaybe Settings.haskellCompileProject
-  testPro <- fromMaybe "" <$> settingMaybe Settings.haskellTestProject
+  testPro <- fromMaybe pro <$> settingMaybe Settings.haskellTestProject
   whenM (unset Settings.ui) (set pro testPro)
   where
     set pro testPro =
