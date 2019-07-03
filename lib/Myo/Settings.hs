@@ -7,6 +7,8 @@ import Ribosome.Data.Setting (Setting(Setting))
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions)
 import Myo.Command.Data.Command (CommandLanguage)
+import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
+import Myo.Ui.Data.UiSettingCodec (UiSettingCodec)
 
 vimTmuxPane :: Setting Int
 vimTmuxPane =
@@ -36,13 +38,13 @@ outputAutoJump :: Setting Bool
 outputAutoJump =
   Setting "output_auto_jump" True (Just True)
 
-systemCommands :: Setting [AddSystemCommandOptions]
-systemCommands =
-  Setting "system_commands" True (Just [])
+commands :: Setting CommandSettingCodec
+commands =
+  Setting "commands" True Nothing
 
-shellCommands :: Setting [AddShellCommandOptions]
-shellCommands =
-  Setting "shell_commands" True (Just [])
+ui :: Setting UiSettingCodec
+ui =
+  Setting "ui" True Nothing
 
 resetOnSave :: Setting Bool
 resetOnSave =
@@ -87,3 +89,11 @@ proteomeMainName =
 saveInterval :: Setting Double
 saveInterval =
   Setting "save_interval" True (Just 1.0)
+
+haskellCompileProject :: Setting Text
+haskellCompileProject =
+  Setting "haskell_compile_project" True Nothing
+
+haskellTestProject :: Setting Text
+haskellTestProject =
+  Setting "haskell_test_project" True Nothing

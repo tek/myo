@@ -28,6 +28,7 @@ import Myo.Data.Env (Env, Myo)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
 import Myo.Init (initialize, myoStage4)
+import Myo.Proteome (myoProteomeLoaded)
 import Myo.Quit (myoQuit)
 import Myo.Save (myoSave)
 import Myo.Ui.Data.UiState (UiState)
@@ -66,7 +67,8 @@ rpcHandlers =
     $(rpcHandler sync 'myoTestBuildPosition),
     $(rpcHandler sync 'myoTestBuildArgs),
     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
-    $(rpcHandler (autocmd "BufWritePre") 'myoSave)
+    $(rpcHandler (autocmd "BufWritePre") 'myoSave),
+    $(rpcHandler (autocmd "ProteomeMainProject") 'myoProteomeLoaded)
     ]
 
 mappingOutputQuit ::

@@ -14,7 +14,7 @@ import Myo.Orphans ()
 
 newtype CommandLanguage =
   CommandLanguage Text
-  deriving (Eq, Show, Ord, Generic, MsgpackDecode, MsgpackEncode)
+  deriving (Eq, Show, Ord, Generic, MsgpackDecode, MsgpackEncode, IsString)
 
 instance ToJSON CommandLanguage where
   toEncoding = genericToEncoding defaultOptions

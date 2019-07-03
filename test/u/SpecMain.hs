@@ -7,6 +7,7 @@ import Test.Framework.BlackBoxTest ()
 import {-@ HTF_TESTS @-} Command.HistoryMenuSpec
 import {-@ HTF_TESTS @-} Command.UpdateSpec
 import {-@ HTF_TESTS @-} Command.VimTestSpec
+import {-@ HTF_TESTS @-} ConfigSpec
 import {-@ HTF_TESTS @-} DiagSpec
 import {-@ HTF_TESTS @-} Output.CycleSpec
 import {-@ HTF_TESTS @-} Output.EmptyOutputSpec
