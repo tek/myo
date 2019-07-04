@@ -1,4 +1,3 @@
-
 module Myo.Plugin where
 
 import Control.Monad ((<=<))
@@ -70,7 +69,7 @@ rpcHandlers =
     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
     $(rpcHandler (autocmd "BufWritePre") 'myoSave),
     $(rpcHandler (
-    autocmd "User" . autocmdOptions (AutocmdOptions "ProteomeMainProject" False Nothing)) 'myoProteomeLoaded)
+    autocmd "User" . autocmdOptions (AutocmdOptions "ProteomeProject" False Nothing)) 'myoProteomeLoaded)
     ]
 
 mappingOutputQuit ::

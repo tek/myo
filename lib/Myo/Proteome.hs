@@ -14,6 +14,7 @@ import qualified Myo.Settings as Settings (
   haskellCompileProject,
   haskellTestProject,
   proteomeMainType,
+  testLang,
   testShell,
   ui,
   )
@@ -81,7 +82,7 @@ haskellConfig = do
     set pro testPro =
       updateSetting Settings.ui (UiSettingCodec Nothing (Just haskellPanes)) *>
       updateSetting Settings.commands (CommandSettingCodec (Just (haskellSystemCommands pro testPro)) Nothing) *>
-      updateSetting Settings.testShell "sbt"
+      updateSetting Settings.testLang "haskell"
 
 scalaPanes :: [AddPaneOptions]
 scalaPanes =
@@ -113,7 +114,8 @@ scalaConfig =
     set =
       updateSetting Settings.ui (UiSettingCodec Nothing (Just scalaPanes)) *>
       updateSetting Settings.commands (CommandSettingCodec (Just scalaSystemCommands) (Just scalaShellCommands)) *>
-      updateSetting Settings.testShell "sbt"
+      updateSetting Settings.testShell "sbt" *>
+      updateSetting Settings.testLang "scala"
 
 builtins ::
   NvimE e m =>
@@ -131,7 +133,7 @@ configureFromProteome ::
   Text ->
   m ()
 configureFromProteome =
-  fromMaybe (pure ()) . (builtins !?)
+  traverse_ id . (builtins !?)
 
 myoProteomeLoaded ::
   NvimE e m =>
