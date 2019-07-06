@@ -31,30 +31,30 @@ import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.ParseReport (outputWindow)
 import qualified Myo.Settings as Settings (outputSelectFirst)
 
-loc1 :: FilePath -> Location
+loc1 :: Text -> Location
 loc1 file =
   Location file 9 (Just 2)
 
-loc2 :: FilePath -> Location
+loc2 :: Text -> Location
 loc2 file =
   Location file 3 (Just 4)
 
-events :: FilePath -> Vector OutputEvent
+events :: Text -> Vector OutputEvent
 events file =
   Vector.fromList [OutputEvent (Just (loc1 file)) 0, OutputEvent (Just (loc2 file)) 1]
 
-reportLines :: FilePath -> Vector ReportLine
+reportLines :: Text -> Vector ReportLine
 reportLines file =
   formatReportLine 0 (loc1 file) (FoundReq1 "TypeA" "TypeB") <> formatReportLine 1 (loc2 file) (NoMethod "fmap")
 
-parsedOutput :: FilePath -> ParsedOutput
+parsedOutput :: Text -> ParsedOutput
 parsedOutput file =
   ParsedOutput haskellSyntax (const $ ParseReport (events file) (reportLines file))
 
 cycleSpecRender :: Myo Window
 cycleSpecRender = do
   file <- fixture $ "output" </> "select" </> "File.hs"
-  let po = [parsedOutput file]
+  let po = [parsedOutput (toText file)]
   initialize''
   setL @CommandState CommandState.parseResult (Just (ParseResult (Ident.Str "test") po))
   renderParseResult (Ident.Str "test") po

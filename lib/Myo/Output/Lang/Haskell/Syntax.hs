@@ -46,6 +46,34 @@ doResDiscardMarker :: Text
 doResDiscardMarker =
   "do-notation result discarded"
 
+invalidImportNameMarker :: Text
+invalidImportNameMarker =
+  "invalid import name"
+
+moduleNameMismatchMarker :: Text
+moduleNameMismatchMarker =
+  "module name mismatch"
+
+unknownModuleMarker :: Text
+unknownModuleMarker =
+  "unknown module"
+
+ambiguousTypeVarMarker :: Text
+ambiguousTypeVarMarker =
+  "ambiguous type var for constraint"
+
+invalidQualifiedNameMarker :: Text
+invalidQualifiedNameMarker =
+  "invalid qualified name"
+
+runtimeErrorMarker :: Text
+runtimeErrorMarker =
+  "runtime error"
+
+patternsMarker :: Text
+patternsMarker =
+  "non-exhaustive patterns"
+
 haskellInclude :: SyntaxItem
 haskellInclude =
   syntaxVerbatim "syntax include @haskell syntax/haskell.vim"
@@ -78,8 +106,13 @@ errorMessage =
   where
     item = syntaxRegion "MyoHsError" "^" errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
-    params = Map.fromList [("contains", contains)]
-    contains = "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard"
+    params = Map.fromList [("contains", contains1 <> contains2 <> contains3)]
+    contains1 =
+      "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard"
+    contains2 =
+      ",MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName"
+    contains3 =
+      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns"
 
 foundReq :: SyntaxItem
 foundReq =
@@ -214,21 +247,85 @@ moduleLine =
     item = syntaxMatch "MyoHsModule" "^.*$"
     options = ["contained", "skipnl"]
 
+simpleMessage :: Text -> Text -> Text -> SyntaxItem
+simpleMessage name next marker =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegionOffset ("MyoHs" <> name) marker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHs" <> next)]
+
 doNotationResultDiscarded :: SyntaxItem
 doNotationResultDiscarded =
-  item { siOptions = options, siParams = params }
-  where
-    item = syntaxRegionOffset "MyoHsDoResDiscard" doResDiscardMarker errorEnd Nothing "ms=e+1" ""
-    options = ["contained", "skipwhite", "skipnl"]
-    params = Map.fromList [("contains", "MyoHsDoResDiscardHead")]
+  simpleMessage "DoResDiscard" "Code" doResDiscardMarker
 
-doNotationResultDiscardedHead :: SyntaxItem
-doNotationResultDiscardedHead =
+invalidImportName :: SyntaxItem
+invalidImportName =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxMatch "MyoHsDoResDiscardHead" ("\\s*" <> doResDiscardMarker)
+    item = syntaxRegionOffset "MyoHsInvalidImportName" invalidImportNameMarker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsInvalidImportNameHead")]
+
+invalidImportNameHead :: SyntaxItem
+invalidImportNameHead =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsInvalidImportNameHead" invalidImportNameMarker
     options = ["contained", "skipnl"]
+    params = Map.fromList [("nextgroup", "MyoHsNames")]
+
+moduleNameMismatch :: SyntaxItem
+moduleNameMismatch =
+  simpleMessage "ModuleNameMismatch" "Found" moduleNameMismatchMarker
+
+unknownModule :: SyntaxItem
+unknownModule =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegionOffset "MyoHsUnknownModule" unknownModuleMarker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsUnknownModuleHead")]
+
+unknownModuleHead :: SyntaxItem
+unknownModuleHead =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsUnknownModuleHead" unknownModuleMarker
+    options = ["contained", "skipnl"]
+    params = Map.fromList [("nextgroup", "MyoHsModule")]
+
+invalidQualifiedName :: SyntaxItem
+invalidQualifiedName =
+  simpleMessage "InvalidQualifiedName" "Code" invalidQualifiedNameMarker
+
+runtimeError :: SyntaxItem
+runtimeError =
+  simpleMessage "RuntimeError" "Code" runtimeErrorMarker
+
+ambiguousTypeVar :: SyntaxItem
+ambiguousTypeVar =
+  simpleMessage "AmbiguousTypeVar" "AmbiguousTypeVarVar" ambiguousTypeVarMarker
+
+ambiguousTypeVarVar :: SyntaxItem
+ambiguousTypeVarVar =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsAmbiguousTypeVarVar" "^.*$"
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("nextgroup", "MyoHsAmbiguousTypeVarMethod")]
+
+ambiguousTypeVarMethod :: SyntaxItem
+ambiguousTypeVarMethod =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsAmbiguousTypeVarMethod" "^.*$"
+    options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("nextgroup", "MyoHsCode")]
+
+patterns :: SyntaxItem
+patterns =
+  simpleMessage "NonExhaustivePatterns" "Code" patternsMarker
 
 sync :: SyntaxItem
 sync =
@@ -278,19 +375,54 @@ hlModule :: HiLink
 hlModule =
   HiLink "MyoHsModule" "Type"
 
+hlDoNotationResDiscarded :: HiLink
+hlDoNotationResDiscarded =
+  HiLink "MyoHsDoResDiscardHead" "Error"
+
+hlInvalidImportName :: HiLink
+hlInvalidImportName =
+  HiLink "MyoHsInvalidImportNameHead" "Error"
+
+hlModuleNameMismatch :: HiLink
+hlModuleNameMismatch =
+  HiLink "MyoHsModuleNameMismatchHead" "Error"
+
+hlUnknownModule :: HiLink
+hlUnknownModule =
+  HiLink "MyoHsUnknownModuleHead" "Error"
+
+hlInvalidQualifiedName :: HiLink
+hlInvalidQualifiedName =
+  HiLink "MyoHsInvalidQualifiedNameHead" "Error"
+
+hlAmbiguousTypeVar :: HiLink
+hlAmbiguousTypeVar =
+  HiLink "MyoHsAmbiguousTypeVarHead" "Error"
+
+hlAmbiguousTypeVarVar :: HiLink
+hlAmbiguousTypeVarVar =
+  HiLink "MyoHsAmbiguousTypeVarVar" "MyoHsName"
+
+hlAmbiguousTypeVarMethod :: HiLink
+hlAmbiguousTypeVarMethod =
+  HiLink "MyoHsAmbiguousTypeVarMethod" "MyoHsCode"
+
 haskellSyntax :: Syntax
 haskellSyntax =
-  Syntax items highlights hilinks
+  Syntax (items ++ [sync]) highlights hilinks
   where
     items =
       [
         haskellInclude, location, path, lineNumberSymbol, errorMessage, foundReq, found, req, code,
         noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
         notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
-        doNotationResultDiscardedHead, sync
+        invalidImportName, invalidImportNameHead, moduleNameMismatch, unknownModule, unknownModuleHead,
+        invalidQualifiedName, runtimeError, ambiguousTypeVar, ambiguousTypeVarVar, ambiguousTypeVarMethod, patterns
       ]
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =
       [
-        hlError, hlPath, hlLineNumber, hlBang, hlNoInstanceKw, hlNotInScope, hlModule
+        hlError, hlPath, hlLineNumber, hlBang, hlNoInstanceKw, hlNotInScope, hlModule, hlDoNotationResDiscarded,
+        hlInvalidImportName, hlModuleNameMismatch, hlUnknownModule, hlInvalidQualifiedName, hlAmbiguousTypeVar,
+        hlAmbiguousTypeVarVar, hlAmbiguousTypeVarMethod
       ]

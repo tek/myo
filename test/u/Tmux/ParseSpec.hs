@@ -42,7 +42,7 @@ line2 = "line 2"
 lang :: CommandLanguage
 lang = CommandLanguage "echo"
 
-parseEcho :: FilePath -> Text -> Either OutputError ParsedOutput
+parseEcho :: Text -> Text -> Either OutputError ParsedOutput
 parseEcho file text =
   Right (ParsedOutput def (const report))
   where
@@ -58,7 +58,7 @@ parseTmuxSpec = do
     opts = AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) (Just lang) Nothing
   file <- fixture "tmux/parse/file"
   initialize''
-  addHandler lang (OutputHandler (OutputParser (parseEcho file)))
+  addHandler lang (OutputHandler (OutputParser (parseEcho (toText file))))
   myoAddSystemCommand opts
   myoRun ident
   sleep 2

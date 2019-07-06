@@ -24,13 +24,20 @@ import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Syntax (
+  ambiguousTypeVarMarker,
   doResDiscardMarker,
   foundReqMarker,
   haskellSyntax,
+  invalidImportNameMarker,
+  invalidQualifiedNameMarker,
   moduleImportMarker,
+  moduleNameMismatchMarker,
   nameImportsMarker,
+  patternsMarker,
+  runtimeErrorMarker,
+  unknownModuleMarker,
   )
-import Myo.Text.Parser.Combinators (parensExpr)
+import Myo.Text.Parser.Combinators (parensExpr, unParens)
 
 data HaskellMessage =
   FoundReq1 Text Text
@@ -54,6 +61,20 @@ data HaskellMessage =
   NoInstance Text Text
   |
   DoNotationResultDiscarded Text
+  |
+  InvalidImportName Text Text
+  |
+  ModuleNameMismatch Text Text
+  |
+  NoSuchModule Text
+  |
+  AmbiguousTypeVar Text Text Text
+  |
+  InvalidQualifiedName Text
+  |
+  RuntimeError Text
+  |
+  NonExhaustivePatterns Text
   deriving (Eq, Show)
 
 lq :: Char
@@ -63,9 +84,20 @@ rq :: Char
 rq =
   '’'
 
-qnames :: TokenParsing m => m Char -> m () -> m [Text]
+quoted ::
+  TokenParsing m =>
+  m a ->
+  m a
+quoted =
+  between (char lq) (char rq)
+
+qnames ::
+  TokenParsing m =>
+  m Char ->
+  m () ->
+  m [Text]
 qnames wordChar separator =
-  toText <$$> between (char lq) (char rq) (sepBy1 (some wordChar) separator)
+  toText <$$> quoted (sepBy1 (some wordChar) separator)
 
 qname :: TokenParsing m => m Text
 qname =
@@ -83,7 +115,7 @@ foundReq1 =
   flip FoundReq1 <$> req <*> found
   where
     req = string "Couldn't match expected type" *> ws *> qname <* ws
-    found = string "with actual type" *> ws *> qname <* skipMany anyChar
+    found = string "with actual type" *> ws *> qname
 
 foundReq2 ::
   TokenParsing m =>
@@ -91,8 +123,10 @@ foundReq2 ::
 foundReq2 =
   FoundReq2 <$> found <*> req <* skipMany anyChar
   where
-    found = string "Couldn't match type " *> qname
-    req = string " with " *> skipOptional (string "actual type ") *> qname
+    found =
+      string "Couldn't match type " *> qname
+    req =
+      ws *> string "with" *> ws *> skipOptional (string "actual type") *> ws *> qname
 
 typeNotInScope ::
   TokenParsing m =>
@@ -148,17 +182,79 @@ parseError ::
 parseError =
   ParseError <$ (string "Parse error:" *> many anyChar)
 
-noInstance ::
+noInstance1 ::
   TokenParsing m =>
   m HaskellMessage
-noInstance =
+noInstance1 =
   NoInstance . show <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf [lq]) *> qname)
+
+noInstance2 ::
+  TokenParsing m =>
+  m HaskellMessage
+noInstance2 =
+  NoInstance . show <$> (string "Could not deduce" *> ws *> parens parensExpr) <*> name
+  where
+    name =
+      string "arising from a use of" *> ws *> qname
 
 doNotationResultDiscarded ::
   TokenParsing m =>
   m HaskellMessage
 doNotationResultDiscarded =
   DoNotationResultDiscarded <$> (string "A do-notation statement discarded a result of type" *> ws *> qname)
+
+invalidImportName ::
+  TokenParsing m =>
+  m HaskellMessage
+invalidImportName =
+  InvalidImportName <$> mod' <*> export
+  where
+    mod' =
+      string "Module" *> ws *> qname
+    export =
+      ws *> string "does not export" *> ws *> qname
+
+moduleNameMismatch ::
+  TokenParsing m =>
+  m HaskellMessage
+moduleNameMismatch =
+  ModuleNameMismatch <$> saw <*> expected
+  where
+    saw =
+      string "File name does not match module name:" *> ws *> string "Saw:" *> ws *> qname
+    expected =
+      ws *> string "Expected:" *> ws *> qname
+
+unknownModule ::
+  TokenParsing m =>
+  m HaskellMessage
+unknownModule =
+  NoSuchModule <$> name
+  where
+    name =
+      string "Could not find module" *> ws *> qname
+
+ambiguousTypeVar ::
+  TokenParsing m =>
+  m HaskellMessage
+ambiguousTypeVar =
+  AmbiguousTypeVar <$> var <*> func <*> constraint
+  where
+    var =
+      string "Ambiguous type variable" *> ws *> qname
+    func =
+      ws *> string "arising from a use of" *> ws *> qname
+    constraint =
+      ws *> string "prevents the constraint" *> ws *> (unParens . show <$> quoted parensExpr)
+
+invalidQualifiedName ::
+  TokenParsing m =>
+  m HaskellMessage
+invalidQualifiedName =
+  InvalidQualifiedName <$> name
+  where
+    name =
+      string "Not in scope:" *> ws *> qname <* (ws *> string "Module")
 
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
@@ -180,9 +276,15 @@ parseMessage =
         moduleImport,
         namesImport,
         parseError,
-        noInstance,
+        noInstance1,
+        noInstance2,
         variableNotInScope,
         doNotationResultDiscarded,
+        invalidImportName,
+        moduleNameMismatch,
+        unknownModule,
+        ambiguousTypeVar,
+        invalidQualifiedName,
         verbatim
       ]
 
@@ -216,6 +318,20 @@ formatMessage (VariableNotInScope name tpe) =
   ["variable not in scope", name <> " :: " <> tpe]
 formatMessage (DoNotationResultDiscarded tpe) =
   [doResDiscardMarker, tpe]
+formatMessage (InvalidImportName mod' export) =
+  [invalidImportNameMarker, export, mod']
+formatMessage (ModuleNameMismatch saw expected) =
+  [moduleNameMismatchMarker, saw, expected]
+formatMessage (NoSuchModule name) =
+  [unknownModuleMarker, name]
+formatMessage (AmbiguousTypeVar var func constraint) =
+  [ambiguousTypeVarMarker, var, func, constraint]
+formatMessage (InvalidQualifiedName name) =
+  [invalidQualifiedNameMarker, name]
+formatMessage (RuntimeError msg) =
+  [runtimeErrorMarker, msg]
+formatMessage (NonExhaustivePatterns fun) =
+  [patternsMarker, fun]
 formatMessage (Verbatim text) =
   Text.lines text
 
@@ -242,11 +358,22 @@ parsedOutputCons events offset =
 eventLevel :: EventType -> Int
 eventLevel EventType.Warning = 1
 eventLevel EventType.Error = 0
+eventLevel EventType.RuntimeError = 0
 
 eventReport :: Int -> HaskellEvent -> Either OutputError HaskellOutputEvent
-eventReport index (HaskellEvent loc tpe (messageText :| _)) = do
-  message <- mapLeft (OutputError.Parse . toText) $ parseOnly parseMessage messageText
-  return $ HaskellOutputEvent (eventLevel tpe) index loc message
+eventReport index (HaskellEvent loc tpe (messageText :| _)) =
+  bimap outputError event (message tpe)
+  where
+    message EventType.RuntimeError =
+      pure $ RuntimeError messageText
+    message EventType.Patterns =
+      pure $ NonExhaustivePatterns messageText
+    message _ =
+      parseOnly parseMessage messageText
+    outputError =
+      OutputError.Parse . toText
+    event =
+      HaskellOutputEvent (eventLevel tpe) index loc
 
 haskellReport :: Vector HaskellEvent -> Either OutputError ParsedOutput
 haskellReport events =

@@ -2,20 +2,17 @@
 
 module Myo.Output.Lang.Haskell.Parser where
 
-import Control.Monad ((<=<))
 import Data.Attoparsec.Text (parseOnly)
 import Data.Either.Combinators (mapLeft)
-import Data.Functor (void)
 import Data.List.NonEmpty (NonEmpty((:|)))
-import Data.Maybe (catMaybes)
-import Data.Text (Text)
+import qualified Data.List.NonEmpty as NonEmpty (last)
 import qualified Data.Text as Text (filter)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, string)
-import Text.Parser.Combinators (choice, eof, many, manyTill, skipMany, skipOptional, try)
+import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, text)
+import Text.Parser.Combinators (choice, eof, many, manyTill, sepByNonEmpty, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
-import Text.Parser.Token (TokenParsing, brackets, natural, whiteSpace)
+import Text.Parser.Token (TokenParsing, brackets, natural, parens, whiteSpace)
 import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
 
 import Myo.Output.Data.Location (Location(Location))
@@ -26,25 +23,54 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
-import Myo.Text.Parser.Combinators (colon, emptyLine, skipLine, ws)
+import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, skipLine, tillEol, word, wordNot, ws)
+
+path ::
+  CharParsing m =>
+  m Text
+path =
+  toText <$> manyTill anyChar (try $ choice [newline, colon])
+
+location ::
+  TokenParsing m =>
+  m Location
+location =
+  Location <$> path <*> line <*> col
+  where
+    line =
+      num <* colon
+    col =
+      Just <$> num
+    num =
+      fromIntegral . subtract 1 <$> natural
 
 locationLine ::
-  Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   m (Location, EventType)
-locationLine = do
-  ws
-  path <- manyTill anyChar (try $ choice [newline, colon])
-  lineno <- natural <* colon
-  colno <- natural <* colon
-  skipOptional whiteSpace
-  tpe <- choice [EventType.Error <$ string "error", EventType.Warning <$ string "warning"]
-  _ <- colon
-  ws
-  skipOptional (brackets (many $ noneOf "]"))
-  ws
-  return (Location path (fromIntegral lineno - 1) (Just (fromIntegral colno - 1)), tpe)
+locationLine =
+  tuple loc tpe
+  where
+    loc =
+      ws *> location <* colon <* ws
+    tpe =
+      choice [EventType.Error <$ text "error", EventType.Warning <$ text "warning"] <* trailing
+    trailing =
+      colon *> ws *> skipOptional (brackets (many $ noneOf "]")) *> ws
+
+region ::
+  TokenParsing m =>
+  m Location
+region =
+  (cons <$> path <*> lineCol) <* (num *> colon)
+  where
+    cons p (l, c) =
+      Location p l c
+    lineCol =
+      num <* char '-'
+    num =
+      bimap normalize (Just . normalize) <$> parens (tuple (natural <* char ',') natural)
+    normalize =
+      fromIntegral . subtract 1
 
 dot :: CharParsing m => m Char
 dot =
@@ -73,19 +99,63 @@ multiMessage = do
   tail' <- many part
   return $ toText <$> head' :| tail'
   where
-    part = ws *> dot *> ws *> manyTill anyChar (choice [void $ lookAhead dot, void emptyLine, codeSnippet, eof])
+    part =
+      ws *> dot *> ws *> manyTill anyChar (choice [void $ lookAhead dot, void emptyLine, codeSnippet, eof])
 
-event ::
+compileEvent ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   LookAheadParsing m =>
   m HaskellEvent
-event = do
-  (location, tpe) <- locationLine
-  msgs <- choice [multiMessage, singleMessage]
-  skipMany newline
-  return $ HaskellEvent location tpe msgs
+compileEvent =
+  uncurry HaskellEvent <$> locationLine <*> choice [multiMessage, singleMessage]
+
+patternEvent ::
+  TokenParsing m =>
+  m HaskellEvent
+patternEvent =
+  cons <$> region <*> fun
+  where
+    cons loc =
+      HaskellEvent loc EventType.Patterns
+    fun =
+      ws *> text "Non-exhaustive patterns in function" *> ws *> ((:| []) <$> word)
+
+assertionLine ::
+  TokenParsing m =>
+  m ()
+assertionLine =
+  void word *>
+  text "failed at" *>
+  ws *>
+  anyTillChar ':' *>
+  natural *>
+  ws
+
+stackFrame ::
+  TokenParsing m =>
+  m Location
+stackFrame =
+  ws *>
+  word *>
+  text "called at" *>
+  ws *>
+  location
+
+runtimeEvent ::
+  TokenParsing m =>
+  m HaskellEvent
+runtimeEvent =
+  cons <$> msg <*> loc
+  where
+    cons msg loc =
+      HaskellEvent loc EventType.RuntimeError (msg :| [])
+    msg =
+      assertionLine *> anyTillChar ':' *> ws *> tillEol
+    loc =
+      NonEmpty.last <$> frames
+    frames =
+      ws *> text "CallStack" *> void tillEol *> sepByNonEmpty stackFrame tillEol
 
 parseHaskellErrors ::
   Monad m =>
@@ -94,7 +164,15 @@ parseHaskellErrors ::
   LookAheadParsing m =>
   m (Vector HaskellEvent)
 parseHaskellErrors =
-  Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])
+  Vector.fromList . catMaybes <$> many (choice events <* skipMany newline)
+  where
+    events =
+      [
+        Just <$> compileEvent,
+        Just <$> patternEvent,
+        Just <$> runtimeEvent,
+        Nothing <$ skipLine
+        ]
 
 removeProgressIndicator1RE :: SearchReplace RE Text
 removeProgressIndicator1RE =

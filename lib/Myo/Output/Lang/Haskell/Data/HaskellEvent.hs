@@ -9,6 +9,10 @@ data EventType =
   Error
   |
   Warning
+  |
+  RuntimeError
+  |
+  Patterns
   deriving (Eq, Show)
 
 data HaskellEvent =

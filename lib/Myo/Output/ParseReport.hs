@@ -106,7 +106,7 @@ selectEvent mainWindow outputWindow' (OutputEvent (Just (Location path line col)
   window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
   existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
-  maybe (edit path) (nvimWinSetBuf window) existingBuffer
+  maybe (edit (toString path)) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
   vimCommand "normal! zz"

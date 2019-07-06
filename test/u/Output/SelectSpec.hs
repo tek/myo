@@ -31,26 +31,26 @@ import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Plugin (mappingOutputSelect)
 import Unit (tmuxSpec)
 
-events :: FilePath -> Vector OutputEvent
+events :: Text -> Vector OutputEvent
 events file =
   Vector.fromList [OutputEvent (Just (Location file 9 (Just 2))) 0, OutputEvent Nothing 1]
 
-loc :: FilePath -> Location
+loc :: Text -> Location
 loc file =
   Location file 10 Nothing
 
-reportLines :: FilePath -> Vector ReportLine
+reportLines :: Text -> Vector ReportLine
 reportLines file =
   formatReportLine 0 (loc file) (FoundReq1 "TypeA" "TypeB") <> formatReportLine 0 (loc file) (NoMethod "fmap")
 
-parsedOutput :: FilePath -> ParsedOutput
+parsedOutput :: Text -> ParsedOutput
 parsedOutput file =
   ParsedOutput haskellSyntax (const $ ParseReport (events file) (reportLines file))
 
 outputSelectSpec :: Myo ()
 outputSelectSpec = do
   file <- fixture $ "output" </> "select" </> "File.hs"
-  let po = [parsedOutput file]
+  let po = [parsedOutput (toText file)]
   initialize''
   setL @CommandState CommandState.parseResult (Just (ParseResult (Ident.Str "test") po))
   renderParseResult (Ident.Str "test") po

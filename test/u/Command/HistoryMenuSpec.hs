@@ -7,12 +7,13 @@ import Control.Exception.Lifted (bracket)
 import Control.Lens ((^?))
 import qualified Control.Lens as Lens (element)
 import Ribosome.Api.Input (syntheticInput)
+import Ribosome.Menu.Action (menuReturn)
+import qualified Ribosome.Menu.Data.FilteredMenuItem as FilteredMenuItem (item)
 import Ribosome.Menu.Data.Menu (Menu(Menu))
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem (text)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult (MenuResult(Return))
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Simple (menuReturn)
 import Ribosome.Test.Tmux (tmuxSpecDef)
 import Test.Framework
 
@@ -40,11 +41,11 @@ exec ::
   Menu Ident ->
   Prompt ->
   m (MenuConsumerAction m (Maybe Text), Menu Ident)
-exec m@(Menu _ items _ selected _ _) _ =
+exec m@(Menu _ items selected _ _ _) _ =
   menuReturn item m
   where
     item =
-      items ^? Lens.element selected . MenuItem.text
+      items ^? Lens.element selected . FilteredMenuItem.item . MenuItem.text
 
 historyMenuSpec :: Myo ()
 historyMenuSpec = do
