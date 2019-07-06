@@ -101,8 +101,9 @@ containsVimPid (Codec.PanePid _ panePid) =
   (Pid panePid `elem`) <$$> ppids
 
 detectVimPidPane ::
-  MonadIO m =>
   Nvim m =>
+  MonadIO m =>
+  MonadFail m =>
   MonadBaseControl IO m =>
   Pid ->
   TmuxProg m Codec.PaneCoords
@@ -117,6 +118,7 @@ detectVimPidPane vpid = do
 
 detectVimPane ::
   MonadIO m =>
+  MonadFail m =>
   Nvim m =>
   MonadBaseControl IO m =>
   TmuxProg m Codec.PaneCoords
@@ -127,7 +129,7 @@ detectVimPane = do
 detectDefaultUi ::
   NvimE e m =>
   MonadRibo m =>
-  MonadIO m =>
+  MonadFail m =>
   MonadBaseControl IO m =>
   Nvim m =>
   MonadDeepError e SettingError m =>

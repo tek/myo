@@ -5,7 +5,6 @@ import Control.Applicative (Alternative)
 import Control.Exception.Lifted (try)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Attoparsec.Text (parseOnly)
-import Data.Bifunctor (first)
 import Data.Conduit.List (unfoldM)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Path (absdir, toFilePath)
@@ -39,7 +38,7 @@ ppid ::
   Pid ->
   m (Maybe Pid)
 ppid =
-  parse . (first err) <$$> try . readFile . procStatPath
+  parse . (bimap err toText) <$$> try . readFile . procStatPath
   where
     err (_ :: SomeException) =
       "failed to read procstat"
