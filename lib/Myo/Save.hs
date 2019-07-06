@@ -1,6 +1,6 @@
 module Myo.Save where
 
-import Control.Monad.DeepState (modifyM)
+import Prelude hiding (state)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.IO (vimCommand)

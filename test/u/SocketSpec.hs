@@ -41,7 +41,7 @@ listen listenChan sock =
 
 logSocketPath :: Text -> Myo (Path Abs File)
 logSocketPath =
-  commandLogPath . Str . toString
+  commandLogPath . Str
 
 chanResult :: TBMChan a -> IO [a]
 chanResult chan = do

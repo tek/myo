@@ -10,4 +10,4 @@ data ViewCoords =
   }
 
 viewCoords :: Text -> Text -> Text -> ViewCoords
-viewCoords si wi vi = ViewCoords (Str (toString si)) (Str (toString wi)) (Str (toString vi))
+viewCoords si wi vi = ViewCoords (Str si) (Str wi) (Str vi)

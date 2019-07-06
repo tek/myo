@@ -1,18 +1,14 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Output.HaskellRenderSpec (htf_thisModulesTests) where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Data.Functor (void)
 import Data.Functor.Syntax ((<$$>))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
-import Ribosome.Api.Window (setCurrentCursor)
-import Ribosome.Control.Monad.Ribo (NvimE)
 import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
@@ -30,7 +26,6 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
-import Text.RawString.QQ (r)
 import Unit (tmuxSpec)
 
 loc :: Location

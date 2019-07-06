@@ -1,11 +1,8 @@
 module Myo.Settings where
 
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry(ViewGeometry))
 import Ribosome.Data.Setting (Setting(Setting))
 
-import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions)
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions)
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec)

@@ -1,11 +1,10 @@
-
 module Myo.Command.Data.Execution where
 
-import Chiasma.Data.Ident (Ident, Identifiable(..))
+import Chiasma.Data.Ident (Identifiable(..))
 import Control.Lens (makeClassy)
-import Data.ByteString (ByteString)
 import Data.Hourglass (Elapsed)
 import Network.Socket (Socket)
+import Prelude hiding (state)
 import qualified Text.Show
 
 import Myo.Command.Data.Pid (Pid)

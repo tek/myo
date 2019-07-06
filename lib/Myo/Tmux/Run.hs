@@ -10,12 +10,10 @@ import Chiasma.Data.Views (Views, ViewsError)
 import qualified Chiasma.Monad.Stream as Chiasma (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import qualified Chiasma.View.State as Views (paneId)
-import Control.Monad.DeepError (MonadDeepError, throwHoist)
-import Control.Monad.DeepState (MonadDeepState)
-import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Path (Abs, File, Path)
 import Path.IO (doesFileExist, removeFile)
+import Prelude hiding (state)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Exception (tryAny)
 import Ribosome.Control.Monad.Ribo (MonadRibo)
@@ -126,4 +124,4 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _) logPath details) =
     run _ =
       undefined
     send paneId =
-      sendKeys paneId (toString <$> lines')
+      sendKeys paneId lines'

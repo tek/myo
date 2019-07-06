@@ -12,7 +12,7 @@ import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, text)
 import Text.Parser.Combinators (choice, eof, many, manyTill, sepByNonEmpty, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
-import Text.Parser.Token (TokenParsing, brackets, natural, parens, whiteSpace)
+import Text.Parser.Token (TokenParsing, brackets, natural, parens)
 import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
 
 import Myo.Output.Data.Location (Location(Location))
@@ -23,7 +23,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
-import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, skipLine, tillEol, word, wordNot, ws)
+import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, skipLine, tillEol, word, ws)
 
 path ::
   CharParsing m =>
@@ -148,8 +148,8 @@ runtimeEvent ::
 runtimeEvent =
   cons <$> msg <*> loc
   where
-    cons msg loc =
-      HaskellEvent loc EventType.RuntimeError (msg :| [])
+    cons m l =
+      HaskellEvent l EventType.RuntimeError (m :| [])
     msg =
       assertionLine *> anyTillChar ':' *> ws *> tillEol
     loc =

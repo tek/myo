@@ -1,9 +1,7 @@
 module Myo.Output.Lang.Haskell.Report where
 
 import Control.Lens (ifolded, withIndex)
-import Control.Monad (join)
 import Data.Attoparsec.Text (parseOnly)
-import Data.Either.Combinators (mapLeft)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
@@ -195,7 +193,7 @@ noInstance2 =
   NoInstance . show <$> (string "Could not deduce" *> ws *> parens parensExpr) <*> name
   where
     name =
-      string "arising from a use of" *> ws *> qname
+      choice [string "arising from a use of", string "arising from the literal"] *> ws *> qname
 
 doNotationResultDiscarded ::
   TokenParsing m =>
@@ -359,6 +357,7 @@ eventLevel :: EventType -> Int
 eventLevel EventType.Warning = 1
 eventLevel EventType.Error = 0
 eventLevel EventType.RuntimeError = 0
+eventLevel EventType.Patterns = 0
 
 eventReport :: Int -> HaskellEvent -> Either OutputError HaskellOutputEvent
 eventReport index (HaskellEvent loc tpe (messageText :| _)) =

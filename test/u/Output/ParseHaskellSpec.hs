@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
-{-# LANGUAGE QuasiQuotes #-}
 
 module Output.ParseHaskellSpec (htf_thisModulesTests) where
 
@@ -162,6 +161,10 @@ haskellOutput =
     "user error (test exceeded timeout of 10 seconds)",
     "",
     "/path/to/File.hs:(36,1)-(114,43): Non-exhaustive patterns in function wrong",
+    "",
+    "/path/to/File.hs:36:1: error:",
+    "Could not deduce (IsString a1) arising from the literal ‘\"to\"’",
+    "from the context: (Monad m)",
     ""
     ]
 
@@ -253,6 +256,10 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "non-exhaustive patterns",
   "wrong",
+  "",
+  "/path/to/File.hs \57505 36",
+  "!instance: \"to\"",
+  "IsString a1",
   ""
   ]
 

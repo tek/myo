@@ -1,12 +1,12 @@
 module Myo.Command.Execution where
 
-import Chiasma.Data.Ident (Ident)
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (_Just, at, mapMOf, set, view)
 import Control.Monad.DeepState (modifyM)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Network.Socket (Socket)
 import qualified Network.Socket as Socket (close)
+import Prelude hiding (state)
 import Ribosome.Control.Exception (tryAny)
 import qualified Ribosome.Control.Monad.Ribo as Ribo (prepend)
 import System.Hourglass (timeCurrent)

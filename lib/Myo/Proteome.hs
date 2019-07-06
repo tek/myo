@@ -18,7 +18,7 @@ import qualified Myo.Settings as Settings (
   testShell,
   ui,
   )
-import Myo.Ui.Data.AddPaneOptions (AddPaneOptions(AddPaneOptions))
+import Myo.Ui.Data.AddPaneOptions (AddPaneOptions)
 import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions(..))
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec(UiSettingCodec))
 
@@ -45,7 +45,7 @@ haskellPanes =
 
 stackCommand :: Text -> Text -> AddSystemCommandOptions
 stackCommand cmd line =
-  AddSystemCommandOptions (Ident.Str ("stack-" <> toString cmd)) [line] Nothing (Just "make") (Just "haskell") Nothing
+  AddSystemCommandOptions (Ident.Str ("stack-" <> cmd)) [line] Nothing (Just "make") (Just "haskell") Nothing
 
 stackBuildCommand :: Text -> Text -> Bool -> AddSystemCommandOptions
 stackBuildCommand cmd pro pedantic =

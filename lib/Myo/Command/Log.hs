@@ -1,7 +1,7 @@
 module Myo.Command.Log where
 
 import Chiasma.Command.Pane (pipePane)
-import Chiasma.Data.Ident (Ident, identString)
+import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Control.Lens (Lens', (?~))
@@ -60,7 +60,7 @@ insertLogPath ::
   m (Path Abs File)
 insertLogPath ident = do
   base <- logTempDir
-  fileName <- parseRelFile $ "pane-" <> identString ident
+  fileName <- parseRelFile . toString $ "pane-" <> identText ident
   let logPath = base </> fileName
   modify $ logPathLens ident ?~ logPath
   return logPath
@@ -95,7 +95,7 @@ pipePaneToSocket ::
 pipePaneToSocket paneId logPath =
   pipePane paneId cmd
   where
-    cmd = "'socat STDIN UNIX-SENDTO:" <> toFilePath logPath <> "'"
+    cmd = "'socat STDIN UNIX-SENDTO:" <> toText (toFilePath logPath) <> "'"
 
 logLens :: Ident -> Lens' CommandState (Maybe CommandLog)
 logLens ident = CommandState.logs . Lens.at ident

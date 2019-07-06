@@ -248,10 +248,10 @@ moduleLine =
     options = ["contained", "skipnl"]
 
 simpleMessage :: Text -> Text -> Text -> SyntaxItem
-simpleMessage name next marker =
+simpleMessage name' next marker =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxRegionOffset ("MyoHs" <> name) marker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset ("MyoHs" <> name') marker errorEnd Nothing "ms=e+1" ""
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHs" <> next)]
 
