@@ -47,8 +47,11 @@ parseEcho file text =
   Right (ParsedOutput def (const report))
   where
     report =
-      ParseReport (Vector.fromList [OutputEvent (Just (Location file 0 Nothing)) 0]) (Vector.fromList (rline <$> lines text))
-    rline = ReportLine (EventIndex 0)
+      ParseReport (Vector.fromList events) (Vector.fromList (rline <$> lines text))
+    rline =
+      ReportLine (EventIndex 0)
+    events =
+      [OutputEvent (Just (Location file 0 Nothing)) 0]
 
 parseTmuxSpec :: Myo ()
 parseTmuxSpec = do

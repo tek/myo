@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Myo.System.Proc where
 
 import Conduit (ConduitT, runConduit, sinkList, (.|))
@@ -9,6 +11,7 @@ import Data.Conduit.List (unfoldM)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Path (absdir, toFilePath)
 import Path.IO (listDir)
+import Ribosome.Control.Exception (catchAnyAs)
 import System.FilePath (FilePath, (</>))
 import Text.Parser.Char (CharParsing, anyChar, noneOf, spaces)
 import Text.Parser.Combinators (many, skipMany)
@@ -38,7 +41,7 @@ ppid ::
   Pid ->
   m (Maybe Pid)
 ppid =
-  parse . (bimap err toText) <$$> try . readFile . procStatPath
+  parse . bimap err toText <$$> try . readFile . procStatPath
   where
     err (_ :: SomeException) =
       "failed to read procstat"
@@ -79,7 +82,7 @@ childPids pid = do
   (dirs, _) <- listDir [absdir|/proc|]
   let
     pidStrings = catMaybes ((\ a -> matchedText (a ?=~ pidRegex)) . toText . toFilePath <$> dirs)
-    pids = mapMaybe (rightToMaybe . (fmap Pid) . readEither) pidStrings
+    pids = mapMaybe (rightToMaybe . fmap Pid . readEither) pidStrings
   mapMaybe matchParent <$> traverse withPpid pids
   where
     withPpid pid' =
@@ -91,7 +94,8 @@ childPids pid = do
 
 processExists ::
   MonadIO m =>
+  MonadBaseControl IO m =>
   Pid ->
   m Bool
 processExists =
-  doesPathExist . procStatPath
+  catchAnyAs False . doesPathExist . procStatPath

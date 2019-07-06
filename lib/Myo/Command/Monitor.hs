@@ -50,6 +50,7 @@ sanitizeOutput =
 
 checkTracked ::
   MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   Ident ->
   Pid ->
@@ -105,8 +106,9 @@ promoteTimedOutExecution ident started =
       now - started > Elapsed (Seconds (fromIntegral timeout))
 
 checkExecuting ::
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
   Execution ->
@@ -133,12 +135,11 @@ checkExecuting (Execution ident _ _ (ExecutionMonitor state started _ checkPendi
       setExecutionState ident
 
 handleEvent ::
-  MonadRibo m =>
   NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
-  MonadIO m =>
-  MonadBaseControl IO m =>
   MonitorEvent ->
   m ()
 handleEvent (CommandOutput ident bytes) =
