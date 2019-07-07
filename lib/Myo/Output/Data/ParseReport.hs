@@ -1,4 +1,3 @@
-
 module Myo.Output.Data.ParseReport where
 
 import Data.DeepLenses (deepLenses)
@@ -8,21 +7,21 @@ import Prelude hiding (lines)
 import Myo.Output.Data.OutputEvent (OutputEvent)
 import Myo.Output.Data.ReportLine (ReportLine)
 
-data ParseReport =
+data ParseReport a =
   ParseReport {
     _events :: Vector OutputEvent,
-    _lines :: Vector ReportLine
+    _lines :: Vector (ReportLine a)
   }
   deriving (Eq, Show)
 
-deepLenses ''ParseReport
+makeClassy ''ParseReport
 
-instance Semigroup ParseReport where
+instance Semigroup (ParseReport a) where
   (ParseReport e1 l1) <> (ParseReport e2 l2) = ParseReport (e1 <> e2) (l1 <> l2)
 
-instance Monoid ParseReport where
+instance Monoid (ParseReport a) where
   mempty = ParseReport mempty mempty
 
-noEventsInReport :: ParseReport -> Bool
+noEventsInReport :: ParseReport a -> Bool
 noEventsInReport (ParseReport e _) =
   null e

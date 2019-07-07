@@ -1,5 +1,6 @@
 module Myo.Output.ParseReport where
 
+import Control.Lens (each, mapped, over)
 import qualified Control.Lens as Lens (_1, views)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.Vector ((!?))
@@ -28,12 +29,13 @@ import Ribosome.Scratch (lookupScratch, scratchPreviousWindow, scratchWindow, sh
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute), Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal, NoLocation, NotParsed))
-import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
-import qualified Myo.Output.Data.ParseReport as ParseReport (events)
+import qualified Myo.Output.Data.ParseReport as ParseReport (events, lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (ParsedOutput(_syntax))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
@@ -43,14 +45,14 @@ scratchName =
   "myo-report"
 
 eventByIndex ::
-  ParseReport ->
-  EventIndex ->
+  ParseReport EventIndex.Absolute ->
+  EventIndex.Absolute ->
   Maybe OutputEvent
-eventByIndex (ParseReport events _) (EventIndex eventIndex) =
-  events !? eventIndex
+eventByIndex (ParseReport events _) (EventIndex.Absolute eventIndex) =
+  events !? fromIntegral eventIndex
 
 eventByLine ::
-  ParseReport ->
+  ParseReport EventIndex.Absolute ->
   Int ->
   Maybe OutputEvent
 eventByLine report@(ParseReport _ lines') line = do
@@ -58,8 +60,8 @@ eventByLine report@(ParseReport _ lines') line = do
   eventByIndex report eventIndex
 
 lineNumberByEventIndex ::
-  ParseReport ->
-  EventIndex ->
+  ParseReport EventIndex.Absolute ->
+  EventIndex.Absolute ->
   Maybe Int
 lineNumberByEventIndex (ParseReport _ lines') eventIndex =
   Vector.findIndex matchEventIndex lines'
@@ -135,8 +137,8 @@ selectEventByIndexFromReport ::
   MonadRibo m =>
   MonadIO m =>
   NvimE e m =>
-  ParseReport ->
-  EventIndex ->
+  ParseReport EventIndex.Absolute ->
+  EventIndex.Absolute ->
   Window ->
   Window ->
   m ()
@@ -149,7 +151,7 @@ selectCurrentLineEventFrom ::
   MonadRibo m =>
   MonadIO m =>
   NvimE e m =>
-  ParseReport ->
+  ParseReport EventIndex.Absolute ->
   Window ->
   Window ->
   m ()
@@ -159,14 +161,14 @@ selectCurrentLineEventFrom report outputWindow' mainWindow =
 currentReport ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
-  ((ParseReport, [Syntax]) -> a) ->
+  ((ParseReport EventIndex.Absolute, [Syntax]) -> a) ->
   m a
 currentReport f =
   f <$> (hoistMaybe OutputError.NotParsed =<< getL @CommandState CommandState.parseReport)
 
 currentEvent ::
   MonadDeepState s CommandState m =>
-  m EventIndex
+  m EventIndex.Absolute
 currentEvent =
   getL @CommandState CommandState.currentEvent
 
@@ -176,10 +178,10 @@ cycleIndex ::
   Int ->
   m Bool
 cycleIndex offset = do
-  (EventIndex current) <- currentEvent
-  total <- currentReport (Lens.views (Lens._1 . ParseReport.events) length)
-  let new = (current + offset) `mod` total
-  setL @CommandState CommandState.currentEvent (EventIndex new)
+  (EventIndex.Absolute current) <- currentEvent
+  total <- currentReport (fromIntegral . Lens.views (Lens._1 . ParseReport.events) length)
+  let new = fromIntegral $ (fromIntegral current + offset) `mod` total
+  setL @CommandState CommandState.currentEvent (EventIndex.Absolute new)
   return (new /= current)
 
 scratchErrorMaybe ::
@@ -217,7 +219,7 @@ renderReport ::
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
-  ParseReport ->
+  ParseReport EventIndex.Absolute ->
   [Syntax] ->
   m ()
 renderReport (ParseReport _ lines') syntax = do
@@ -264,7 +266,7 @@ navigateToEvent ::
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
   Bool ->
-  EventIndex ->
+  EventIndex.Absolute ->
   m ()
 navigateToEvent jump eventIndex = do
   ensureReportScratch
@@ -290,13 +292,14 @@ navigateToCurrentEvent ::
 navigateToCurrentEvent jump =
   navigateToEvent jump =<< currentEvent
 
-compileReport :: [ParsedOutput] -> (ParseReport, [Syntax])
+compileReport :: [ParsedOutput] -> (ParseReport EventIndex.Absolute, [Syntax])
 compileReport output =
   (mconcat reports, syntax)
   where
     syntax = ParsedOutput._syntax <$> output
     (_, reports) = mapAccumL format 0 output
-    format offset (ParsedOutput _ cons) =
-      (offset + length events, report')
+    format offset (ParsedOutput _ (ParseReport events lines')) =
+      (offset + fromIntegral (length events), ParseReport events (makeAbsolute <$> lines'))
       where
-        report'@(ParseReport events _) = cons offset
+        makeAbsolute (ReportLine (EventIndex.Relative index) text) =
+          ReportLine (EventIndex.Absolute (offset +index)) text

@@ -270,11 +270,8 @@ parseHaskell =
 test_parseHaskellErrors :: IO ()
 test_parseHaskellErrors = do
   outputE <- parseHaskell
-  ParsedOutput _ cons <- assertRight outputE
-  let
-    report = cons 0
-    lines' = ReportLine._text <$> ParseReport._lines report
-  assertEqual target lines'
+  ParsedOutput _ report <- assertRight outputE
+  assertEqual target (ReportLine._text <$> ParseReport._lines report)
 
 parseHaskellGarbage :: IO (Either OutputError ParsedOutput)
 parseHaskellGarbage = do
@@ -298,8 +295,5 @@ garbageTarget =
 test_parseGarbage :: IO ()
 test_parseGarbage = do
   outputE <- parseHaskellGarbage
-  ParsedOutput _ cons <- assertRight outputE
-  let
-    report = cons 0
-    lines' = ReportLine._text <$> ParseReport._lines report
-  assertEqual garbageTarget lines'
+  ParsedOutput _ report <- assertRight outputE
+  assertEqual garbageTarget (ReportLine._text <$> ParseReport._lines report)

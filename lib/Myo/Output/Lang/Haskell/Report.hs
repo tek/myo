@@ -11,10 +11,11 @@ import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, many, manyTill, sepBy1, skipMany, skipOptional, some, try)
 import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative)
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
-import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
@@ -35,6 +36,7 @@ import Myo.Output.Lang.Haskell.Syntax (
   runtimeErrorMarker,
   unknownModuleMarker,
   )
+import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Text.Parser.Combinators (parensExpr, unParens)
 
 data HaskellMessage =
@@ -286,15 +288,6 @@ parseMessage =
         verbatim
       ]
 
-data HaskellOutputEvent =
-  HaskellOutputEvent {
-    level :: Int,
-    index :: Int,
-    location :: Location,
-    message :: HaskellMessage
-    }
-  deriving (Eq, Show)
-
 formatMessage :: HaskellMessage -> [Text]
 formatMessage (FoundReq1 found req) =
   [foundReqMarker, found, req]
@@ -337,21 +330,11 @@ formatLocation :: Location -> Text
 formatLocation (Location path line _) =
   unwords [toText path, lineNumber, show (line + 1)]
 
-formatReportLine :: Int -> Location -> HaskellMessage -> Vector ReportLine
-formatReportLine index location message =
-  ReportLine (EventIndex index) <$> Vector.fromList (formatLocation location : formatMessage message <> [""])
-
-formatEvent :: Location -> Int -> Int -> HaskellMessage -> (OutputEvent, Vector ReportLine)
-formatEvent location level index message =
-  (OutputEvent (Just location) level, formatReportLine index location message)
-
-parsedOutputCons :: Vector HaskellOutputEvent -> Int -> ParseReport
-parsedOutputCons events offset =
-  ParseReport events' (join lines')
-  where
-    (events', lines') = Vector.unzip (cons <$> events)
-    cons HaskellOutputEvent{..} =
-      formatEvent location level (index + offset) message
+formatReportLine :: LangOutputEvent HaskellMessage -> Vector Text
+formatReportLine (LangOutputEvent (OutputEvent (Just location) _) message) =
+  Vector.fromList (formatLocation location : formatMessage message <> [""])
+formatReportLine _ =
+  mempty
 
 eventLevel :: EventType -> Int
 eventLevel EventType.Warning = 1
@@ -359,8 +342,8 @@ eventLevel EventType.Error = 0
 eventLevel EventType.RuntimeError = 0
 eventLevel EventType.Patterns = 0
 
-eventReport :: Int -> HaskellEvent -> Either OutputError HaskellOutputEvent
-eventReport index (HaskellEvent loc tpe (messageText :| _)) =
+eventReport :: HaskellEvent -> Either OutputError (LangOutputEvent HaskellMessage)
+eventReport (HaskellEvent loc tpe (messageText :| _)) =
   bimap outputError event (message tpe)
   where
     message EventType.RuntimeError =
@@ -372,10 +355,8 @@ eventReport index (HaskellEvent loc tpe (messageText :| _)) =
     outputError =
       OutputError.Parse . toText
     event =
-      HaskellOutputEvent (eventLevel tpe) index loc
+      LangOutputEvent (OutputEvent (Just loc) (eventLevel tpe))
 
 haskellReport :: Vector HaskellEvent -> Either OutputError ParsedOutput
-haskellReport events =
-  ParsedOutput haskellSyntax . parsedOutputCons <$> (traverse (uncurry eventReport) . zipWithIndex) events
-  where
-    zipWithIndex = toVectorOf (ifolded . withIndex)
+haskellReport =
+  ParsedOutput haskellSyntax . parsedOutputCons formatReportLine <$$> traverse eventReport

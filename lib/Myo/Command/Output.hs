@@ -3,6 +3,7 @@ module Myo.Command.Output where
 import Chiasma.Data.Ident (Ident)
 import Control.Monad (when)
 import Control.Monad.DeepState (MonadDeepState, setL)
+import GHC.Natural (minusNaturalMaybe)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.SettingError (SettingError)
@@ -13,8 +14,8 @@ import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
 import Myo.Command.History (displayNameByIdent)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute))
 import Myo.Output.Data.OutputError (OutputError(NoEvents))
-import Myo.Output.Data.OutputEvent (EventIndex(EventIndex))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.ParseReport (
@@ -49,11 +50,11 @@ renderParseResult ident output = do
   when (noEventsInReport report) (throwHoist (NoEvents name))
   setL @CommandState CommandState.parseReport (Just (report, syntax))
   jumpFirst <- setting Settings.outputSelectFirst
-  setL @CommandState CommandState.currentEvent (EventIndex (first' jumpFirst))
+  setL @CommandState CommandState.currentEvent (EventIndex.Absolute (first' jumpFirst))
   renderReport report syntax
   navigateToCurrentEvent =<< setting Settings.outputAutoJump
   where
-    first' jumpFirst = if jumpFirst then 0 else length events - 1
+    first' jumpFirst = if jumpFirst then 0 else fromMaybe 0 (minusNaturalMaybe (fromIntegral (length events)) 1)
     (report@(ParseReport events _), syntax) =
       compileReport output
 

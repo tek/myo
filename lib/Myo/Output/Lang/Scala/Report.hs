@@ -1,7 +1,5 @@
 module Myo.Output.Lang.Scala.Report where
 
-import Control.Lens (ifolded, withIndex)
-import Control.Monad (join)
 import Data.Attoparsec.Text (parseOnly)
 import qualified Data.List as List (unwords)
 import qualified Data.Text as Text (splitAt)
@@ -12,13 +10,15 @@ import Text.Parser.Char (CharParsing, char, noneOf)
 import Text.Parser.Combinators (between, choice, many, sepBy1, skipOptional, some, try)
 import Text.Parser.Token (TokenParsing, brackets, parens, whiteSpace)
 
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative)
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 import Myo.Output.Data.String (colMarker, lineNumber)
+import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Output.Lang.Scala.Data.ScalaEvent (EventType, ScalaEvent(ScalaEvent))
 import qualified Myo.Output.Lang.Scala.Data.ScalaEvent as EventType (EventType(..))
 import Myo.Output.Lang.Scala.Syntax (foundMarker, reqMarker, scalaSyntax, separatorMarker)
@@ -107,12 +107,12 @@ formatCode :: Location -> Int -> Text -> Text
 formatCode (Location _ _ col) codeIndent code =
   pre <> colMarker <> post
   where
-    num = fromMaybe 0 ((\ x -> x - codeIndent) <$> col)
+    num = maybe 0 (subtract codeIndent) col
     (pre, post) = Text.splitAt num code
 
-formatReportLine :: Int -> Location -> ScalaMessage -> Vector ReportLine
-formatReportLine index location (ScalaMessage err info codeIndent code) =
-  ReportLine (EventIndex index) <$> Vector.fromList lines'
+formatReportLine :: LangOutputEvent ScalaMessage -> Vector Text
+formatReportLine (LangOutputEvent (OutputEvent (Just location) _) (ScalaMessage err info codeIndent code)) =
+  Vector.fromList lines'
   where
     lines' =
       formatLocation location : err : formattedInfo <> [formattedCode, ""]
@@ -120,29 +120,17 @@ formatReportLine index location (ScalaMessage err info codeIndent code) =
       indent . formatInfo <$> info
     formattedCode =
       indent $ formatCode location codeIndent code
-
-formatEvent :: Location -> Int -> Int -> ScalaMessage -> (OutputEvent, Vector ReportLine)
-formatEvent location level index message =
-  (OutputEvent (Just location) level, formatReportLine index location message)
-
-parsedOutputCons :: Vector ScalaOutputEvent -> Int -> ParseReport
-parsedOutputCons events offset =
-  ParseReport events' (join lines')
-  where
-    (events', lines') = Vector.unzip (cons <$> events)
-    cons ScalaOutputEvent{..} =
-      formatEvent location level (index + offset) message
+formatReportLine _ =
+  mempty
 
 eventLevel :: EventType -> Int
 eventLevel EventType.Warning = 1
 eventLevel EventType.Error = 0
 
-eventReport :: Int -> ScalaEvent -> Either OutputError ScalaOutputEvent
-eventReport index (ScalaEvent loc tpe msg info codeIndent code) =
-  return $ ScalaOutputEvent (eventLevel tpe) index loc (ScalaMessage msg info codeIndent code)
+eventReport :: ScalaEvent -> LangOutputEvent ScalaMessage
+eventReport (ScalaEvent loc tpe msg info codeIndent code) =
+  LangOutputEvent (OutputEvent (Just loc) (eventLevel tpe)) (ScalaMessage msg info codeIndent code)
 
 scalaReport :: Vector ScalaEvent -> Either OutputError ParsedOutput
-scalaReport events =
-  ParsedOutput scalaSyntax . parsedOutputCons <$> (traverse (uncurry eventReport) . zipWithIndex) events
-  where
-    zipWithIndex = toVectorOf (ifolded . withIndex)
+scalaReport =
+  Right . ParsedOutput scalaSyntax . parsedOutputCons formatReportLine . fmap eventReport

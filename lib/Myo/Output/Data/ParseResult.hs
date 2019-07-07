@@ -1,8 +1,4 @@
-
 module Myo.Output.Data.ParseResult where
-
-import Chiasma.Data.Ident (Ident)
-import Data.DeepLenses (deepLenses)
 
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 
@@ -12,4 +8,4 @@ data ParseResult =
     _output :: [ParsedOutput]
   }
 
-deepLenses ''ParseResult
+makeClassy ''ParseResult

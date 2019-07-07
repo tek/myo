@@ -66,8 +66,5 @@ parseScala =
 test_parseScala :: IO ()
 test_parseScala = do
   outputE <- parseScala
-  ParsedOutput _ cons <- assertRight outputE
-  let
-    report = cons 0
-    lines' = ReportLine._text <$> ParseReport._lines report
-  assertEqual target lines'
+  ParsedOutput _ report <- assertRight outputE
+  assertEqual target (ReportLine._text <$> ParseReport._lines report)

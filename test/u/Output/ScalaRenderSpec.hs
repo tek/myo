@@ -20,8 +20,9 @@ import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (EventIndex(EventIndex), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(..))
@@ -36,7 +37,7 @@ events :: Vector OutputEvent
 events =
   Vector.fromList [OutputEvent (Just loc) 0, OutputEvent (Just loc) 1, OutputEvent (Just loc) 1]
 
-reportLines :: Vector ReportLine
+reportLines :: Vector (ReportLine EventIndex.Relative)
 reportLines =
   Vector.fromList [
     ReportLine i0 "/path/to/file.scala \57505 3",
@@ -57,13 +58,13 @@ reportLines =
     ReportLine i2 ""
     ]
     where
-      i0 = EventIndex 0
-      i1 = EventIndex 1
-      i2 = EventIndex 2
+      i0 = EventIndex.Relative 0
+      i1 = EventIndex.Relative 1
+      i2 = EventIndex.Relative 2
 
 parsedOutput :: ParsedOutput
 parsedOutput =
-  ParsedOutput scalaSyntax (const $ ParseReport events reportLines)
+  ParsedOutput scalaSyntax (ParseReport events reportLines)
 
 syntaxTarget :: [Text]
 syntaxTarget = [

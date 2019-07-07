@@ -1,10 +1,8 @@
 module Myo.Output.Data.ReportLine where
 
-import Myo.Output.Data.OutputEvent (EventIndex)
-
-data ReportLine =
+data ReportLine a =
   ReportLine {
-    _event :: EventIndex,
+    _event :: a,
     _text :: Text
   }
   deriving (Eq, Show)

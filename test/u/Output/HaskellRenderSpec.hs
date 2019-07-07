@@ -6,7 +6,7 @@ import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Functor.Syntax ((<$$>))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)
-import qualified Data.Vector as Vector (fromList)
+import qualified Data.Vector as Vector (fromList, zipWith)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
@@ -19,22 +19,24 @@ import Config (outputAutoJump, outputSelectFirst, svar)
 import Myo.Command.Output (renderParseResult)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative)
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
+import Myo.Output.Lang.Report (parsedOutputCons)
 import Unit (tmuxSpec)
 
 loc :: Location
 loc =
   Location "/path/to/File.hs" 10 Nothing
 
-events :: Vector OutputEvent
-events =
-  Vector.fromList $ OutputEvent (Just loc) <$> [0..4]
+event :: OutputEvent
+event =
+  OutputEvent (Just loc) 0
 
 msg0 :: HaskellMessage
 msg0 =
@@ -88,16 +90,12 @@ reportMsgs :: [HaskellMessage]
 reportMsgs =
   [msg0, msg1, msg2, msg3, msg4, msg5, msg6, msg7, msg8, msg9, msg10, msg11]
 
-reportLine :: Int -> HaskellMessage -> Vector ReportLine
-reportLine index =
-  formatReportLine index loc
-
 parsedOutput :: ParsedOutput
 parsedOutput =
-  ParsedOutput haskellSyntax (const $ ParseReport events lines')
+  ParsedOutput haskellSyntax (parsedOutputCons formatReportLine events)
   where
-    lines' =
-      uncurry reportLine =<< Vector.fromList (zip [0..] reportMsgs)
+    events =
+      Vector.fromList $ zipWith LangOutputEvent (repeat event) reportMsgs
 
 target :: [Text]
 target = [

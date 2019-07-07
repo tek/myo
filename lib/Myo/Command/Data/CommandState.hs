@@ -17,7 +17,7 @@ import Myo.Command.Data.CommandLog (CommandLog)
 import Myo.Command.Data.Execution (Execution)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.MonitorEvent (MonitorEvent)
-import Myo.Output.Data.OutputEvent (EventIndex)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute)
 import Myo.Output.Data.OutputHandler (OutputHandler)
 import Myo.Output.Data.ParseReport (ParseReport)
 import Myo.Output.Data.ParseResult (ParseResult)
@@ -32,8 +32,8 @@ data CommandState =
     _logPaths :: LogPaths,
     _logs :: Logs,
     _parseResult :: Maybe ParseResult,
-    _parseReport :: Maybe (ParseReport, [Syntax]),
-    _currentEvent :: EventIndex,
+    _parseReport :: Maybe (ParseReport EventIndex.Absolute, [Syntax]),
+    _currentEvent :: EventIndex.Absolute,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _monitorChan :: Maybe (TMChan MonitorEvent),
     _executing :: Map Ident Execution,

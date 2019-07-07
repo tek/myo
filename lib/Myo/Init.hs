@@ -18,6 +18,7 @@ import System.Log.Logger (Priority(ERROR), setLevel, updateGlobalLogger)
 import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
 import Myo.Command.History (loadHistory)
 import Myo.Command.Parse (addHandler)
+import Myo.Command.Subproc.Runner (addSubprocessRunner)
 import Myo.Data.Env (Env(_instanceIdent, _tempDir), Myo)
 import Myo.Orphans ()
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
@@ -29,6 +30,7 @@ import Myo.Ui.Default (detectDefaultUi)
 
 initialize'' :: Myo ()
 initialize'' = do
+  addSubprocessRunner
   addTmuxRunner
   addHandler (CommandLanguage "haskell") (OutputHandler haskellOutputParser)
   addHandler (CommandLanguage "scala") (OutputHandler scalaOutputParser)
