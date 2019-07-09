@@ -5,7 +5,7 @@ module Command.VimTestSpec (htf_thisModulesTests) where
 import Ribosome.Api.Function (defineFunction)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Unit (fixture, withLog)
+import Ribosome.Test.Unit (fixture)
 import Test.Framework
 
 import Myo.Command.Parse (commandOutputByName)
@@ -33,4 +33,4 @@ vimTestSpec = do
 
 test_vimTest :: IO ()
 test_vimTest =
-  specDef (withLog vimTestSpec)
+  specDef vimTestSpec

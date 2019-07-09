@@ -1,6 +1,5 @@
 module Myo.Output.Data.ParseReport where
 
-import Data.DeepLenses (deepLenses)
 import Data.Vector (Vector)
 import Prelude hiding (lines)
 

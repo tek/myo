@@ -2,9 +2,7 @@
 
 module DiagSpec (htf_thisModulesTests) where
 
-import Control.Monad.IO.Class (liftIO)
 import Ribosome.Api.Buffer (currentBufferContent)
-import Ribosome.Test.Unit (withLog)
 import Test.Framework
 
 import Myo.Data.Env (Myo)
@@ -32,4 +30,4 @@ diagSpec = do
 
 test_diag :: IO ()
 test_diag =
-  specDef (withLog diagSpec)
+  specDef diagSpec

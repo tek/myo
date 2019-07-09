@@ -14,6 +14,7 @@ import Data.Conduit.TMChan (TMChan, newTMChan, sinkTMChan, sourceTMChan)
 import Data.Hourglass (Elapsed(Elapsed), Seconds(Seconds))
 import Network.Socket (Socket)
 import Path (Abs, File, Path, toFilePath)
+import Prelude hiding (state)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Exception (tryAny)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
@@ -23,7 +24,6 @@ import Ribosome.Error.Report (processErrorReport')
 import Ribosome.System.Time (sleep)
 import System.Hourglass (timeCurrent)
 import System.Log (Priority(DEBUG))
-import Prelude hiding (state)
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (executing, monitorChan)
@@ -143,13 +143,14 @@ handleEvent ::
   MonitorEvent ->
   m ()
 handleEvent (CommandOutput ident bytes) =
+  logDebug @Text ("command output: " <> decodeUtf8 (sanitizeOutput bytes)) *>
   appendLog ident (sanitizeOutput bytes)
 handleEvent Tick =
   traverse_ checkExecuting =<< getL @CommandState CommandState.executing
 
-listenerErrorReport :: IOException -> ErrorReport
-listenerErrorReport ex =
-  ErrorReport "command monitor failed" ["exception in output listener:", show ex] DEBUG
+listenerErrorReport :: Socket -> IOException -> ErrorReport
+listenerErrorReport sock ex =
+  ErrorReport "command monitor failed" ["exception in output listener:", show ex, "socket: " <> show sock] DEBUG
 
 listener ::
   MonadRibo m =>
@@ -162,7 +163,7 @@ listener ::
   m ()
 listener cmdIdent sock listenChan = do
   result <- try $ runConduit $ sourceSocket sock .| mapC (CommandOutput cmdIdent) .| sinkTMChan listenChan
-  whenLeft () result (processErrorReport' "monitor" . listenerErrorReport)
+  whenLeft () result (processErrorReport' "monitor" . listenerErrorReport sock)
 
 listen ::
   MonadRibo m =>
