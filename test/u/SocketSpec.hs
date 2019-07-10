@@ -2,7 +2,9 @@
 
 module SocketSpec (htf_thisModulesTests) where
 
+import Chiasma.Command.Pane (sendKeys)
 import Chiasma.Data.Ident (Ident(Str))
+import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Conduit (runConduit, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -15,13 +17,17 @@ import Data.Functor (void)
 import Network.Socket (SockAddr(SockAddrUnix), Socket, connect)
 import Network.Socket.ByteString (sendAll)
 import Path (Abs, File, Path, toFilePath)
+import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 
 import Config (defaultVars)
 import Myo.Command.Log (commandLogPath)
+import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Myo)
+import Myo.Init (initialize'')
 import Myo.Network.Socket (socketBind, unixSocket)
-import Unit (specWithDef)
+import Output.Cat (addCatCommand)
+import Unit (specWithDef, tmuxSpecDef)
 
 watcher ::
   (MonadIO m, MonadBaseControl IO m) =>
@@ -82,3 +88,25 @@ socketSpec = do
 test_socket :: IO ()
 test_socket =
   defaultVars >>= specWithDef socketSpec
+
+monitorSpec :: Myo ()
+monitorSpec = do
+  initialize''
+  ident <- addCatCommand "tmux"
+  myoRun ident
+  send ["line"]
+  sleep 2
+  send ["line", "mine"]
+  send ["line"]
+  send ["line"]
+  send ["line 5", "mine 12"]
+  sleep 1
+  where
+    send =
+      runTmux . sendKeys (PaneId 1)
+
+test_monitor :: IO ()
+test_monitor = do
+  when debug $ tmuxSpecDef (withLog monitorSpec)
+  where
+    debug = False

@@ -11,7 +11,7 @@ import Data.Conduit.List (unfoldM)
 import Data.List.NonEmpty (NonEmpty((:|)))
 import Path (absdir, toFilePath)
 import Path.IO (listDir)
-import Ribosome.Control.Exception (catchAnyAs)
+import Ribosome.Control.Exception (catchAnyAs, tryAny)
 import System.FilePath (FilePath, (</>))
 import Text.Parser.Char (CharParsing, anyChar, noneOf, spaces)
 import Text.Parser.Combinators (many, skipMany)
@@ -41,11 +41,12 @@ ppid ::
   Pid ->
   m (Maybe Pid)
 ppid =
-  parse . bimap err toText <$$> try . readFile . procStatPath
+  parse . bimap err toText <$$> tryAny . readFile . procStatPath
   where
-    err (_ :: SomeException) =
-      "failed to read procstat"
-    parse = rightToMaybe . (>>= parseProcStatPpid)
+    err =
+      const "failed to read procstat"
+    parse =
+      rightToMaybe . (>>= parseProcStatPpid)
 
 ppidsC ::
   MonadIO m =>

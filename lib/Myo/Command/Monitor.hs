@@ -4,7 +4,7 @@ import Chiasma.Data.Ident (Ident, identText)
 import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
-import Control.Exception.Lifted (try)
+import Control.Exception.Lifted (try, throw)
 import qualified Data.ByteString as ByteString (concat)
 import qualified Data.ByteString.Lazy as LB (ByteString, toChunks)
 import qualified Data.ByteString.Search as ByteString (replace)
@@ -16,7 +16,7 @@ import Network.Socket (Socket)
 import Path (Abs, File, Path, toFilePath)
 import Prelude hiding (state)
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Exception (tryAny)
+import Ribosome.Control.Exception (catchAny, tryAny)
 import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Data.SettingError (SettingError)
@@ -61,7 +61,7 @@ checkTracked ident pid = do
   where
     kill = do
       logDebug $ "tracked command `" <> identText ident <> "` has no process anymore"
-      killExecution ident
+      void . tryAny $ killExecution ident
 
 promoteExecution ::
   MonadRibo m =>
@@ -114,7 +114,7 @@ checkExecuting ::
   Execution ->
   m ()
 checkExecuting (Execution ident _ _ (ExecutionMonitor state started _ checkPending)) = do
-  check state
+  catchAny (showDebug "checking execution:") $ check state
   promoteTimedOutExecution ident started state
   where
     check Pending =
