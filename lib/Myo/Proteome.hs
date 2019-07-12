@@ -45,14 +45,17 @@ haskellPanes =
 
 stackCommand :: Text -> Text -> AddSystemCommandOptions
 stackCommand cmd line =
-  AddSystemCommandOptions (Ident.Str ("stack-" <> cmd)) [line] Nothing (Just "make") (Just "haskell") Nothing
+  AddSystemCommandOptions (Ident.Str ("stack-" <> cmd)) lines' Nothing (Just "make") (Just "haskell") Nothing
+  where
+    lines' =
+      ["stack " <> line]
 
 stackBuildCommand :: Text -> Text -> Bool -> AddSystemCommandOptions
 stackBuildCommand cmd pro pedantic =
   stackCommand (cmd <> suf) line
   where
     line =
-      "stack " <> cmd <> " --fast " <> pedanticArg <> pro
+      cmd <> " --fast " <> pedanticArg <> pro
     pedanticArg =
       if pedantic then "--pedantic " else ""
     suf =
