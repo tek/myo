@@ -105,7 +105,11 @@ scalaSystemCommands =
 
 scalaShellCommands :: [AddShellCommandOptions]
 scalaShellCommands =
-  [AddShellCommandOptions "compile" ["test:compile"] Nothing "sbt" (Just "scala") Nothing]
+  [
+    AddShellCommandOptions "compile" ["test:compile"] Nothing "sbt" (Just "scala") Nothing,
+    AddShellCommandOptions "test" ["test"] Nothing "sbt" (Just "scala") Nothing,
+    AddShellCommandOptions "clean" ["clean"] Nothing "sbt" (Just "scala") Nothing
+    ]
 
 scalaConfig ::
   NvimE e m =>
