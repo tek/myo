@@ -17,6 +17,7 @@ import Data.Functor (void)
 import Network.Socket (SockAddr(SockAddrUnix), Socket, connect)
 import Network.Socket.ByteString (sendAll)
 import Path (Abs, File, Path, toFilePath)
+import Prelude hiding (tmuxSpecDef)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 

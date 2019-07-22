@@ -1,6 +1,5 @@
 module Myo.Output.ParseReport where
 
-import Control.Lens (each, mapped, over)
 import qualified Control.Lens as Lens (_1, views)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.Vector ((!?))
@@ -35,7 +34,7 @@ import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal, NoLocation, NotParsed))
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
-import qualified Myo.Output.Data.ParseReport as ParseReport (events, lines)
+import qualified Myo.Output.Data.ParseReport as ParseReport (events)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (ParsedOutput(_syntax))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))

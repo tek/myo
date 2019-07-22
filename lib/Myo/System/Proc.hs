@@ -4,7 +4,6 @@ module Myo.System.Proc where
 
 import Conduit (ConduitT, runConduit, sinkList, (.|))
 import Control.Applicative (Alternative)
-import Control.Exception.Lifted (try)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Attoparsec.Text (parseOnly)
 import Data.Conduit.List (unfoldM)

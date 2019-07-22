@@ -11,6 +11,7 @@ import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
 import Ribosome.Orphans ()
 import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
+import Prelude hiding (tmuxSpecDef)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))

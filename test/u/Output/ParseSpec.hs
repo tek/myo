@@ -5,7 +5,6 @@ module Output.ParseSpec (htf_thisModulesTests) where
 import qualified Data.Vector as Vector (toList)
 import Test.Framework
 
-import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
 import Myo.Command.Log (appendLog, pushCommandLog)
 import Myo.Command.Parse (parseCommand, selectCommand)
 import Myo.Command.Run (myoRun)

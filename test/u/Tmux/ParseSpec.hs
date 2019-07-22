@@ -2,9 +2,9 @@
 
 module Tmux.ParseSpec (htf_thisModulesTests) where
 
-import Chiasma.Data.Ident (Ident(Str))
 import qualified Control.Lens as Lens (element, firstOf)
 import qualified Data.ByteString.Char8 as ByteString (lines)
+import Prelude hiding (tmuxGuiSpecDef)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Window (currentLine)
 import Ribosome.Test.Await (await)

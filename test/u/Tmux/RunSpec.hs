@@ -7,6 +7,7 @@ import Chiasma.Command.Pane (capturePane, copyMode, paneMode)
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Data.Text (Text)
+import Prelude hiding (tmuxSpecDef)
 import Ribosome.Tmux.Run (runTmux)
 import Test.Framework
 

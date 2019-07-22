@@ -1,7 +1,6 @@
 module Output.Cat where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import qualified Data.Text as Text (stripPrefix)
 import qualified Data.Vector as Vector (fromList)
 
 import Myo.Command.Add (myoAddSystemCommand)

@@ -4,6 +4,7 @@ module Tmux.RunShellSpec (htf_thisModulesTests) where
 
 import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Prelude hiding (tmuxSpecDef)
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Test.Await (await)
 import Ribosome.Tmux.Run (runTmux)

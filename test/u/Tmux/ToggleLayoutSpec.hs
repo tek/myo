@@ -6,6 +6,7 @@ import qualified Chiasma.Codec.Data as Codec (Pane)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Chiasma.Monad.Tmux as Tmux (read)
 import Chiasma.Ui.Data.View (Layout, Pane(Pane), View(View), consLayout, consPane)
+import Prelude hiding (tmuxSpecDef)
 import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
 
