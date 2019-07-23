@@ -27,9 +27,9 @@ parseEcho file text =
   Right (ParsedOutput def report)
   where
     report =
-      ParseReport (Vector.fromList events) (Vector.fromList (rline <$> matching))
-    rline =
-      ReportLine (EventIndex.Relative 0)
+      ParseReport (Vector.fromList events) (Vector.fromList (uncurry rline <$> zip matching [0..]))
+    rline text index =
+      ReportLine (EventIndex.Relative index) text
     matching =
       catMaybes $ Text.stripPrefix "echoline " <$> lines text
     events =
