@@ -89,9 +89,8 @@ cycleAndNavigate ::
   MonadDeepError e DecodeError m =>
   Int ->
   m ()
-cycleAndNavigate offset = do
-  changed <- cycleIndex offset
-  when changed (navigateToCurrentEvent True)
+cycleAndNavigate offset =
+  whenM (cycleIndex offset) (navigateToCurrentEvent True)
 
 myoPrev ::
   NvimE e m =>

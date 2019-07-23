@@ -28,8 +28,8 @@ parseEcho file text =
   where
     report =
       ParseReport (Vector.fromList events) (Vector.fromList (uncurry rline <$> zip matching [0..]))
-    rline text index =
-      ReportLine (EventIndex.Relative index) text
+    rline lineText index =
+      ReportLine (EventIndex.Relative index) lineText
     matching =
       catMaybes $ Text.stripPrefix "echoline " <$> lines text
     events =

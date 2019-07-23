@@ -98,7 +98,7 @@ historyMenu execute =
     handler =
       defaultMenu (Map.fromList [("cr", execute)])
     promptConfig =
-      PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer False
+      PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer []
     scratchOptions count =
       scratchSize count $ defaultScratchOptions "myo-history"
 

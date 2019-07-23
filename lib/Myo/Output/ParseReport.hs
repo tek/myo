@@ -1,6 +1,6 @@
 module Myo.Output.ParseReport where
 
-import qualified Control.Lens as Lens (_1, views)
+import Control.Lens (_1, views)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.Vector ((!?))
 import qualified Data.Vector as Vector (findIndex)
@@ -15,6 +15,7 @@ import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Window)
 import Ribosome.Nvim.Api.IO (
+  bufferLineCount,
   nvimBufIsLoaded,
   nvimWinSetBuf,
   vimCommand,
@@ -24,11 +25,11 @@ import Ribosome.Nvim.Api.IO (
   windowIsValid,
   windowSetOption,
   )
-import Ribosome.Scratch (lookupScratch, scratchPreviousWindow, scratchWindow, showInScratch)
+import Ribosome.Scratch (lookupScratch, scratchBuffer, scratchPreviousWindow, scratchWindow, showInScratch)
 
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
-import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute), Relative(Relative))
+import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute, unAbsolute), Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal, NoLocation, NotParsed))
@@ -178,7 +179,7 @@ cycleIndex ::
   m Bool
 cycleIndex offset = do
   (EventIndex.Absolute current) <- currentEvent
-  total <- currentReport (fromIntegral . Lens.views (Lens._1 . ParseReport.events) length)
+  total <- currentReport (fromIntegral . views (_1 . ParseReport.events) length)
   let new = fromIntegral $ (fromIntegral current + offset) `mod` total
   setL @CommandState CommandState.currentEvent (EventIndex.Absolute new)
   return (new /= current)
@@ -203,6 +204,13 @@ outputWindow ::
   m Window
 outputWindow =
   scratchErrorMaybe =<< scratchWindow scratchName
+
+outputBuffer ::
+  MonadDeepError e OutputError m =>
+  MonadRibo m =>
+  m Buffer
+outputBuffer =
+  scratchErrorMaybe =<< scratchBuffer scratchName
 
 mappings :: [Mapping]
 mappings =
@@ -272,11 +280,19 @@ navigateToEvent jump eventIndex = do
   report <- currentReport fst
   window <- outputWindow
   mainWindow <- outputMainWindow
+  buffer <- outputBuffer
+  totalLines <- bufferLineCount buffer
   line <- hoistMaybe indexErr $ lineNumberByEventIndex report eventIndex
+  when (isLastEvent report) (setLine window (totalLines - 1))
   setLine window line
   when jump (selectEventByIndexFromReport report eventIndex mainWindow window)
   where
-    indexErr = OutputError.Internal $ "invalid event index " <> show eventIndex
+    indexErr =
+      OutputError.Internal $ "invalid event index " <> show eventIndex
+    isLastEvent report =
+      fromIntegral (EventIndex.unAbsolute eventIndex) == eventCount report - 1
+    eventCount =
+      views ParseReport.events length
 
 navigateToCurrentEvent ::
   NvimE e m =>
