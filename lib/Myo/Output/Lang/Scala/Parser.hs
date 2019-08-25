@@ -34,7 +34,7 @@ eventTag ::
   TokenParsing m =>
   m EventType
 eventTag =
-  brackets eventType <* ws
+  ws *> brackets eventType <* ws
 
 locationLine ::
   Monad m =>
@@ -63,8 +63,8 @@ codeLine ::
   TokenParsing m =>
   m (Int, Text)
 codeLine = do
-  w <- char '[' *> eventType *> char ']' *> many (satisfy isSpace)
-  t <- (toText <$> tillEol)
+  w <- ws *> char '[' *> eventType *> char ']' *> many (satisfy isSpace)
+  t <- toText <$> tillEol
   return (length w - 1, t)
 
 colMarkerLine ::
