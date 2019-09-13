@@ -11,11 +11,12 @@ import Ribosome.Test.Ui (windowCountIs)
 import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Command.Output (renderParseResult)
+import Myo.Command.Output (compileAndRenderReport)
+import Myo.Command.Parse (storeParseResult)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
@@ -27,9 +28,9 @@ loc :: Location
 loc =
   Location "/path/to/File.hs" 10 Nothing
 
-events :: Vector OutputEvent
+events :: Vector OutputEventMeta
 events =
-  Vector.fromList [OutputEvent (Just loc) 0, OutputEvent (Just loc) 1]
+  Vector.fromList [OutputEventMeta (Just loc) 0, OutputEventMeta (Just loc) 1]
 
 messages :: Vector HaskellMessage
 messages =
@@ -42,7 +43,8 @@ parsedOutput =
 outputQuitSpec :: Myo ()
 outputQuitSpec = do
   initialize''
-  renderParseResult (Ident.Str "test") [parsedOutput]
+  storeParseResult (Ident.Str "test") [parsedOutput]
+  compileAndRenderReport
   windowCountIs 2
   executeMapping mappingOutputQuit
   windowCountIs 1

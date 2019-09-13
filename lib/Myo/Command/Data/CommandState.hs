@@ -18,12 +18,24 @@ import Myo.Command.Data.Execution (Execution)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.MonitorEvent (MonitorEvent)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute)
+import Myo.Output.Data.OutputEvents (OutputEvents)
 import Myo.Output.Data.OutputHandler (OutputHandler)
 import Myo.Output.Data.ParseReport (ParseReport)
-import Myo.Output.Data.ParseResult (ParseResult)
 
 type LogPaths = Map Ident (Path Abs File)
 type Logs = Map Ident CommandLog
+
+data OutputState =
+  OutputState {
+    _command :: Ident,
+    _syntax :: [Syntax],
+    _events :: OutputEvents,
+    _currentEvent :: EventIndex.Absolute,
+    _report :: Maybe ParseReport
+  }
+  deriving (Eq, Show)
+
+deepLenses ''OutputState
 
 data CommandState =
   CommandState {
@@ -31,9 +43,7 @@ data CommandState =
     _history :: [HistoryEntry],
     _logPaths :: LogPaths,
     _logs :: Logs,
-    _parseResult :: Maybe ParseResult,
-    _parseReport :: Maybe (ParseReport EventIndex.Absolute, [Syntax]),
-    _currentEvent :: EventIndex.Absolute,
+    _output :: Maybe OutputState,
     _outputHandlers :: Map CommandLanguage [OutputHandler],
     _monitorChan :: Maybe (TMChan MonitorEvent),
     _executing :: Map Ident Execution,
@@ -44,5 +54,5 @@ data CommandState =
 deepLenses ''CommandState
 
 instance Text.Show.Show CommandState where
-  show (CommandState cmds hist lps lgs _ prprt ce han _ _ _) =
-    "CommandState" ++ show (cmds, hist, lps, lgs, prprt, ce, han)
+  show (CommandState cmds hist lps lgs out han _ _ _) =
+    "CommandState" ++ show (cmds, hist, lps, lgs, out, han)

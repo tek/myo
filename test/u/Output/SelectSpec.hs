@@ -14,40 +14,42 @@ import System.FilePath ((</>))
 import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (parseResult)
-import Myo.Command.Output (renderParseResult)
+import Myo.Command.Data.CommandState (CommandState, OutputState(OutputState))
+import qualified Myo.Command.Data.CommandState as CommandState (output)
+import Myo.Command.Output (compileAndRenderReport)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
-import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Output.Data.OutputEvent (
+  LangOutputEvent(LangOutputEvent),
+  OutputEventMeta(OutputEventMeta),
+  )
+import Myo.Output.Data.OutputEvents (OutputEvents)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Plugin (mappingOutputSelect)
 import Unit (tmuxSpec)
 
-events :: Text -> Vector OutputEvent
+events :: Text -> Vector OutputEventMeta
 events file =
-  Vector.fromList [OutputEvent (Just (Location file 9 (Just 2))) 0, OutputEvent Nothing 1]
+  Vector.fromList [OutputEventMeta (Just (Location file 9 (Just 2))) 0, OutputEventMeta Nothing 1]
 
 messages :: Vector HaskellMessage
 messages =
   Vector.fromList [FoundReq1 "TypeA" "TypeB", NoMethod "fmap"]
 
-parsedOutput :: Text -> ParsedOutput
+parsedOutput :: Text -> OutputEvents
 parsedOutput file =
-  ParsedOutput haskellSyntax (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages))
+  parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages)
 
 outputSelectSpec :: Myo ()
 outputSelectSpec = do
   file <- fixture $ "output" </> "select" </> "File.hs"
-  let po = [parsedOutput (toText file)]
+  let po = parsedOutput (toText file)
   initialize''
-  setL @CommandState CommandState.parseResult (Just (ParseResult (Ident.Str "test") po))
-  renderParseResult (Ident.Str "test") po
+  setL @CommandState CommandState.output (Just (OutputState (Ident.Str "test") [haskellSyntax] po def Nothing))
+  compileAndRenderReport
   windowCountIs 2
   executeMapping mappingOutputSelect
   (line, col) <- currentCursor

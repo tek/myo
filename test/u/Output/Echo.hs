@@ -2,7 +2,7 @@ module Output.Echo where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Data.Text as Text (stripPrefix)
-import qualified Data.Vector as Vector (fromList)
+import qualified Data.Vector as Vector (fromList, singleton)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
@@ -12,10 +12,10 @@ import Myo.Data.Env (Myo)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
-import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 
@@ -24,18 +24,18 @@ lang = CommandLanguage "echo"
 
 parseEcho :: Text -> Text -> Either OutputError ParsedOutput
 parseEcho file text =
-  Right (ParsedOutput def report)
+  Right (ParsedOutput def events)
   where
-    report =
-      ParseReport (Vector.fromList events) (Vector.fromList (uncurry rline <$> zip matching [0..]))
-    rline lineText index =
-      ReportLine (EventIndex.Relative index) lineText
+    events =
+      OutputEvents (Vector.fromList (uncurry event <$> zip matching [0..]))
     matching =
       catMaybes $ Text.stripPrefix "echoline " <$> lines text
-    events =
-      event <$ matching
-    event =
-      OutputEvent (Just (Location file 0 Nothing)) 0
+    event lineText index =
+      OutputEvent eventMeta (Vector.singleton (rline lineText index))
+    rline lineText index =
+      ReportLine (EventIndex.Relative index) lineText
+    eventMeta =
+      OutputEventMeta (Just (Location file 0 Nothing)) 0
 
 addEchoHandler :: FilePath -> Myo ()
 addEchoHandler file =

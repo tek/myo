@@ -1,7 +1,7 @@
 module Output.Cat where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import qualified Data.Vector as Vector (fromList)
+import qualified Data.Vector as Vector (fromList, singleton)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
@@ -11,10 +11,10 @@ import Myo.Data.Env (Myo)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
 import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
 import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
-import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 
@@ -23,16 +23,16 @@ lang = CommandLanguage "echo"
 
 parseCat :: Text -> Text -> Either OutputError ParsedOutput
 parseCat file text =
-  Right (ParsedOutput def report)
+  Right (ParsedOutput def events)
   where
-    report =
-      ParseReport (Vector.fromList events) (Vector.fromList (rline <$> lines text))
+    events =
+      OutputEvents (Vector.fromList (event <$> (rline <$> lines text)))
+    event l =
+      OutputEvent eventMeta (Vector.singleton l)
     rline =
       ReportLine (EventIndex.Relative 0)
-    events =
-      event <$ lines text
-    event =
-      OutputEvent (Just (Location file 0 Nothing)) 0
+    eventMeta =
+      OutputEventMeta (Just (Location file 0 Nothing)) 0
 
 addCatHandler :: FilePath -> Myo ()
 addCatHandler file =

@@ -7,7 +7,7 @@ import Data.Functor (void)
 import Data.Functor.Syntax ((<$$>))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)
-import qualified Data.Vector as Vector (fromList)
+import qualified Data.Vector as Vector (fromList, zipWith)
 import Prelude hiding (tmuxSpec)
 import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Control.Monad.Ribo (NvimE)
@@ -18,13 +18,14 @@ import Ribosome.Test.Screenshot (assertScreenshot)
 import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Command.Output (renderParseResult)
+import Myo.Command.Output (compileAndRenderReport)
+import Myo.Command.Parse (storeParseResult)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
-import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(..))
 import Myo.Output.Lang.Scala.Syntax (scalaSyntax)
@@ -34,38 +35,58 @@ loc :: Location
 loc =
   Location "/path/to/file.scala" 10 Nothing
 
-events :: Vector OutputEvent
-events =
-  Vector.fromList [OutputEvent (Just loc) 0, OutputEvent (Just loc) 1, OutputEvent (Just loc) 1]
+eventMetas :: Vector OutputEventMeta
+eventMetas =
+  Vector.fromList [
+    OutputEventMeta (Just loc) 0,
+    OutputEventMeta (Just loc) 0,
+    OutputEventMeta (Just loc) 0,
+    OutputEventMeta (Just loc) 1
+    ]
 
-reportLines :: Vector (ReportLine EventIndex.Relative)
+reportLines :: Vector (Vector (ReportLine EventIndex.Relative))
 reportLines =
   Vector.fromList [
-    ReportLine i0 "/path/to/file.scala \57505 3",
-    ReportLine i0 "expected class or object definition",
-    ReportLine i0 "  \8224name",
-    ReportLine i0 "",
-    ReportLine i1 "/path/to/other_file.scala \57505 7",
-    ReportLine i1 "terrible mistake",
-    ReportLine i1 "  !I param: Type",
-    ReportLine i1 "  Foo.bar invalid because",
-    ReportLine i1 "  !I param2: Class",
-    ReportLine i1 "  \8224implicitly[Class]",
-    ReportLine i1 "",
-    ReportLine i2 "/path/to/third_file.scala \57505 3",
-    ReportLine i2 "type mismatch",
-    ReportLine i2 "  Type[+Int <| List[String]-]",
-    ReportLine i2 "  func(\8224param)",
-    ReportLine i2 ""
+    Vector.fromList [
+      ReportLine i0 "/path/to/file.scala \57505 3",
+      ReportLine i0 "expected class or object definition",
+      ReportLine i0 "  \8224name",
+      ReportLine i0 ""
+      ],
+    Vector.fromList [
+      ReportLine i1 "/path/to/other_file.scala \57505 7",
+      ReportLine i1 "terrible mistake",
+      ReportLine i1 "  !I param: Type",
+      ReportLine i1 "  Foo.bar invalid because",
+      ReportLine i1 "  !I param2: Class",
+      ReportLine i1 "  \8224implicitly[Class]",
+      ReportLine i1 ""
+      ],
+    Vector.fromList [
+      ReportLine i2 "/path/to/third_file.scala \57505 3",
+      ReportLine i2 "type mismatch",
+      ReportLine i2 "  Type[+Int <| List[String]-]",
+      ReportLine i2 "  func(\8224param)",
+      ReportLine i2 ""
+      ],
+    Vector.fromList [
+      ReportLine i3 "/path/to/warning.scala \57505 3",
+      ReportLine i3 "unused import"
+      ]
     ]
     where
       i0 = EventIndex.Relative 0
       i1 = EventIndex.Relative 1
       i2 = EventIndex.Relative 2
+      i3 = EventIndex.Relative 3
+
+events :: OutputEvents
+events =
+  OutputEvents (Vector.zipWith OutputEvent eventMetas reportLines)
 
 parsedOutput :: ParsedOutput
 parsedOutput =
-  ParsedOutput scalaSyntax (ParseReport events reportLines)
+  ParsedOutput scalaSyntax events
 
 syntaxTarget :: [Text]
 syntaxTarget = [
@@ -126,7 +147,8 @@ scalaRenderSpec :: Myo ()
 scalaRenderSpec = do
   initialize''
   setupHighlights
-  renderParseResult (Ident.Str "test") [parsedOutput]
+  storeParseResult (Ident.Str "test") [parsedOutput]
+  compileAndRenderReport
   vimCommand "wincmd w"
   syntax <- myoSyntax
   gassertEqual syntaxTarget syntax

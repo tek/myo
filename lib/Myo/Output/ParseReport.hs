@@ -1,9 +1,11 @@
 module Myo.Output.ParseReport where
 
-import Control.Lens (_1, views)
+import Control.Lens (Lens', _Just, ifolded, over, set, view, views, withIndex)
 import Control.Monad.DeepError (hoistMaybe)
-import Data.Vector ((!?))
-import qualified Data.Vector as Vector (findIndex)
+import Data.MonoTraversable (minimumByMay)
+import Data.Vector (Vector, (!?))
+import qualified Data.Vector as Vector (filter, findIndex, unzip)
+import Data.Vector.Lens (toVectorOf)
 import Ribosome.Api.Buffer (bufferForFile, edit)
 import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
@@ -27,17 +29,19 @@ import Ribosome.Nvim.Api.IO (
   )
 import Ribosome.Scratch (lookupScratch, scratchBuffer, scratchPreviousWindow, scratchWindow, showInScratch)
 
-import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
-import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute, unAbsolute), Relative(Relative))
+import Myo.Command.Data.CommandState (CommandState, OutputState)
+import qualified Myo.Command.Data.CommandState as CommandState (output)
+import qualified Myo.Command.Data.CommandState as OutputState (command, currentEvent, events, report, syntax)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute, unAbsolute))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal, NoLocation, NotParsed))
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
+import qualified Myo.Output.Data.OutputEvent as OutputEvent (meta)
+import qualified Myo.Output.Data.OutputEvent as OutputEventMeta (level)
+import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import qualified Myo.Output.Data.ParseReport as ParseReport (events)
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (ParsedOutput(_syntax))
 import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 
 scratchName :: Text
@@ -45,22 +49,22 @@ scratchName =
   "myo-report"
 
 eventByIndex ::
-  ParseReport EventIndex.Absolute ->
+  ParseReport ->
   EventIndex.Absolute ->
-  Maybe OutputEvent
+  Maybe OutputEventMeta
 eventByIndex (ParseReport events _) (EventIndex.Absolute eventIndex) =
   events !? fromIntegral eventIndex
 
 eventByLine ::
-  ParseReport EventIndex.Absolute ->
+  ParseReport ->
   Int ->
-  Maybe OutputEvent
+  Maybe OutputEventMeta
 eventByLine report@(ParseReport _ lines') line = do
   (ReportLine eventIndex _) <- lines' !? line
   eventByIndex report eventIndex
 
 lineNumberByEventIndex ::
-  ParseReport EventIndex.Absolute ->
+  ParseReport ->
   EventIndex.Absolute ->
   Maybe Int
 lineNumberByEventIndex (ParseReport _ lines') eventIndex =
@@ -101,9 +105,9 @@ selectEvent ::
   NvimE e m =>
   Window ->
   Window ->
-  OutputEvent ->
+  OutputEventMeta ->
   m ()
-selectEvent mainWindow outputWindow' (OutputEvent (Just (Location path line col)) _) = do
+selectEvent mainWindow outputWindow' (OutputEventMeta (Just (Location path line col)) _) = do
   previousExists <- windowIsValid mainWindow
   window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
@@ -124,7 +128,7 @@ selectMaybeEvent ::
   NvimE e m =>
   Window ->
   Window ->
-  Maybe OutputEvent ->
+  Maybe OutputEventMeta ->
   m ()
 selectMaybeEvent mainWindow outputWindow' =
   maybe err (selectEvent mainWindow outputWindow')
@@ -137,7 +141,7 @@ selectEventByIndexFromReport ::
   MonadRibo m =>
   MonadIO m =>
   NvimE e m =>
-  ParseReport EventIndex.Absolute ->
+  ParseReport ->
   EventIndex.Absolute ->
   Window ->
   Window ->
@@ -151,26 +155,69 @@ selectCurrentLineEventFrom ::
   MonadRibo m =>
   MonadIO m =>
   NvimE e m =>
-  ParseReport EventIndex.Absolute ->
+  ParseReport ->
   Window ->
   Window ->
   m ()
 selectCurrentLineEventFrom report outputWindow' mainWindow =
   selectMaybeEvent mainWindow outputWindow' =<< eventByLine report <$> windowLine outputWindow'
 
+currentOutput ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  m OutputState
+currentOutput =
+  hoistMaybe OutputError.NotParsed =<< getL @CommandState CommandState.output
+
+currentOutputCommand ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  m Ident
+currentOutputCommand =
+  view OutputState.command <$> currentOutput
+
+currentEvents ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  m OutputEvents
+currentEvents =
+  view OutputState.events <$> currentOutput
+
+currentSyntax ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
+  m [Syntax]
+currentSyntax =
+  view OutputState.syntax <$> currentOutput
+
 currentReport ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
-  ((ParseReport EventIndex.Absolute, [Syntax]) -> a) ->
-  m a
-currentReport f =
-  f <$> (hoistMaybe OutputError.NotParsed =<< getL @CommandState CommandState.parseReport)
+  m ParseReport
+currentReport =
+  hoistMaybe OutputError.NotParsed =<< view OutputState.report <$> currentOutput
 
 currentEvent ::
   MonadDeepState s CommandState m =>
+  MonadDeepError e OutputError m =>
   m EventIndex.Absolute
 currentEvent =
-  getL @CommandState CommandState.currentEvent
+  view OutputState.currentEvent <$> currentOutput
+
+modifyOutput ::
+  MonadDeepState s CommandState m =>
+  (OutputState -> OutputState) ->
+  m ()
+modifyOutput f =
+  modifyL @CommandState CommandState.output (over _Just f)
+
+setOutput ::
+  MonadDeepState s CommandState m =>
+  Lens' OutputState a ->
+  a ->
+  m ()
+setOutput lens a =
+  modifyL @CommandState CommandState.output (set (_Just . lens) a)
 
 cycleIndex ::
   MonadDeepState s CommandState m =>
@@ -179,9 +226,9 @@ cycleIndex ::
   m Bool
 cycleIndex offset = do
   (EventIndex.Absolute current) <- currentEvent
-  total <- currentReport (fromIntegral . views (_1 . ParseReport.events) length)
+  total <- fromIntegral . views ParseReport.events length <$> currentReport
   let new = fromIntegral $ (fromIntegral current + offset) `mod` total
-  setL @CommandState CommandState.currentEvent (EventIndex.Absolute new)
+  modifyL @CommandState CommandState.output (set (_Just . OutputState.currentEvent) (EventIndex.Absolute new))
   return (new /= current)
 
 scratchErrorMaybe ::
@@ -226,7 +273,7 @@ renderReport ::
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
-  ParseReport EventIndex.Absolute ->
+  ParseReport ->
   [Syntax] ->
   m ()
 renderReport (ParseReport _ lines') syntax = do
@@ -249,8 +296,10 @@ renderCurrentReport ::
   MonadDeepError e SettingError m =>
   MonadDeepError e OutputError m =>
   m ()
-renderCurrentReport =
-  uncurry renderReport =<< currentReport id
+renderCurrentReport = do
+  report <- currentReport
+  syntax <- currentSyntax
+  renderReport report syntax
 
 ensureReportScratch ::
   NvimE e m =>
@@ -277,7 +326,7 @@ navigateToEvent ::
   m ()
 navigateToEvent jump eventIndex = do
   ensureReportScratch
-  report <- currentReport fst
+  report <- currentReport
   window <- outputWindow
   mainWindow <- outputMainWindow
   buffer <- outputBuffer
@@ -307,14 +356,34 @@ navigateToCurrentEvent ::
 navigateToCurrentEvent jump =
   navigateToEvent jump =<< currentEvent
 
-compileReport :: [ParsedOutput] -> (ParseReport EventIndex.Absolute, [Syntax])
-compileReport output =
-  (mconcat reports, syntax)
+levelLens :: Lens' OutputEvent Int
+levelLens =
+  OutputEvent.meta . OutputEventMeta.level
+
+compareEventFilterLevel :: OutputEvent -> OutputEvent -> Ordering
+compareEventFilterLevel e1 e2 =
+  compare (view levelLens e1) (view levelLens e2)
+
+filterEventLevel :: Int -> Vector OutputEvent -> Vector OutputEvent
+filterEventLevel maxLevel events =
+  Vector.filter levelHigher events
   where
-    syntax = ParsedOutput._syntax <$> output
-    (_, reports) = mapAccumL format 0 output
-    format offset (ParsedOutput _ (ParseReport events lines')) =
-      (offset + fromIntegral (length events), ParseReport events (makeAbsolute <$> lines'))
-      where
-        makeAbsolute (ReportLine (EventIndex.Relative index) text) =
-          ReportLine (EventIndex.Absolute (offset +index)) text
+    levelHigher event =
+      view levelLens event <= effectiveMaxLevel
+    effectiveMaxLevel =
+      max maxLevel (fromMaybe 0 lowestEventLevel)
+    lowestEventLevel =
+      view levelLens <$> minimumByMay compareEventFilterLevel events
+
+compileReport :: Int -> OutputEvents -> ParseReport
+compileReport maxLevel (OutputEvents events) =
+  process events
+  where
+    process =
+      uncurry ParseReport . second join . Vector.unzip . fmap reindexEvent . zipWithIndex . filterEventLevel maxLevel
+    reindexEvent (index, OutputEvent meta lines') =
+      (meta, makeAbsolute index <$> lines')
+    makeAbsolute index (ReportLine _ text) =
+      ReportLine (EventIndex.Absolute (fromIntegral index)) text
+    zipWithIndex =
+      toVectorOf (ifolded . withIndex)

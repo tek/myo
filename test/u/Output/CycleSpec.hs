@@ -13,17 +13,14 @@ import Ribosome.Test.Unit (fixture)
 import System.FilePath ((</>))
 import Test.Framework
 
-import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (parseResult)
-import Myo.Command.Output (myoNext, myoPrev, renderParseResult)
+import Myo.Command.Output (compileAndRenderReport, myoNext, myoPrev)
+import Myo.Command.Parse (storeParseResult)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
-import Myo.Output.Data.ParseResult (ParseResult(ParseResult))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
-import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Output.ParseReport (outputWindow)
 import qualified Myo.Settings as Settings (outputSelectFirst)
@@ -36,9 +33,9 @@ loc2 :: Text -> Maybe Location
 loc2 file =
   Just $ Location file 3 (Just 4)
 
-events :: Text -> Vector OutputEvent
+events :: Text -> Vector OutputEventMeta
 events file =
-  Vector.fromList [OutputEvent (loc1 file) 0, OutputEvent (loc2 file) 1]
+  Vector.fromList [OutputEventMeta (loc1 file) 0, OutputEventMeta (loc2 file) 0]
 
 messages :: Vector HaskellMessage
 messages =
@@ -46,15 +43,15 @@ messages =
 
 parsedOutput :: Text -> ParsedOutput
 parsedOutput file =
-  ParsedOutput haskellSyntax (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages))
+  ParsedOutput def (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages))
 
 cycleSpecRender :: Myo Window
 cycleSpecRender = do
   file <- fixture $ "output" </> "select" </> "File.hs"
   let po = [parsedOutput (toText file)]
   initialize''
-  setL @CommandState CommandState.parseResult (Just (ParseResult (Ident.Str "test") po))
-  renderParseResult (Ident.Str "test") po
+  storeParseResult (Ident.Str "test") po
+  compileAndRenderReport
   windowCountIs 2
   outputWindow
 

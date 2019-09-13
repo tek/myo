@@ -16,6 +16,7 @@ import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
+import Myo.Output.ParseReport (compileReport)
 
 haskellOutput :: Text
 haskellOutput =
@@ -160,6 +161,11 @@ haskellOutput =
     "  undefined, called at /path/to/File.hs:36:34 in package:File",
     "user error (test exceeded timeout of 10 seconds)",
     "",
+    "Prelude.undefined",
+    "CallStack:",
+    "  error, called at libraries/base/GHC/Err.hs:79:14 in base:GHC.Err",
+    "  undefined, called at /path/to/File.hs:36:34 in package:File",
+    "",
     "/path/to/File.hs:(36,1)-(114,43): Non-exhaustive patterns in function wrong",
     "",
     "/path/to/File.hs:36:1: error:",
@@ -254,6 +260,10 @@ target = Vector.fromList [
   "Prelude.undefined",
   "",
   "/path/to/File.hs \57505 36",
+  "runtime error",
+  "Prelude.undefined",
+  "",
+  "/path/to/File.hs \57505 36",
   "non-exhaustive patterns",
   "wrong",
   "",
@@ -270,8 +280,8 @@ parseHaskell =
 test_parseHaskellErrors :: IO ()
 test_parseHaskellErrors = do
   outputE <- parseHaskell
-  ParsedOutput _ report <- assertRight outputE
-  assertEqual target (ReportLine._text <$> ParseReport._lines report)
+  ParsedOutput _ events <- assertRight outputE
+  assertEqual target (ReportLine._text <$> ParseReport._lines ((compileReport 1 events)))
 
 parseHaskellGarbage :: IO (Either OutputError ParsedOutput)
 parseHaskellGarbage = do
@@ -295,5 +305,5 @@ garbageTarget =
 test_parseGarbage :: IO ()
 test_parseGarbage = do
   outputE <- parseHaskellGarbage
-  ParsedOutput _ report <- assertRight outputE
-  assertEqual garbageTarget (ReportLine._text <$> ParseReport._lines report)
+  ParsedOutput _ events <- assertRight outputE
+  assertEqual garbageTarget (ReportLine._text <$> ParseReport._lines (compileReport 0 events))

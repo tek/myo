@@ -151,7 +151,7 @@ runtimeEvent =
     cons m l =
       HaskellEvent l EventType.RuntimeError (m :| [])
     msg =
-      assertionLine *> anyTillChar ':' *> ws *> tillEol
+      skipOptional (assertionLine *> anyTillChar ':') *> ws *> tillEol
     loc =
       NonEmpty.last <$> frames
     frames =

@@ -11,7 +11,7 @@ import Text.Parser.Token (TokenParsing, brackets, parens, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.String (colMarker, lineNumber)
 import Myo.Output.Lang.Report (parsedOutputCons)
@@ -107,7 +107,7 @@ formatCode (Location _ _ col) codeIndent code =
     (pre, post) = Text.splitAt num code
 
 formatReportLine :: LangOutputEvent ScalaMessage -> Vector Text
-formatReportLine (LangOutputEvent (OutputEvent (Just location) _) (ScalaMessage err info codeIndent code)) =
+formatReportLine (LangOutputEvent (OutputEventMeta (Just location) _) (ScalaMessage err info codeIndent code)) =
   Vector.fromList lines'
   where
     lines' =
@@ -125,7 +125,7 @@ eventLevel EventType.Error = 0
 
 eventReport :: ScalaEvent -> LangOutputEvent ScalaMessage
 eventReport (ScalaEvent loc tpe msg info codeIndent code) =
-  LangOutputEvent (OutputEvent (Just loc) (eventLevel tpe)) (ScalaMessage msg info codeIndent code)
+  LangOutputEvent (OutputEventMeta (Just loc) (eventLevel tpe)) (ScalaMessage msg info codeIndent code)
 
 scalaReport :: Vector ScalaEvent -> Either OutputError ParsedOutput
 scalaReport =

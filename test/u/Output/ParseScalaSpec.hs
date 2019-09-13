@@ -17,6 +17,7 @@ import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Data.String (colMarker)
 import Myo.Output.Lang.Scala.Parser hiding (parseScala)
 import Myo.Output.Lang.Scala.Syntax (foundMarker, reqMarker, separatorMarker)
+import Myo.Output.ParseReport (compileReport)
 
 scalaOutput :: Text
 scalaOutput =
@@ -66,5 +67,5 @@ parseScala =
 test_parseScala :: IO ()
 test_parseScala = do
   outputE <- parseScala
-  ParsedOutput _ report <- assertRight outputE
-  assertEqual target (ReportLine._text <$> ParseReport._lines report)
+  ParsedOutput _ events <- assertRight outputE
+  assertEqual target (ReportLine._text <$> ParseReport._lines (compileReport 0 events))

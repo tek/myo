@@ -38,6 +38,7 @@ dependencies:
 - lifted-base
 - messagepack
 - monad-control
+- mono-traversable
 - mtl
 - network
 - nvim-hs

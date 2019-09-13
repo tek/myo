@@ -2,6 +2,7 @@
 
 module Output.ParseSpec (htf_thisModulesTests) where
 
+import Control.Lens (view)
 import qualified Data.Vector as Vector (toList)
 import Test.Framework
 
@@ -11,6 +12,7 @@ import Myo.Command.Run (myoRun)
 import Myo.Command.Subproc.Runner (addSubprocessRunner)
 import Myo.Data.Env (Myo)
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
+import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (events)
 import Myo.Output.ParseReport (compileReport)
 import Output.Echo (addEchoCommand, addEchoHandler)
 import Unit (specDef)
@@ -28,7 +30,8 @@ parsePreviousSpec = do
   cmd <- selectCommand (Just ident)
   pushCommandLog ident
   appendLog ident "unparsable"
-  ParseReport events _ <- fst . compileReport <$> parseCommand cmd
+  outputEvents <- view ParsedOutput.events <$$> parseCommand cmd
+  let ParseReport events _ = compileReport 0 (fold outputEvents)
   gassertNotEmpty (Vector.toList events)
 
 test_parsePrevious :: IO ()

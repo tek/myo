@@ -12,7 +12,7 @@ import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.String (lineNumber)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
@@ -326,7 +326,7 @@ formatLocation (Location path line _) =
   unwords [toText path, lineNumber, show (line + 1)]
 
 formatReportLine :: LangOutputEvent HaskellMessage -> Vector Text
-formatReportLine (LangOutputEvent (OutputEvent (Just location) _) message) =
+formatReportLine (LangOutputEvent (OutputEventMeta (Just location) _) message) =
   Vector.fromList (formatLocation location : formatMessage message <> [""])
 formatReportLine _ =
   mempty
@@ -350,7 +350,7 @@ eventReport (HaskellEvent loc tpe (messageText :| _)) =
     outputError =
       OutputError.Parse . toText
     event =
-      LangOutputEvent (OutputEvent (Just loc) (eventLevel tpe))
+      LangOutputEvent (OutputEventMeta (Just loc) (eventLevel tpe))
 
 haskellReport :: Vector HaskellEvent -> Either OutputError ParsedOutput
 haskellReport =

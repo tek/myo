@@ -1,8 +1,7 @@
 module Myo.Command.Output where
 
-import Chiasma.Data.Ident (Ident)
 import Control.Monad (when)
-import Control.Monad.DeepState (MonadDeepState, setL)
+import Control.Monad.DeepState (MonadDeepState)
 import GHC.Natural (minusNaturalMaybe)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
@@ -12,15 +11,17 @@ import Ribosome.Scratch (killScratchByName)
 
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (currentEvent, parseReport)
+import qualified Myo.Command.Data.CommandState as OutputState (currentEvent, report)
 import Myo.Command.History (displayNameByIdent)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute))
 import Myo.Output.Data.OutputError (OutputError(NoEvents))
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport), noEventsInReport)
-import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.ParseReport (
   compileReport,
+  currentEvents,
+  currentOutputCommand,
   currentReport,
+  currentSyntax,
   cycleIndex,
   navigateToCurrentEvent,
   outputMainWindow,
@@ -28,13 +29,12 @@ import Myo.Output.ParseReport (
   renderReport,
   scratchName,
   selectCurrentLineEventFrom,
+  setOutput,
   )
 import qualified Myo.Settings as Settings (outputAutoJump, outputSelectFirst)
 
-renderParseResult ::
+initialRenderReport ::
   NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
@@ -42,21 +42,34 @@ renderParseResult ::
   MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
-  Ident ->
-  [ParsedOutput] ->
+  ParseReport ->
   m ()
-renderParseResult ident output = do
-  name <- displayNameByIdent ident
-  when (noEventsInReport report) (throwHoist (NoEvents name))
-  setL @CommandState CommandState.parseReport (Just (report, syntax))
+initialRenderReport report@(ParseReport events _) = do
   jumpFirst <- setting Settings.outputSelectFirst
-  setL @CommandState CommandState.currentEvent (EventIndex.Absolute (first' jumpFirst))
+  setOutput OutputState.currentEvent (EventIndex.Absolute (first' jumpFirst))
+  syntax <- currentSyntax
   renderReport report syntax
   navigateToCurrentEvent =<< setting Settings.outputAutoJump
   where
-    first' jumpFirst = if jumpFirst then 0 else fromMaybe 0 (minusNaturalMaybe (fromIntegral (length events)) 1)
-    (report@(ParseReport events _), syntax) =
-      compileReport output
+    first' jumpFirst =
+      if jumpFirst then 0 else fromMaybe 0 (minusNaturalMaybe (fromIntegral (length events)) 1)
+
+compileAndRenderReport ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepError e DecodeError m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepError e SettingError m =>
+  m ()
+compileAndRenderReport = do
+  report <- compileReport 0 <$> currentEvents
+  ident <- currentOutputCommand
+  when (noEventsInReport report) (throwHoist . NoEvents =<< displayNameByIdent ident)
+  setOutput OutputState.report (Just report)
+  initialRenderReport report
 
 outputQuit ::
   MonadRibo m =>
@@ -76,7 +89,7 @@ outputSelect ::
 outputSelect = do
   mainWindow <- outputMainWindow
   window <- outputWindow
-  report <- currentReport fst
+  report <- currentReport
   selectCurrentLineEventFrom report window mainWindow
 
 cycleAndNavigate ::

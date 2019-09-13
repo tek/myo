@@ -7,5 +7,6 @@ data ParseResult =
     _command :: Ident,
     _output :: [ParsedOutput]
   }
+  deriving (Eq, Show)
 
 makeClassy ''ParseResult

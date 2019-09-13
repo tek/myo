@@ -15,11 +15,12 @@ import Ribosome.Test.Screenshot (assertScreenshot)
 import Test.Framework
 
 import Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Command.Output (renderParseResult)
+import Myo.Command.Output (compileAndRenderReport)
+import Myo.Command.Parse (storeParseResult)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEvent(OutputEvent))
+import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
@@ -30,9 +31,9 @@ loc :: Location
 loc =
   Location "/path/to/File.hs" 10 Nothing
 
-event :: OutputEvent
+event :: OutputEventMeta
 event =
-  OutputEvent (Just loc) 0
+  OutputEventMeta (Just loc) 0
 
 msg0 :: HaskellMessage
 msg0 =
@@ -241,7 +242,8 @@ haskellRenderSpec :: Myo ()
 haskellRenderSpec = do
   initialize''
   setupHighlights
-  renderParseResult (Ident.Str "test") [parsedOutput]
+  storeParseResult (Ident.Str "test") [parsedOutput]
+  compileAndRenderReport
   vimCommand "wincmd w"
   vimCommand "wincmd o"
   gassertEqual target =<< currentBufferContent
