@@ -1,9 +1,10 @@
 module Myo.Command.Test where
 
-import Chiasma.Data.Ident (Ident, generateIdent)
+import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans.Control (MonadBaseControl)
+import Data.Hashable (hash)
 import Data.MessagePack (Object)
 import Ribosome.Api.Window (currentCursor)
 import Ribosome.Config.Setting (setting, settingMaybe)
@@ -116,6 +117,10 @@ testInterpreter _ (Just shell) =
 testInterpreter target _ =
   System (Just target)
 
+testIdent :: Text -> Ident
+testIdent =
+  Ident.Str . ((testName <> " ") <>) . show . hash
+
 updateTestCommand ::
   MonadDeepError e SettingError m =>
   MonadRibo m =>
@@ -123,12 +128,11 @@ updateTestCommand ::
   Text ->
   m Command
 updateTestCommand testLine = do
-  ident <- generateIdent
   runner <- setting testRunner
   shell <- settingMaybe testShell
   target <- setting testPane
   lang <- settingMaybe testLang
-  return (Command (testInterpreter target shell) ident [testLine] (Just runner) lang (Just testName))
+  return (Command (testInterpreter target shell) (testIdent testLine) [testLine] (Just runner) lang (Just testName))
 
 myoVimTest ::
   MonadDeepError e SettingError m =>

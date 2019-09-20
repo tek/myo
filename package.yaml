@@ -32,6 +32,7 @@ dependencies:
 - exceptions
 - filepath
 - free
+- hashable
 - hourglass
 - hslogger
 - lens

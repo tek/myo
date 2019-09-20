@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 module Myo.Command.History where
 
 import Chiasma.Data.Ident (sameIdent)
@@ -113,6 +115,10 @@ loadHistory = do
   showDebug "myo-persist-subpath" =<< subPath
   lockOrSkip "load-history" . loadHistoryFrom =<< subPath
 
+duplicateHistoryEntry :: Command -> HistoryEntry -> Bool
+duplicateHistoryEntry cmd (HistoryEntry historyCmd) =
+  sameIdent cmd historyCmd
+
 pushHistory ::
   NvimE e m =>
   MonadIO m =>
@@ -128,7 +134,7 @@ pushHistory cmd = do
   modifyL @CommandState CommandState.history prep
   storeHistory
   where
-    prep es = HistoryEntry cmd : filter (not . sameIdent cmd) es
+    prep es = HistoryEntry cmd : filter (not . duplicateHistoryEntry cmd) es
 
 lookupHistoryIndex ::
   MonadDeepState s CommandState m =>
