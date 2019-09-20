@@ -28,6 +28,8 @@ data OutputError =
   |
   NoLocation
   |
+  FileNonexistent
+  |
   Internal Text
   |
   NotParsed
@@ -62,6 +64,8 @@ instance ReportError OutputError where
       msg = "command `" <> ident <> "` has not generated any output"
   errorReport NoLocation =
     ErrorReport "this event is not associated with a location" ["OutputError.NoLocation"] NOTICE
+  errorReport FileNonexistent =
+    ErrorReport "this event's file is nonexistent" ["OutputError.FileNonexistent"] NOTICE
   errorReport (Internal msg) =
     ErrorReport "internal error" ["OutputError.Internal:", msg] ERROR
   errorReport NotParsed =

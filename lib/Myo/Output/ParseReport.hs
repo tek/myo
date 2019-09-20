@@ -1,11 +1,13 @@
 module Myo.Output.ParseReport where
 
-import Control.Lens (Lens', _Just, ifolded, over, set, view, views, withIndex)
+import Control.Lens (_Just, ifolded, Lens', over, set, view, views, withIndex)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.MonoTraversable (minimumByMay)
 import Data.Vector (Vector, (!?))
 import qualified Data.Vector as Vector (filter, findIndex, unzip)
 import Data.Vector.Lens (toVectorOf)
+import Path (parseAbsFile)
+import Path.IO (doesFileExist)
 import Ribosome.Api.Buffer (bufferForFile, edit)
 import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
@@ -35,7 +37,9 @@ import qualified Myo.Command.Data.CommandState as OutputState (command, currentE
 import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute, unAbsolute))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Internal, NoLocation, NotParsed))
+import qualified Myo.Output.Data.OutputError as OutputError (
+  OutputError(Internal, NoLocation, NotParsed, FileNonexistent),
+  )
 import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
 import qualified Myo.Output.Data.OutputEvent as OutputEvent (meta)
 import qualified Myo.Output.Data.OutputEvent as OutputEventMeta (level)
@@ -97,6 +101,33 @@ filterUnloaded buffer =
     filt True = Just buffer
     filt False = Nothing
 
+selectEventAt ::
+  MonadDeepError e DecodeError m =>
+  MonadIO m =>
+  MonadRibo m =>
+  NvimE e m =>
+  Window ->
+  Window ->
+  Location ->
+  m ()
+selectEventAt mainWindow outputWindow' (Location path line col) = do
+  previousExists <- windowIsValid mainWindow
+  window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
+  vimSetCurrentWindow window
+  existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
+  maybe (edit (toString path)) (nvimWinSetBuf window) existingBuffer
+  setCursor window line (fromMaybe 0 col)
+  vimCommand "normal! zv"
+  vimCommand "normal! zz"
+  redraw
+
+locationExists ::
+  MonadIO m =>
+  Location ->
+  m Bool
+locationExists (Location path _ _) =
+  fromMaybe False <$> traverse doesFileExist (parseAbsFile (toString path))
+
 selectEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
@@ -107,16 +138,8 @@ selectEvent ::
   Window ->
   OutputEventMeta ->
   m ()
-selectEvent mainWindow outputWindow' (OutputEventMeta (Just (Location path line col)) _) = do
-  previousExists <- windowIsValid mainWindow
-  window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
-  vimSetCurrentWindow window
-  existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
-  maybe (edit (toString path)) (nvimWinSetBuf window) existingBuffer
-  setCursor window line (fromMaybe 0 col)
-  vimCommand "normal! zv"
-  vimCommand "normal! zz"
-  redraw
+selectEvent mainWindow outputWindow' (OutputEventMeta (Just loc) _) =
+  ifM (locationExists loc) (selectEventAt mainWindow outputWindow' loc) (throwHoist OutputError.FileNonexistent)
 selectEvent _ _ _ =
   throwHoist OutputError.NoLocation
 
