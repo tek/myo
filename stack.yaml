@@ -18,7 +18,7 @@ extra-deps:
 - github: tek/cornea
   commit: 28c9cc8f2c4beb19f3adaa5aa5cf4aeca5699a7e
 - github: tek/chiasma
-  commit: 25578d92b19beba962f8e163805a42da94715a8e
+  commit: e22af83a5d7ff7883cc9f1c91b0f3e3830b39d7d
 - github: tek/ribosome
   commit: 758a98e37a983e519bf6d6f0865d71741ec83ed9
   subdirs:
