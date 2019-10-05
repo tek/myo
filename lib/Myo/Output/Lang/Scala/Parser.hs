@@ -75,6 +75,7 @@ codeLine ::
   TokenParsing m =>
   m (Int, Text)
 codeLine = do
+  skipUntagged
   w <- char '[' *> eventType *> char ']' *> many (satisfy isSpace)
   t <- toText <$> tillEol
   return (length w - 1, t)
