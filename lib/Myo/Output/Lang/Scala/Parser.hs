@@ -10,7 +10,7 @@ import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, char, newline, satisfy, string)
-import Text.Parser.Combinators (choice, many, notFollowedBy, skipOptional)
+import Text.Parser.Combinators (choice, many, notFollowedBy, skipMany, skipOptional)
 import Text.Parser.LookAhead (LookAheadParsing)
 import Text.Parser.Token (TokenParsing, brackets, natural)
 
@@ -35,6 +35,12 @@ eventTag ::
   m EventType
 eventTag =
   ws *> brackets eventType <* ws
+
+skipUntagged ::
+  TokenParsing m =>
+  m ()
+skipUntagged =
+  skipMany (notFollowedBy eventTag *> tillEol)
 
 locationLine ::
   Monad m =>
@@ -63,7 +69,7 @@ codeLine ::
   TokenParsing m =>
   m (Int, Text)
 codeLine = do
-  w <- ws *> char '[' *> eventType *> char ']' *> many (satisfy isSpace)
+  w <- char '[' *> eventType *> char ']' *> many (satisfy isSpace)
   t <- toText <$> tillEol
   return (length w - 1, t)
 
@@ -93,7 +99,9 @@ event ::
   LookAheadParsing m =>
   m ScalaEvent
 event = do
+  skipUntagged
   (location, eventType', message) <- locationLine
+  skipUntagged
   (info, indent, code) <- errorInfo
   return (ScalaEvent location eventType' message info indent code)
 
