@@ -32,6 +32,8 @@ scalaOutput =
     "[error] !I param2: Class",
     "[error]   implicitly[Class]",
     "[error]   ^",
+    "",
+    "  | => core / Compile / compileIncremental 0s",
     "[error] /path/to/third_file.scala:3:10: type mismatch",
     "",
     "",

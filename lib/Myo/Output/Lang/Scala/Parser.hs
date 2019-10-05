@@ -42,6 +42,12 @@ skipUntagged ::
 skipUntagged =
   skipMany (notFollowedBy eventTag *> tillEol)
 
+eventStart ::
+  TokenParsing m =>
+  m EventType
+eventStart =
+  skipUntagged *> eventTag
+
 locationLine ::
   Monad m =>
   CharParsing m =>
@@ -49,7 +55,7 @@ locationLine ::
   LookAheadParsing m =>
   m (Location, EventType, Text)
 locationLine = do
-  tpe <- ws *> eventTag
+  tpe <- ws *> eventStart
   path <- tillInLine colon
   lineno <- natural <* colon
   colno <- natural <* colon
@@ -61,7 +67,7 @@ infoLine ::
   TokenParsing m =>
   m Text
 infoLine =
-  eventTag *> (toText <$> tillEol)
+  eventStart *> (toText <$> tillEol)
 
 codeLine ::
   Monad m =>
@@ -78,7 +84,7 @@ colMarkerLine ::
   TokenParsing m =>
   m ()
 colMarkerLine =
-  void $ eventTag *> char '^' *> newline
+  void $ eventStart *> char '^' *> newline
 
 errorInfo ::
   Monad m =>
@@ -87,10 +93,8 @@ errorInfo ::
   LookAheadParsing m =>
   m ([Text], Int, Text)
 errorInfo = do
-  info <- many (skipUntagged *> infoLine <* notFollowedBy (choice [colMarkerLine, void locationLine]))
-  skipUntagged
+  info <- many (infoLine <* skipUntagged <* notFollowedBy (choice [colMarkerLine, void locationLine]))
   (indent, code) <- codeLine
-  skipUntagged
   skipOptional colMarkerLine
   return (info, indent, code)
 
@@ -101,9 +105,7 @@ event ::
   LookAheadParsing m =>
   m ScalaEvent
 event = do
-  skipUntagged
   (location, eventType', message) <- locationLine
-  skipUntagged
   (info, indent, code) <- errorInfo
   return (ScalaEvent location eventType' message info indent code)
 
