@@ -87,8 +87,10 @@ errorInfo ::
   LookAheadParsing m =>
   m ([Text], Int, Text)
 errorInfo = do
-  info <- many (infoLine <* notFollowedBy (choice [colMarkerLine, void locationLine]))
+  info <- many (skipUntagged *> infoLine <* notFollowedBy (choice [colMarkerLine, void locationLine]))
+  skipUntagged
   (indent, code) <- codeLine
+  skipUntagged
   skipOptional colMarkerLine
   return (info, indent, code)
 

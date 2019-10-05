@@ -39,7 +39,11 @@ scalaOutput =
     "",
     "  | => core / Compile / compileIncremental 0s",
     "[error]   Type[Int | List[String]]",
+    "",
+    "  | => core / Compile / compileIncremental 0s",
     "[error]     func(param)",
+    "",
+    "  | => core / Compile / compileIncremental 0s",
     "[error]          ^",
     "[error] one error found",
     ""
