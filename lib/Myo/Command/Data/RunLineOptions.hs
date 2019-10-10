@@ -10,6 +10,7 @@ data RunLineOptions =
     lines :: Maybe [Text],
     target :: Maybe Ident,
     runner :: Maybe Ident,
-    lang :: Maybe CommandLanguage
+    lang :: Maybe CommandLanguage,
+    skipHistory :: Maybe Bool
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)

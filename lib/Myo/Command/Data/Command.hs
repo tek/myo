@@ -28,7 +28,8 @@ data Command =
     _lines :: [Text],
     _runner :: Maybe Ident,
     _lang :: Maybe CommandLanguage,
-    _displayName :: Maybe Text
+    _displayName :: Maybe Text,
+    _skipHistory :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -38,7 +39,7 @@ instance Identifiable Command where
   identify = _ident
 
 instance Pretty Command where
-  pretty (Command iprt ident' lines' runner' lang' name) =
+  pretty (Command iprt ident' lines' runner' lang' displayName' skipHistory') =
     nest 2 . vsep $ header : info
     where
       header =
@@ -46,7 +47,12 @@ instance Pretty Command where
       info =
         prettyIprt : prettyLines : opt
       opt =
-        catMaybes [prettyRunner <$> runner', prettyLang <$> lang', prettyName <$> name]
+        catMaybes [
+          prettyRunner <$> runner',
+          prettyLang <$> lang',
+          prettyName <$> displayName',
+          Just $ "skip history:" <+> pretty skipHistory'
+          ]
       prettyIprt = "interpreter:" <+> pretty iprt
       prettyRunner r = "runner:" <+> pretty r
       prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> lines')

@@ -91,7 +91,7 @@ historyMenu execute =
       nvimMenu (scratchOptions (length entries)) (items entries) handler promptConfig Nothing
     items entries =
       yield (menuItem <$> entries)
-    menuItem (HistoryEntry (Command _ ident lines' _ _ displayName)) =
+    menuItem (HistoryEntry (Command _ ident lines' _ _ displayName _)) =
       simpleMenuItem ident (menuItemText ident lines' displayName)
     menuItemText ident lines' displayName =
       Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']

@@ -55,7 +55,7 @@ preRun ::
   RunTask ->
   Runner ->
   m ()
-preRun task@(RunTask (Command _ cmdIdent _ _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
+preRun task@(RunTask (Command _ cmdIdent _ _ _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
   ensurePaneOpen ident
   checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
   closeOutputSocket cmdIdent
@@ -189,14 +189,14 @@ myoLine ::
   MonadThrow m =>
   RunLineOptions ->
   m ()
-myoLine (RunLineOptions mayLine mayLines mayTarget runner lang) = do
+myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory) = do
   ident <- generateIdent
   lines' <- hoistMaybe RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
   target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
   runCommand $ cmd ident target lines'
   where
     cmd ident target lines' =
-      cons target ident lines' runner lang Nothing
+      cons target ident lines' runner lang Nothing (fromMaybe False skipHistory)
     cons =
       either shellCommand (systemCommand . Just)
     findTarget target =
@@ -219,4 +219,4 @@ myoLineCmd ::
   Text ->
   m ()
 myoLineCmd line' =
-  myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing)
+  myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing)

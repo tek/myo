@@ -132,7 +132,8 @@ updateTestCommand testLine = do
   shell <- settingMaybe testShell
   target <- setting testPane
   lang <- settingMaybe testLang
-  return (Command (testInterpreter target shell) (testIdent testLine) [testLine] (Just runner) lang (Just testName))
+  let interpreter = testInterpreter target shell
+  return $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False
 
 myoVimTest ::
   MonadDeepError e SettingError m =>

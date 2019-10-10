@@ -106,7 +106,7 @@ tmuxRun ::
   MonadDeepError e RunError m =>
   RunTask ->
   m ()
-tmuxRun (RunTask (Command _ commandIdent lines' _ _ _) logPath details) =
+tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _) logPath details) =
   run details
   where
     run (RunTaskDetails.UiSystem paneIdent) = do

@@ -58,7 +58,7 @@ shellPanePinSpec = do
   setupDefaultTestUi
   addTmuxRunner
   insertPane (viewCoords "vim" "vim" "make") (consPane sid)
-  myoAddSystemCommand (AddSystemCommandOptions sid ["tail"] Nothing (Just sid) Nothing Nothing)
+  myoAddSystemCommand (AddSystemCommandOptions sid ["tail"] Nothing (Just sid) Nothing Nothing Nothing)
   myoRun sid
   sleep 3
   panes <- gassertRight =<< runTmuxE (Tmux.read @Codec.Pane "list-panes" ["-a"])

@@ -3,8 +3,7 @@
 module Myo.Command.History where
 
 import Chiasma.Data.Ident (sameIdent)
-import Control.Lens (Lens')
-import qualified Control.Lens as Lens (element, filtered, firstOf, folded, view, views)
+import Control.Lens (Lens', element, filtered, firstOf, folded, view, views)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (hoistMaybe)
 import Control.Monad.DeepState (MonadDeepState)
@@ -19,7 +18,7 @@ import Ribosome.Persist (mayPersistLoad, persistStore)
 
 import Myo.Command.Command (mayCommandBy)
 import Myo.Command.Data.Command (Command)
-import qualified Myo.Command.Data.Command as Command (displayName, ident)
+import qualified Myo.Command.Data.Command as Command (displayName, ident, skipHistory)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (
   CommandError(NoSuchHistoryIndex, NoSuchHistoryIdent, NoSuchCommand),
@@ -130,9 +129,10 @@ pushHistory ::
   MonadThrow m =>
   Command ->
   m ()
-pushHistory cmd = do
-  modifyL @CommandState CommandState.history prep
-  storeHistory
+pushHistory cmd =
+  unless (view Command.skipHistory cmd) $ do
+    modifyL @CommandState CommandState.history prep
+    storeHistory
   where
     prep es = HistoryEntry cmd : filter (not . duplicateHistoryEntry cmd) es
 
@@ -142,7 +142,7 @@ lookupHistoryIndex ::
   Int ->
   m Command
 lookupHistoryIndex index =
-  Lens.view HistoryEntry.command <$> (err =<< gets @CommandState (Lens.firstOf (CommandState.history . Lens.element index)))
+  view HistoryEntry.command <$> (err =<< gets @CommandState (firstOf (CommandState.history . element index)))
   where
     err = hoistMaybe (CommandError.NoSuchHistoryIndex index)
 
@@ -152,17 +152,17 @@ lookupHistoryIdent ::
   Ident ->
   m Command
 lookupHistoryIdent ident =
-  Lens.view HistoryEntry.command <$> (err =<< gets @CommandState lens)
+  view HistoryEntry.command <$> (err =<< gets @CommandState lens)
   where
     lens =
-      Lens.firstOf (CommandState.history . Lens.folded . Lens.filtered (sameIdent ident))
+      firstOf (CommandState.history . folded . filtered (sameIdent ident))
     err =
       hoistMaybe (CommandError.NoSuchHistoryIdent (show ident))
 
 lookupHistory ::
   MonadDeepState s CommandState m =>
   MonadDeepError e CommandError m =>
-  (Either Ident Int) ->
+  Either Ident Int ->
   m Command
 lookupHistory =
   either lookupHistoryIdent lookupHistoryIndex
@@ -174,10 +174,10 @@ mayHistoryBy ::
   a ->
   m (Maybe Command)
 mayHistoryBy lens a =
-  (fmap (Lens.view HistoryEntry.command)) <$> (gets @CommandState entryLens)
+  fmap (view HistoryEntry.command) <$> gets @CommandState entryLens
   where
     entryLens =
-      Lens.firstOf (CommandState.history . Lens.folded . Lens.filtered (Lens.views (HistoryEntry.command . lens) (a ==)))
+      firstOf (CommandState.history . folded . filtered (views (HistoryEntry.command . lens) (a ==)))
 
 historyBy ::
   Eq a =>
@@ -201,7 +201,7 @@ mayCommandOrHistoryBy ::
   a ->
   m (Maybe Command)
 mayCommandOrHistoryBy lens a =
-  hist =<< (mayCommandBy lens a)
+  hist =<< mayCommandBy lens a
   where
     hist =
       maybe (mayHistoryBy lens a) (return . Just)
@@ -237,4 +237,4 @@ displayNameByIdent ident =
   select <$> mayCommandOrHistoryBy Command.ident ident
   where
     select =
-      fromMaybe (show ident) . (>>= Lens.view Command.displayName)
+      fromMaybe (show ident) . (>>= view Command.displayName)

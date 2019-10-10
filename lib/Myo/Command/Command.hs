@@ -65,11 +65,11 @@ commandByName ::
 commandByName context name =
   commandBy context name Command.displayName (Just name)
 
-systemCommand :: Maybe Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Command
+systemCommand :: Maybe Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Bool -> Command
 systemCommand target =
   Command (System target)
 
-shellCommand :: Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Command
+shellCommand :: Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Bool -> Command
 shellCommand target =
   Command (Shell target)
 

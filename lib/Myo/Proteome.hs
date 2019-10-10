@@ -45,7 +45,7 @@ haskellPanes =
 
 stackCommand :: Text -> Text -> AddSystemCommandOptions
 stackCommand cmd line =
-  AddSystemCommandOptions (Ident.Str ("stack-" <> cmd)) lines' Nothing (Just "make") (Just "haskell") Nothing
+  AddSystemCommandOptions (Ident.Str ("stack-" <> cmd)) lines' Nothing (Just "make") (Just "haskell") Nothing Nothing
   where
     lines' =
       ["stack " <> line]
@@ -64,7 +64,7 @@ stackBuildCommand cmd pro pedantic =
 haskellSystemCommands :: Text -> Text -> [AddSystemCommandOptions]
 haskellSystemCommands pro testPro =
   [
-    AddSystemCommandOptions "ghci" ["ghci"] Nothing (Just "ghci") (Just "haskell") Nothing,
+    AddSystemCommandOptions "ghci" ["ghci"] Nothing (Just "ghci") (Just "haskell") Nothing (Just True),
     stackBuildCommand "build" pro True,
     stackBuildCommand "build" pro False,
     stackBuildCommand "test" testPro True,
@@ -101,14 +101,14 @@ scalaPanes =
 
 scalaSystemCommands :: [AddSystemCommandOptions]
 scalaSystemCommands =
-  [AddSystemCommandOptions "sbt" ["sbt"] Nothing (Just "sbt") (Just "scala") Nothing]
+  [AddSystemCommandOptions "sbt" ["sbt"] Nothing (Just "sbt") (Just "scala") Nothing (Just True)]
 
 scalaShellCommands :: [AddShellCommandOptions]
 scalaShellCommands =
   [
-    AddShellCommandOptions "compile" ["test:compile"] Nothing "sbt" (Just "scala") Nothing,
-    AddShellCommandOptions "test" ["test"] Nothing "sbt" (Just "scala") Nothing,
-    AddShellCommandOptions "clean" ["clean"] Nothing "sbt" (Just "scala") Nothing
+    AddShellCommandOptions "compile" ["test:compile"] Nothing "sbt" (Just "scala") Nothing Nothing,
+    AddShellCommandOptions "test" ["test"] Nothing "sbt" (Just "scala") Nothing Nothing,
+    AddShellCommandOptions "clean" ["clean"] Nothing "sbt" (Just "scala") Nothing (Just True)
     ]
 
 scalaConfig ::

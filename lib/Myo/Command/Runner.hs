@@ -35,7 +35,7 @@ explicitRunner ::
   MonadDeepError e RunError m =>
   RunTask ->
   m (Maybe Runner)
-explicitRunner (RunTask (Command _ _ _ (Just runner) _ _) _ _) =
+explicitRunner (RunTask (Command _ _ _ (Just runner) _ _ _) _ _) =
   gets @Env $ firstOf (Env.runners . folded . filtered matchRunner)
   where
     matchRunner (Runner ident _ _ _) =
