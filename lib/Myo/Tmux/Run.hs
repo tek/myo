@@ -115,13 +115,15 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _) logPath details) =
       waitForSocket logPath
       runRiboTmux $ do
         pipePaneToSocket paneId logPath
-        quitCopyMode paneId
-        send paneId
+        runUi paneId
     run (RunTaskDetails.UiShell _ paneIdent) = do
       logDebug $ "running tmux shell task `" <> identText commandIdent <> "`"
       paneId <- Views.paneId paneIdent
-      runRiboTmux $ send paneId
+      runRiboTmux $ runUi paneId
     run _ =
       undefined
+    runUi paneId = do
+        quitCopyMode paneId
+        send paneId
     send paneId =
       sendKeys paneId lines'

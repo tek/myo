@@ -29,7 +29,7 @@ import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
 import Myo.Command.Data.CommandState (CommandState, Logs)
 import qualified Myo.Command.Data.CommandState as CommandState (logPaths, logs)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent)
+import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
 import Myo.Data.Env (Env)
 import qualified Myo.Data.Env as Env (tempDir)
 import Myo.Network.Socket (socketBind)
@@ -117,6 +117,19 @@ mainCommandOrHistory ident =
     recurse _ =
       return ident
 
+mayMainCommandOrHistory ::
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m Ident
+mayMainCommandOrHistory ident =
+  recurse =<< (Lens.view Command.interpreter <$$> mayCommandOrHistoryByIdent ident)
+  where
+    recurse (Just (Shell target)) =
+      mayMainCommandOrHistory target
+    recurse _ =
+      return ident
+
 commandLogBy ::
   Eq a =>
   Show a =>
@@ -166,7 +179,7 @@ pushCommandLog ::
   Ident ->
   m ()
 pushCommandLog ident = do
-  logIdent <- mainCommandOrHistory ident
+  logIdent <- mayMainCommandOrHistory ident
   modifyL (logLens logIdent) (fmap push)
   where
     push (CommandLog prev cur) | ByteString.null cur =
