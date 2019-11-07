@@ -18,11 +18,12 @@ import Ribosome.Persist (mayPersistLoad, persistStore)
 
 import Myo.Command.Command (mayCommandBy)
 import Myo.Command.Data.Command (Command)
-import qualified Myo.Command.Data.Command as Command (displayName, ident, skipHistory)
+import qualified Myo.Command.Data.Command as Command (displayName, ident, interpreter, skipHistory)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (
   CommandError(NoSuchHistoryIndex, NoSuchHistoryIdent, NoSuchCommand),
   )
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter(Shell))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
@@ -219,6 +220,14 @@ commandOrHistoryBy ident lens a =
   where
     err =
       hoistMaybe (CommandError.NoSuchCommand "commandOrHistoryBy" ident)
+
+mayCommandOrHistoryByIdent ::
+  MonadDeepState s CommandState m =>
+  MonadDeepError e CommandError m =>
+  Ident ->
+  m (Maybe Command)
+mayCommandOrHistoryByIdent =
+  mayCommandOrHistoryBy Command.ident
 
 commandOrHistoryByIdent ::
   MonadDeepState s CommandState m =>

@@ -136,18 +136,18 @@ updateTestCommand testLine = do
   return $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False
 
 myoVimTest ::
-  MonadDeepError e SettingError m =>
   MonadRibo m =>
   NvimE e m =>
   RunTmux m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
+  MonadDeepState s Env m =>
+  MonadDeepError e RunError m =>
   MonadDeepError e ToggleError m =>
   MonadDeepError e TreeModError m =>
-  MonadDeepError e RunError m =>
   MonadDeepError e CommandError m =>
+  MonadDeepError e SettingError m =>
   MonadDeepError e PersistError m =>
-  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadThrow m =>
   m ()

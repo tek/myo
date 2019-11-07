@@ -166,7 +166,7 @@ pushCommandLog ::
   Ident ->
   m ()
 pushCommandLog ident = do
-  logIdent <- mainCommand ident
+  logIdent <- mainCommandOrHistory ident
   modifyL (logLens logIdent) (fmap push)
   where
     push (CommandLog prev cur) | ByteString.null cur =
