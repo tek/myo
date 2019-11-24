@@ -75,19 +75,19 @@ packages:
   original:
     url: https://github.com/tek/cornea/archive/28c9cc8f2c4beb19f3adaa5aa5cf4aeca5699a7e.tar.gz
 - completed:
-    size: 33424
-    url: https://github.com/tek/chiasma/archive/6e116f7bd86f18b8a4df6031fc8cafe11aae5197.tar.gz
+    size: 33443
+    url: https://github.com/tek/chiasma/archive/012f4acb0afa0e92f1ce39e186c9a5bdf951ed8e.tar.gz
     cabal-file:
       size: 5755
-      sha256: d8b2ccb3392ec124156301ce7a1acc84e5f3e0f085201af1b388a0c474707a1b
+      sha256: 0d1dd6ef5b373b4ec1384fd64238ae38d688d8ac6efd4d5931adb88d215f3a62
     name: chiasma
-    version: 0.1.0.0
-    sha256: 29b64bafe999ab75ee0deb9a5bcc473d0bc342ccc5e7d67070ee306bebe6cdfe
+    version: 0.1.0.1
+    sha256: 8128b8a17866f419a576a09acfba6be7c943417d773d6d085345ad751b0d9476
     pantry-tree:
       size: 5451
-      sha256: f13a083c7a70baf6aef822b673ea8f42f8f44333ba347614e6e7ab4ce8fa6fdf
+      sha256: a471e66eef833cb882b2cb31ab3b9bc49d2f951ed4778db8fc12efbef3d07c67
   original:
-    url: https://github.com/tek/chiasma/archive/6e116f7bd86f18b8a4df6031fc8cafe11aae5197.tar.gz
+    url: https://github.com/tek/chiasma/archive/012f4acb0afa0e92f1ce39e186c9a5bdf951ed8e.tar.gz
 - completed:
     size: 72977
     subdir: modules/core
@@ -122,7 +122,7 @@ packages:
     url: https://github.com/tek/ribosome/archive/91b821d158e88dab111f99e2d955c75212200b88.tar.gz
 snapshots:
 - completed:
-    size: 500539
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/13/27.yaml
-    sha256: 690db832392afe55733b4c7023fd29b1b1c660ee42f1fb505b86b07394ca994e
-  original: lts-13.27
+    size: 525663
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/14.yaml
+    sha256: 6edc48df46eb8bf7b861e98dd30d021a92c2e1820c9bb6528aac5d997b0e14ef
+  original: lts-14.14

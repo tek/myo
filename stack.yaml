@@ -1,4 +1,4 @@
-resolver: lts-13.27
+resolver: lts-14.14
 packages:
 - .
 # - ../ribosome/modules/core
@@ -18,7 +18,7 @@ extra-deps:
 - github: tek/cornea
   commit: 28c9cc8f2c4beb19f3adaa5aa5cf4aeca5699a7e
 - github: tek/chiasma
-  commit: 6e116f7bd86f18b8a4df6031fc8cafe11aae5197
+  commit: 012f4acb0afa0e92f1ce39e186c9a5bdf951ed8e
 - github: tek/ribosome
   commit: 91b821d158e88dab111f99e2d955c75212200b88
   subdirs:

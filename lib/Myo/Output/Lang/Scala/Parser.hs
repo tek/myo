@@ -34,7 +34,7 @@ eventTag ::
   TokenParsing m =>
   m EventType
 eventTag =
-  ws *> brackets eventType <* ws
+  ws *> char '[' *> eventType <* char ']'
 
 skipUntagged ::
   TokenParsing m =>
@@ -48,6 +48,12 @@ eventStart ::
 eventStart =
   skipUntagged *> eventTag
 
+eventStartSkipWs ::
+  TokenParsing m =>
+  m EventType
+eventStartSkipWs =
+  skipUntagged *> eventTag <* ws
+
 locationLine ::
   Monad m =>
   CharParsing m =>
@@ -55,7 +61,7 @@ locationLine ::
   LookAheadParsing m =>
   m (Location, EventType, Text)
 locationLine = do
-  tpe <- ws *> eventStart
+  tpe <- ws *> eventStart <* char ' ' <* notFollowedBy (char ' ')
   path <- tillInLine colon
   lineno <- natural <* colon
   colno <- natural <* colon
@@ -67,7 +73,7 @@ infoLine ::
   TokenParsing m =>
   m Text
 infoLine =
-  eventStart *> (toText <$> tillEol)
+  eventStartSkipWs *> (toText <$> tillEol)
 
 codeLine ::
   Monad m =>
@@ -85,7 +91,7 @@ colMarkerLine ::
   TokenParsing m =>
   m ()
 colMarkerLine =
-  void $ eventStart *> char '^' *> newline
+  void $ eventStartSkipWs *> char '^' *> newline
 
 errorInfo ::
   Monad m =>
