@@ -12,7 +12,7 @@ import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, char, newline, satisfy, string)
 import Text.Parser.Combinators (choice, many, notFollowedBy, skipMany, skipOptional)
 import Text.Parser.LookAhead (LookAheadParsing)
-import Text.Parser.Token (TokenParsing, brackets, natural)
+import Text.Parser.Token (TokenParsing, natural)
 
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)

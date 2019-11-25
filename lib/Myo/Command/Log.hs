@@ -12,8 +12,9 @@ import Control.Monad.Free (MonadFree)
 import Control.Monad.IO.Class (MonadIO)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (null)
+import Data.Char (isAlphaNum)
 import qualified Data.Map as Map (keys, toList)
-import qualified Data.Text as Text (lines)
+import qualified Data.Text as Text (concatMap, lines, singleton)
 import Network.Socket (Socket)
 import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus)
@@ -95,7 +96,10 @@ pipePaneToSocket ::
 pipePaneToSocket paneId logPath =
   pipePane paneId cmd
   where
-    cmd = "'socat STDIN UNIX-SENDTO:" <> toText (toFilePath logPath) <> "'"
+    cmd = "'socat STDIN UNIX-SENDTO:" <> (Text.concatMap escape . toText . toFilePath) logPath <> "'"
+    escape c = prefix c <> Text.singleton c
+    prefix c | isAlphaNum c = ""
+    prefix _ | otherwise = "\\"
 
 logLens :: Ident -> Lens' CommandState (Maybe CommandLog)
 logLens ident = CommandState.logs . Lens.at ident

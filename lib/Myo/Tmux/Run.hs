@@ -110,7 +110,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _) logPath details) =
   run details
   where
     run (RunTaskDetails.UiSystem paneIdent) = do
-      logDebug $ "running tmux system task `" <> identText commandIdent <> "`"
+      logDebug $ "running tmux system task `" <> identText commandIdent <> "` with log `" <> show logPath <> "`"
       paneId <- Views.paneId paneIdent
       waitForSocket logPath
       runRiboTmux $ do

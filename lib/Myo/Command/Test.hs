@@ -119,7 +119,7 @@ testInterpreter target _ =
 
 testIdent :: Text -> Ident
 testIdent =
-  Ident.Str . ((testName <> " ") <>) . show . hash
+  Ident.Str . (testName <>) . show . hash
 
 updateTestCommand ::
   MonadDeepError e SettingError m =>
