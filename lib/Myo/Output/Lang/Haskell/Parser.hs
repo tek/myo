@@ -188,7 +188,7 @@ removeControlCharsRE =
 
 removeModulePrefixRE :: SearchReplace RE Text
 removeModulePrefixRE =
-  [ed|^\S+\s*> ///|]
+  [ed|^\s*\S+\s*> ///|]
 
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
