@@ -188,14 +188,14 @@ removeControlCharsRE =
 
 removeModulePrefixRE :: SearchReplace RE Text
 removeModulePrefixRE =
-  [ed|^\s*\S+\s*> ///|]
+  [ed|^ *[^> ]+\w *> ///|]
 
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
   flip (foldl (flip searchReplaceAll)) regexes . Text.filter ('\b' /=)
   where
     regexes =
-      [removeModulePrefixRE, removeControlCharsRE, removeProgressIndicator1RE, removeProgressIndicator2RE]
+      [removeControlCharsRE, removeProgressIndicator1RE, removeProgressIndicator2RE, removeModulePrefixRE]
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =
