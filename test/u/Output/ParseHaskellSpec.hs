@@ -171,6 +171,13 @@ haskellOutput =
     "/path/to/File.hs:36:1: error:",
     "Could not deduce (IsString a1) arising from the literal ‘\"to\"’",
     "from the context: (Monad m)",
+    "",
+    "module-name      > /path/to/File.hs:36:1: error:",
+    "module-name      >   Not in scope: type constructor or class ‘Something’",
+    "module-name      >      |",
+    "module-name      >   19 | makeSomething :: Text -> [Something]",
+    "module-name      >      |                           ^^^^^^^^^",
+    "",
     ""
     ]
 
@@ -270,6 +277,10 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "!instance: \"to\"",
   "IsString a1",
+  "",
+  "/path/to/File.hs \57505 36",
+  "type not in scope",
+  "Something",
   ""
   ]
 
@@ -281,7 +292,7 @@ test_parseHaskellErrors :: IO ()
 test_parseHaskellErrors = do
   outputE <- parseHaskell
   ParsedOutput _ events <- assertRight outputE
-  assertEqual target (ReportLine._text <$> ParseReport._lines ((compileReport 1 events)))
+  assertEqual target (ReportLine._text <$> ParseReport._lines (compileReport 1 events))
 
 parseHaskellGarbage :: IO (Either OutputError ParsedOutput)
 parseHaskellGarbage = do

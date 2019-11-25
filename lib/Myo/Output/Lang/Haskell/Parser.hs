@@ -186,12 +186,16 @@ removeControlCharsRE :: SearchReplace RE Text
 removeControlCharsRE =
   [ed|(\x9b|\x1b\[)[0-?]*[ -\/]*[@-~]///|]
 
+removeModulePrefixRE :: SearchReplace RE Text
+removeModulePrefixRE =
+  [ed|^\S+\s*> ///|]
+
 sanitizeHaskellOutput :: Text -> Text
 sanitizeHaskellOutput =
   flip (foldl (flip searchReplaceAll)) regexes . Text.filter ('\b' /=)
   where
     regexes =
-      [removeControlCharsRE, removeProgressIndicator1RE, removeProgressIndicator2RE]
+      [removeModulePrefixRE, removeControlCharsRE, removeProgressIndicator1RE, removeProgressIndicator2RE]
 
 parseHaskell :: Text -> Either OutputError ParsedOutput
 parseHaskell =
