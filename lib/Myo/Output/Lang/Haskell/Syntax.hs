@@ -267,7 +267,7 @@ invalidImportName :: SyntaxItem
 invalidImportName =
   item { siOptions = options, siParams = params }
   where
-    item = syntaxRegionOffset "MyoHsInvalidImportName" invalidImportNameMarker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegion "MyoHsInvalidImportName" invalidImportNameMarker errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsInvalidImportNameHead")]
 
