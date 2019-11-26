@@ -74,6 +74,10 @@ patternsMarker :: Text
 patternsMarker =
   "non-exhaustive patterns"
 
+dataCtorNotInScopeMarker :: Text
+dataCtorNotInScopeMarker =
+  "data constructor not in scope"
+
 haskellInclude :: SyntaxItem
 haskellInclude =
   syntaxVerbatim "syntax include @haskell syntax/haskell.vim"
@@ -112,7 +116,7 @@ errorMessage =
     contains2 =
       ",MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName"
     contains3 =
-      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns"
+      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataCtorNotInScope"
 
 foundReq :: SyntaxItem
 foundReq =
@@ -327,6 +331,10 @@ patterns :: SyntaxItem
 patterns =
   simpleMessage "NonExhaustivePatterns" "Code" patternsMarker
 
+dataCtor :: SyntaxItem
+dataCtor =
+  simpleMessage "DataCtorNotInScope" "Code" dataCtorNotInScopeMarker
+
 sync :: SyntaxItem
 sync =
   syntaxVerbatim "syntax sync minlines=10"
@@ -417,7 +425,8 @@ haskellSyntax =
         noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
         notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
         invalidImportName, invalidImportNameHead, moduleNameMismatch, unknownModule, unknownModuleHead,
-        invalidQualifiedName, runtimeError, ambiguousTypeVar, ambiguousTypeVarVar, ambiguousTypeVarMethod, patterns
+        invalidQualifiedName, runtimeError, ambiguousTypeVar, ambiguousTypeVarVar, ambiguousTypeVarMethod, patterns,
+        dataCtor
       ]
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =

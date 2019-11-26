@@ -19,6 +19,7 @@ import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(Haskel
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Syntax (
   ambiguousTypeVarMarker,
+  dataCtorNotInScopeMarker,
   doResDiscardMarker,
   foundReqMarker,
   haskellSyntax,
@@ -70,6 +71,8 @@ data HaskellMessage =
   RuntimeError Text
   |
   NonExhaustivePatterns Text
+  |
+  DataCtorNotInScope Text
   deriving (Eq, Show)
 
 lq :: Char
@@ -249,7 +252,16 @@ invalidQualifiedName =
   InvalidQualifiedName <$> name
   where
     name =
-      string "Not in scope:" *> ws *> qname <* (ws *> string "Module")
+      string "Not in scope:" *> ws *> qname
+
+dataCtorNotInScope ::
+  TokenParsing m =>
+  m HaskellMessage
+dataCtorNotInScope =
+  DataCtorNotInScope <$> name
+  where
+    name =
+      string "Not in scope: data constructor" *> ws *> qname
 
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
@@ -280,6 +292,7 @@ parseMessage =
         unknownModule,
         ambiguousTypeVar,
         invalidQualifiedName,
+        dataCtorNotInScope,
         verbatim
       ]
 
@@ -318,6 +331,8 @@ formatMessage (RuntimeError msg) =
   [runtimeErrorMarker, msg]
 formatMessage (NonExhaustivePatterns fun) =
   [patternsMarker, fun]
+formatMessage (DataCtorNotInScope name) =
+  [dataCtorNotInScopeMarker, name]
 formatMessage (Verbatim text) =
   Text.lines text
 

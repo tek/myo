@@ -49,11 +49,11 @@ Prelude.undefined
 [1m[31mnon-exhaustive patterns[0m[39m[49m
 wrong
 
+[38;5;159m/path/to/File.hs[39m î¡ [38;5;159m11[39m
+[1m[31mdata constructor not in scope[0m[39m[49m
+Dat
+
 [94m~
-~
-~
-~
-~
 ~
 ~
 [1;7m[39mmyo-report                                                                                                                                                                                                                    1,1            All

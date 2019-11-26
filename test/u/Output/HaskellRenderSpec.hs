@@ -83,16 +83,20 @@ msg11 :: HaskellMessage
 msg11 =
   NonExhaustivePatterns "wrong"
 
+msg12 :: HaskellMessage
+msg12 =
+  DataCtorNotInScope "Dat"
+
 reportMsgs :: [HaskellMessage]
 reportMsgs =
-  [msg0, msg1, msg2, msg3, msg4, msg5, msg6, msg7, msg8, msg9, msg10, msg11]
+  [msg0, msg1, msg2, msg3, msg4, msg5, msg6, msg7, msg8, msg9, msg10, msg11, msg12]
 
 parsedOutput :: ParsedOutput
 parsedOutput =
   ParsedOutput haskellSyntax (parsedOutputCons formatReportLine events)
   where
     events =
-      Vector.fromList $ zipWith LangOutputEvent (repeat event) reportMsgs
+      Vector.fromList $ LangOutputEvent event <$> reportMsgs
 
 target :: [Text]
 target = [
@@ -146,6 +150,10 @@ target = [
   "/path/to/File.hs \57505 11",
   "non-exhaustive patterns",
   "wrong",
+  "",
+  "/path/to/File.hs \57505 11",
+  "data constructor not in scope",
+  "Dat",
   ""
   ]
 
@@ -153,7 +161,7 @@ syntaxTarget :: [Text]
 syntaxTarget = [
   "MyoPath        xxx match /^.*\\ze\\( \57505.*$\\)\\@=/  contained  links to Directory",
   "MyoLineNumber  xxx match /\\(\57505 \\)\\@<=\\zs\\d\\+\\ze/  contained  links to Directory",
-  "MyoHsError     xxx start=/^/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard,MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName,MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns  links to Error",
+  "MyoHsError     xxx start=/^/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard,MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName,MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataCtorNotInScope  links to Error",
   "MyoLocation    xxx match /^.*\57505.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
   "MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsFound",
   "MyoHsNoInstance xxx start=/\\s*!instance:/ end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsNoInstanceHead",
@@ -168,6 +176,7 @@ syntaxTarget = [
   "MyoHsAmbiguousTypeVar xxx start=/ambiguous type var for constraint/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsAmbiguousTypeVarVar",
   "MyoHsRuntimeError xxx start=/runtime error/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsCode",
   "MyoHsNonexhaustivePatterns xxx start=/non-exhaustive patterns/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsCode",
+  "MyoHsDataCtorNotInScope xxx start=/data constructor not in scope/ms=e+1 end=/\\ze.*\\(\57505\\|\8224\\)/  contained contains=MyoHsCode",
   "MyoHsFound     xxx match /^.*$/  contained nextgroup=MyoHsReq skipnl",
   "MyoHsReq       xxx match /^.*$/  contained",
   "MyoHsCode      xxx match /.*/  contained contains=@haskell",
@@ -197,6 +206,7 @@ syntaxTarget = [
   "MyoHsAmbiguousTypeVar xxx cleared",
   "MyoHsRuntimeError xxx cleared",
   "MyoHsNonexhaustivePatterns xxx cleared",
+  "MyoHsDataCtorNotInScope xxx cleared",
   "MyoHsFound     xxx ctermfg=1 guifg=#dc322f",
   "MyoHsReq       xxx ctermfg=2 guifg=#719e07",
   "MyoHsCode      xxx cleared", "MyoHsNoInstanceHead xxx cleared",
@@ -248,7 +258,7 @@ haskellRenderSpec = do
   vimCommand "wincmd o"
   gassertEqual target =<< currentBufferContent
   gassertEqual syntaxTarget =<< myoSyntax
-  assertScreenshot "render-haskell-parse-result" True 0
+  assertScreenshot "render-haskell-parse-result" False 0
 
 test_haskellRender :: IO ()
 test_haskellRender =

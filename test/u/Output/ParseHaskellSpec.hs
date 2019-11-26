@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -F -pgmF htfpp #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Output.ParseHaskellSpec (htf_thisModulesTests) where
 
@@ -9,6 +10,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Test.Unit (fixtureContent)
 import Test.Framework
+import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
@@ -172,12 +174,14 @@ haskellOutput =
     "Could not deduce (IsString a1) arising from the literal ‘\"to\"’",
     "from the context: (Monad m)",
     "",
-    "module-name      > /path/to/File.hs:36:1: error:",
-    "module-name      >   Not in scope: type constructor or class ‘Something’",
+    "  module-name      > /path/to/File.hs:36:1: error:",
+    "  module-name      >   Not in scope: type constructor or class ‘Something’",
     "module-name      >      |",
     "module-name      >   19 | makeSomething :: Text -> [Something]",
     "module-name      >      |                           ^^^^^^^^^",
     "",
+    "/path/to/File.hs:36:1: error:",
+    "Not in scope: data constructor ‘Dat’",
     ""
     ]
 
@@ -281,6 +285,10 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "type not in scope",
   "Something",
+  "",
+  "/path/to/File.hs \57505 36",
+  "data constructor not in scope",
+  "Dat",
   ""
   ]
 
@@ -318,3 +326,9 @@ test_parseGarbage = do
   outputE <- parseHaskellGarbage
   ParsedOutput _ events <- assertRight outputE
   assertEqual garbageTarget (ReportLine._text <$> ParseReport._lines (compileReport 0 events))
+
+test_foo :: IO ()
+test_foo =
+  dbg $ searchReplaceAll rex "asdf\n mod-ule > asdf"
+  where
+    rex = [ed|^\s*\S+\s*> ///|]
