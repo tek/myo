@@ -263,6 +263,16 @@ dataCtorNotInScope =
     name =
       string "Not in scope: data constructor" *> ws *> qname
 
+nonExhausivePatterns ::
+  TokenParsing m =>
+  m HaskellMessage
+nonExhausivePatterns =
+  NonExhaustivePatterns <$> name
+  where
+    name =
+      string "Pattern match(es) are non-exhaustive" *> ws *> string "In an equation for" *> ws *> qname
+
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -293,6 +303,7 @@ parseMessage =
         ambiguousTypeVar,
         invalidQualifiedName,
         dataCtorNotInScope,
+        nonExhausivePatterns,
         verbatim
       ]
 

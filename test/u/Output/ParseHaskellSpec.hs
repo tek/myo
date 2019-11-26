@@ -182,6 +182,11 @@ haskellOutput =
     "",
     "/path/to/File.hs:36:1: error:",
     "Not in scope: data constructor ‘Dat’",
+    "",
+    "/path/to/File.hs:36:1: error:",
+    "",
+    "Pattern match(es) are non-exhaustive",
+    "  In an equation for ‘nonex’:",
     ""
     ]
 
@@ -289,6 +294,10 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "data constructor not in scope",
   "Dat",
+  "",
+  "/path/to/File.hs \57505 36",
+  "non-exhaustive patterns",
+  "nonex",
   ""
   ]
 
