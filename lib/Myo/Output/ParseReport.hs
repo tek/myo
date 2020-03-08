@@ -1,14 +1,15 @@
 module Myo.Output.ParseReport where
 
-import Control.Lens (_Just, ifolded, Lens', over, set, view, views, withIndex)
+import Control.Lens (Lens', _Just, ifolded, over, set, view, views, withIndex)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.MonoTraversable (minimumByMay)
 import Data.Vector (Vector, (!?))
 import qualified Data.Vector as Vector (filter, findIndex, unzip)
 import Data.Vector.Lens (toVectorOf)
-import Path (parseAbsFile)
+import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, toFilePath, (</>))
 import Path.IO (doesFileExist)
 import Ribosome.Api.Buffer (bufferForFile, edit)
+import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
@@ -24,6 +25,7 @@ import Ribosome.Nvim.Api.IO (
   nvimWinSetBuf,
   vimCommand,
   vimGetCurrentWindow,
+  vimGetOption,
   vimGetWindows,
   vimSetCurrentWindow,
   windowIsValid,
@@ -101,8 +103,48 @@ filterUnloaded buffer =
     filt True = Just buffer
     filt False = Nothing
 
+parseAsAbsDir ::
+  Path Abs Dir ->
+  Text ->
+  Maybe (Path Abs Dir)
+parseAsAbsDir cwd path =
+  parseAbsDir (toString path) <|> ((cwd </>) <$> parseRelDir (toString path))
+
+findFile ::
+  ∀ e m .
+  MonadIO m =>
+  MonadDeepError e OutputError m =>
+  NvimE e m =>
+  Text ->
+  m (Path Abs File)
+findFile path = do
+  cwd <- hoistMaybe (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
+  relResult <- runMaybeT (rel cwd)
+  hoistMaybe OutputError.FileNonexistent (abs' <|> relResult)
+  where
+    abs' :: Maybe (Path Abs File)
+    abs' =
+      parseAbsFile (toString path)
+    rel :: Path Abs Dir -> MaybeT m (Path Abs File)
+    rel cwd = do
+      relpath <- MaybeT $ pure $ parseRelFile (toString path)
+      inDir relpath cwd <|> inPath cwd relpath
+    inPath :: Path Abs Dir -> Path Rel File -> MaybeT m (Path Abs File)
+    inPath cwd sub = do
+      (vimPath :: [Text]) <- vimGetOption "path"
+      let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> vimPath)
+      results <- lift $ traverse (runMaybeT . inDir sub) vimPathAbs
+      valid <- MaybeT . pure . nonEmpty . catMaybes $ results
+      pure (head valid)
+    inDir :: Path Rel File -> Path Abs Dir -> MaybeT m (Path Abs File)
+    inDir sub dir =
+      ifM (doesFileExist p) (pure p) (MaybeT (pure Nothing))
+      where
+        p = dir </> sub
+
 selectEventAt ::
   MonadDeepError e DecodeError m =>
+  MonadDeepError e OutputError m =>
   MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
@@ -115,7 +157,7 @@ selectEventAt mainWindow outputWindow' (Location path line col) = do
   window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
   existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
-  maybe (edit (toString path)) (nvimWinSetBuf window) existingBuffer
+  maybe (edit . toFilePath =<< findFile path) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
   vimCommand "normal! zz"
@@ -405,8 +447,8 @@ compileReport maxLevel (OutputEvents events) =
     process =
       uncurry ParseReport . second join . Vector.unzip . fmap reindexEvent . zipWithIndex . filterEventLevel maxLevel
     reindexEvent (index, OutputEvent meta lines') =
-      (meta, makeAbsolute index <$> lines')
-    makeAbsolute index (ReportLine _ text) =
+      (meta, absoluteDir index <$> lines')
+    absoluteDir index (ReportLine _ text) =
       ReportLine (EventIndex.Absolute (fromIntegral index)) text
     zipWithIndex =
       toVectorOf (ifolded . withIndex)
