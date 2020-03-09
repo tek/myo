@@ -2,10 +2,10 @@
 
 module Output.PathSpec (htf_thisModulesTests) where
 
-import Ribosome.Nvim.Api.IO (bufferSetOption, vimGetCurrentBuffer)
 import Path (parseAbsDir, parseAbsFile)
-import Ribosome.Test.Unit (tempDir, tempFile)
 import Ribosome.Api.Option (optionCat)
+import Ribosome.Nvim.Api.IO (bufferSetOption, vimGetCurrentBuffer, vimSetOption)
+import Ribosome.Test.Unit (tempDir, tempFile)
 import System.FilePath ((</>))
 import Test.Framework
 
@@ -22,7 +22,8 @@ outputResolvePathSpec = do
   cwd <- parseAbsDir =<< tempDir base
   targetFile <- tempFile (base <> "/sub/dir/target")
   buf <- vimGetCurrentBuffer
-  bufferSetOption buf "path" "sub"
+  vimSetOption "path" "~/foo,moo"
+  bufferSetOption buf "path" "sub/,~/foo"
   writeFile targetFile ""
   target <- parseAbsFile targetFile
   gassertEqual target =<< findFile cwd "dir/target"

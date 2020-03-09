@@ -157,14 +157,14 @@ selectEventAt ::
   Window ->
   Window ->
   Location ->
+  FilePath ->
   m ()
-selectEventAt mainWindow outputWindow' (Location path line col) = do
+selectEventAt mainWindow outputWindow' (Location _ line col) abspath = do
   previousExists <- windowIsValid mainWindow
   window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
-  existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
-  cwd <- hoistMaybe (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
-  maybe (edit . toFilePath =<< findFile cwd path) (nvimWinSetBuf window) existingBuffer
+  existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText abspath))
+  maybe (edit abspath) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
   vimCommand "normal! zz"
@@ -187,8 +187,10 @@ selectEvent ::
   Window ->
   OutputEventMeta ->
   m ()
-selectEvent mainWindow outputWindow' (OutputEventMeta (Just loc) _) =
-  ifM (locationExists loc) (selectEventAt mainWindow outputWindow' loc) (throwHoist OutputError.FileNonexistent)
+selectEvent mainWindow outputWindow' (OutputEventMeta (Just loc@(Location path _ _)) _) = do
+  cwd <- hoistMaybe (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
+  abspath <- toFilePath <$> findFile cwd path
+  ifM (locationExists loc) (selectEventAt mainWindow outputWindow' loc abspath) (throwHoist OutputError.FileNonexistent)
 selectEvent _ _ _ =
   throwHoist OutputError.NoLocation
 
