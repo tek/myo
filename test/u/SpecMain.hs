@@ -4,6 +4,7 @@ module Main where
 
 import Test.Framework
 import Test.Framework.BlackBoxTest ()
+
 import {-@ HTF_TESTS @-} Command.HistoryMenuSpec
 import {-@ HTF_TESTS @-} Command.UpdateSpec
 import {-@ HTF_TESTS @-} Command.VimTestSpec
@@ -15,6 +16,7 @@ import {-@ HTF_TESTS @-} Output.HaskellRenderSpec
 import {-@ HTF_TESTS @-} Output.ParseHaskellSpec
 import {-@ HTF_TESTS @-} Output.ParseScalaSpec
 import {-@ HTF_TESTS @-} Output.ParseSpec
+import {-@ HTF_TESTS @-} Output.PathSpec
 import {-@ HTF_TESTS @-} Output.QuitSpec
 import {-@ HTF_TESTS @-} Output.SanitizeSpec
 import {-@ HTF_TESTS @-} Output.ScalaRenderSpec

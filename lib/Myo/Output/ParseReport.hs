@@ -3,12 +3,14 @@ module Myo.Output.ParseReport where
 import Control.Lens (Lens', _Just, ifolded, over, set, view, views, withIndex)
 import Control.Monad.DeepError (hoistMaybe)
 import Data.MonoTraversable (minimumByMay)
+import qualified Data.Text as Text
 import Data.Vector (Vector, (!?))
 import qualified Data.Vector as Vector (filter, findIndex, unzip)
 import Data.Vector.Lens (toVectorOf)
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, toFilePath, (</>))
 import Path.IO (doesFileExist)
 import Ribosome.Api.Buffer (bufferForFile, edit)
+import Ribosome.Api.Option (optionList)
 import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
@@ -20,10 +22,12 @@ import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Window)
 import Ribosome.Nvim.Api.IO (
+  bufferGetOption,
   bufferLineCount,
   nvimBufIsLoaded,
   nvimWinSetBuf,
   vimCommand,
+  vimGetCurrentBuffer,
   vimGetCurrentWindow,
   vimGetOption,
   vimGetWindows,
@@ -115,10 +119,10 @@ findFile ::
   MonadIO m =>
   MonadDeepError e OutputError m =>
   NvimE e m =>
+  Path Abs Dir ->
   Text ->
   m (Path Abs File)
-findFile path = do
-  cwd <- hoistMaybe (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
+findFile cwd path = do
   relResult <- runMaybeT (rel cwd)
   hoistMaybe OutputError.FileNonexistent (abs' <|> relResult)
   where
@@ -131,8 +135,10 @@ findFile path = do
       inDir relpath cwd <|> inPath cwd relpath
     inPath :: Path Abs Dir -> Path Rel File -> MaybeT m (Path Abs File)
     inPath cwd sub = do
-      (vimPath :: [Text]) <- vimGetOption "path"
-      let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> vimPath)
+      vimPath <- lift $ optionList "path"
+      buf <- vimGetCurrentBuffer
+      bufPath <- Text.splitOn "," <$> bufferGetOption buf "path"
+      let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> (vimPath <> bufPath))
       results <- lift $ traverse (runMaybeT . inDir sub) vimPathAbs
       valid <- MaybeT . pure . nonEmpty . catMaybes $ results
       pure (head valid)
@@ -157,7 +163,8 @@ selectEventAt mainWindow outputWindow' (Location path line col) = do
   window <- if previousExists && mainWindow /= outputWindow' then return mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
   existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText path))
-  maybe (edit . toFilePath =<< findFile path) (nvimWinSetBuf window) existingBuffer
+  cwd <- hoistMaybe (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
+  maybe (edit . toFilePath =<< findFile cwd path) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
   vimCommand "normal! zz"
