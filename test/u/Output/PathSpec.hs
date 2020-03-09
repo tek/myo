@@ -22,8 +22,7 @@ outputResolvePathSpec = do
   cwd <- parseAbsDir =<< tempDir base
   targetFile <- tempFile (base <> "/sub/dir/target")
   buf <- vimGetCurrentBuffer
-  vimSetOption "path" "~/foo,moo"
-  bufferSetOption buf "path" "sub/,~/foo"
+  vimSetOption "path" "sub/"
   writeFile targetFile ""
   target <- parseAbsFile targetFile
   gassertEqual target =<< findFile cwd "dir/target"

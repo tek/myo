@@ -135,9 +135,9 @@ findFile cwd path = do
       inDir relpath cwd <|> inPath cwd relpath
     inPath :: Path Abs Dir -> Path Rel File -> MaybeT m (Path Abs File)
     inPath cwd sub = do
-      vimPath <- lift $ optionList "path"
+      vimPath <- lift $ catchAs @RpcError [] (optionList "path")
       buf <- vimGetCurrentBuffer
-      bufPath <- Text.splitOn "," <$> bufferGetOption buf "path"
+      bufPath <- Text.splitOn "," <$> catchAs @RpcError "" (bufferGetOption buf "path")
       let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> (vimPath <> bufPath))
       results <- lift $ traverse (runMaybeT . inDir sub) vimPathAbs
       valid <- MaybeT . pure . nonEmpty . catMaybes $ results
