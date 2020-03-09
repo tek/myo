@@ -114,11 +114,36 @@ parseAsAbsDir ::
 parseAsAbsDir cwd path =
   parseAbsDir (toString path) <|> ((cwd </>) <$> parseRelDir (toString path))
 
+fileInDir ::
+  MonadIO m =>
+  Path Rel File ->
+  Path Abs Dir ->
+  MaybeT m (Path Abs File)
+fileInDir sub dir = do
+  ifM (doesFileExist p) (pure p) (MaybeT (pure Nothing))
+  where
+    p = dir </> sub
+
+findFileInPath ::
+  MonadIO m =>
+  NvimE e m =>
+  Path Abs Dir ->
+  Path Rel File ->
+  MaybeT m (Path Abs File)
+findFileInPath cwd sub = do
+  vimPath <- lift $ catchAs @RpcError [] (optionList "path")
+  buf <- vimGetCurrentBuffer
+  bufPath <- Text.splitOn "," <$> catchAs @RpcError "" (bufferGetOption buf "path")
+  let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> (vimPath <> bufPath))
+  results <- lift $ traverse (runMaybeT . fileInDir sub) vimPathAbs
+  head <$> (MaybeT . pure . nonEmpty . catMaybes $ results)
+
 findFile ::
   ∀ e m .
   MonadIO m =>
   MonadDeepError e OutputError m =>
   NvimE e m =>
+  MonadRibo m =>
   Path Abs Dir ->
   Text ->
   m (Path Abs File)
@@ -126,27 +151,11 @@ findFile cwd path = do
   relResult <- runMaybeT (rel cwd)
   hoistMaybe OutputError.FileNonexistent (abs' <|> relResult)
   where
-    abs' :: Maybe (Path Abs File)
     abs' =
       parseAbsFile (toString path)
-    rel :: Path Abs Dir -> MaybeT m (Path Abs File)
     rel cwd = do
       relpath <- MaybeT $ pure $ parseRelFile (toString path)
-      inDir relpath cwd <|> inPath cwd relpath
-    inPath :: Path Abs Dir -> Path Rel File -> MaybeT m (Path Abs File)
-    inPath cwd sub = do
-      vimPath <- lift $ catchAs @RpcError [] (optionList "path")
-      buf <- vimGetCurrentBuffer
-      bufPath <- Text.splitOn "," <$> catchAs @RpcError "" (bufferGetOption buf "path")
-      let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> (vimPath <> bufPath))
-      results <- lift $ traverse (runMaybeT . inDir sub) vimPathAbs
-      valid <- MaybeT . pure . nonEmpty . catMaybes $ results
-      pure (head valid)
-    inDir :: Path Rel File -> Path Abs Dir -> MaybeT m (Path Abs File)
-    inDir sub dir =
-      ifM (doesFileExist p) (pure p) (MaybeT (pure Nothing))
-      where
-        p = dir </> sub
+      fileInDir relpath cwd <|> findFileInPath cwd relpath
 
 selectEventAt ::
   MonadDeepError e DecodeError m =>
@@ -172,10 +181,10 @@ selectEventAt mainWindow outputWindow' (Location _ line col) abspath = do
 
 locationExists ::
   MonadIO m =>
-  Location ->
+  FilePath ->
   m Bool
-locationExists (Location path _ _) =
-  fromMaybe False <$> traverse doesFileExist (parseAbsFile (toString path))
+locationExists path =
+  fromMaybe False <$> traverse doesFileExist (parseAbsFile path)
 
 selectEvent ::
   MonadDeepError e OutputError m =>
@@ -190,7 +199,7 @@ selectEvent ::
 selectEvent mainWindow outputWindow' (OutputEventMeta (Just loc@(Location path _ _)) _) = do
   cwd <- hoistMaybe (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
   abspath <- toFilePath <$> findFile cwd path
-  ifM (locationExists loc) (selectEventAt mainWindow outputWindow' loc abspath) (throwHoist OutputError.FileNonexistent)
+  ifM (locationExists abspath) (selectEventAt mainWindow outputWindow' loc abspath) (throwHoist OutputError.FileNonexistent)
 selectEvent _ _ _ =
   throwHoist OutputError.NoLocation
 
