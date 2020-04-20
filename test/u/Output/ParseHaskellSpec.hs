@@ -10,7 +10,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Test.Unit (fixtureContent)
 import Test.Framework
-import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
+import Text.RE.PCRE.Text (ed, searchReplaceAll)
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)

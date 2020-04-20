@@ -21,7 +21,7 @@ import Myo.Command.HistoryMenu (myoHistory)
 import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
 import Myo.Command.Parse (myoParse, myoParseLatest)
-import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
+import Myo.Command.Run (myo, myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env, Myo)
@@ -54,6 +54,7 @@ rpcHandlers =
     $(rpcHandlerDef 'myoReRun),
     $(rpcHandlerDef 'myoLine),
     $(rpcHandler (cmd []) 'myoLineCmd),
+    $(rpcHandler (cmd []) 'myo),
     $(rpcHandlerDef 'myoParse),
     $(rpcHandler (cmd []) 'myoParseLatest),
     $(rpcHandlerDef 'myoPrev),

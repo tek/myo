@@ -220,3 +220,22 @@ myoLineCmd ::
   m ()
 myoLineCmd line' =
   myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing)
+
+myo ::
+  RunTmux m =>
+  MonadRibo m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepState s Env m =>
+  MonadThrow m =>
+  Text ->
+  m ()
+myo =
+  myoLineCmd
