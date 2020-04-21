@@ -41,6 +41,7 @@ dependencies:
 - monad-control
 - mono-traversable
 - mtl
+- neat-interpolation
 - network
 - nvim-hs
 - parsec
@@ -60,6 +61,7 @@ dependencies:
 - stm-conduit
 - strings
 - stringsearch
+- template-haskell
 - text
 - transformers
 - transformers-base

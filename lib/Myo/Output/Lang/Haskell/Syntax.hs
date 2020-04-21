@@ -3,7 +3,6 @@
 module Myo.Output.Lang.Haskell.Syntax where
 
 import qualified Data.Map as Map (fromList)
-import Data.String.QM (qt)
 import Ribosome.Data.Syntax (
   HiLink(..),
   Highlight(..),
