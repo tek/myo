@@ -151,7 +151,7 @@ haskellOutput =
     "    • Ambiguous type variable ‘a0’ arising from a use of ‘funky’",
     "      prevents the constraint ‘(Classy a0)’ from being solved.",
     "",
-    "/path/to/File.hs:36:1: error:",
+    "/path/to/File.hs:36:1-10: error:",
     "    Not in scope: ‘Mod.name’",
     "    Module ‘Mod’ does not export ‘name’.",
     "",

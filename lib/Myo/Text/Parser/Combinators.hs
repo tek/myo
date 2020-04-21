@@ -11,6 +11,10 @@ colon :: CharParsing m => m Char
 colon =
   char ':'
 
+minus :: CharParsing m => m Char
+minus =
+  char '-'
+
 ws ::
   TokenParsing m =>
   m ()

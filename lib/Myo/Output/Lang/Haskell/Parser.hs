@@ -23,7 +23,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
-import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, skipLine, tillEol, word, ws)
+import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, minus, skipLine, tillEol, word, ws)
 
 path ::
   CharParsing m =>
@@ -40,7 +40,7 @@ location =
     line =
       num <* colon
     col =
-      Just <$> num
+      Just <$> num <* (skipOptional (minus *> num))
     num =
       fromIntegral . subtract 1 <$> natural
 
