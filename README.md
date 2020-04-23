@@ -7,8 +7,6 @@ It provides several interacting features that include:
 * [**Commands**](#commands): Execution of configurable shell commands in [tmux] or subprocesses
 * [**Output**](#output): Parsing, rendering and navigation of messages produced by commands
 
-**Note**: _highly experimental state_
-
 **myo** benefits a lot from having per-project and per-project-type configuration for setting up language-specific commands.
 If you don't have a solution for this, the author also maintains [proteome], a project management plugin.
 
