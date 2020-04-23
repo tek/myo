@@ -3,6 +3,7 @@ module Myo.Proteome where
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Map ((!?))
 import qualified Data.Map as Map (fromList)
+import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Config.Setting (settingMaybe, updateSetting)
 import Ribosome.Data.Setting (Setting)
 
@@ -146,5 +147,6 @@ myoProteomeLoaded ::
   NvimE e m =>
   MonadRibo m =>
   m ()
-myoProteomeLoaded =
+myoProteomeLoaded = do
   traverse_ configureFromProteome =<< settingMaybe Settings.proteomeMainType
+  doautocmd False "MyoBuiltinsLoaded"
