@@ -66,7 +66,7 @@ region =
     cons p (l, c) =
       Location p l c
     lineCol =
-      num <* char '-'
+      num <* minus
     num =
       bimap normalize (Just . normalize) <$> parens (tuple (natural <* char ',') natural)
     normalize =

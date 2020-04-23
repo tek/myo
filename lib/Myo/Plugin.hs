@@ -5,7 +5,7 @@ import qualified Data.Map as Map (fromList)
 import Data.MessagePack (Object)
 import Myo.Output.Data.OutputError (OutputError)
 import Neovim (Neovim, NeovimPlugin, Plugin, wrapPlugin)
-import Neovim.Plugin.Classes (AutocmdOptions(AutocmdOptions))
+import Neovim.Plugin.Classes (AutocmdOptions(AutocmdOptions), CommandOption(CmdComplete))
 import Path (Abs, Dir, Path)
 import Ribosome.Control.Monad.Ribo (Ribo)
 import Ribosome.Control.Ribosome (Ribosome)
@@ -53,8 +53,8 @@ rpcHandlers =
     $(rpcHandler (cmd []) 'myoRun),
     $(rpcHandlerDef 'myoReRun),
     $(rpcHandlerDef 'myoLine),
-    $(rpcHandler (cmd []) 'myoLineCmd),
-    $(rpcHandler (cmd []) 'myo),
+    $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myoLineCmd),
+    $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myo),
     $(rpcHandlerDef 'myoParse),
     $(rpcHandler (cmd []) 'myoParseLatest),
     $(rpcHandlerDef 'myoPrev),
