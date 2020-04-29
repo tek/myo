@@ -94,3 +94,7 @@ haskellCompileProject =
 haskellTestProject :: Setting Text
 haskellTestProject =
   Setting "haskell_test_project" True Nothing
+
+defaultCommands :: Setting Bool
+defaultCommands =
+  Setting "default_commands" True (Just True)

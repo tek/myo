@@ -212,6 +212,23 @@ After parsing, the cursor will be set to the last of first error (depending on t
 and `g:myo_output_auto_jump`).
 Using the functions `MyoPrev` and `MyoNext`, you can cycle through the error list.
 
+# Default Commands
+
+For some languages, a default layout and command set will be set up on startup.
+To prevent this, set:
+
+```vim
+let g:myo_default_commands = v:false
+```
+
+## Haskell
+
+The commands `stack-build` and `stack-test` with `--fast --pedantic` are
+created, as well as their variants without `--pedantic` that are suffixed with
+`-lenient`.
+
+A pane at the bottom of the `make` layout is created for the command `ghci`.
+
 [Neovim]: https://github.com/neovim/neovim
 [Haskell]: https://www.haskell.org
 [ribosome]: https://github.com/tek/ribosome

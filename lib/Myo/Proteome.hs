@@ -4,21 +4,13 @@ import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Map ((!?))
 import qualified Data.Map as Map (fromList)
 import Ribosome.Api.Autocmd (uautocmd)
-import Ribosome.Config.Setting (settingMaybe, updateSetting)
+import Ribosome.Config.Setting (settingMaybe, settingOr, updateSetting)
 import Ribosome.Data.Setting (Setting)
 
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec(CommandSettingCodec))
-import qualified Myo.Settings as Settings (
-  commands,
-  haskellCompileProject,
-  haskellTestProject,
-  proteomeMainType,
-  testLang,
-  testShell,
-  ui,
-  )
+import qualified Myo.Settings as Settings
 import Myo.Ui.Data.AddPaneOptions (AddPaneOptions)
 import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions(..))
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec(UiSettingCodec))
@@ -148,5 +140,8 @@ myoProteomeLoaded ::
   MonadRibo m =>
   m ()
 myoProteomeLoaded = do
-  traverse_ configureFromProteome =<< settingMaybe Settings.proteomeMainType
+  whenM (settingOr True Settings.defaultCommands) run
   uautocmd False "MyoBuiltinsLoaded"
+  where
+    run =
+      traverse_ configureFromProteome =<< settingMaybe Settings.proteomeMainType

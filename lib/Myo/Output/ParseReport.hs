@@ -29,7 +29,6 @@ import Ribosome.Nvim.Api.IO (
   vimCommand,
   vimGetCurrentBuffer,
   vimGetCurrentWindow,
-  vimGetOption,
   vimGetWindows,
   vimSetCurrentWindow,
   windowIsValid,
@@ -153,9 +152,9 @@ findFile cwd path = do
   where
     abs' =
       parseAbsFile (toString path)
-    rel cwd = do
+    rel cwd' = do
       relpath <- MaybeT $ pure $ parseRelFile (toString path)
-      fileInDir relpath cwd <|> findFileInPath cwd relpath
+      fileInDir relpath cwd' <|> findFileInPath cwd' relpath
 
 selectEventAt ::
   MonadDeepError e DecodeError m =>
