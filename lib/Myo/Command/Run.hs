@@ -8,6 +8,7 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans.Control (MonadBaseControl)
+import qualified Data.Text as Text
 import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
@@ -167,7 +168,7 @@ myoRun ::
   Text ->
   m ()
 myoRun =
-  runCommand <=< commandByIdentOrName "run"
+  runCommand <=< commandByIdentOrName "run" . Text.strip
 
 myoReRun ::
   RunTmux m =>
