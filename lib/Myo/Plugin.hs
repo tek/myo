@@ -52,7 +52,7 @@ rpcHandlers =
     $(rpcHandlerDef 'myoToggleLayout),
     $(rpcHandler (cmd []) 'myoFocus),
     $(rpcHandler (cmd [CmdComplete "custom,MyoCompleteCommand"]) 'myoRun),
-    $(rpcHandlerDef 'myoCompleteCommand),
+    $(rpcHandler sync 'myoCompleteCommand),
     $(rpcHandlerDef 'myoReRun),
     $(rpcHandlerDef 'myoLine),
     $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myoLineCmd),
