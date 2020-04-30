@@ -8,14 +8,14 @@ import qualified Chiasma.Codec.Data as Codec (Pane)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Chiasma.Monad.Tmux as Tmux (read)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
+import Prelude hiding (tmuxSpecDef)
 import Ribosome.Orphans ()
 import Ribosome.Tmux.Run (runTmuxE)
 import Test.Framework
-import Prelude hiding (tmuxSpecDef)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoRunIdent)
 import Myo.Data.Env (Myo)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Data.ViewCoords (viewCoords)
@@ -59,7 +59,7 @@ shellPanePinSpec = do
   addTmuxRunner
   insertPane (viewCoords "vim" "vim" "make") (consPane sid)
   myoAddSystemCommand (AddSystemCommandOptions sid ["tail"] Nothing (Just sid) Nothing Nothing Nothing)
-  myoRun sid
+  myoRunIdent sid
   sleep 3
   panes <- gassertRight =<< runTmuxE (Tmux.read @Codec.Pane "list-panes" ["-a"])
   gassertEqual 3 (length panes)

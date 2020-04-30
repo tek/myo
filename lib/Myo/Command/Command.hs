@@ -1,6 +1,7 @@
 module Myo.Command.Command where
 
 import Chiasma.Data.Ident (Ident)
+import qualified Chiasma.Data.Ident as Ident
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (filtered, firstOf, folded, view, views)
 import Control.Monad.DeepError (MonadDeepError, hoistMaybe)
@@ -28,6 +29,15 @@ mayCommandBy lens a =
     f :: CommandState -> Maybe Command
     f = Lens.firstOf (CommandState.commands . Lens.folded . Lens.filtered (Lens.views lens (a ==)))
 
+noSuchCommand ::
+  MonadDeepError e CommandError m =>
+  Text ->
+  Text ->
+  Maybe a ->
+  m a
+noSuchCommand context query =
+  hoistMaybe (CommandError.NoSuchCommand context query)
+
 commandBy ::
   Eq a =>
   MonadDeepError e CommandError m =>
@@ -38,7 +48,7 @@ commandBy ::
   a ->
   m Command
 commandBy context ident lens a =
-  hoistMaybe (CommandError.NoSuchCommand context ident) =<< mayCommandBy lens a
+  noSuchCommand context ident =<< mayCommandBy lens a
 
 mayCommandByIdent ::
   MonadDeepState s CommandState m =>
@@ -64,6 +74,17 @@ commandByName ::
   m Command
 commandByName context name =
   commandBy context name Command.displayName (Just name)
+
+commandByIdentOrName ::
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Text ->
+  Text ->
+  m Command
+commandByIdentOrName context query = do
+  byIdent <- mayCommandByIdent (Ident.Str query)
+  byName <- mayCommandBy Command.displayName (Just query)
+  noSuchCommand context query (byIdent <|> byName)
 
 systemCommand :: Maybe Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Bool -> Command
 systemCommand target =

@@ -15,7 +15,7 @@ import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellC
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Execution (isCommandRunning)
 import Myo.Command.Kill (killCommand)
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoRunIdent)
 import Myo.Data.Env (Myo)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Tmux.Runner (addTmuxRunner)
@@ -65,14 +65,14 @@ tmuxRunShellSpec = do
   setupDefaultTestUi
   myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] (Just "tmux") (Just "make") Nothing Nothing Nothing
   myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines (Just "tmux") shellIdent Nothing Nothing Nothing
-  myoRun cmdIdent
+  myoRunIdent cmdIdent
   await gassertBool (isCommandRunning shellIdent)
   await firstCondition paneContent
-  myoRun cmdIdent
+  myoRunIdent cmdIdent
   await secondCondition paneContent
   killCommand shellIdent
   await (gassertBool . not) (isCommandRunning shellIdent)
-  myoRun cmdIdent
+  myoRunIdent cmdIdent
   await gassertBool (isCommandRunning shellIdent)
   await thirdCondition paneContent
   where

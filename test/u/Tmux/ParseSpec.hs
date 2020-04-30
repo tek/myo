@@ -14,7 +14,7 @@ import qualified Myo.Command.Data.CommandLog as CommandLog (_current)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
 import Myo.Command.Log (commandLog)
 import Myo.Command.Parse (myoParse)
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoRunIdent)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Output.Echo (addEchoCommand, addEchoHandler)
@@ -31,7 +31,7 @@ parseTmuxSpec = do
   initialize''
   addEchoHandler =<< fixture "tmux/parse/file"
   ident <- addEchoCommand "tmux" [line1, line2]
-  myoRun ident
+  myoRunIdent ident
   await logComplete (ByteString.lines . CommandLog._current <$$> commandLog ident)
   myoParse $ ParseOptions Nothing Nothing Nothing
   index <- currentLine

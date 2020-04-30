@@ -24,6 +24,7 @@ import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myo, myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (updateCommands)
+import Myo.Complete (myoCompleteCommand)
 import Myo.Data.Env (Env, Myo)
 import Myo.Data.Error (Error)
 import Myo.Diag (myoDiag)
@@ -50,7 +51,8 @@ rpcHandlers =
     $(rpcHandlerDef 'myoTogglePane),
     $(rpcHandlerDef 'myoToggleLayout),
     $(rpcHandler (cmd []) 'myoFocus),
-    $(rpcHandler (cmd []) 'myoRun),
+    $(rpcHandler (cmd [CmdComplete "custom,MyoCompleteCommand"]) 'myoRun),
+    $(rpcHandlerDef 'myoCompleteCommand),
     $(rpcHandlerDef 'myoReRun),
     $(rpcHandlerDef 'myoLine),
     $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myoLineCmd),

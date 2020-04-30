@@ -4,7 +4,7 @@ module Tmux.RunSpec (htf_thisModulesTests) where
 
 import Chiasma.Codec.Data.PaneMode (PaneMode(PaneMode))
 import Chiasma.Command.Pane (capturePane, copyMode, paneMode)
-import Chiasma.Data.Ident (Ident(Str))
+import Chiasma.Data.Ident (Ident(Str), identText)
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Data.Text (Text)
 import Prelude hiding (tmuxSpecDef)
@@ -41,7 +41,7 @@ setup = do
 
 runAndCheck :: Myo ()
 runAndCheck = do
-  myoRun ident
+  myoRun (identText ident)
   sleep 1
   output <- runTmux $ capturePane (PaneId 1)
   gassertElem line1 output

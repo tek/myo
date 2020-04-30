@@ -13,7 +13,7 @@ import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Tmux.Run (RunTmux)
 
-import Myo.Command.Command (commandByIdent, mayCommandByIdent, shellCommand, systemCommand)
+import Myo.Command.Command (commandByIdent, commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import Myo.Command.Data.Command (Command(..))
 import qualified Myo.Command.Data.Command as Command (ident)
 import Myo.Command.Data.CommandError (CommandError)
@@ -65,7 +65,7 @@ preRun (RunTask _ _ (RunTaskDetails.UiShell shellIdent _)) _ = do
   active <- isCommandActive shellIdent
   unless active $ do
     logDebug $ "starting inactive shell command `" <> identText shellIdent <> "`"
-    myoRun shellIdent
+    myoRun (identText shellIdent)
 preRun _ _ =
   return ()
 
@@ -131,7 +131,7 @@ runCommand cmd = do
   executeRunner runner task
   void $ postRun task
 
-myoRun ::
+myoRunIdent ::
   RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
@@ -147,8 +147,27 @@ myoRun ::
   MonadThrow m =>
   Ident ->
   m ()
-myoRun =
+myoRunIdent =
   runCommand <=< commandByIdent "run"
+
+myoRun ::
+  RunTmux m =>
+  MonadRibo m =>
+  MyoRender s e m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e CommandError m =>
+  MonadDeepError e PersistError m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepError e ToggleError m =>
+  MonadDeepError e TreeModError m =>
+  MonadDeepState s CommandState m =>
+  MonadDeepState s Env m =>
+  MonadThrow m =>
+  Text ->
+  m ()
+myoRun =
+  runCommand <=< commandByIdentOrName "run"
 
 myoReRun ::
   RunTmux m =>

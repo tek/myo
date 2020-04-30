@@ -18,7 +18,7 @@ import Myo.Command.Data.Command (Command(Command))
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunLineOptions (RunLineOptions(RunLineOptions))
 import Myo.Command.Data.RunTask (RunTask(RunTask))
-import Myo.Command.Run (myoLine, myoRun)
+import Myo.Command.Run (myoLine, myoRunIdent)
 import Myo.Command.Runner (addRunner, extractRunError)
 import Myo.Data.Env (Myo)
 import Unit (intSpecDef, specDef)
@@ -57,7 +57,7 @@ runSystemSpec = do
   let ident = Str "cmd"
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just runnerIdent) Nothing Nothing Nothing Nothing
   addDummyRunner runDummy
-  myoRun ident
+  myoRunIdent ident
   check [testError]
 
 test_runSystem :: IO ()

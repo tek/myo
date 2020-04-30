@@ -23,7 +23,7 @@ import Test.Framework
 
 import Config (defaultVars)
 import Myo.Command.Log (commandLogPath)
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoRunIdent)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
 import Myo.Network.Socket (socketBind, unixSocket)
@@ -94,7 +94,7 @@ monitorSpec :: Myo ()
 monitorSpec = do
   initialize''
   ident <- addCatCommand "tmux"
-  myoRun ident
+  myoRunIdent ident
   send ["line"]
   sleep 2
   send ["line", "mine"]

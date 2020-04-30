@@ -8,7 +8,7 @@ import Test.Framework
 
 import Myo.Command.Log (appendLog, pushCommandLog)
 import Myo.Command.Parse (parseCommand, selectCommand)
-import Myo.Command.Run (myoRun)
+import Myo.Command.Run (myoRunIdent)
 import Myo.Command.Subproc.Runner (addSubprocessRunner)
 import Myo.Data.Env (Myo)
 import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
@@ -26,7 +26,7 @@ parsePreviousSpec = do
   addSubprocessRunner
   addEchoHandler =<< fixture "tmux/parse/file"
   ident <- addEchoCommand "proc" lines'
-  myoRun ident
+  myoRunIdent ident
   cmd <- selectCommand (Just ident)
   pushCommandLog ident
   appendLog ident "unparsable"
