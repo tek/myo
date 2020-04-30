@@ -10,7 +10,6 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Test.Unit (fixtureContent)
 import Test.Framework
-import Text.RE.PCRE.Text (ed, searchReplaceAll)
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
@@ -335,9 +334,3 @@ test_parseGarbage = do
   outputE <- parseHaskellGarbage
   ParsedOutput _ events <- assertRight outputE
   assertEqual garbageTarget (ReportLine._text <$> ParseReport._lines (compileReport 0 events))
-
-test_foo :: IO ()
-test_foo =
-  dbg $ searchReplaceAll rex "asdf\n mod-ule > asdf"
-  where
-    rex = [ed|^\s*\S+\s*> ///|]

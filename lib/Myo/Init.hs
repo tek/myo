@@ -27,11 +27,13 @@ import Myo.Output.Lang.Scala.Parser (scalaOutputParser)
 import qualified Myo.Settings as Settings (detectUi)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (detectDefaultUi)
+import Myo.Vim.Runner (addVimRunner)
 
 initialize'' :: Myo ()
 initialize'' = do
   addSubprocessRunner
   addTmuxRunner
+  addVimRunner
   addHandler (CommandLanguage "haskell") (OutputHandler haskellOutputParser)
   addHandler (CommandLanguage "scala") (OutputHandler scalaOutputParser)
   detect <- setting Settings.detectUi

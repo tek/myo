@@ -40,7 +40,8 @@ uiShellTaskDetails shellIdent =
       throwHoist (RunError.InvalidShell shell)
 
 vimTaskDetails :: RunTaskDetails
-vimTaskDetails = undefined
+vimTaskDetails =
+  RunTaskDetails.Vim
 
 runDetails ::
   MonadDeepState s CommandState m =>

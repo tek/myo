@@ -5,6 +5,7 @@ module Main where
 import Test.Framework
 import Test.Framework.BlackBoxTest ()
 
+import {-@ HTF_TESTS @-} Command.CommandMenuSpec
 import {-@ HTF_TESTS @-} Command.HistoryMenuSpec
 import {-@ HTF_TESTS @-} Command.UpdateSpec
 import {-@ HTF_TESTS @-} Command.VimTestSpec
