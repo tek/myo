@@ -182,6 +182,10 @@ This command displays the history in a scratch buffer with a prompt for substrin
 Selecting one of the entries with `<cr>` will rerun the command.
 The prompt starts in normal mode, where you can navigate with `j`/`k`, switch to insert mode with `i`, `a`, `I` and `A`, and abort with `q`, `<esc>` and `<c-c>`.
 
+## MyoCommands
+
+This command displays all defined commands in a menu like [`MyoHistory`](#myohistory).
+
 ## MyoVimTest
 
 **myo** features support for [vim-test], which is a plugin with many built-in heuristics for determining the appropriate
