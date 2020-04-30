@@ -16,6 +16,7 @@ import Ribosome.Plugin (RpcDef, autocmd, autocmdOptions, cmd, riboPlugin, rpcHan
 import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
+import Myo.Command.CommandMenu (myoCommands)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.HistoryMenu (myoHistory)
 import Myo.Command.Log (myoLogs)
@@ -63,7 +64,8 @@ rpcHandlers =
     $(rpcHandlerDef 'myoNext),
     $(rpcHandlerDef 'myoSave),
     $(rpcHandlerDef 'myoVimTest),
-    $(rpcHandlerDef 'myoHistory),
+    $(rpcHandler (cmd []) 'myoHistory),
+    $(rpcHandler (cmd []) 'myoCommands),
     $(rpcHandlerDef 'myoStage4),
     $(rpcHandler sync 'myoTestDetermineRunner),
     $(rpcHandler sync 'myoTestExecutable),
