@@ -38,8 +38,23 @@ import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
 import Myo.Ui.Toggle (ensurePaneOpen)
 
+preRunSystem ::
+  NvimE e m =>
+  MonadRibo m =>
+  MonadBaseControl IO m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e SettingError m =>
+  MonadDeepState s CommandState m =>
+  RunTask ->
+  Runner ->
+  m ()
+preRunSystem task@(RunTask (Command _ cmdIdent _ _ _ _ _) log _) runner = do
+  checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
+  closeOutputSocket cmdIdent
+  pushExecution cmdIdent checkPending
+  monitorCommand cmdIdent log
+
 preRun ::
-  RunTmux m =>
   MonadRibo m =>
   NvimE e m =>
   MyoRender s e m =>
@@ -58,15 +73,14 @@ preRun ::
   m ()
 preRun task@(RunTask (Command _ cmdIdent _ _ _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
   ensurePaneOpen ident
-  checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
-  closeOutputSocket cmdIdent
-  pushExecution cmdIdent checkPending
-  monitorCommand cmdIdent log
+  preRunSystem task runner
 preRun (RunTask _ _ (RunTaskDetails.UiShell shellIdent _)) _ = do
   active <- isCommandActive shellIdent
   unless active $ do
     logDebug $ "starting inactive shell command `" <> identText shellIdent <> "`"
     myoRun (identText shellIdent)
+preRun task@(RunTask _ _ RunTaskDetails.System) runner = do
+  preRunSystem task runner
 preRun _ _ =
   return ()
 

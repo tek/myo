@@ -15,63 +15,63 @@ extra-source-files:
 - README.md
 
 dependencies:
-- aeson
-- attoparsec
-- base-noprelude >= 4.7 && < 5
-- bytestring
-- chiasma
-- composition-extra
-- conduit
-- conduit-extra
-- containers
-- cornea
-- data-default
-- deepseq
-- directory
-- either
-- exceptions
-- filepath
-- free
-- hashable
-- hourglass
-- hslogger
-- lens
-- lifted-base
-- messagepack
-- monad-control
-- mono-traversable
-- mtl
-- neat-interpolation
-- network
-- nvim-hs
-- parsec
-- parsers
-- path
-- path-io
-- prettyprinter
-- process
-- raw-strings-qq
-- rawstring-qm
-- regex-with-pcre
-- relude
-- resourcet
-- ribosome >= 0.3
-- split
-- stm-chans
-- stm-conduit
-- strings
-- stringsearch
-- template-haskell
-- text
-- transformers
-- transformers-base
-- typed-process
-- unix
-- unliftio
-- unliftio-core
-- utf8-string
-- uuid
-- vector
+  - aeson
+  - attoparsec
+  - base-noprelude >= 4.7 && < 5
+  - bytestring
+  - chiasma
+  - composition-extra
+  - conduit
+  - conduit-extra
+  - containers
+  - cornea
+  - data-default
+  - deepseq
+  - directory
+  - either
+  - exceptions
+  - filepath
+  - free
+  - hashable
+  - hourglass
+  - hslogger
+  - lens
+  - lifted-base
+  - messagepack
+  - monad-control
+  - mono-traversable
+  - mtl
+  - neat-interpolation
+  - network
+  - nvim-hs
+  - parsec
+  - parsers
+  - path
+  - path-io
+  - prettyprinter
+  - process
+  - raw-strings-qq
+  - rawstring-qm
+  - regex-with-pcre
+  - relude
+  - resourcet
+  - ribosome >= 0.3
+  - split
+  - stm-chans
+  - stm-conduit
+  - strings
+  - stringsearch
+  - template-haskell
+  - text
+  - transformers
+  - transformers-base
+  - typed-process
+  - unix
+  - unliftio
+  - unliftio-core
+  - utf8-string
+  - uuid
+  - vector
 
 library:
  source-dirs: lib

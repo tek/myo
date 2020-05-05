@@ -39,6 +39,8 @@ data RunError =
   VimTest Text
   |
   NoLinesSpecified
+  |
+  SubprocFailed [Text]
   deriving Show
 
 deepPrisms ''RunError
@@ -75,3 +77,8 @@ instance ReportError RunError where
     ErrorReport "vim-test failed" ["RunError.VimTest:", e] ERROR
   errorReport NoLinesSpecified =
     ErrorReport "no lines specified for command" ["RunError.NoLinesSpecified"] NOTICE
+  errorReport (SubprocFailed err) =
+    ErrorReport ("subprocess failed" <> userErr err) ("RunError.SubprocFailed" : err) NOTICE
+    where
+      userErr [] = ""
+      userErr (e : _) = ": " <> e

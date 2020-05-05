@@ -121,7 +121,7 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _) logPath details) =
       paneId <- Views.paneId paneIdent
       runRiboTmux $ runUi paneId
     run _ =
-      undefined
+      unit
     runUi paneId = do
         quitCopyMode paneId
         send paneId
