@@ -97,8 +97,10 @@ runSubprocSpec = do
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls -234234"] (Just runnerIdent) Nothing Nothing Nothing Nothing
   myoRunIdent ident
   sleep 1
+  myoRunIdent ident
+  sleep 1
   loggedError <- gassertJust =<< inspectErrors (Lens.view $ Errors.componentErrors . Lens.at (ComponentName "subproc"))
-  gassertEqual 1 (length loggedError)
+  gassertEqual 2 (length loggedError)
 
 test_runSubproc :: IO ()
 test_runSubproc =

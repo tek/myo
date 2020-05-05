@@ -8,7 +8,7 @@ import Myo.Command.Data.Execution (ExecutionState)
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(System, UiSystem))
-import Myo.Command.Runner (RunInIO, addRunner, extractRunError)
+import Myo.Command.Runner (addRunner, extractRunError, RunInIO)
 import Myo.Command.Subproc.Run (runSubprocTask)
 import Myo.Data.Env (Env)
 import Myo.Output.Data.OutputError (OutputError)
@@ -39,5 +39,5 @@ addSubprocessRunner ::
   MonadDeepState s CommandState m =>
   RunInIO m =>
   m ()
-addSubprocessRunner =
+addSubprocessRunner = do
   addRunner "proc" (extractRunError runSubprocTask) subprocCheckPending subprocCanRun

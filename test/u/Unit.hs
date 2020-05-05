@@ -21,7 +21,7 @@ import Myo.Env (bracketMyoTempDir)
 import Myo.Init (initialize'')
 import Myo.Plugin (plugin')
 import qualified Myo.Settings as Settings (detectUi)
-import Prelude hiding (defaultTestConfig, defaultTestConfigWith, integrationSpec, tmuxSpec, tmuxGuiSpec)
+import Prelude hiding (defaultTestConfig, defaultTestConfigWith, integrationSpec, tmuxGuiSpec, tmuxSpec)
 
 specConfig :: TestConfig -> Env -> Myo () -> IO ()
 specConfig =

@@ -5,32 +5,35 @@ import Control.Monad.Base (MonadBase)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text
 import Myo.Command.Data.CommandState (CommandState)
-import Network.Socket (SockAddr(SockAddrUnix), connect, socketToHandle)
+import Network.Socket (ShutdownCmd(ShutdownBoth), SockAddr(SockAddrUnix), connect, socketToHandle)
+import qualified Network.Socket as Socket
 import Path (Abs, File, Path, toFilePath)
-import Path.IO (doesFileExist)
+import Path.IO (doesFileExist, removeFile)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
+import Ribosome.Control.Exception (tryAny)
 import Ribosome.Error.Report (reportError')
 import qualified System.Exit as ExitCode
 import qualified System.IO as IOMode (IOMode(WriteMode))
 import System.Process (getPid)
 import System.Process.Typed (
-  getStderr,
-  getStdout,
   proc,
   setStderr,
   setStdout,
   startProcess,
   unsafeProcessHandle,
   useHandleClose,
+  useHandleOpen,
   waitExitCode,
   )
 
 import Myo.Command.Data.Command (Command(..))
 import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.Execution (Execution(Execution), ExecutionMonitor(ExecutionMonitor), ExecutionState(..))
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(..))
+import Myo.Command.Execution (killExecution, modifyExecutionState, setExecutionState)
 import Myo.Command.Parse (commandOutput)
 import Myo.Data.Error (Error)
 import Myo.Network.Socket (unixSocket)
@@ -48,35 +51,39 @@ waitForSocket logPath =
     Left _ -> throwHoist RunError.SocketFailure
 
 subprocess ::
-  MonadIO m =>
-  MonadBase IO m =>
+  NvimE e m =>
+  MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e RunError m =>
   Ident ->
-  TVar (Maybe Pid) ->
   Path Abs File ->
   [Text] ->
   m ()
-subprocess ident pidVar logPath (cmd : args) = do
+subprocess ident logPath (cmd : args) = do
   waitForSocket logPath
   socket <- unixSocket
-  liftIO $ connect socket (SockAddrUnix (toFilePath logPath))
-  handle <- liftIO $ socketToHandle socket IOMode.WriteMode
-  let stream = useHandleClose handle
-  prc <- startProcess . setStdout stream . setStderr stream $ proc (toString cmd) (toString <$> args)
-  pid <- liftIO $ getPid (unsafeProcessHandle prc)
-  atomically $ writeTVar pidVar (Pid . fromIntegral <$> pid)
-  check =<< waitExitCode prc
+  result <- runExceptT @Error $ do
+    liftIO $ connect socket (SockAddrUnix (toFilePath logPath))
+    handle <- liftIO $ socketToHandle socket IOMode.WriteMode
+    let stream = useHandleClose handle
+    prc <- startProcess . setStdout stream . setStderr stream $ proc (toString cmd) (toString <$> args)
+    pid <- liftIO $ getPid (unsafeProcessHandle prc)
+    setExecutionState ident (maybe Unknown (Tracked . Pid . fromIntegral) pid)
+    check =<< waitExitCode prc
+    setExecutionState ident Stopped
+  reportError' @Error "subproc" result
+  tryAny $ liftIO $ Socket.shutdown socket ShutdownBoth
+  void $ tryAny $ removeFile logPath
   where
     check ExitCode.ExitSuccess =
       unit
     check (ExitCode.ExitFailure _) = do
       output <- commandOutput ident Nothing
       throwHoist $ RunError.SubprocFailed (Text.lines output)
-subprocess _ _ _ _ =
+subprocess _ _ _ =
   throwHoist $ RunError.InvalidCmdline "empty cmdline"
 
 runSubproc ::
@@ -91,12 +98,8 @@ runSubproc ::
   Text ->
   Path Abs File ->
   m ()
-runSubproc ident line logPath = do
-  pidVar <- liftIO $ newTVarIO Nothing
-  void $ fork (run pidVar)
-    where
-      run pidVar =
-        reportError' @Error "subproc" =<< runExceptT (subprocess ident pidVar logPath (Text.words line))
+runSubproc ident line logPath =
+  void $ fork (subprocess ident logPath (Text.words line))
 
 runSubprocTask ::
   NvimE e m =>
