@@ -103,37 +103,37 @@ packages:
   original:
     url: https://github.com/tek/chiasma/archive/012f4acb0afa0e92f1ce39e186c9a5bdf951ed8e.tar.gz
 - completed:
-    size: 74580
+    size: 74901
     subdir: modules/core
-    url: https://github.com/tek/ribosome/archive/d2c153e18f9335ba68c8b88953fb0afec812c398.tar.gz
+    url: https://github.com/tek/ribosome/archive/a5f03a7d00e002bae2a5eaf6df2ec07698fae6e7.tar.gz
     cabal-file:
-      size: 6163
-      sha256: 63fe6b352695aaefa29b42554ef0b468732126de9677ce0a8ec32a038f90ee1a
+      size: 6215
+      sha256: 3d69476eb3229b1f1258d21ebcd04ec4dedeaa41d2e269184e4e1ba5bc7bc942
     name: ribosome
     version: 0.3.0.1
-    sha256: bed6b5f650f879498e4f9cb8367266de288a968f71846dbcc7e3d23e2cfa53b5
+    sha256: a6d924c4d7f037ab30e0cb0bd607d3a5737163fd892677140e1fd14dcc9ee618
     pantry-tree:
-      size: 8358
-      sha256: 3262a1b81b3e39f5a5a51376e95b4b780d57c03b9877a37d5d264adcb2485c60
+      size: 8431
+      sha256: 1a5546ba7b8b4c8221e3e44689a471522811b0311e4dd1cc3af6c42c3d1a62fa
   original:
     subdir: modules/core
-    url: https://github.com/tek/ribosome/archive/d2c153e18f9335ba68c8b88953fb0afec812c398.tar.gz
+    url: https://github.com/tek/ribosome/archive/a5f03a7d00e002bae2a5eaf6df2ec07698fae6e7.tar.gz
 - completed:
-    size: 74580
+    size: 74901
     subdir: modules/test
-    url: https://github.com/tek/ribosome/archive/d2c153e18f9335ba68c8b88953fb0afec812c398.tar.gz
+    url: https://github.com/tek/ribosome/archive/a5f03a7d00e002bae2a5eaf6df2ec07698fae6e7.tar.gz
     cabal-file:
       size: 2373
       sha256: 41f5bb0defad9abb96ed7d46235478b47893115abfac43ef85f5961bb1f06c51
     name: ribosome-test
     version: 0.3.0.1
-    sha256: bed6b5f650f879498e4f9cb8367266de288a968f71846dbcc7e3d23e2cfa53b5
+    sha256: a6d924c4d7f037ab30e0cb0bd607d3a5737163fd892677140e1fd14dcc9ee618
     pantry-tree:
       size: 972
       sha256: c5ce2bcfd53176d1c1bfa4938008adfd2c821e3a107849cca27870079f54d84b
   original:
     subdir: modules/test
-    url: https://github.com/tek/ribosome/archive/d2c153e18f9335ba68c8b88953fb0afec812c398.tar.gz
+    url: https://github.com/tek/ribosome/archive/a5f03a7d00e002bae2a5eaf6df2ec07698fae6e7.tar.gz
 snapshots:
 - completed:
     size: 524996

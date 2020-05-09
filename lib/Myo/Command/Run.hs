@@ -71,7 +71,7 @@ preRun ::
   RunTask ->
   Runner ->
   m ()
-preRun task@(RunTask (Command _ cmdIdent _ _ _ _ _) log (RunTaskDetails.UiSystem ident)) runner = do
+preRun task@(RunTask _ _ (RunTaskDetails.UiSystem ident)) runner = do
   ensurePaneOpen ident
   preRunSystem task runner
 preRun (RunTask _ _ (RunTaskDetails.UiShell shellIdent _)) _ = do

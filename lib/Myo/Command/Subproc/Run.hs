@@ -1,7 +1,6 @@
 module Myo.Command.Subproc.Run where
 
 import Control.Concurrent.Lifted (fork)
-import Control.Monad.Base (MonadBase)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text
 import Myo.Command.Data.CommandState (CommandState)
@@ -22,18 +21,17 @@ import System.Process.Typed (
   startProcess,
   unsafeProcessHandle,
   useHandleClose,
-  useHandleOpen,
   waitExitCode,
   )
 
 import Myo.Command.Data.Command (Command(..))
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.Execution (Execution(Execution), ExecutionMonitor(ExecutionMonitor), ExecutionState(..))
+import Myo.Command.Data.Execution (ExecutionState(..))
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(..))
-import Myo.Command.Execution (killExecution, modifyExecutionState, setExecutionState)
+import Myo.Command.Execution (setExecutionState)
 import Myo.Command.Parse (commandOutput)
 import Myo.Data.Error (Error)
 import Myo.Network.Socket (unixSocket)
@@ -75,7 +73,7 @@ subprocess ident logPath (cmd : args) = do
     check =<< waitExitCode prc
     setExecutionState ident Stopped
   reportError' @Error "subproc" result
-  tryAny $ liftIO $ Socket.shutdown socket ShutdownBoth
+  void $ tryAny $ liftIO $ Socket.shutdown socket ShutdownBoth
   void $ tryAny $ removeFile logPath
   where
     check ExitCode.ExitSuccess =
@@ -118,7 +116,7 @@ runSubprocTask (RunTask (Command _ ident lines' _ _ _ _) logPath details) =
     UiShell _ _ -> throwHoist $ RunError.Unsupported "subproc" "shell"
     Vim -> throwHoist $ RunError.Unsupported "subproc" "vim"
   where
-    run ident [line] =
-      runSubproc ident line logPath
+    run ident' [line] =
+      runSubproc ident' line logPath
     run _ _ =
       throwHoist $ RunError.InvalidCmdline "proc command must have exactly one line"
