@@ -56,7 +56,7 @@ check target = do
 runSystemSpec :: Myo ()
 runSystemSpec = do
   let ident = Str "cmd"
-  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just runnerIdent) Nothing Nothing Nothing Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just runnerIdent) Nothing Nothing Nothing Nothing Nothing
   addDummyRunner runDummy
   myoRunIdent ident
   check [testError]
@@ -69,13 +69,13 @@ cmdline :: Text
 cmdline = "echo 'hello"
 
 lineRunner :: RunTask -> Myo ()
-lineRunner (RunTask (Command _ _ lines' _ _ _ _) _ _) =
+lineRunner (RunTask (Command _ _ lines' _ _ _ _ _) _ _) =
   reportError cname lines'
 
 runLineSingleSpec :: Myo ()
 runLineSingleSpec = do
   addDummyRunner lineRunner
-  myoLine (RunLineOptions (Just cmdline) Nothing Nothing (Just runnerIdent) Nothing Nothing)
+  myoLine (RunLineOptions (Just cmdline) Nothing Nothing (Just runnerIdent) Nothing Nothing Nothing)
   check [cmdline]
 
 test_runLineSingle :: IO ()
@@ -94,7 +94,7 @@ runSubprocSpec :: Myo ()
 runSubprocSpec = do
   let ident = Str "cmd"
   addSubprocessRunner
-  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls -234234"] (Just runnerIdent) Nothing Nothing Nothing Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls -234234"] (Just runnerIdent) Nothing Nothing Nothing Nothing Nothing
   myoRunIdent ident
   sleep 1
   myoRunIdent ident

@@ -11,8 +11,8 @@ import Myo.Command.Data.Pid (Pid, pidNum)
 import Myo.Command.Execution (executionPid, findExecution)
 
 signalPid ::
-  MonadBaseControl IO m =>
   MonadIO m =>
+  MonadBaseControl IO m =>
   Signal ->
   Pid ->
   m ()
@@ -20,8 +20,8 @@ signalPid signal =
   void . tryAny . liftIO . Signal.signalProcess signal . fromIntegral . pidNum
 
 killPid ::
-  MonadBaseControl IO m =>
   MonadIO m =>
+  MonadBaseControl IO m =>
   Pid ->
   m ()
 killPid =

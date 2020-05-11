@@ -147,9 +147,9 @@ parseCommand ::
   MonadDeepState s CommandState m =>
   Command ->
   m [ParsedOutput]
-parseCommand (Command _ ident _ _ (Just lang) _ _) =
+parseCommand (Command _ ident _ _ (Just lang) _ _ _) =
   parseCommandWithLang lang ident
-parseCommand (Command _ ident _ _ Nothing _ _) = do
+parseCommand (Command _ ident _ _ Nothing _ _ _) = do
   lang <- hoistMaybe (OutputError.NoLang ident) =<< projectLanguage
   parseCommandWithLang lang ident
 

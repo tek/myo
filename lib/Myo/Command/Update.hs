@@ -21,7 +21,9 @@ updateCommands o = do
   CommandSettingCodec system shell <- fromMsgpack' o
   modify @CommandState (Lens.set CommandState.commands ((createShell <$> fold shell) ++ (createSystem <$> fold system)))
   where
-    createSystem (AddSystemCommandOptions ident lines' runner target lang name skipHistory) =
-      systemCommand target ident lines' runner lang name (fromMaybe False skipHistory)
-    createShell (AddShellCommandOptions ident lines' runner target lang name skipHistory) =
-      shellCommand target ident lines' runner lang name (fromMaybe False skipHistory)
+    createSystem (AddSystemCommandOptions ident lines' runner target lang name skipHistory kill) =
+      systemCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill)
+    createShell (AddShellCommandOptions ident lines' runner target lang name skipHistory kill) =
+      shellCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill)
+    orFalse =
+      fromMaybe False

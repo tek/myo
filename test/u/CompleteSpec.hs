@@ -17,7 +17,7 @@ commands =
   [cmd "cmd-15", cmd "cmd-20", cmd "cmd-16"]
   where
     cmd n =
-      Command (CommandInterpreter.System def) n [] def def def False
+      Command (CommandInterpreter.System def) n [] def def def False False
 
 completeCommandSpec :: Myo ()
 completeCommandSpec = do

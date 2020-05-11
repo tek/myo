@@ -18,6 +18,7 @@ data AddSystemCommandOptions =
     target :: Maybe Ident,
     lang :: Maybe CommandLanguage,
     displayName :: Maybe Text,
-    skipHistory :: Maybe Bool
+    skipHistory :: Maybe Bool,
+    kill :: Maybe Bool
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)

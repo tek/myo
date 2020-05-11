@@ -11,6 +11,7 @@ data RunLineOptions =
     target :: Maybe Ident,
     runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
-    skipHistory :: Maybe Bool
+    skipHistory :: Maybe Bool,
+    kill :: Maybe Bool
   }
   deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)

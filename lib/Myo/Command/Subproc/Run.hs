@@ -109,7 +109,7 @@ runSubprocTask ::
   MonadDeepState s CommandState m =>
   RunTask ->
   m ()
-runSubprocTask (RunTask (Command _ ident lines' _ _ _ _) logPath details) =
+runSubprocTask (RunTask (Command _ ident lines' _ _ _ _ _) logPath details) =
   case details of
     System -> run ident lines'
     UiSystem _ -> run ident lines'

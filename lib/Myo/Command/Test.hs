@@ -133,7 +133,7 @@ updateTestCommand testLine = do
   target <- setting testPane
   lang <- settingMaybe testLang
   let interpreter = testInterpreter target shell
-  return $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False
+  return $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False False
 
 myoVimTest ::
   MonadRibo m =>

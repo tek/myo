@@ -2,11 +2,11 @@ module Myo.Output.Lang.Scala.Syntax where
 
 import qualified Data.Map as Map (fromList)
 import Ribosome.Data.Syntax (
-  HiLink(..),
   Highlight(..),
+  HiLink(..),
   Syntax(Syntax),
-  SyntaxItem(..),
   syntaxHighlight,
+  SyntaxItem(..),
   syntaxMatch,
   syntaxRegion,
   syntaxVerbatim,

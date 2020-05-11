@@ -13,16 +13,16 @@ myoAddSystemCommand ::
   MonadDeepState s CommandState m =>
   AddSystemCommandOptions ->
   m ()
-myoAddSystemCommand (AddSystemCommandOptions ident lines' runner target lang name skipHistory) =
+myoAddSystemCommand (AddSystemCommandOptions ident lines' runner target lang name skipHistory kill) =
   Ribo.prepend @CommandState CommandState.commands cmd
   where
-    cmd = systemCommand target ident lines' runner lang name (fromMaybe False skipHistory)
+    cmd = systemCommand target ident lines' runner lang name (fromMaybe False skipHistory) (fromMaybe False kill)
 
 myoAddShellCommand ::
   MonadDeepState s CommandState m =>
   AddShellCommandOptions ->
   m ()
-myoAddShellCommand (AddShellCommandOptions ident lines' runner target lang name skipHistory) =
+myoAddShellCommand (AddShellCommandOptions ident lines' runner target lang name skipHistory kill) =
   Ribo.prepend @CommandState CommandState.commands cmd
   where
-    cmd = shellCommand target ident lines' runner lang name (fromMaybe False skipHistory)
+    cmd = shellCommand target ident lines' runner lang name (fromMaybe False skipHistory) (fromMaybe False kill)

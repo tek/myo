@@ -49,7 +49,8 @@ runDetails ::
   MonadDeepError e RunError m =>
   Command ->
   m RunTaskDetails
-runDetails (Command interpreter _ _ _ _ _ _) = analyze interpreter
+runDetails =
+  analyze . Lens.view Command.interpreter
   where
     analyze (CommandInterpreter.System Nothing) = return systemTaskDetails
     analyze (CommandInterpreter.System (Just paneIdent)) = return $ uiSystemTaskDetails paneIdent

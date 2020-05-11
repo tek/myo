@@ -72,7 +72,7 @@ outputLog =
 saveSpec :: Myo ()
 saveSpec = do
   updateSetting Settings.saveInterval 0.0
-  myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing Nothing
   doautocmd False "BufWritePre"
   await (gassertEqual ([], "")) outputLog
   () <- vimCallFunction "PushOutput" []

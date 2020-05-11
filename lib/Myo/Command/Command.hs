@@ -86,11 +86,29 @@ commandByIdentOrName context query = do
   byName <- mayCommandBy Command.displayName (Just query)
   noSuchCommand context query (byIdent <|> byName)
 
-systemCommand :: Maybe Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Bool -> Command
+systemCommand ::
+  Maybe Ident ->
+  Ident ->
+  [Text] ->
+  Maybe Ident ->
+  Maybe CommandLanguage ->
+  Maybe Text ->
+  Bool ->
+  Bool ->
+  Command
 systemCommand target =
   Command (System target)
 
-shellCommand :: Ident -> Ident -> [Text] -> Maybe Ident -> Maybe CommandLanguage -> Maybe Text -> Bool -> Command
+shellCommand ::
+  Ident ->
+  Ident ->
+  [Text] ->
+  Maybe Ident ->
+  Maybe CommandLanguage ->
+  Maybe Text ->
+  Bool ->
+  Bool ->
+  Command
 shellCommand target =
   Command (Shell target)
 

@@ -46,9 +46,11 @@ addEchoCommand runner lines' =
   ident <$ myoAddSystemCommand opts
   where
     opts =
-      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) (Just (Ident.Str "make")) (Just lang) Nothing Nothing
+      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing
     ident =
       Ident.Str "cmd"
+    makeIdent =
+      Just (Ident.Str "make")
     cmds =
       cmd <$> lines'
     cmd line' =
