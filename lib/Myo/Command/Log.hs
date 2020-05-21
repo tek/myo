@@ -178,12 +178,15 @@ appendLog ident bytes =
       Just (CommandLog [] bytes)
 
 pushCommandLog ::
+  MonadRibo m =>
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m ()
 pushCommandLog ident = do
   logIdent <- mayMainCommandOrHistory ident
+  let logIdentT = identText logIdent
+  logDebug @Text [qt|pushing command log for `${logIdentT}`|]
   modifyL (logLens logIdent) (fmap push)
   where
     push (CommandLog prev cur) | ByteString.null cur =
@@ -192,6 +195,7 @@ pushCommandLog ident = do
       CommandLog (cur : prev) ""
 
 pushCommandLogs ::
+  MonadRibo m =>
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   m ()

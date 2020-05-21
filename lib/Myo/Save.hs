@@ -34,24 +34,27 @@ sensibleSave state@Env{ _lastSave = last', .. } = do
     shouldSave now saveTimeout =
       now - last' > saveTimeout
     save =
-      runExceptT @CommandError pushCommandLogs *> updateLastSave
+      logDebug @Text "pushing command log on save" *>
+      runExceptT @CommandError pushCommandLogs *>
+      updateLastSave
 
 myoSave ::
   NvimE e m =>
   MonadRibo m =>
-  MonadDeepError e SettingError m =>
   MonadDeepState s Env m =>
+  MonadDeepError e SettingError m =>
   m ()
 myoSave =
   (`when` modifyM sensibleSave) =<< setting Settings.resetOnSave
 
 saveAll ::
-  MonadIO m =>
   NvimE e m =>
+  MonadRibo m =>
   MonadDeepState s Env m =>
+  MonadDeepError e SettingError m =>
   m ()
 saveAll = do
-  updateLastSave
+  myoSave
   vimCommand "noautocmd wall"
 
 preCommandSave ::
