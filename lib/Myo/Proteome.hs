@@ -56,17 +56,17 @@ stackBuildCommand cmd pro pedantic =
     suf =
       if pedantic then "" else "-lenient"
 
-haskellSystemCommands :: Text -> Text -> [AddSystemCommandOptions]
-haskellSystemCommands pro testPro =
-  [
-    AddSystemCommandOptions "ghci" ["ghci"] Nothing (Just "ghci") (Just "haskell") Nothing (Just True) Nothing,
+haskellSystemCommands :: Bool -> Text -> Text -> [AddSystemCommandOptions]
+haskellSystemCommands stack pro testPro =
+  AddSystemCommandOptions "ghci" ["ghci"] Nothing (Just "ghci") (Just "haskell") Nothing (Just True) Nothing :
+  if stack then [
     stackBuildCommand "build" pro True,
     stackBuildCommand "build" pro False,
     stackBuildCommand "test" testPro True,
     stackBuildCommand "test" testPro False,
     stackCommand "clean" ("clean " <> pro),
     stackCommand "clean-all" "clean"
-    ]
+  ] else []
 
 haskellConfig ::
   NvimE e m =>
@@ -75,11 +75,12 @@ haskellConfig ::
 haskellConfig = do
   pro <- fromMaybe "" <$> settingMaybe Settings.haskellCompileProject
   testPro <- fromMaybe pro <$> settingMaybe Settings.haskellTestProject
-  whenM (unset Settings.ui) (set pro testPro)
+  stack <- settingOr True Settings.haskellStack
+  whenM (unset Settings.ui) (set stack pro testPro)
   where
-    set pro testPro =
+    set stack pro testPro =
       updateSetting Settings.ui (UiSettingCodec Nothing (Just haskellPanes)) *>
-      updateSetting Settings.commands (CommandSettingCodec (Just (haskellSystemCommands pro testPro)) Nothing) *>
+      updateSetting Settings.commands (CommandSettingCodec (Just (haskellSystemCommands stack pro testPro)) Nothing) *>
       updateSetting Settings.testLang "haskell"
 
 scalaPanes :: [AddPaneOptions]

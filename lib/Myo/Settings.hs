@@ -95,6 +95,10 @@ haskellTestProject :: Setting Text
 haskellTestProject =
   Setting "haskell_test_project" True Nothing
 
+haskellStack :: Setting Bool
+haskellStack =
+  Setting "haskell_stack" True (Just True)
+
 defaultCommands :: Setting Bool
 defaultCommands =
   Setting "default_commands" True (Just True)
