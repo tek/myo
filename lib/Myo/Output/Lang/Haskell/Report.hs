@@ -5,7 +5,7 @@ import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
+import Text.Parser.Char (CharParsing, anyChar, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, many, manyTill, sepBy1, skipMany, skipOptional, some, try)
 import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 
@@ -75,19 +75,19 @@ data HaskellMessage =
   DataCtorNotInScope Text
   deriving (Eq, Show)
 
-lq :: Char
-lq =
-  '‘'
-rq :: Char
-rq =
-  '’'
+lqs :: String
+lqs =
+  "‘`"
+rqs :: String
+rqs =
+  "’'"
 
 quoted ::
   TokenParsing m =>
   m a ->
   m a
 quoted =
-  between (char lq) (char rq)
+  between (oneOf lqs) (oneOf rqs)
 
 qnames ::
   TokenParsing m =>
@@ -99,7 +99,7 @@ qnames wordChar separator =
 
 qname :: TokenParsing m => m Text
 qname =
-  unwords <$> qnames (noneOf ['\n', ' ', rq]) whiteSpace
+  unwords <$> qnames (noneOf (['\n', ' '] ++ rqs)) whiteSpace
 
 ws :: TokenParsing m => m ()
 ws =
@@ -184,7 +184,7 @@ noInstance1 ::
   TokenParsing m =>
   m HaskellMessage
 noInstance1 =
-  NoInstance . show <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf [lq]) *> qname)
+  NoInstance . show <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf lqs) *> qname)
 
 noInstance2 ::
   TokenParsing m =>
