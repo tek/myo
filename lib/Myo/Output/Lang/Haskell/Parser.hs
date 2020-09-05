@@ -9,7 +9,7 @@ import qualified Data.List.NonEmpty as NonEmpty (last)
 import qualified Data.Text as Text (filter)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, text)
+import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, oneOf, text)
 import Text.Parser.Combinators (choice, eof, many, manyTill, sepByNonEmpty, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, parens)
@@ -74,7 +74,7 @@ region =
 
 dot :: CharParsing m => m Char
 dot =
-  char '•'
+  oneOf "•*"
 
 codeSnippet ::
   TokenParsing m =>
