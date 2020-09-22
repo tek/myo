@@ -4,10 +4,11 @@ import Control.Concurrent.Lifted (fork)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text
 import Myo.Command.Data.CommandState (CommandState)
-import Network.Socket (ShutdownCmd(ShutdownBoth), SockAddr(SockAddrUnix), connect, socketToHandle)
 import qualified Network.Socket as Socket
+import Network.Socket (ShutdownCmd(ShutdownBoth), SockAddr(SockAddrUnix), connect, socketToHandle)
 import Path (Abs, File, Path, toFilePath)
 import Path.IO (doesFileExist, removeFile)
+import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
 import Ribosome.Control.Exception (tryAny)
 import Ribosome.Error.Report (reportError')
@@ -18,6 +19,7 @@ import System.Process.Typed (
   proc,
   setStderr,
   setStdout,
+  setWorkingDir,
   startProcess,
   unsafeProcessHandle,
   useHandleClose,
@@ -56,18 +58,19 @@ subprocess ::
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e RunError m =>
+  String ->
   Ident ->
   Path Abs File ->
   [Text] ->
   m ()
-subprocess ident logPath (cmd : args) = do
+subprocess cwd ident logPath (cmd : args) = do
   waitForSocket logPath
   socket <- unixSocket
   result <- runExceptT @Error $ do
     liftIO $ connect socket (SockAddrUnix (toFilePath logPath))
     handle <- liftIO $ socketToHandle socket IOMode.WriteMode
     let stream = useHandleClose handle
-    prc <- startProcess . setStdout stream . setStderr stream $ proc (toString cmd) (toString <$> args)
+    prc <- startProcess . setStdout stream . setStderr stream . setWorkingDir cwd $ proc (toString cmd) (toString <$> args)
     pid <- liftIO $ getPid (unsafeProcessHandle prc)
     setExecutionState ident (maybe Unknown (Tracked . Pid . fromIntegral) pid)
     check =<< waitExitCode prc
@@ -81,7 +84,7 @@ subprocess ident logPath (cmd : args) = do
     check (ExitCode.ExitFailure _) = do
       output <- commandOutput ident Nothing
       throwHoist $ RunError.SubprocFailed (Text.lines output)
-subprocess _ _ _ =
+subprocess _ _ _ _ =
   throwHoist $ RunError.InvalidCmdline "empty cmdline"
 
 runSubproc ::
@@ -96,8 +99,9 @@ runSubproc ::
   Text ->
   Path Abs File ->
   m ()
-runSubproc ident line logPath =
-  void $ fork (subprocess ident logPath (Text.words line))
+runSubproc ident line logPath = do
+  cwd <- nvimCwd
+  void $ fork (subprocess cwd ident logPath (Text.words line))
 
 runSubprocTask ::
   NvimE e m =>
