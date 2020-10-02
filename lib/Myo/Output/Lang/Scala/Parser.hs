@@ -1,16 +1,11 @@
 module Myo.Output.Lang.Scala.Parser where
 
-import Control.Monad ((<=<))
 import Data.Attoparsec.Text (parseOnly)
 import Data.Char (isSpace)
-import Data.Either.Combinators (mapLeft)
-import Data.Functor (void)
-import Data.Maybe (catMaybes)
-import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, char, newline, satisfy, string)
-import Text.Parser.Combinators (choice, many, notFollowedBy, skipMany, skipOptional)
+import Text.Parser.Combinators (choice, notFollowedBy, skipMany, skipOptional)
 import Text.Parser.LookAhead (LookAheadParsing)
 import Text.Parser.Token (TokenParsing, natural)
 

@@ -4,7 +4,7 @@ module Tmux.RunSpec (htf_thisModulesTests) where
 
 import Chiasma.Codec.Data.PaneMode (PaneMode(PaneMode))
 import Chiasma.Command.Pane (capturePane, copyMode, paneMode)
-import Chiasma.Data.Ident (Ident(Str), identText)
+import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.TmuxId (PaneId(PaneId))
 import Data.Text (Text)
 import Prelude hiding (tmuxSpecDef)
@@ -36,7 +36,7 @@ setup = do
   myoAddSystemCommand cmd
   where
     cmd =
-      AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing Nothing Nothing Nothing
+      AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing Nothing Nothing Nothing Nothing
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 runAndCheck :: Myo ()

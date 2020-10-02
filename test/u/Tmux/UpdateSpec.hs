@@ -2,7 +2,6 @@
 
 module Tmux.UpdateSpec (htf_thisModulesTests) where
 
-import Chiasma.Data.Ident (identText)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Chiasma.Ui.Data.View (View(View))
 import Data.Bifoldable (bifoldMap)

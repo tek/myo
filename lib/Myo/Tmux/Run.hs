@@ -1,8 +1,7 @@
 module Myo.Tmux.Run where
 
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
-import Chiasma.Command.Pane (panePid, pipePane, quitCopyMode, sendKeys)
-import Chiasma.Data.Ident (identText)
+import Chiasma.Command.Pane (capturePane, panePid, pipePane, quitCopyMode, sendKeys)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.Views (Views, ViewsError)
@@ -10,26 +9,24 @@ import Chiasma.Monad.Stream (TmuxProg)
 import qualified Chiasma.Monad.Stream as Chiasma (runTmux)
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import qualified Chiasma.View.State as Views (paneId)
-import Control.Monad.Trans.Control (MonadBaseControl)
+import qualified Data.Text as Text
 import qualified Myo.Control.Concurrent.Wait as Ribosome (waitIOPredDef)
 import Path (Abs, File, Path)
 import Path.IO (doesFileExist, removeFile)
 import Prelude hiding (state)
 import Ribosome.Api.Echo (echo, echon)
 import Ribosome.Control.Exception (tryAny)
-import Ribosome.Control.Monad.Ribo (MonadRibo)
-import Ribosome.Tmux.Run (runRiboTmux, RunTmux)
-import System.Posix.Signals (Signal)
+import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 import qualified System.Posix.Signals as Signal
+import System.Posix.Signals (Signal)
 
 import Myo.Command.Data.Command (Command(Command))
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Execution (ExecutionState)
 import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Starting, Pending, Unknown))
 import Myo.Command.Data.Pid (Pid(Pid))
+import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunError as RunError (RunError(SocketFailure))
-import Myo.Command.Data.RunTask (RunTask(RunTask))
+import Myo.Command.Data.RunTask (RunTask(RunTask), RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
 import Myo.Command.Kill (signalPid)
 import Myo.Command.Log (pipePaneToSocket)
@@ -48,7 +45,6 @@ tmuxCanRun (RunTask _ _ details) =
 
 waitForSocket ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MonadDeepError e RunError m =>
   Path Abs File ->
   m ()
@@ -110,7 +106,6 @@ killSignals =
 killRunning ::
   NvimE e m =>
   MonadRibo m =>
-  MonadBaseControl IO m =>
   PaneId ->
   TmuxProg m ()
 killRunning paneId =
@@ -142,13 +137,12 @@ tmuxRun ::
   NvimE e m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
   MonadDeepState s Views m =>
   MonadDeepError e ViewsError m =>
   MonadDeepError e RunError m =>
   RunTask ->
   m ()
-tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _ kill) logPath details) =
+tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _ kill _) logPath details) =
   run details
   where
     run (RunTaskDetails.UiSystem paneIdent) = do
@@ -170,3 +164,25 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _ kill) logPath details) =
         send paneId
     send paneId =
       sendKeys paneId lines'
+
+taskPane :: RunTaskDetails -> Maybe Ident
+taskPane = \case
+  RunTaskDetails.UiSystem paneIdent ->
+    Just paneIdent
+  RunTaskDetails.UiShell _ paneIdent ->
+    Just paneIdent
+  _ ->
+    Nothing
+
+tmuxCapture ::
+  RunTmux m =>
+  NvimE e m =>
+  MonadDeepState s Views m =>
+  MonadDeepError e RunError m =>
+  MonadDeepError e ViewsError m =>
+  RunTask ->
+  m ByteString
+tmuxCapture (RunTask _ _ details) = do
+  paneIdent <- hoistMaybe (RunError.Unsupported "tmux" "capture") (taskPane details)
+  paneId <- Views.paneId paneIdent
+  foldMap (encodeUtf8 . flip Text.snoc '\n') <$> runRiboTmux (capturePane paneId)

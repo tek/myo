@@ -1,11 +1,7 @@
 module Myo.Command.Runner where
 
-import Chiasma.Data.Ident (Ident)
 import Control.Lens (filtered, firstOf, folded, views)
-import Control.Monad.DeepError (MonadDeepError, catchAt, hoistMaybe)
-import Control.Monad.DeepState (MonadDeepState, gets)
-import Control.Monad.Trans.Control (MonadBaseControl, embed)
-import Data.Foldable (find)
+import Control.Monad.Trans.Control (embed)
 import Ribosome.Control.Monad.Ribo (Ribo, prepend)
 
 import Myo.Command.Data.Command (Command(Command))
@@ -27,18 +23,17 @@ instance Show e => RunInIO (Ribo s e) where
         either (Left . RunError.IOEmbed . show) id <$$> run
 
 canRun :: RunTask -> Runner -> Bool
-canRun task (Runner _ can _ _) =
+canRun task (Runner _ can _ _ _) =
   can task
 
 explicitRunner ::
   MonadDeepState s Env m =>
-  MonadDeepError e RunError m =>
   RunTask ->
   m (Maybe Runner)
-explicitRunner (RunTask (Command _ _ _ (Just runner) _ _ _ _) _ _) =
+explicitRunner (RunTask (Command _ _ _ (Just runner) _ _ _ _ _) _ _) =
   gets @Env $ firstOf (Env.runners . folded . filtered matchRunner)
   where
-    matchRunner (Runner ident _ _ _) =
+    matchRunner (Runner ident _ _ _ _) =
       ident == runner
 explicitRunner _ =
   pure Nothing
@@ -65,11 +60,13 @@ addRunner ::
   (RunTask -> m (Either RunError ())) ->
   (RunTask -> m (Either RunError (IO ExecutionState))) ->
   CanRun ->
+  Maybe (RunTask -> m (Either RunError ByteString)) ->
   m ()
-addRunner ident run checkPending can = do
+addRunner ident run checkPending can capture = do
   er <- runInIOSE run
   cp <- runInIOSE checkPending
-  prepend @Env Env.runners (Runner ident can er cp)
+  cpt <- traverse runInIOSE capture
+  prepend @Env Env.runners (Runner ident can er cp cpt)
 
 extractRunError ::
   MonadDeepError e RunError m =>

@@ -1,9 +1,6 @@
 module Myo.Init where
 
 import Chiasma.Data.Ident (generateIdent)
-import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
-import Data.Default (Default(def))
 import Neovim (Neovim)
 import Neovim.Context.Internal (Config(customConfig), asks')
 import Path (Abs, Dir, Path)

@@ -1,18 +1,13 @@
 module Myo.Command.Run where
 
-import Chiasma.Data.Ident (generateIdent, identText)
+import Chiasma.Data.Ident (generateIdent)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Control.Lens as Lens (view)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text
-import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Command (commandByIdent, commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import Myo.Command.Data.Command (Command(..))
@@ -32,6 +27,7 @@ import Myo.Command.Monitor (monitorCommand)
 import Myo.Command.RunTask (runTask)
 import Myo.Command.Runner (findRunner)
 import Myo.Data.Env (Env, Runner(Runner, runnerCheckPending))
+import Myo.Data.Maybe (orFalse)
 import Myo.Orphans ()
 import Myo.Save (preCommandSave)
 import Myo.Ui.Data.ToggleError (ToggleError)
@@ -48,7 +44,7 @@ preRunSystem ::
   RunTask ->
   Runner ->
   m ()
-preRunSystem task@(RunTask (Command _ cmdIdent _ _ _ _ _ _) log _) runner = do
+preRunSystem task@(RunTask (Command _ cmdIdent _ _ _ _ _ _ _) log _) runner = do
   checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
   closeOutputSocket cmdIdent
   pushExecution cmdIdent checkPending
@@ -56,7 +52,6 @@ preRunSystem task@(RunTask (Command _ cmdIdent _ _ _ _ _ _) log _) runner = do
 
 preRun ::
   MonadRibo m =>
-  NvimE e m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
   MonadDeepError e CommandError m =>
@@ -103,13 +98,11 @@ postRun _ =
 
 executeRunner ::
   MonadRibo m =>
-  MonadIO m =>
   MonadDeepError e RunError m =>
-  MonadDeepState s Env m =>
   Runner ->
   RunTask ->
   m ()
-executeRunner (Runner _ _ run _) task = do
+executeRunner (Runner _ _ run _ _) task = do
   logDebug $ "executing runner for command `" <> identText ident <> "`"
   hoistEither =<< liftIO (run task)
   where
@@ -122,7 +115,6 @@ executeRunner (Runner _ _ run _) task = do
 -- that output is redirected to this socket.
 -- Pushes the command into the history.
 runCommand ::
-  RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
@@ -147,7 +139,6 @@ runCommand cmd = do
   void $ postRun task
 
 myoRunIdent ::
-  RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
@@ -166,7 +157,6 @@ myoRunIdent =
   runCommand <=< commandByIdent "run"
 
 myoRun ::
-  RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
@@ -185,7 +175,6 @@ myoRun =
   runCommand <=< commandByIdentOrName "run" . Text.strip
 
 myoReRun ::
-  RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
@@ -208,7 +197,6 @@ defaultTarget =
   Ident.Str "make"
 
 myoLine ::
-  RunTmux m =>
   MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
@@ -223,22 +211,20 @@ myoLine ::
   MonadThrow m =>
   RunLineOptions ->
   m ()
-myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill) = do
+myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) = do
   ident <- generateIdent
   lines' <- hoistMaybe RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
   target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
   runCommand $ cmd ident target lines'
   where
     cmd ident target lines' =
-      cons target ident lines' runner lang Nothing (fromMaybe False skipHistory) (fromMaybe False kill)
+      cons target ident lines' runner lang Nothing (orFalse skipHistory) (orFalse kill) (orFalse capture)
     cons =
       either shellCommand (systemCommand . Just)
     findTarget target =
       maybe (Right target) (Left . Lens.view Command.ident) <$> mayCommandByIdent target
 
 myoLineCmd ::
-  RunTmux m =>
-  MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
   MonadDeepError e CommandError m =>
@@ -253,11 +239,9 @@ myoLineCmd ::
   Text ->
   m ()
 myoLineCmd line' =
-  myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing Nothing)
+  myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
 
 myo ::
-  RunTmux m =>
-  MonadRibo m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
   MonadDeepError e CommandError m =>

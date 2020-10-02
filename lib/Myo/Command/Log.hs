@@ -1,16 +1,12 @@
 module Myo.Command.Log where
 
 import Chiasma.Command.Pane (pipePane)
-import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
-import Control.Lens (Lens', (?~))
+import Control.Lens (Lens', (?~), (^.))
 import qualified Control.Lens as Lens (at, over, view)
 import Control.Monad.Base (MonadBase)
-import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Free (MonadFree)
-import Control.Monad.IO.Class (MonadIO)
-import Data.ByteString (ByteString)
 import qualified Data.ByteString as ByteString (null)
 import Data.Char (isAlphaNum)
 import qualified Data.Map as Map (keys, toList)
@@ -21,14 +17,16 @@ import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (showInScratch)
 
-import Myo.Command.Command (mainCommand)
+import Myo.Command.Command (mainCommand, mainCommandIdent)
 import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.Command as Command (displayName, ident, interpreter)
+import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter(Shell))
 import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
 import Myo.Command.Data.CommandState (CommandState, Logs)
 import qualified Myo.Command.Data.CommandState as CommandState (logPaths, logs)
+import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
 import Myo.Data.Env (Env)
@@ -39,7 +37,6 @@ logPathLens :: Ident -> Lens' CommandState (Maybe (Path Abs File))
 logPathLens ident = CommandState.logPaths . Lens.at ident
 
 logPathByIdent ::
-  MonadDeepError e RunError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m (Maybe (Path Abs File))
@@ -56,21 +53,26 @@ insertLogPath ::
   MonadDeepError e RunError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  MonadThrow m =>
   Ident ->
   m (Path Abs File)
 insertLogPath ident = do
   base <- logTempDir
-  fileName <- parseRelFile . toString $ "pane-" <> identText ident
+  fileName <- hoistMaybe invalidIdent (parseFileName)
   let logPath = base </> fileName
   modify $ logPathLens ident ?~ logPath
   return logPath
+  where
+    parseFileName =
+      parseRelFile (toString ("pane-" <> identT))
+    invalidIdent =
+      RunError.Command (CommandError.Misc ("invalid command ident: " <> identT))
+    identT =
+      identText ident
 
 commandLogPath ::
   MonadDeepError e RunError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  MonadThrow m =>
   Ident ->
   m (Path Abs File)
 commandLogPath ident = do
@@ -81,7 +83,6 @@ commandLogSocketBind ::
   MonadDeepError e RunError m =>
   MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
-  MonadThrow m =>
   MonadBase IO m =>
   Ident ->
   m Socket
@@ -89,7 +90,7 @@ commandLogSocketBind =
   socketBind <=< commandLogPath
 
 pipePaneToSocket ::
-  (MonadIO m, MonadFree TmuxThunk m) =>
+  MonadFree TmuxThunk m =>
   PaneId ->
   Path Abs File ->
   m ()
@@ -112,12 +113,27 @@ mainCommandOrHistory ::
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
+  m Command
+mainCommandOrHistory ident = do
+  cmd <- commandOrHistoryByIdent ident
+  recurse cmd (cmd ^. Command.interpreter)
+  where
+    recurse cmd = \case
+      Shell target ->
+        mainCommand target
+      _ ->
+        pure cmd
+
+mainCommandOrHistoryIdent ::
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
   m Ident
-mainCommandOrHistory ident =
+mainCommandOrHistoryIdent ident =
   recurse =<< (Lens.view Command.interpreter <$> commandOrHistoryByIdent ident)
   where
     recurse (Shell target) =
-      mainCommand target
+      mainCommandIdent target
     recurse _ =
       return ident
 
@@ -136,7 +152,6 @@ mayMainCommandOrHistory ident =
 
 commandLogBy ::
   Eq a =>
-  Show a =>
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Text ->
@@ -145,7 +160,7 @@ commandLogBy ::
   m (Maybe CommandLog)
 commandLogBy ident lens a = do
   cmd <- commandOrHistoryBy ident lens a
-  logIdent <- mainCommandOrHistory (Lens.view Command.ident cmd)
+  logIdent <- mainCommandOrHistoryIdent (Lens.view Command.ident cmd)
   getL (logLens logIdent)
 
 commandLog ::

@@ -1,6 +1,5 @@
 module Myo.Ui.Lens.Toggle where
 
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
 import Chiasma.Ui.Data.View (ViewTree)
@@ -12,7 +11,6 @@ import Chiasma.Ui.ViewTree (
   )
 import qualified Chiasma.Ui.ViewTree as ToggleResult (ToggleResult(..))
 import Control.Lens (Traversal')
-import Control.Monad.DeepState (modifyM)
 
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.View (uiTreesLens)

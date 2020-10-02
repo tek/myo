@@ -4,21 +4,14 @@
 
 module Myo.Ui.Render where
 
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Chiasma.Data.Views (Views)
 import Chiasma.Render (render)
-import Control.Monad ((<=<))
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
 import Control.Monad.Error.Class (MonadError)
 import Control.Monad.Free.Class (MonadFree)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Except (runExceptT)
-import Data.Foldable (traverse_)
 import Ribosome.Api.Path (nvimCwd)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
 import Myo.Env (myoSpaces)

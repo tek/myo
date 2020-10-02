@@ -7,8 +7,6 @@ import Chiasma.Data.Ident (Ident(..))
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
 import Data.MessagePack (Object(ObjectString))
 import qualified Data.UUID as UUID (toString)
-import Ribosome.Msgpack.Decode (MsgpackDecode(..))
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 import qualified Ribosome.Msgpack.Util as Util (illegalType, string)
 
 instance MsgpackDecode Ident where

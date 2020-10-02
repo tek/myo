@@ -1,10 +1,7 @@
 module Myo.Command.Output where
 
-import Control.Monad (when)
-import Control.Monad.DeepState (MonadDeepState)
 import GHC.Natural (minusNaturalMaybe)
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (killScratchByName)

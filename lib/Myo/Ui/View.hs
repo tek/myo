@@ -2,7 +2,6 @@
 
 module Myo.Ui.View where
 
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Views (Views)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
@@ -21,9 +20,6 @@ import Chiasma.Ui.Data.ViewState (ViewState(ViewState))
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (Lens', Traversal', each, has, mapMOf, transformM)
 import Control.Lens.Setter ((%~), (<>~))
-import Control.Monad ((<=<))
-import Control.Monad.DeepError (MonadDeepError, hoistEither)
-import Data.Foldable (traverse_)
 
 import Myo.Data.Env (Env)
 import qualified Myo.Data.Env as Env (ui)

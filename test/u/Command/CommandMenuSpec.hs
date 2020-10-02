@@ -26,7 +26,7 @@ commands =
   [entry "c1", entry "c2", entry "c3", entry "c4", entry "c4", entry "c4", entry "c4", entry "c4"]
   where
     entry n@(show -> nt) =
-      Command (CommandInterpreter.Vim False Nothing) n [[qt|let g:command = '${nt}'|]] def def def False False
+      Command (CommandInterpreter.Vim False Nothing) n [[qt|let g:command = '${nt}'|]] def def def False False False
 
 commandMenuSpec :: Myo ()
 commandMenuSpec = do

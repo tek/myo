@@ -1,6 +1,5 @@
 module Myo.Plugin where
 
-import Control.Monad ((<=<))
 import qualified Data.Map as Map (fromList)
 import Data.MessagePack (Object)
 import Myo.Output.Data.OutputError (OutputError)

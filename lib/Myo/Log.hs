@@ -6,10 +6,7 @@ module Myo.Log (
 import qualified Chiasma.Data.Views as Views (log)
 import Chiasma.Ui.ShowTree (printViewTree)
 import qualified Control.Lens as Lens (toListOf, view)
-import Control.Monad.DeepState (MonadDeepState, gets)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (traverse_)
-import Data.Text.Prettyprint.Doc (line, (<>))
+import Data.Text.Prettyprint.Doc (line)
 import Data.Text.Prettyprint.Doc.Util (putDocW)
 import Ribosome.Log (debug, err, info, prefixed)
 

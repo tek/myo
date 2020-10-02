@@ -1,6 +1,6 @@
 module Myo.Command.Data.PendingCommand where
 
-import Chiasma.Data.Ident (Ident, Identifiable(..))
+import Chiasma.Data.Ident (Identifiable(..))
 import Data.Hourglass (Elapsed)
 import qualified Text.Show
 

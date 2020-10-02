@@ -2,8 +2,6 @@ module Myo.Command.Execution where
 
 import Control.Lens (Lens')
 import qualified Control.Lens as Lens (_Just, at, mapMOf, set, view)
-import Control.Monad.DeepState (modifyM)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Network.Socket (Socket)
 import qualified Network.Socket as Socket (close)
 import Prelude hiding (state)

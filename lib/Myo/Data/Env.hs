@@ -3,8 +3,6 @@
 module Myo.Data.Env where
 
 import Chiasma.Data.Ident (Ident(Str))
-import Data.DeepLenses (deepLenses)
-import Data.Default (Default(def))
 import Data.Hourglass (ElapsedP)
 import Path (Abs, Dir, Path, absdir)
 import Ribosome.Control.Monad.Ribo (Ribo)
@@ -30,13 +28,14 @@ data Runner =
     runnerIdent :: Ident,
     runnerEligible :: CanRun,
     runnerRun :: RunF,
-    runnerCheckPending :: CheckPending
+    runnerCheckPending :: CheckPending,
+    capture :: Maybe (RunTask -> IO (Either RunError ByteString))
   }
 
 class Runner1 a where
 
 instance Text.Show.Show Runner where
-  show (Runner ident _ _ _) =
+  show (Runner ident _ _ _ _) =
     "Runner(" <> show ident <> ")"
 
 data Env =

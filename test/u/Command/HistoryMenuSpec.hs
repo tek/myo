@@ -34,7 +34,7 @@ history =
   [entry "c1", entry "c2", entry "c3", entry "c4", entry "c4", entry "c4", entry "c4", entry "c4"]
   where
     entry n =
-      HistoryEntry (Command (CommandInterpreter.System Nothing) n def def def def False False)
+      HistoryEntry (Command (CommandInterpreter.System Nothing) n def def def def False False False)
 
 exec ::
   MonadIO m =>

@@ -67,6 +67,10 @@ testLang :: Setting CommandLanguage
 testLang =
   Setting "test_lang" True Nothing
 
+testCapture :: Setting Bool
+testCapture =
+  Setting "test_capture" True Nothing
+
 processTimeout :: Setting Int
 processTimeout =
   Setting "process_timeout" True (Just 3)

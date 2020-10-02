@@ -1,6 +1,5 @@
 module Myo.Output.Data.OutputParser where
 
-import Data.Text (Text)
 import qualified Text.Show
 
 import Myo.Output.Data.OutputError (OutputError)

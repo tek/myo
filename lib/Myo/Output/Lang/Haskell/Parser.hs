@@ -3,14 +3,12 @@
 module Myo.Output.Lang.Haskell.Parser where
 
 import Data.Attoparsec.Text (parseOnly)
-import Data.Either.Combinators (mapLeft)
-import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.List.NonEmpty as NonEmpty (last)
 import qualified Data.Text as Text (filter)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, oneOf, text)
-import Text.Parser.Combinators (choice, eof, many, manyTill, sepByNonEmpty, skipMany, skipOptional, try)
+import Text.Parser.Combinators (choice, eof, manyTill, sepByNonEmpty, skipMany, skipOptional, try)
 import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, parens)
 import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)

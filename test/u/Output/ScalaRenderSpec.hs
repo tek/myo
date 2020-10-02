@@ -3,7 +3,6 @@
 module Output.ScalaRenderSpec (htf_thisModulesTests) where
 
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Data.Functor (void)
 import Data.Functor.Syntax ((<$$>))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)

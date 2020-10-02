@@ -1,9 +1,7 @@
-
 module Myo.Ui.Data.Window where
 
-import Chiasma.Data.Ident (Ident, Identifiable(..))
+import Chiasma.Data.Ident (Identifiable(..))
 import Chiasma.Ui.Data.View (ViewTree)
-import Control.Lens (makeClassy)
 import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
 
 data Window =

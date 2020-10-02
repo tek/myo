@@ -43,7 +43,7 @@ addCatCommand runner =
   ident <$ myoAddSystemCommand opts
   where
     opts =
-      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing
+      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing Nothing
     ident =
       Ident.Str "cat"
     makeIdent =

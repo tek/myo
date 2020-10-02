@@ -1,8 +1,6 @@
 module Myo.Command.RunTaskDetails where
 
-import Chiasma.Data.Ident (Ident)
 import qualified Control.Lens as Lens (view)
-import Control.Monad.DeepError (MonadDeepError)
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command(..))

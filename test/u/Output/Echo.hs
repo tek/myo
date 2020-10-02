@@ -41,12 +41,16 @@ addEchoHandler :: FilePath -> Myo ()
 addEchoHandler file =
   addHandler lang (OutputHandler (OutputParser (parseEcho (toText file))))
 
-addEchoCommand :: Text -> [Text] -> Myo Ident
-addEchoCommand runner lines' =
+addEchoCommand ::
+  Text ->
+  [Text] ->
+  Bool ->
+  Myo Ident
+addEchoCommand runner lines' capture =
   ident <$ myoAddSystemCommand opts
   where
     opts =
-      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing
+      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing (Just capture)
     ident =
       Ident.Str "cmd"
     makeIdent =

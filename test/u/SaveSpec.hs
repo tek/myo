@@ -2,7 +2,6 @@
 
 module SaveSpec (htf_thisModulesTests) where
 
-import Chiasma.Data.Ident (Ident)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Neovim (Plugin(..))
 import Path (Abs, Dir, Path)
@@ -72,7 +71,7 @@ outputLog =
 saveSpec :: Myo ()
 saveSpec = do
   updateSetting Settings.saveInterval 0.0
-  myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
   doautocmd False "BufWritePre"
   await (gassertEqual ([], "")) outputLog
   () <- vimCallFunction "PushOutput" []

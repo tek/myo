@@ -1,8 +1,6 @@
-module Myo.Command.Data.RunningCommand(
-  RunningCommand(..),
-) where
+module Myo.Command.Data.RunningCommand where
 
-import Chiasma.Data.Ident (Ident, Identifiable(..))
+import Chiasma.Data.Ident (Identifiable(..))
 import Myo.Command.Data.Pid (Pid)
 
 data RunningCommand =

@@ -2,12 +2,10 @@
 
 module Myo.Data.Error where
 
-import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.Mapping (MappingError)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.RunError (RunError)

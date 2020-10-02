@@ -1,10 +1,8 @@
 
 module Myo.Command.Data.RunError where
 
-import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
-import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
 import Ribosome.Orphans ()
@@ -47,7 +45,7 @@ deepPrisms ''RunError
 
 instance ReportError RunError where
   errorReport (Command e) = errorReport e
-  errorReport (NoRunner task@(RunTask (Cmd.Command _ ident _ _ _ _ _ _) _ _)) =
+  errorReport (NoRunner task@(RunTask (Cmd.Command _ ident _ _ _ _ _ _ _) _ _)) =
     ErrorReport user ["no runner for task:", show task] NOTICE
     where
       user = "no runner available for command `" <> identText ident <> "`"
@@ -59,7 +57,7 @@ instance ReportError RunError where
     ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
   errorReport SocketFailure =
     ErrorReport "internal error" ["could not create listener socket"] ERROR
-  errorReport (InvalidShell command@(Cmd.Command _ ident _ _ _ _ _ _)) =
+  errorReport (InvalidShell command@(Cmd.Command _ ident _ _ _ _ _ _ _)) =
     ErrorReport msg ["RunError.InvalidShell:", show command] ERROR
     where
       msg = "invalid command for shell: " <> show ident

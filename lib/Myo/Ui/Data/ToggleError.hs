@@ -7,7 +7,6 @@ module Myo.Ui.Data.ToggleError(
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Data.DeepPrisms (deepPrisms)
 import Ribosome.Error.Report.Class (ReportError(..))
 
 data ToggleError =

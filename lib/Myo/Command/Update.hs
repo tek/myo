@@ -11,6 +11,7 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSyst
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec(CommandSettingCodec))
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (commands)
+import Myo.Data.Maybe (orFalse)
 
 updateCommands ::
   MonadDeepError e DecodeError m =>
@@ -21,9 +22,7 @@ updateCommands o = do
   CommandSettingCodec system shell <- fromMsgpack' o
   modify @CommandState (Lens.set CommandState.commands ((createShell <$> fold shell) ++ (createSystem <$> fold system)))
   where
-    createSystem (AddSystemCommandOptions ident lines' runner target lang name skipHistory kill) =
-      systemCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill)
-    createShell (AddShellCommandOptions ident lines' runner target lang name skipHistory kill) =
-      shellCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill)
-    orFalse =
-      fromMaybe False
+    createSystem (AddSystemCommandOptions ident lines' runner target lang name skipHistory kill capture) =
+      systemCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill) (orFalse capture)
+    createShell (AddShellCommandOptions ident lines' runner target lang name skipHistory kill capture) =
+      shellCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill) (orFalse capture)

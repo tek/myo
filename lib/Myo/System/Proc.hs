@@ -3,17 +3,14 @@
 module Myo.System.Proc where
 
 import Conduit (ConduitT, runConduit, sinkList, (.|))
-import Control.Applicative (Alternative)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Attoparsec.Text (parseOnly)
 import Data.Conduit.List (unfoldM)
-import Data.List.NonEmpty (NonEmpty((:|)))
 import Path (absdir, toFilePath)
 import Path.IO (listDir)
 import Ribosome.Control.Exception (catchAnyAs)
-import System.FilePath (FilePath, (</>))
+import System.FilePath ((</>))
 import Text.Parser.Char (CharParsing, anyChar, noneOf, spaces)
-import Text.Parser.Combinators (many, skipMany)
+import Text.Parser.Combinators (skipMany)
 import Text.Parser.Token (TokenParsing, decimal, parens)
 import Text.RE.PCRE.Text (RE, matchedText, re, (?=~))
 import UnliftIO.Directory (doesPathExist)
@@ -79,7 +76,7 @@ childPids pid = do
   (dirs, _) <- listDir [absdir|/proc|]
   let
     pidStrings = catMaybes ((\ a -> matchedText (a ?=~ pidRegex)) . toText . toFilePath <$> dirs)
-    pids = mapMaybe (rightToMaybe . fmap Pid . readEither) pidStrings
+    pids = mapMaybe (rightToMaybe . fmap Pid . readEither . toString) pidStrings
   mapMaybe matchParent <$> traverse withPpid pids
   where
     withPpid pid' =

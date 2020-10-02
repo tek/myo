@@ -1,6 +1,5 @@
 module Myo.Command.Data.RunTask where
 
-import Chiasma.Data.Ident (Ident)
 import Myo.Command.Data.Command (Command)
 import Path (Abs, File, Path)
 

@@ -2,7 +2,6 @@
 
 module Output.ParseScalaSpec (htf_thisModulesTests) where
 
-import Control.Monad.Trans.Except (runExceptT)
 import Data.Text (Text)
 import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)

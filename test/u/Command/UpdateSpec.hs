@@ -2,14 +2,13 @@
 
 module Command.UpdateSpec (htf_thisModulesTests) where
 
-import Chiasma.Data.Ident (identText)
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Neovim (Plugin(..))
 import Path (Abs, Dir, Path)
 import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Api.Variable (setVar)
 import Ribosome.Control.Monad.Ribo (NvimE)
-import Ribosome.Control.Ribosome (newRibosome, Ribosome)
+import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
 import Ribosome.Test.Await (await)
@@ -28,13 +27,13 @@ import Myo.Plugin (handleError, variables)
 
 commands1 :: [AddSystemCommandOptions]
 commands1 =
-  [AddSystemCommandOptions (Ident.Str "c1") ["tail"] Nothing Nothing Nothing Nothing Nothing Nothing]
+  [AddSystemCommandOptions (Ident.Str "c1") ["tail"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing]
 
 commands2 :: [AddSystemCommandOptions]
 commands2 =
   [
-    AddSystemCommandOptions (Ident.Str "c1") ["tails"] Nothing Nothing Nothing Nothing Nothing Nothing,
-    AddSystemCommandOptions (Ident.Str "c2") ["echo"] Nothing Nothing Nothing Nothing Nothing Nothing
+    AddSystemCommandOptions (Ident.Str "c1") ["tails"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing,
+    AddSystemCommandOptions (Ident.Str "c2") ["echo"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ]
 
 codec :: [AddSystemCommandOptions] -> CommandSettingCodec
@@ -45,7 +44,7 @@ cmdData :: MonadDeepState s CommandState m => m [(Text, [Text])]
 cmdData =
   fmap extract <$> getL @CommandState CommandState.commands
   where
-    extract (Command _ ident lines' _ _ _ _ _) = (identText ident, lines')
+    extract (Command _ ident lines' _ _ _ _ _ _) = (identText ident, lines')
 
 $(return [])
 

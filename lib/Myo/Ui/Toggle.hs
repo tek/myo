@@ -1,9 +1,6 @@
 module Myo.Ui.Toggle where
 
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Control.Monad.IO.Class (MonadIO)
-import Data.Functor (void)
 import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Orphans ()

@@ -2,7 +2,6 @@ module Myo.Command.Data.HistoryEntry where
 
 import Chiasma.Data.Ident (Identifiable(..))
 import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
-import GHC.Generics (Generic)
 
 import Myo.Command.Data.Command (Command)
 

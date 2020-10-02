@@ -1,6 +1,6 @@
 module Myo.Ui.UpsertView where
 
-import Chiasma.Data.Ident (Ident, sameIdent)
+import Chiasma.Data.Ident (sameIdent)
 import Chiasma.Ui.Data.View (
   LayoutView,
   PaneView,

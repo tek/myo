@@ -9,31 +9,23 @@ import qualified Chiasma.Data.View as Tmux (View(View))
 import Chiasma.Data.Views (Views(Views))
 import Chiasma.Monad.Stream (TmuxProg)
 import Chiasma.Ui.Data.View (
-  consLayout,
-  consLayoutVertical,
-  consPane,
   Pane(..),
   Tree(..),
   TreeSub(..),
   View(..),
   ViewTree,
+  consLayout,
+  consLayoutVertical,
+  consPane,
   )
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
 import Control.Lens (findMOf)
 import qualified Control.Lens as Lens (each)
-import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Control.Monad.Trans.Except (runExceptT)
-import Control.Monad.Trans.Maybe (MaybeT(..))
-import Data.Functor.Syntax ((<$$>))
 import Ribosome.Api.Process (vimPid)
 import Ribosome.Config.Setting (setting)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim, NvimE)
+import Ribosome.Control.Monad.Ribo (Nvim)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
-import Ribosome.Tmux.Run (runRiboTmux, RunTmux)
+import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Orphans ()

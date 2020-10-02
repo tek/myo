@@ -1,7 +1,5 @@
 module Myo.Output.Lang.Scala.Data.ScalaEvent where
 
-import Data.Text (Text)
-
 import Myo.Output.Data.Location (Location)
 
 data EventType =

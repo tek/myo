@@ -5,7 +5,6 @@ module Config (
 
 import Prelude hiding (defaultTestConfig, defaultTestConfigWith)
 import Ribosome.Data.Setting (Setting(Setting))
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 import Ribosome.Test.Embed (TestConfig(tcVariables), Vars(..))
 import qualified Ribosome.Test.Embed as E (defaultTestConfig, defaultTestConfigWith)
 

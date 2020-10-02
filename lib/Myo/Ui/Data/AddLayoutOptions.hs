@@ -2,12 +2,6 @@
 
 module Myo.Ui.Data.AddLayoutOptions where
 
-import Chiasma.Data.Ident (Ident)
-import Data.Default (Default)
-import GHC.Generics (Generic)
-import Ribosome.Msgpack.Decode (MsgpackDecode(..))
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
-
 import Myo.Orphans ()
 
 data AddLayoutOptions =

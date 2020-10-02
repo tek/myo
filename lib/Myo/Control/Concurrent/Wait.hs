@@ -1,11 +1,5 @@
 module Myo.Control.Concurrent.Wait where
 
-import Control.Monad.IO.Class (MonadIO)
-import Data.Default (Default(def))
-import Data.Functor ((<&>))
-
-import Ribosome.System.Time (sleep)
-
 -- |Specifies the maximum number of retries and the interval in seconds for 'waitIO'.
 data Retry =
   Retry Int Double

@@ -1,6 +1,5 @@
 module Myo.Command.Monitor where
 
-import Chiasma.Data.Ident (Ident, identText)
 import Conduit (mapC, mapMC, runConduit, sinkNull, (.|))
 import Control.Concurrent.Lifted (fork)
 import Control.Exception (IOException)
@@ -17,11 +16,10 @@ import Path (Abs, File, Path, toFilePath)
 import Prelude hiding (state)
 import Ribosome.Config.Setting (setting)
 import Ribosome.Control.Exception (catchAny, tryAny)
-import Ribosome.Control.Monad.Ribo (MonadRibo, Nvim)
+import Ribosome.Control.Monad.Ribo (Nvim)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report (processErrorReport')
-import Ribosome.System.Time (sleep)
 import System.Hourglass (timeCurrent)
 import System.Log (Priority(DEBUG))
 

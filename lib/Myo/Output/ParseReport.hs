@@ -1,7 +1,6 @@
 module Myo.Output.ParseReport where
 
 import Control.Lens (Lens', _Just, ifolded, over, set, view, views, withIndex)
-import Control.Monad.DeepError (hoistMaybe)
 import Data.MonoTraversable (minimumByMay)
 import qualified Data.Text as Text
 import Data.Vector (Vector, (!?))
@@ -13,7 +12,6 @@ import Ribosome.Api.Buffer (bufferForFile, edit)
 import Ribosome.Api.Option (optionList)
 import Ribosome.Api.Path (nvimCwd)
 import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
 import qualified Ribosome.Data.Scratch as Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)

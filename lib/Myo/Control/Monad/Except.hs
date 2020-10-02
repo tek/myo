@@ -3,7 +3,7 @@ module Myo.Control.Monad.Except(
 ) where
 
 import Control.Monad.Error.Class (liftEither)
-import Control.Monad.Trans.Except (ExceptT, catchE)
+import Control.Monad.Trans.Except (catchE)
 
 coalesceE :: Monad m => (e -> e') -> ExceptT e m a -> ExceptT e' m a
 coalesceE trans ma =

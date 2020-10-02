@@ -1,12 +1,10 @@
 module Myo.Ui.Update where
 
-import Chiasma.Data.Ident (Ident, generateIdent)
+import Chiasma.Data.Ident (generateIdent)
 import Chiasma.Ui.Data.View (Layout(Layout), Pane(Pane), View(View))
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry(ViewGeometry))
 import Chiasma.Ui.Data.ViewState (ViewState(ViewState))
-import Control.Monad.DeepState (modifyL)
 import Data.MessagePack (Object)
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Msgpack.Decode (fromMsgpack')
 import Ribosome.Msgpack.Error (DecodeError)

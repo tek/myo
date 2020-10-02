@@ -1,8 +1,7 @@
 module Myo.Diag where
 
-import Data.Functor (void)
-import Data.Text.Prettyprint.Doc (Doc, line, pretty, vsep, (<>))
-import Ribosome.Control.Monad.Ribo (MonadRibo, NvimE, inspectErrors)
+import Data.Text.Prettyprint.Doc (Doc, line, pretty, vsep)
+import Ribosome.Control.Monad.Ribo (inspectErrors)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
 import Ribosome.Data.Syntax (

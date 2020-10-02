@@ -1,7 +1,5 @@
 module Myo.Command.Kill where
 
-import Chiasma.Data.Ident (Ident)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Ribosome.Control.Exception (tryAny)
 import System.Posix.Signals (Signal)
 import qualified System.Posix.Signals as Signal (killProcess, signalProcess)

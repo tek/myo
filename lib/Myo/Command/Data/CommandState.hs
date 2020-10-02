@@ -2,12 +2,7 @@
 
 module Myo.Command.Data.CommandState where
 
-import Chiasma.Data.Ident (Ident)
 import Control.Concurrent.STM.TMChan (TMChan)
-import Data.DeepLenses (deepLenses)
-import Data.Default (Default)
-import Data.Map (Map)
-import GHC.Generics (Generic)
 import Path (Abs, File, Path)
 import Ribosome.Data.Syntax (Syntax)
 import qualified Text.Show (Show(show))

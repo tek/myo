@@ -1,12 +1,11 @@
 module Myo.Output.Lang.Haskell.Report where
 
 import Data.Attoparsec.Text (parseOnly)
-import Data.List.NonEmpty (NonEmpty((:|)))
 import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, anyChar, noneOf, oneOf, string)
-import Text.Parser.Combinators (between, choice, many, manyTill, sepBy1, skipMany, skipOptional, some, try)
+import Text.Parser.Combinators (between, choice, manyTill, sepBy1, skipMany, skipOptional, try)
 import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))

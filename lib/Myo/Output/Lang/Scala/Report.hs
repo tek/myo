@@ -6,7 +6,7 @@ import qualified Data.Text as Text (splitAt)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, char, noneOf)
-import Text.Parser.Combinators (between, choice, many, sepBy1, skipOptional, some, try)
+import Text.Parser.Combinators (between, choice, sepBy1, skipOptional, try)
 import Text.Parser.Token (TokenParsing, brackets, parens, whiteSpace)
 
 import Myo.Output.Data.Location (Location(Location))

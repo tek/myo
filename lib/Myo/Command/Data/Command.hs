@@ -1,13 +1,9 @@
-
 module Myo.Command.Data.Command where
 
-import Chiasma.Data.Ident (Ident, Identifiable(..))
-import Control.Lens (makeClassy)
+import Chiasma.Data.Ident (Identifiable(..))
 import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
 import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
 import Prelude hiding (lines)
-import Ribosome.Msgpack.Decode (MsgpackDecode(..))
-import Ribosome.Msgpack.Encode (MsgpackEncode(..))
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
 import Myo.Orphans ()
@@ -30,7 +26,8 @@ data Command =
     _lang :: Maybe CommandLanguage,
     _displayName :: Maybe Text,
     _skipHistory :: Bool,
-    _kill :: Bool
+    _kill :: Bool,
+    _capture :: Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -40,7 +37,7 @@ instance Identifiable Command where
   identify = _ident
 
 instance Pretty Command where
-  pretty (Command iprt ident' lines' runner' lang' displayName' skipHistory' kill') =
+  pretty (Command iprt ident' lines' runner' lang' displayName' skipHistory' kill' capture') =
     nest 2 . vsep $ header : info
     where
       header =
@@ -53,7 +50,8 @@ instance Pretty Command where
           prettyLang <$> lang',
           prettyName <$> displayName',
           Just $ "skip history:" <+> pretty skipHistory',
-          Just $ "kill" <+> pretty kill'
+          Just $ "kill" <+> pretty kill',
+          Just $ "capture:" <+> pretty capture'
           ]
       prettyIprt = "interpreter:" <+> pretty iprt
       prettyRunner r = "runner:" <+> pretty r

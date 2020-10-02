@@ -1,21 +1,17 @@
 module Myo.Command.Command where
 
-import Chiasma.Data.Ident (Ident)
 import qualified Chiasma.Data.Ident as Ident
-import Control.Lens (Lens')
-import qualified Control.Lens as Lens (filtered, firstOf, folded, view, views)
-import Control.Monad.DeepError (MonadDeepError, hoistMaybe)
-import Control.Monad.DeepState (MonadDeepState, gets)
+import Control.Lens (Lens', filtered, firstOf, folded, views)
 import Ribosome.Control.Monad.Ribo (inspectHeadE)
 
-import Myo.Command.Data.Command (Command(Command), CommandLanguage)
-import qualified Myo.Command.Data.Command as Command (displayName, ident, interpreter)
+import Myo.Command.Data.Command (Command(Command), CommandLanguage, _interpreter)
+import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchCommand, NoCommands))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System, Shell))
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (commands, history)
-import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (command)
+import qualified Myo.Command.Data.CommandState as CommandState
+import qualified Myo.Command.Data.HistoryEntry as HistoryEntry
 
 mayCommandBy ::
   Eq a =>
@@ -27,7 +23,7 @@ mayCommandBy lens a =
   gets f
   where
     f :: CommandState -> Maybe Command
-    f = Lens.firstOf (CommandState.commands . Lens.folded . Lens.filtered (Lens.views lens (a ==)))
+    f = firstOf (CommandState.commands . folded . filtered (views lens (a ==)))
 
 noSuchCommand ::
   MonadDeepError e CommandError m =>
@@ -95,6 +91,7 @@ systemCommand ::
   Maybe Text ->
   Bool ->
   Bool ->
+  Bool ->
   Command
 systemCommand target =
   Command (System target)
@@ -108,6 +105,7 @@ shellCommand ::
   Maybe Text ->
   Bool ->
   Bool ->
+  Bool ->
   Command
 shellCommand target =
   Command (Shell target)
@@ -116,17 +114,43 @@ latestCommand ::
   (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>
   m Command
 latestCommand =
-  Lens.view HistoryEntry.command <$> inspectHeadE @CommandState CommandError.NoCommands CommandState.history
+  HistoryEntry._command <$> inspectHeadE @CommandState CommandError.NoCommands CommandState.history
+
+mayMainCommand ::
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m (Maybe Command)
+mayMainCommand ident =
+  check =<< mayCommandByIdent ident
+  where
+    check = \case
+      Just (Command { _interpreter = Shell target, .. }) ->
+        mayMainCommand target
+      cmd ->
+        pure cmd
 
 mainCommand ::
   MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
-  m Ident
+  m Command
 mainCommand ident =
-  recurse =<< Lens.view Command.interpreter <$$> mayCommandByIdent ident
+  err =<< mayMainCommand ident
   where
-    recurse (Just (Shell target)) =
-      mainCommand target
-    recurse _ =
-      return ident
+    err =
+      hoistMaybe (CommandError.NoSuchCommand "mainCommand" (identText ident))
+
+mayMainCommandIdent ::
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m (Maybe Ident)
+mayMainCommandIdent =
+  fmap (fmap Command._ident) . mayMainCommand
+
+mainCommandIdent ::
+  MonadDeepError e CommandError m =>
+  MonadDeepState s CommandState m =>
+  Ident ->
+  m Ident
+mainCommandIdent =
+  fmap Command._ident . mainCommand

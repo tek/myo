@@ -1,7 +1,6 @@
 module Myo.Command.Subproc.Run where
 
 import Control.Concurrent.Lifted (fork)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import qualified Data.Text as Text
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Network.Socket as Socket
@@ -35,6 +34,7 @@ import qualified Myo.Command.Data.RunError as RunError (RunError(..))
 import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(..))
 import Myo.Command.Execution (setExecutionState)
 import Myo.Command.Parse (commandOutput)
+import Myo.Data.Env (Env)
 import Myo.Data.Error (Error)
 import Myo.Network.Socket (unixSocket)
 import Myo.Output.Data.OutputError (OutputError)
@@ -54,8 +54,7 @@ subprocess ::
   NvimE e m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
-  MonadDeepError e OutputError m =>
-  MonadDeepError e CommandError m =>
+  MonadDeepState s Env m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e RunError m =>
   String ->
@@ -82,7 +81,7 @@ subprocess cwd ident logPath (cmd : args) = do
     check ExitCode.ExitSuccess =
       unit
     check (ExitCode.ExitFailure _) = do
-      output <- commandOutput ident Nothing
+      output <- commandOutput ident Nothing False
       throwHoist $ RunError.SubprocFailed (Text.lines output)
 subprocess _ _ _ _ =
   throwHoist $ RunError.InvalidCmdline "empty cmdline"
@@ -91,9 +90,8 @@ runSubproc ::
   NvimE e m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
+  MonadDeepState s Env m =>
   MonadDeepError e RunError m =>
-  MonadDeepError e OutputError m =>
-  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   Ident ->
   Text ->
@@ -107,13 +105,12 @@ runSubprocTask ::
   NvimE e m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
+  MonadDeepState s Env m =>
   MonadDeepError e RunError m =>
-  MonadDeepError e OutputError m =>
-  MonadDeepError e CommandError m =>
   MonadDeepState s CommandState m =>
   RunTask ->
   m ()
-runSubprocTask (RunTask (Command _ ident lines' _ _ _ _ _) logPath details) =
+runSubprocTask (RunTask (Command _ ident lines' _ _ _ _ _ _) logPath details) =
   case details of
     System -> run ident lines'
     UiSystem _ -> run ident lines'

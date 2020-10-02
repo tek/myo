@@ -3,13 +3,7 @@ module Myo.Vim.Runner where
 import Chiasma.Data.Ident (Ident(Str))
 import Chiasma.Data.Views (Views, ViewsError)
 import Control.Lens (view)
-import Control.Monad.DeepError (MonadDeepError)
-import Control.Monad.DeepState (MonadDeepState)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import Data.Functor (void)
 import Ribosome.Api.Atomic (atomic)
-import Ribosome.Control.Monad.Ribo (MonadRibo)
 import Ribosome.Msgpack.Error (DecodeError)
 import qualified Ribosome.Nvim.Api.Data as ApiData
 import Ribosome.Nvim.Api.RpcCall (syncRpcCall)
@@ -18,8 +12,8 @@ import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Execution (ExecutionState)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask(RunTask))
 import qualified Myo.Command.Data.RunTask as RunTaskDetails
+import Myo.Command.Data.RunTask (RunTask(RunTask))
 import Myo.Command.Runner (RunInIO, addRunner)
 import Myo.Data.Env (Env)
 
@@ -41,6 +35,7 @@ vimCanRun (RunTask _ _ RunTaskDetails.Vim) =
 vimCanRun _ =
   False
 
+-- TODO vim can capture
 addVimRunner ::
   MonadRibo m =>
   NvimE e m =>
@@ -55,4 +50,4 @@ addVimRunner ::
   RunInIO m =>
   m ()
 addVimRunner =
-  void $ addRunner (Str "vim") vimRun vimCheckPending vimCanRun
+  void $ addRunner (Str "vim") vimRun vimCheckPending vimCanRun Nothing

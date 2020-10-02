@@ -64,8 +64,8 @@ tmuxRunShellSpec = do
   updateSetting Settings.processTimeout 2
   addTmuxRunner
   setupDefaultTestUi
-  myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] r (Just "make") Nothing Nothing Nothing Nothing
-  myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines r shellIdent Nothing Nothing Nothing Nothing
+  myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] r (Just "make") Nothing Nothing Nothing Nothing Nothing
+  myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines r shellIdent Nothing Nothing Nothing Nothing Nothing
   myoRunIdent cmdIdent
   await gassertBool (isCommandRunning shellIdent)
   await firstCondition paneContent

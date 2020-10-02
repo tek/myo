@@ -1,8 +1,5 @@
-
 module Myo.Output.Data.OutputError where
 
-import Chiasma.Data.Ident (Ident, identText)
-import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Error.Report.Class (ReportError(..))

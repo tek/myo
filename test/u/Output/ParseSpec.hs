@@ -25,7 +25,7 @@ parsePreviousSpec :: Myo ()
 parsePreviousSpec = do
   addSubprocessRunner
   addEchoHandler =<< fixture "tmux/parse/file"
-  ident <- addEchoCommand "proc" lines'
+  ident <- addEchoCommand "proc" lines' False
   myoRunIdent ident
   cmd <- selectCommand (Just ident)
   pushCommandLog ident

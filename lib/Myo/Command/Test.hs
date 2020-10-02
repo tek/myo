@@ -3,16 +3,13 @@ module Myo.Command.Test where
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.Trans.Control (MonadBaseControl)
 import Data.Hashable (hash)
 import Data.MessagePack (Object)
 import Ribosome.Api.Window (currentCursor)
-import Ribosome.Config.Setting (setting, settingMaybe)
+import Ribosome.Config.Setting (setting, settingMaybe, settingOr)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Msgpack.Decode (MsgpackDecode)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
-import Ribosome.Nvim.Api.RpcCall (RpcError)
 import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Data.Command (Command(Command))
@@ -24,7 +21,7 @@ import qualified Myo.Command.Data.RunError as RunError (RunError(VimTest))
 import Myo.Command.Data.VimTestPosition (VimTestPosition(VimTestPosition))
 import Myo.Command.Run (runCommand)
 import Myo.Data.Env (Env)
-import Myo.Settings (testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
+import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
 
@@ -132,8 +129,9 @@ updateTestCommand testLine = do
   shell <- settingMaybe testShell
   target <- setting testPane
   lang <- settingMaybe testLang
+  capture <- settingOr False testCapture
   let interpreter = testInterpreter target shell
-  return $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False False
+  return $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False False capture
 
 myoVimTest ::
   MonadRibo m =>

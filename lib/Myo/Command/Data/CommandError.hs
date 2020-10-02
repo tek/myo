@@ -1,7 +1,5 @@
-
 module Myo.Command.Data.CommandError where
 
-import Data.DeepPrisms (deepPrisms)
 import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
 import Ribosome.Error.Report.Class (ReportError(..))
 import System.Log (Priority(ERROR, NOTICE))
