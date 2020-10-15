@@ -20,7 +20,7 @@ import Myo.Output.Data.String (colMarker, lineNumber)
 
 errorEnd :: Text
 errorEnd =
-  [qt|\\ze.*\\(${lineNumber}\\|${colMarker}\\)|]
+  [qt|\v\ze.*(${lineNumber}|${colMarker})|]
 
 foundReqMarker :: Text
 foundReqMarker =
