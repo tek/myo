@@ -145,7 +145,7 @@ code =
   item { siOptions = options, siParams = params }
   where
     item = syntaxMatch "MyoHsCode" ".*"
-    options = ["contained"]
+    options = ["contained", "keepend"]
     params = Map.fromList [("contains", "@haskell")]
 
 noInstance :: SyntaxItem
