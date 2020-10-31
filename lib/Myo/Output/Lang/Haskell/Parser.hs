@@ -1,6 +1,3 @@
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ApplicativeDo #-}
-
 module Myo.Output.Lang.Haskell.Parser where
 
 import Data.Attoparsec.Text (parseOnly)
@@ -24,12 +21,22 @@ import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventTy
 import Myo.Output.Lang.Haskell.Report (haskellReport)
 import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, minus, skipLine, tillEol, word, ws)
 
+acrossNl ::
+  TokenParsing m =>
+  String ->
+  m Text
+acrossNl s =
+  toText <$> traverse nlOrChar s
+  where
+    nlOrChar c =
+      skipOptional newline *> char c
+
 path ::
   CharParsing m =>
   m Text
 path = do
   slash <- char '/'
-  rest <- toText <$> manyTill anyChar (try $ choice [newline *> newline, colon])
+  rest <- toText <$> manyTill (skipOptional newline *> anyChar) (try (choice [newline *> newline, colon]))
   pure (Text.cons slash rest)
 
 location ::
@@ -39,9 +46,9 @@ location =
   Location <$> path <*> line <*> col
   where
     line =
-      num <* colon
+      ws *> num <* ws <* colon
     col =
-      Just <$> num <* (skipOptional (minus *> num))
+      Just <$> (ws *> num) <* (skipOptional (ws *> minus *> ws *> num))
     num =
       fromIntegral . subtract 1 <$> natural
 
@@ -54,9 +61,9 @@ locationLine =
     loc =
       ws *> location <* colon <* ws
     tpe =
-      choice [EventType.Error <$ text "error", EventType.Warning <$ text "warning"] <* trailing
+      choice [EventType.Error <$ acrossNl "error", EventType.Warning <$ acrossNl "warning"] <* trailing
     trailing =
-      colon *> ws *> skipOptional (brackets (many $ noneOf "]")) *> ws
+      ws *> colon *> ws *> skipOptional (brackets (many $ noneOf "]")) *> ws
 
 region ::
   TokenParsing m =>

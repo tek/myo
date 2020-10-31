@@ -1,4 +1,8 @@
-Progress 0/2            /path/to/File.hs:1:1: error:
+Progress 0/2            /path/to/
+File.hs:
+1
+:1: er
+ror:
 Progress 0/2                Variable not in scope: var :: IO a0
 Progress 0/2               |
 Progress 0/2            77 |   var
