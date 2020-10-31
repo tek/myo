@@ -51,8 +51,8 @@ chanResult chan = do
   next <- atomically $ tryReadTBMChan chan
   case next of
     Just (Just a) -> do
-      rec <- chanResult chan
-      return (a : rec)
+      recur <- chanResult chan
+      return (a : recur)
     _ -> return []
 
 socketSpec :: Myo ()

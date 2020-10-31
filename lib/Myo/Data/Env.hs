@@ -10,12 +10,12 @@ import Ribosome.Orphans ()
 import Ribosome.System.Time (secondsP)
 import qualified Text.Show (Show(show))
 
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandState (logs, logPaths, CommandState)
 import Myo.Command.Data.Execution (ExecutionState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
 import Myo.Data.Error (Error)
-import Myo.Ui.Data.UiState (UiState)
+import Myo.Ui.Data.UiState (views, UiState)
 
 type Myo a = Ribo Env Error a
 
