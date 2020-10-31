@@ -1,10 +1,11 @@
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ApplicativeDo #-}
 
 module Myo.Output.Lang.Haskell.Parser where
 
 import Data.Attoparsec.Text (parseOnly)
 import qualified Data.List.NonEmpty as NonEmpty (last)
-import qualified Data.Text as Text (filter)
+import qualified Data.Text as Text
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, anyChar, char, newline, noneOf, oneOf, text)
@@ -26,8 +27,10 @@ import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, minus, skipLi
 path ::
   CharParsing m =>
   m Text
-path =
-  toText <$> manyTill anyChar (try $ choice [newline, colon])
+path = do
+  slash <- char '/'
+  rest <- toText <$> manyTill anyChar (try $ choice [newline *> newline, colon])
+  pure (Text.cons slash rest)
 
 location ::
   TokenParsing m =>

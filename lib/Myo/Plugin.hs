@@ -106,10 +106,8 @@ mappings =
   [mappingOutputQuit, mappingOutputSelect]
 
 variables ::
-  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
-  MonadDeepError e DecodeError m =>
   MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
