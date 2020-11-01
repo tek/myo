@@ -202,7 +202,6 @@ storeOutputSocket socket ident = do
 
 closeOutputSocket ::
   MonadRibo m =>
-  MonadIO m =>
   MonadDeepState s CommandState m =>
   Ident ->
   m ()

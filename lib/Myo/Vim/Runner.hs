@@ -1,7 +1,6 @@
 module Myo.Vim.Runner where
 
 import Chiasma.Data.Ident (Ident(Str))
-import Chiasma.Data.Views (Views, ViewsError)
 import Control.Lens (view)
 import Ribosome.Api.Atomic (atomic)
 import Ribosome.Msgpack.Error (DecodeError)
@@ -9,7 +8,6 @@ import qualified Ribosome.Nvim.Api.Data as ApiData
 import Ribosome.Nvim.Api.RpcCall (syncRpcCall)
 
 import qualified Myo.Command.Data.Command as Command
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Execution (ExecutionState)
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails
@@ -39,14 +37,9 @@ vimCanRun _ =
 addVimRunner ::
   MonadRibo m =>
   NvimE e m =>
-  MonadIO m =>
   MonadBaseControl IO m =>
   MonadDeepState s Env m =>
-  MonadDeepState s Views m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e ViewsError m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepState s CommandState m =>
   RunInIO m =>
   m ()
 addVimRunner =

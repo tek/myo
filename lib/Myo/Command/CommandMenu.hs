@@ -15,8 +15,8 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Menu.Action (menuQuit, menuQuitWith)
 import Ribosome.Menu.Data.Menu (Menu)
 import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import qualified Ribosome.Menu.Data.MenuItem as MenuItem
+import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
 import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
@@ -25,13 +25,12 @@ import Ribosome.Menu.Prompt.Run (basicTransition)
 import Ribosome.Menu.Run (nvimMenu)
 import Ribosome.Menu.Simple (defaultMenu, selectedMenuItem)
 import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Data.Command (Command(Command))
-import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandState as CommandState
+import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Data.Env (Env)
@@ -39,7 +38,6 @@ import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
 
 runCommand ::
-  RunTmux m =>
   MonadRibo m =>
   MonadThrow m =>
   MyoRender s e m =>
@@ -102,10 +100,8 @@ commandMenu execute =
 
 myoCommands ::
   NvimE e m =>
-  MonadRibo m =>
   MonadResource m =>
   MonadBaseControl IO m =>
-  RunTmux m =>
   MyoRender s e m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>

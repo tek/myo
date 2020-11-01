@@ -85,7 +85,6 @@ postRun ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e SettingError m =>
-  MonadDeepError e PersistError m =>
   MonadThrow m =>
   RunTask ->
   m ()

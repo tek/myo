@@ -136,7 +136,6 @@ tmuxRun ::
   RunTmux m =>
   NvimE e m =>
   MonadRibo m =>
-  MonadBaseControl IO m =>
   MonadDeepState s Views m =>
   MonadDeepError e ViewsError m =>
   MonadDeepError e RunError m =>

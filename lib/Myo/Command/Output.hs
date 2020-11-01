@@ -6,7 +6,6 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Scratch (killScratchByName)
 
-import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as OutputState (currentEvent, report)
 import Myo.Command.History (displayNameByIdent)
@@ -36,7 +35,6 @@ initialRenderReport ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   ParseReport ->
@@ -57,7 +55,6 @@ compileAndRenderReport ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e CommandError m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e SettingError m =>
   m ()
@@ -78,7 +75,6 @@ outputQuit =
 outputSelect ::
   NvimE e m =>
   MonadRibo m =>
-  MonadBaseControl IO m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadDeepState s CommandState m =>
@@ -95,7 +91,6 @@ cycleAndNavigate ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
-  MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
   Int ->
   m ()
@@ -108,7 +103,6 @@ myoPrev ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
-  MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
   m ()
 myoPrev =
@@ -120,7 +114,6 @@ myoNext ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
-  MonadDeepError e SettingError m =>
   MonadDeepError e DecodeError m =>
   m ()
 myoNext =

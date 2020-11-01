@@ -37,10 +37,8 @@ import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Render (MyoRender)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Tmux.Run (RunTmux)
 
 runHistoryEntry ::
-  RunTmux m =>
   MonadRibo m =>
   MonadThrow m =>
   MyoRender s e m =>
@@ -103,10 +101,8 @@ historyMenu execute =
 
 myoHistory ::
   NvimE e m =>
-  MonadRibo m =>
   MonadResource m =>
   MonadBaseControl IO m =>
-  RunTmux m =>
   MyoRender s e m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>

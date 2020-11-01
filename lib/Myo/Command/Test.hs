@@ -10,7 +10,6 @@ import Ribosome.Config.Setting (setting, settingMaybe, settingOr)
 import Ribosome.Data.PersistError (PersistError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
-import Ribosome.Tmux.Run (RunTmux)
 
 import Myo.Command.Data.Command (Command(Command))
 import Myo.Command.Data.CommandError (CommandError)
@@ -135,8 +134,6 @@ updateTestCommand testLine = do
 
 myoVimTest ::
   MonadRibo m =>
-  NvimE e m =>
-  RunTmux m =>
   MyoRender s e m =>
   MonadBaseControl IO m =>
   MonadDeepState s Env m =>

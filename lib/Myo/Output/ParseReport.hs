@@ -15,7 +15,6 @@ import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
 import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
 import qualified Ribosome.Data.Scratch as Scratch (scratchWindow)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)
-import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Data.Syntax (Syntax)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.Data (Buffer, Window)
@@ -156,8 +155,6 @@ findFile cwd path = do
 
 selectEventAt ::
   MonadDeepError e DecodeError m =>
-  MonadDeepError e OutputError m =>
-  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Window ->
@@ -186,7 +183,6 @@ locationExists path =
 selectEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
-  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Window ->
@@ -203,7 +199,6 @@ selectEvent _ _ _ =
 selectMaybeEvent ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
-  MonadIO m =>
   MonadRibo m =>
   NvimE e m =>
   Window ->
@@ -219,7 +214,6 @@ selectEventByIndexFromReport ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
   ParseReport ->
   EventIndex.Absolute ->
@@ -233,7 +227,6 @@ selectCurrentLineEventFrom ::
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
   MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
   ParseReport ->
   Window ->
@@ -350,9 +343,7 @@ renderReport ::
   NvimE e m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e SettingError m =>
   ParseReport ->
   [Syntax] ->
   m ()
@@ -373,7 +364,6 @@ renderCurrentReport ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e SettingError m =>
   MonadDeepError e OutputError m =>
   m ()
 renderCurrentReport = do
@@ -387,7 +377,6 @@ ensureReportScratch ::
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e SettingError m =>
   MonadDeepError e OutputError m =>
   m ()
 ensureReportScratch =
@@ -400,7 +389,6 @@ navigateToEvent ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e SettingError m =>
   Bool ->
   EventIndex.Absolute ->
   m ()
@@ -430,7 +418,6 @@ navigateToCurrentEvent ::
   MonadDeepState s CommandState m =>
   MonadDeepError e OutputError m =>
   MonadDeepError e DecodeError m =>
-  MonadDeepError e SettingError m =>
   Bool ->
   m ()
 navigateToCurrentEvent jump =

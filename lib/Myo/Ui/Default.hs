@@ -123,7 +123,6 @@ detectDefaultUi ::
   MonadRibo m =>
   MonadFail m =>
   MonadBaseControl IO m =>
-  Nvim m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s Views m =>
   MonadDeepState s UiState m =>

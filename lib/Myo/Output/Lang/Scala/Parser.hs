@@ -6,7 +6,6 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (CharParsing, char, newline, satisfy, string)
 import Text.Parser.Combinators (choice, notFollowedBy, skipMany, skipOptional)
-import Text.Parser.LookAhead (LookAheadParsing)
 import Text.Parser.Token (TokenParsing, natural)
 
 import Myo.Output.Data.Location (Location(Location))
@@ -53,7 +52,6 @@ locationLine ::
   Monad m =>
   CharParsing m =>
   TokenParsing m =>
-  LookAheadParsing m =>
   m (Location, EventType, Text)
 locationLine = do
   tpe <- ws *> eventStart <* char ' ' <* notFollowedBy (char ' ')
@@ -92,7 +90,6 @@ errorInfo ::
   Monad m =>
   CharParsing m =>
   TokenParsing m =>
-  LookAheadParsing m =>
   m ([Text], Int, Text)
 errorInfo = do
   info <- many (infoLine <* skipUntagged <* notFollowedBy (choice [colMarkerLine, void locationLine]))
@@ -102,9 +99,7 @@ errorInfo = do
 
 event ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
-  LookAheadParsing m =>
   m ScalaEvent
 event = do
   (location, eventType', message) <- locationLine
@@ -115,7 +110,6 @@ parseScalaErrors ::
   Monad m =>
   CharParsing m =>
   TokenParsing m =>
-  LookAheadParsing m =>
   m (Vector ScalaEvent)
 parseScalaErrors =
   Vector.fromList . catMaybes <$> many (choice [Just <$> event, Nothing <$ skipLine])

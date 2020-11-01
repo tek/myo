@@ -54,9 +54,7 @@ renderSpacesE cwd =
 
 runRenderSpaces ::
   MonadRibo m =>
-  MonadDeepError e TmuxError m =>
   MonadDeepError e RenderError m =>
-  NvimE e m =>
   MonadDeepState s Views m =>
   RunTmux m =>
   FilePath ->

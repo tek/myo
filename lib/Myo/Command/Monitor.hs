@@ -153,7 +153,6 @@ listenerErrorReport sock ex =
 listener ::
   MonadRibo m =>
   Nvim m =>
-  MonadIO m =>
   MonadBaseControl IO m =>
   Ident ->
   Socket ->
@@ -166,7 +165,6 @@ listener cmdIdent sock listenChan = do
 listen ::
   MonadRibo m =>
   Nvim m =>
-  MonadIO m =>
   MonadDeepState s CommandState m =>
   MonadBaseControl IO m =>
   Ident ->
@@ -187,7 +185,6 @@ listen cmdIdent logPath listenChan =
 
 runMonitor ::
   MonadRibo m =>
-  MonadIO m =>
   NvimE e m =>
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
@@ -199,10 +196,6 @@ runMonitor listenChan =
 
 runClock ::
   MonadRibo m =>
-  Nvim m =>
-  MonadIO m =>
-  MonadDeepState s CommandState m =>
-  MonadBaseControl IO m =>
   TMChan MonitorEvent ->
   m ()
 runClock listenChan =
@@ -217,7 +210,6 @@ startMonitor ::
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
   MonadBaseControl IO m =>
-  MonadIO m =>
   m (TMChan MonitorEvent)
 startMonitor = do
   chan <- atomically newTMChan
@@ -232,7 +224,6 @@ ensureMonitor ::
   MonadDeepError e SettingError m =>
   MonadDeepState s CommandState m =>
   MonadBaseControl IO m =>
-  MonadIO m =>
   m (TMChan MonitorEvent)
 ensureMonitor = do
   current <- getL @CommandState CommandState.monitorChan
@@ -243,7 +234,6 @@ monitorCommand ::
   NvimE e m =>
   MonadDeepError e SettingError m =>
   MonadBaseControl IO m =>
-  MonadIO m =>
   MonadDeepState s CommandState m =>
   Ident ->
   Path Abs File ->

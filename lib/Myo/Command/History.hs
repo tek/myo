@@ -28,7 +28,6 @@ import qualified Myo.Settings as Settings (proteomeMainName, proteomeMainType)
 
 proteomePath ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   m (Maybe (Path Rel Dir))
@@ -47,7 +46,6 @@ fsPath = do
 
 subPath ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   m (Path Rel File)
@@ -62,7 +60,6 @@ history =
 
 storeHistoryAt ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   MonadDeepState s CommandState m =>
@@ -74,7 +71,6 @@ storeHistoryAt path =
 
 storeHistory ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadThrow m =>
   MonadBaseControl IO m =>
@@ -86,7 +82,6 @@ storeHistory =
 
 loadHistoryFrom ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e SettingError m =>
@@ -99,7 +94,6 @@ loadHistoryFrom path =
 
 loadHistory ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
@@ -117,12 +111,10 @@ duplicateHistoryEntry cmd (HistoryEntry historyCmd) =
 
 pushHistory ::
   NvimE e m =>
-  MonadIO m =>
   MonadRibo m =>
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e SettingError m =>
-  MonadDeepError e PersistError m =>
   MonadThrow m =>
   Command ->
   m ()
@@ -193,7 +185,6 @@ historyBy ident lens =
 mayCommandOrHistoryBy ::
   Eq a =>
   MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
   Lens' Command a ->
   a ->
   m (Maybe Command)
@@ -219,7 +210,6 @@ commandOrHistoryBy ident lens a =
 
 mayCommandOrHistoryByIdent ::
   MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
   Ident ->
   m (Maybe Command)
 mayCommandOrHistoryByIdent =
@@ -235,7 +225,6 @@ commandOrHistoryByIdent ident =
 
 displayNameByIdent ::
   MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
   Ident ->
   m Text
 displayNameByIdent ident =

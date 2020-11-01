@@ -26,7 +26,6 @@ import System.Process.Typed (
   )
 
 import Myo.Command.Data.Command (Command(..))
-import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.Execution (ExecutionState(..))
 import Myo.Command.Data.Pid (Pid(Pid))
 import Myo.Command.Data.RunError (RunError)
@@ -37,7 +36,6 @@ import Myo.Command.Parse (commandOutput)
 import Myo.Data.Env (Env)
 import Myo.Data.Error (Error)
 import Myo.Network.Socket (unixSocket)
-import Myo.Output.Data.OutputError (OutputError)
 
 waitForSocket ::
   MonadIO m =>

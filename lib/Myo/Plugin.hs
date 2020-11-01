@@ -86,7 +86,6 @@ mappingOutputQuit =
 mappingOutputSelect ::
   NvimE e m =>
   MonadRibo m =>
-  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e OutputError m =>
@@ -97,7 +96,6 @@ mappingOutputSelect =
 mappings ::
   NvimE e m =>
   MonadRibo m =>
-  MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e OutputError m =>
