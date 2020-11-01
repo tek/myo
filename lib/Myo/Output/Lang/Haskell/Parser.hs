@@ -11,6 +11,7 @@ import Text.Parser.LookAhead (LookAheadParsing, lookAhead)
 import Text.Parser.Token (TokenParsing, brackets, natural, parens)
 import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
 
+import Data.Char (digitToInt)
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
@@ -20,65 +21,111 @@ import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(Haskel
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
 import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, minus, skipLine, tillEol, word, ws)
+import Text.Parser.Char (digit)
 
-acrossNl ::
+stringAcrossNl ::
   TokenParsing m =>
   String ->
   m Text
-acrossNl s =
+stringAcrossNl s =
   toText <$> traverse nlOrChar s
   where
     nlOrChar c =
       skipOptional newline *> char c
 
+number :: TokenParsing m => Integer -> m Char -> m Integer
+number base baseDigit =
+  foldl' (\ x d -> base * x + toInteger (digitToInt d)) 0 <$> some baseDigit
+
+digitsAcrossNl ::
+  TokenParsing m =>
+  m Int
+digitsAcrossNl =
+  fromIntegral <$> number 10 nlOrDigit
+  where
+    nlOrDigit =
+      skipOptional newline *> digit
+
 path ::
+  Monad m =>
   CharParsing m =>
   m Text
-path = do
+path =
+  toText <$> manyTill anyChar (try (choice [newline, colon]))
+
+pathAcrossNl ::
+  Monad m =>
+  CharParsing m =>
+  m Text
+pathAcrossNl = do
   slash <- char '/'
   rest <- toText <$> manyTill (skipOptional newline *> anyChar) (try (choice [newline *> newline, colon]))
   pure (Text.cons slash rest)
 
-location ::
+normalize :: Integral a => a -> Int
+normalize =
+  fromIntegral . subtract 1
+
+num ::
   TokenParsing m =>
-  m Location
-location =
-  Location <$> path <*> line <*> col
+  m Int
+num =
+  normalize <$> digitsAcrossNl
+
+lineCol ::
+  TokenParsing m =>
+  m (Int, Maybe Int)
+lineCol =
+  tuple line col
   where
     line =
       ws *> num <* ws <* colon
     col =
-      Just <$> (ws *> num) <* (skipOptional (ws *> minus *> ws *> num))
-    num =
-      fromIntegral . subtract 1 <$> natural
+      Just <$> (ws *> num) <* skipOptional (ws *> minus *> ws *> num)
 
-locationLine ::
+parensLineCol ::
+  TokenParsing m =>
+  m (Int, Int)
+parensLineCol =
+  parens (tuple (num <* ws <* char ',') num)
+
+lineColRegion ::
+  TokenParsing m =>
+  m (Int, Maybe Int)
+lineColRegion =
+  second Just <$> parensLineCol <* ws <* minus <* ws <* parensLineCol
+
+location ::
+  Monad m =>
+  TokenParsing m =>
+  m Location
+location = do
+  p <- pathAcrossNl
+  (l, c) <- choice [lineCol, lineColRegion]
+  pure (Location p l c)
+
+locationOneline ::
+  Monad m =>
+  TokenParsing m =>
+  m Location
+locationOneline = do
+  p <- path
+  (l, c) <- choice [lineCol, lineColRegion]
+  pure (Location p l c)
+
+locationHeader ::
+  Monad m =>
   TokenParsing m =>
   m (Location, EventType)
-locationLine =
+locationHeader =
   tuple loc tpe
   where
     loc =
       ws *> location <* colon <* ws
     tpe =
-      choice [EventType.Error <$ acrossNl "error", EventType.Warning <$ acrossNl "warning"] <* trailing
+      choice [EventType.Error <$ stringAcrossNl "error", EventType.Warning <$ stringAcrossNl "warning"] <* trailing
     trailing =
       ws *> colon *> ws *> skipOptional (brackets (many $ noneOf "]")) *> ws
-
-region ::
-  TokenParsing m =>
-  m Location
-region =
-  (cons <$> path <*> lineCol) <* (num *> colon)
-  where
-    cons p (l, c) =
-      Location p l c
-    lineCol =
-      num <* minus
-    num =
-      bimap normalize (Just . normalize) <$> parens (tuple (natural <* char ',') natural)
-    normalize =
-      fromIntegral . subtract 1
 
 dot :: CharParsing m => m Char
 dot =
@@ -116,13 +163,14 @@ compileEvent ::
   LookAheadParsing m =>
   m HaskellEvent
 compileEvent =
-  uncurry HaskellEvent <$> locationLine <*> choice [multiMessage, singleMessage]
+  uncurry HaskellEvent <$> locationHeader <*> choice [multiMessage, singleMessage]
 
 patternEvent ::
+  Monad m =>
   TokenParsing m =>
   m HaskellEvent
 patternEvent =
-  cons <$> region <*> fun
+  cons <$> (location <* colon) <*> fun
   where
     cons loc =
       HaskellEvent loc EventType.Patterns
@@ -141,6 +189,7 @@ assertionLine =
   ws
 
 stackFrame ::
+  Monad m =>
   TokenParsing m =>
   m Location
 stackFrame =
@@ -148,9 +197,10 @@ stackFrame =
   word *>
   text "called at" *>
   ws *>
-  location
+  locationOneline
 
 runtimeEvent ::
+  Monad m =>
   TokenParsing m =>
   m HaskellEvent
 runtimeEvent =
