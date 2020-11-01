@@ -7,6 +7,7 @@ newtype OutputEvents =
   OutputEvents {
     _events :: Vector OutputEvent
   }
-  deriving (Eq, Show, Semigroup, Monoid)
+  deriving (Eq, Show)
+  deriving newtype (Semigroup, Monoid)
 
 makeClassy ''OutputEvents
