@@ -101,7 +101,7 @@ location ::
   m Location
 location = do
   p <- pathAcrossNl
-  (l, c) <- choice [lineCol, lineColRegion]
+  (l, c) <- choice [lineCol, lineColRegion] <* ws
   pure (Location p l c)
 
 locationOneline ::
