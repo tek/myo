@@ -55,7 +55,7 @@ saveAll ::
   m ()
 saveAll = do
   myoSave
-  vimCommand "noautocmd wall"
+  vimCommand "noautocmd silent! wall"
 
 preCommandSave ::
   NvimE e m =>
