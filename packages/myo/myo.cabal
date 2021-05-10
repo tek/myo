@@ -1,0 +1,491 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           myo
+version:        0.1.1.0
+synopsis:       Neovim Layout and Command Manager
+description:    Please see the README on GitHub at <https://github.com/tek/myo>
+category:       Neovim
+homepage:       https://github.com/tek/myo#readme
+bug-reports:    https://github.com/tek/myo/issues
+author:         Torsten Schmits
+maintainer:     tek@tryp.io
+copyright:      2021 Torsten Schmits
+license:        BSD-2-Clause-Patent
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    readme.md
+    changelog.md
+
+source-repository head
+  type: git
+  location: https://github.com/tek/myo
+
+library
+  exposed-modules:
+      Myo.Command.Add
+      Myo.Command.Command
+      Myo.Command.CommandMenu
+      Myo.Command.Data.AddShellCommandOptions
+      Myo.Command.Data.AddSystemCommandOptions
+      Myo.Command.Data.Command
+      Myo.Command.Data.CommandError
+      Myo.Command.Data.CommandInterpreter
+      Myo.Command.Data.CommandLog
+      Myo.Command.Data.CommandSettingCodec
+      Myo.Command.Data.CommandState
+      Myo.Command.Data.Execution
+      Myo.Command.Data.HistoryEntry
+      Myo.Command.Data.MonitorEvent
+      Myo.Command.Data.ParseOptions
+      Myo.Command.Data.PendingCommand
+      Myo.Command.Data.Pid
+      Myo.Command.Data.RunError
+      Myo.Command.Data.RunLineOptions
+      Myo.Command.Data.RunningCommand
+      Myo.Command.Data.RunTask
+      Myo.Command.Data.VimTestPosition
+      Myo.Command.Execution
+      Myo.Command.History
+      Myo.Command.HistoryMenu
+      Myo.Command.Kill
+      Myo.Command.Log
+      Myo.Command.Monitor
+      Myo.Command.Output
+      Myo.Command.Parse
+      Myo.Command.Run
+      Myo.Command.Runner
+      Myo.Command.RunTask
+      Myo.Command.RunTaskDetails
+      Myo.Command.Subproc.Run
+      Myo.Command.Subproc.Runner
+      Myo.Command.Test
+      Myo.Command.Update
+      Myo.Complete
+      Myo.Control.Concurrent.Wait
+      Myo.Control.Monad.Except
+      Myo.Data.Env
+      Myo.Data.Error
+      Myo.Data.ExactlyOne
+      Myo.Data.Maybe
+      Myo.Data.String.Pretty
+      Myo.Diag
+      Myo.Env
+      Myo.Init
+      Myo.Log
+      Myo.Network.Socket
+      Myo.Orphans
+      Myo.Output.Data.EventIndex
+      Myo.Output.Data.Location
+      Myo.Output.Data.OutputError
+      Myo.Output.Data.OutputEvent
+      Myo.Output.Data.OutputEvents
+      Myo.Output.Data.OutputHandler
+      Myo.Output.Data.OutputLine
+      Myo.Output.Data.OutputParser
+      Myo.Output.Data.ParsedOutput
+      Myo.Output.Data.ParseReport
+      Myo.Output.Data.ParseResult
+      Myo.Output.Data.ReportLine
+      Myo.Output.Data.String
+      Myo.Output.Lang.Haskell.Data.HaskellEvent
+      Myo.Output.Lang.Haskell.Parser
+      Myo.Output.Lang.Haskell.Report
+      Myo.Output.Lang.Haskell.Syntax
+      Myo.Output.Lang.Report
+      Myo.Output.Lang.Scala.Data.ScalaEvent
+      Myo.Output.Lang.Scala.Parser
+      Myo.Output.Lang.Scala.Report
+      Myo.Output.Lang.Scala.Syntax
+      Myo.Output.ParseReport
+      Myo.Plugin
+      Myo.Prelude
+      Myo.Proteome
+      Myo.Quit
+      Myo.Save
+      Myo.Settings
+      Myo.System.Proc
+      Myo.Text.Parser.Combinators
+      Myo.Tmux.Quit
+      Myo.Tmux.Run
+      Myo.Tmux.Runner
+      Myo.Ui.Data.AddLayoutOptions
+      Myo.Ui.Data.AddPaneOptions
+      Myo.Ui.Data.Space
+      Myo.Ui.Data.ToggleError
+      Myo.Ui.Data.UiSettingCodec
+      Myo.Ui.Data.UiState
+      Myo.Ui.Data.ViewCoords
+      Myo.Ui.Data.Window
+      Myo.Ui.Default
+      Myo.Ui.Focus
+      Myo.Ui.Lens.Toggle
+      Myo.Ui.Render
+      Myo.Ui.Toggle
+      Myo.Ui.Update
+      Myo.Ui.UpsertView
+      Myo.Ui.View
+      Myo.Vim.Runner
+  other-modules:
+      Prelude
+      Paths_myo
+  autogen-modules:
+      Paths_myo
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
+  build-depends:
+      aeson
+    , attoparsec
+    , base ==4.*
+    , bytestring
+    , chiasma
+    , composition
+    , composition-extra
+    , conduit
+    , conduit-extra
+    , containers
+    , cornea
+    , data-default
+    , directory
+    , either
+    , exceptions
+    , filepath
+    , free
+    , hashable
+    , hourglass
+    , hslogger
+    , lens
+    , lifted-async
+    , lifted-base
+    , messagepack
+    , monad-control
+    , mono-traversable
+    , mtl
+    , network
+    , nvim-hs
+    , parsers
+    , path
+    , path-io
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , process
+    , raw-strings-qq
+    , regex-with-pcre
+    , relude >=0.7 && <1.2
+    , resourcet
+    , ribosome
+    , stm-chans
+    , stm-conduit
+    , string-interpolate
+    , stringsearch
+    , template-haskell
+    , text
+    , transformers
+    , transformers-base
+    , typed-process
+    , unix
+    , unliftio
+    , uuid
+    , vector
+  mixins:
+      base hiding (Prelude)
+  default-language: Haskell2010
+
+executable myo
+  main-is: Main.hs
+  other-modules:
+      Paths_myo
+  hs-source-dirs:
+      app
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveTraversable
+      DerivingStrategies
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , attoparsec
+    , base ==4.*
+    , bytestring
+    , chiasma
+    , composition
+    , composition-extra
+    , conduit
+    , conduit-extra
+    , containers
+    , cornea
+    , data-default
+    , directory
+    , either
+    , exceptions
+    , filepath
+    , free
+    , hashable
+    , hourglass
+    , hslogger
+    , lens
+    , lifted-async
+    , lifted-base
+    , messagepack
+    , monad-control
+    , mono-traversable
+    , mtl
+    , myo
+    , network
+    , nvim-hs
+    , parsers
+    , path
+    , path-io
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , process
+    , raw-strings-qq
+    , regex-with-pcre
+    , relude >=0.7 && <1.2
+    , resourcet
+    , ribosome
+    , stm-chans
+    , stm-conduit
+    , string-interpolate
+    , stringsearch
+    , template-haskell
+    , text
+    , transformers
+    , transformers-base
+    , typed-process
+    , unix
+    , unliftio
+    , uuid
+    , vector
+  mixins:
+      base hiding (Prelude)
+    , myo hiding (Myo.Prelude)
+    , myo (Myo.Prelude as Prelude)
+  default-language: Haskell2010

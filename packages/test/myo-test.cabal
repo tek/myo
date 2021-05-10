@@ -1,0 +1,288 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           myo-test
+version:        0.1.1.0
+synopsis:       Neovim Layout and Command Manager, Tests
+description:    Please see the README on GitHub at <https://github.com/tek/myo>
+category:       Neovim
+homepage:       https://github.com/tek/myo#readme
+bug-reports:    https://github.com/tek/myo/issues
+author:         Torsten Schmits
+maintainer:     tek@tryp.io
+copyright:      2021 Torsten Schmits
+license:        BSD-2-Clause-Patent
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/tek/myo
+
+library
+  exposed-modules:
+      Keep
+  other-modules:
+      Paths_myo_test
+  hs-source-dirs:
+      lib
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
+  build-depends:
+      aeson
+    , base ==4.*
+    , bytestring
+    , chiasma
+    , composition
+    , composition-extra
+    , conduit
+    , containers
+    , cornea
+    , data-default
+    , directory
+    , either
+    , exceptions
+    , filepath
+    , free
+    , hslogger
+    , lens
+    , lifted-async
+    , lifted-base
+    , messagepack
+    , monad-control
+    , mtl
+    , myo
+    , nvim-hs
+    , path
+    , path-io
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , process
+    , relude >=0.7 && <1.2
+    , resourcet
+    , ribosome
+    , template-haskell
+    , text
+    , transformers
+    , typed-process
+    , unix
+    , unliftio
+  mixins:
+      base hiding (Prelude)
+    , myo hiding (Myo.Prelude)
+    , myo (Myo.Prelude as Prelude)
+  default-language: Haskell2010
+
+test-suite myo-unit
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Myo.Test.Command.CommandMenuTest
+      Myo.Test.Command.HistoryMenuTest
+      Myo.Test.Command.UpdateTest
+      Myo.Test.Command.VimTestTest
+      Myo.Test.CompleteTest
+      Myo.Test.Config
+      Myo.Test.ConfigTest
+      Myo.Test.DiagTest
+      Myo.Test.Output.Cat
+      Myo.Test.Output.CycleTest
+      Myo.Test.Output.Echo
+      Myo.Test.Output.EmptyOutputTest
+      Myo.Test.Output.HaskellRenderTest
+      Myo.Test.Output.ParseHaskellTest
+      Myo.Test.Output.ParseScalaTest
+      Myo.Test.Output.ParseTest
+      Myo.Test.Output.PathTest
+      Myo.Test.Output.QuitTest
+      Myo.Test.Output.SanitizeTest
+      Myo.Test.Output.ScalaRenderTest
+      Myo.Test.Output.SelectTest
+      Myo.Test.ProcTest
+      Myo.Test.RunTest
+      Myo.Test.SaveTest
+      Myo.Test.SocketTest
+      Myo.Test.Tmux.FocusTest
+      Myo.Test.Tmux.Output
+      Myo.Test.Tmux.ParseTest
+      Myo.Test.Tmux.RunShellTest
+      Myo.Test.Tmux.RunTest
+      Myo.Test.Tmux.ToggleLayoutTest
+      Myo.Test.Tmux.TogglePaneTest
+      Myo.Test.Tmux.UpdateTest
+      Myo.Test.Unit
+      Paths_myo_test
+  hs-source-dirs:
+      test
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BangPatterns
+      BinaryLiterals
+      BlockArguments
+      ConstraintKinds
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DeriveDataTypeable
+      DeriveFoldable
+      DeriveFunctor
+      DeriveGeneric
+      DeriveLift
+      DeriveTraversable
+      DerivingStrategies
+      DisambiguateRecordFields
+      DoAndIfThenElse
+      DuplicateRecordFields
+      EmptyDataDecls
+      ExistentialQuantification
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      GeneralizedNewtypeDeriving
+      InstanceSigs
+      KindSignatures
+      LambdaCase
+      LiberalTypeSynonyms
+      MultiParamTypeClasses
+      MultiWayIf
+      NamedFieldPuns
+      OverloadedStrings
+      OverloadedLists
+      PackageImports
+      PartialTypeSignatures
+      PatternGuards
+      PatternSynonyms
+      PolyKinds
+      QuantifiedConstraints
+      QuasiQuotes
+      RankNTypes
+      RecordWildCards
+      RecursiveDo
+      ScopedTypeVariables
+      StandaloneDeriving
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeFamilyDependencies
+      TypeOperators
+      TypeSynonymInstances
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base ==4.*
+    , bytestring
+    , chiasma
+    , composition
+    , composition-extra
+    , conduit
+    , conduit-extra
+    , containers
+    , cornea
+    , data-default
+    , directory
+    , either
+    , exceptions
+    , filepath
+    , free
+    , hedgehog
+    , hslogger
+    , lens
+    , lens-regex-pcre
+    , lifted-async
+    , lifted-base
+    , messagepack
+    , monad-control
+    , mtl
+    , myo
+    , network
+    , nvim-hs
+    , path
+    , path-io
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , process
+    , relude >=0.7 && <1.2
+    , resourcet
+    , ribosome
+    , ribosome-test
+    , stm-conduit
+    , tasty
+    , tasty-hedgehog
+    , template-haskell
+    , text
+    , transformers
+    , typed-process
+    , unix
+    , unliftio
+    , vector
+  mixins:
+      base hiding (Prelude)
+    , myo hiding (Myo.Prelude)
+    , myo (Myo.Prelude as Prelude)
+  default-language: Haskell2010

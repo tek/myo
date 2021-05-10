@@ -1,13 +1,10 @@
 cradle:
-  stack:
-    - path: "./lib"
-      component: "myo:lib"
+  cabal:
+    - path: "./packages/myo/lib"
+      component: "lib:myo"
 
-    - path: "./app/Main.hs"
+    - path: "./packages/myo/app"
       component: "myo:exe:myo"
 
-    - path: "./app/Paths_myo.hs"
-      component: "myo:exe:myo"
-
-    - path: "./test/u"
-      component: "myo:test:myo-unit"
+    - path: "./packages/test/test"
+      component: "myo-test:test:myo-unit"

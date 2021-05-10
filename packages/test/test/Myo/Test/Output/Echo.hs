@@ -1,0 +1,72 @@
+module Myo.Test.Output.Echo where
+
+import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+import Control.Lens (IndexedTraversal', (.~))
+import Control.Lens.Regex.Text (Match, group, regex)
+import qualified Data.Text as Text (stripPrefix)
+import qualified Data.Vector as Vector (fromList, singleton)
+import Prelude hiding (group)
+
+import Myo.Command.Add (myoAddSystemCommand)
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
+import Myo.Command.Parse (addHandler)
+import Myo.Data.Env (Myo)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
+import Myo.Output.Data.Location (Location(Location))
+import Myo.Output.Data.OutputError (OutputError)
+import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
+import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
+import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
+import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
+
+stripPromptRegex :: IndexedTraversal' Int Text Match
+stripPromptRegex =
+  [regex|(.*\$ ).*|]
+
+stripPrompt :: Text -> Text
+stripPrompt =
+  stripPromptRegex . group 0 .~ ""
+
+lang :: CommandLanguage
+lang = CommandLanguage "echo"
+
+parseEcho :: Text -> Text -> Either OutputError ParsedOutput
+parseEcho file text' =
+  Right (ParsedOutput def events)
+  where
+    events =
+      OutputEvents (Vector.fromList (uncurry event <$> zip matching [0..]))
+    matching =
+      catMaybes $ Text.stripPrefix "echoline " . stripPrompt <$> lines text'
+    event lineText index =
+      OutputEvent eventMeta (Vector.singleton (rline lineText index))
+    rline lineText index =
+      ReportLine (EventIndex.Relative index) lineText
+    eventMeta =
+      OutputEventMeta (Just (Location file 0 Nothing)) 0
+
+addEchoHandler :: FilePath -> Myo ()
+addEchoHandler file =
+  addHandler lang (OutputHandler (OutputParser (parseEcho (toText file))))
+
+addEchoCommand ::
+  Text ->
+  [Text] ->
+  Bool ->
+  Myo Ident
+addEchoCommand runner lines' capture =
+  ident <$ myoAddSystemCommand opts
+  where
+    opts =
+      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing (Just capture)
+    ident =
+      Ident.Str "cmd"
+    makeIdent =
+      Just (Ident.Str "make")
+    cmds =
+      cmd <$> lines'
+    cmd line' =
+      "echo echoline " <> line'

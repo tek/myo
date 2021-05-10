@@ -1,0 +1,37 @@
+name: myo-test
+synopsis: Neovim Layout and Command Manager, Tests
+<<: !include shared/meta.yaml
+defaults:
+  local: shared/defaults.yaml
+
+dependencies:
+  - name: myo
+    mixin:
+      - hiding (Myo.Prelude)
+      - (Myo.Prelude as Prelude)
+
+library:
+  source-dirs: lib
+
+tests:
+  myo-unit:
+    main: Main.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - conduit-extra
+      - hedgehog
+      - lens-regex-pcre
+      - network
+      - ribosome-test
+      - stm-conduit
+      - tasty
+      - tasty-hedgehog
+      - name: myo
+        mixin:
+          - hiding (Myo.Prelude)
+          - (Myo.Prelude as Prelude)
+      - vector
