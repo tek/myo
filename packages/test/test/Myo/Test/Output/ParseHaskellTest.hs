@@ -183,7 +183,12 @@ haskellOutput =
     "",
     "Pattern match(es) are non-exhaustive",
     "  In an equation for ‘nonex’:",
-    ""
+    "",
+    [text|
+    /path/to/File.hs:36:1: error:
+    • Expected kind ‘Tree -> Constraint’,
+        but ‘Tree a b c’ has kind ‘Constraint’
+    |]
     ]
 
 target :: Vector Text
@@ -294,6 +299,11 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 36",
   "non-exhaustive patterns",
   "nonex",
+  "",
+  "/path/to/File.hs \57505 36",
+  "kind mismatch",
+  "Constraint",
+  "Tree -> Constraint",
   ""
   ]
 

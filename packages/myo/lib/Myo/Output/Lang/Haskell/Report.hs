@@ -29,7 +29,7 @@ import Myo.Output.Lang.Haskell.Syntax (
   nameImportsMarker,
   patternsMarker,
   runtimeErrorMarker,
-  unknownModuleMarker,
+  unknownModuleMarker, kindMismatchMarker
   )
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Text.Parser.Combinators (parensExpr, unParens)
@@ -72,6 +72,8 @@ data HaskellMessage =
   NonExhaustivePatterns Text
   |
   DataCtorNotInScope Text
+  |
+  KindMismatch Text Text
   deriving (Eq, Show)
 
 lqs :: String
@@ -271,6 +273,15 @@ nonExhausivePatterns =
     name =
       string "Pattern match(es) are non-exhaustive" *> ws *> string "In an equation for" *> ws *> qname
 
+kindMismatch ::
+  Applicative m =>
+  TokenParsing m =>
+  m HaskellMessage
+kindMismatch =
+  flip KindMismatch <$> req <*> found
+  where
+    req = string "Expected kind" *> ws *> qname <* string "," <* ws
+    found = string "but" *> ws *> qname *> string " has kind " *> qname
 
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
@@ -303,6 +314,7 @@ parseMessage =
         invalidQualifiedName,
         dataCtorNotInScope,
         nonExhausivePatterns,
+        kindMismatch,
         verbatim
       ]
 
@@ -345,6 +357,8 @@ formatMessage (DataCtorNotInScope name) =
   [dataCtorNotInScopeMarker, name]
 formatMessage (Verbatim txt) =
   Text.lines txt
+formatMessage (KindMismatch found req) =
+  [kindMismatchMarker, found, req]
 
 formatLocation :: Location -> Text
 formatLocation (Location path line _) =

@@ -24,6 +24,10 @@ foundReqMarker :: Text
 foundReqMarker =
   "type mismatch"
 
+kindMismatchMarker :: Text
+kindMismatchMarker =
+  "kind mismatch"
+
 noInstanceMarker :: Text
 noInstanceMarker =
   "\\s*!instance:"
@@ -120,6 +124,14 @@ foundReq =
   item { siOptions = options, siParams = params }
   where
     item = syntaxRegionOffset "MyoHsFoundReq" foundReqMarker errorEnd Nothing "ms=e+1" ""
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsFound")]
+
+kindMismatch :: SyntaxItem
+kindMismatch =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegionOffset "MyoHsKindMismatch" kindMismatchMarker errorEnd Nothing "ms=e+1" ""
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsFound")]
 
@@ -418,7 +430,7 @@ haskellSyntax =
   where
     items =
       [
-        haskellInclude, location, path, lineNumberSymbol, errorMessage, foundReq, found, req, code,
+        haskellInclude, location, path, lineNumberSymbol, errorMessage, foundReq, kindMismatch, found, req, code,
         noInstance, noInstanceHead, noInstanceBang, noInstanceKw, noInstanceTrigger, noInstanceDesc, notInScope,
         notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
         invalidImportName, invalidImportNameHead, moduleNameMismatch, unknownModule, unknownModuleHead,
