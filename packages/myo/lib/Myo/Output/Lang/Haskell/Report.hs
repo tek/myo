@@ -319,6 +319,12 @@ polysemyUnhandled ::
 polysemyUnhandled =
   string "Unhandled effect" *> ws *> between (char '\'') (char '\'') (formatEffect <$> typeExpr)
 
+polysemyAmbiguous ::
+  TokenParsing m =>
+  m HaskellMessage
+polysemyAmbiguous =
+  string "Ambiguous use of effect" *> ws *> between (char '\'') (char '\'') (formatEffect <$> typeExpr)
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -353,6 +359,7 @@ parseMessage =
         kindMismatch,
         polysemyCouldNotDeduce,
         polysemyUnhandled,
+        polysemyAmbiguous,
         verbatim
       ]
 
