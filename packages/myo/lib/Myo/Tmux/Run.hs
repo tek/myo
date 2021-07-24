@@ -1,7 +1,7 @@
 module Myo.Tmux.Run where
 
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
-import Chiasma.Command.Pane (capturePane, panePid, pipePane, quitCopyMode, sendKeys)
+import Chiasma.Command.Pane (capturePane, panePid, pipePane, quitCopyMode, sendKeys, paneTarget)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.Views (Views, ViewsError)
@@ -34,6 +34,10 @@ import Myo.Control.Concurrent.Wait (waitIOPredDef)
 import Myo.System.Proc (childPids)
 import Ribosome.Config.Setting (settingMaybe)
 import qualified Ribosome.Config.Settings as Settings (tmuxSocket)
+import Control.Monad.Free (MonadFree)
+import Chiasma.Data.TmuxThunk (TmuxThunk)
+import qualified Chiasma.Monad.Tmux as Tmux
+import Data.List (dropWhileEnd)
 
 tmuxCanRun :: RunTask -> Bool
 tmuxCanRun (RunTask _ _ details) =
@@ -173,6 +177,14 @@ taskPane = \case
   _ ->
     Nothing
 
+capturePaneClean ::
+  MonadFree TmuxThunk m =>
+  PaneId ->
+  m [Text]
+capturePaneClean paneId = do
+  lines' <- Tmux.readRaw "capture-pane" (paneTarget paneId <> ["-p", "-J"])
+  return $ dropWhileEnd ("" ==) lines'
+
 tmuxCapture ::
   RunTmux m =>
   NvimE e m =>
@@ -184,4 +196,4 @@ tmuxCapture ::
 tmuxCapture (RunTask _ _ details) = do
   paneIdent <- hoistMaybe (RunError.Unsupported "tmux" "capture") (taskPane details)
   paneId <- Views.paneId paneIdent
-  foldMap (encodeUtf8 . flip Text.snoc '\n') <$> runRiboTmux (capturePane paneId)
+  foldMap (encodeUtf8 . flip Text.snoc '\n') <$> runRiboTmux (capturePaneClean paneId)
