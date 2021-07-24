@@ -1,11 +1,9 @@
 module Myo.Text.Parser.Combinators where
 
-import Data.Char (isSpace)
-import qualified Data.Text as Text (drop, dropEnd, take, takeEnd)
-import Text.Parser.Char (CharParsing, alphaNum, anyChar, char, newline, noneOf, satisfy)
+import qualified Data.Text as Text (drop, dropEnd, intercalate, take, takeEnd, splitOn)
+import Text.Parser.Char (CharParsing, alphaNum, anyChar, char, newline, noneOf)
 import Text.Parser.Combinators (choice, manyTill, skipOptional, try)
-import Text.Parser.Token (TokenParsing, parens, whiteSpace)
-import qualified Text.Show
+import Text.Parser.Token (TokenParsing, parens, whiteSpace, brackets)
 
 colon :: CharParsing m => m Char
 colon =
@@ -45,16 +43,28 @@ emptyLine =
   void $ newline *> many (char ' ') *> newline
 
 data Expr =
-  Plain Text
+  Plain [Text]
   |
-  Parenthesized Text Expr
-  deriving Eq
+  Parenthesized [Text] Expr
+  deriving (Eq, Show)
 
-instance Text.Show.Show Expr where
-  show (Plain t) =
-    toString t
-  show (Parenthesized before sub) =
-    toString before <> "(" <> show sub <> ")"
+formatParens :: [Text] -> Text -> Text
+formatParens before sub =
+  (Text.intercalate " " before) <> (if null before then "" else " ") <> "(" <> sub <> ")"
+
+formatExpr :: Expr -> Text
+formatExpr = \case
+  Plain t ->
+    Text.intercalate " " t
+  Parenthesized before sub ->
+    formatParens before (formatExpr sub)
+
+formatExprToplevel :: Expr -> Text
+formatExprToplevel = \case
+  Parenthesized [] sub ->
+    formatExpr sub
+  expr ->
+    formatExpr expr
 
 parensExpr ::
   TokenParsing m =>
@@ -62,7 +72,7 @@ parensExpr ::
 parensExpr =
   choice [try parenthesized, Plain <$> plain]
   where
-    plain = toText <$> many (alphaNum <|> satisfy isSpace)
+    plain = fmap toText <$> many (some alphaNum <* ws)
     parenthesized =
       Parenthesized <$> plain <*> parens parensExpr
 
@@ -94,3 +104,56 @@ anyTillChar ::
   m Text
 anyTillChar =
   fmap toText <$> manyTill anyChar . char
+
+data TypeExpr =
+  Single Text
+  |
+  Apply [TypeExpr]
+  |
+  Parens TypeExpr
+  |
+  Brackets TypeExpr
+  deriving (Eq, Show)
+
+formatTypeParens :: Text -> Text
+formatTypeParens sub =
+  "(" <> sub <> ")"
+
+formatTypeBrackets :: Text -> Text
+formatTypeBrackets sub =
+  "[" <> sub <> "]"
+
+unqualify :: Text -> Text
+unqualify name =
+  maybe name last (nonEmpty ((Text.splitOn ".") name))
+
+formatTypeExpr :: TypeExpr -> Text
+formatTypeExpr = \case
+  Single t ->
+    unqualify t
+  Apply t ->
+    Text.intercalate " " (formatTypeExpr <$> t)
+  Parens sub ->
+    formatTypeParens (formatTypeExpr sub)
+  Brackets sub ->
+    formatTypeBrackets (formatTypeExpr sub)
+
+formatTypeExprToplevel :: TypeExpr -> Text
+formatTypeExprToplevel = \case
+  Parens sub ->
+    formatTypeExpr sub
+  expr ->
+    formatTypeExpr expr
+
+typeExpr ::
+  TokenParsing m =>
+  m TypeExpr
+typeExpr =
+  Apply <$> many ((try pars <|> try bracks <|> plain) <* ws)
+  where
+    plain =
+      Single . toText <$> some (noneOf " ()[]\n'")
+    pars =
+      Parens <$> parens typeExpr
+    bracks =
+      Brackets <$> brackets typeExpr

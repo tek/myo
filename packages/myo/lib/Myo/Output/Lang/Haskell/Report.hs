@@ -4,7 +4,7 @@ import Data.Attoparsec.Text (parseOnly)
 import qualified Data.Text as Text (intercalate, lines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, noneOf, oneOf, string)
+import Text.Parser.Char (CharParsing, anyChar, noneOf, oneOf, string, char)
 import Text.Parser.Combinators (between, choice, manyTill, sepBy1, skipMany, skipOptional, try)
 import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
 
@@ -32,7 +32,8 @@ import Myo.Output.Lang.Haskell.Syntax (
   unknownModuleMarker, kindMismatchMarker
   )
 import Myo.Output.Lang.Report (parsedOutputCons)
-import Myo.Text.Parser.Combinators (parensExpr, unParens)
+import Myo.Text.Parser.Combinators (parensExpr, unParens, formatExpr, typeExpr, formatTypeExpr, formatTypeExprToplevel, TypeExpr)
+import qualified Myo.Text.Parser.Combinators as Expr
 
 data HaskellMessage =
   FoundReq1 Text Text
@@ -74,14 +75,16 @@ data HaskellMessage =
   DataCtorNotInScope Text
   |
   KindMismatch Text Text
+  |
+  PolysemyEffect { effect :: Text, resumableError :: Maybe Text }
   deriving (Eq, Show)
 
 lqs :: String
 lqs =
-  "\8216‘`"
+  "‘`"
 rqs :: String
 rqs =
-  "’'\8217"
+  "’'"
 
 quoted ::
   TokenParsing m =>
@@ -100,7 +103,7 @@ qnames wordChar separator =
 
 qname :: TokenParsing m => m Text
 qname =
-  unwords <$> qnames (noneOf (['\n', ' '] ++ rqs)) whiteSpace
+  unwords <$> qnames (noneOf ('\n' : ' ' : rqs)) whiteSpace
 
 ws :: TokenParsing m => m ()
 ws =
@@ -185,13 +188,13 @@ noInstance1 ::
   TokenParsing m =>
   m HaskellMessage
 noInstance1 =
-  NoInstance . show <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf lqs) *> qname)
+  NoInstance . formatExpr <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf lqs) *> qname)
 
 noInstance2 ::
   TokenParsing m =>
   m HaskellMessage
 noInstance2 =
-  NoInstance . show <$> (string "Could not deduce" *> ws *> parens parensExpr) <*> name
+  NoInstance . formatExpr <$> (string "Could not deduce" *> ws *> parens parensExpr) <*> name
   where
     name =
       choice [string "arising from a use of", string "arising from the literal"] *> ws *> qname
@@ -244,7 +247,7 @@ ambiguousTypeVar =
     func =
       ws *> string "arising from a use of" *> ws *> qname
     constraint =
-      ws *> string "prevents the constraint" *> ws *> (unParens . show <$> quoted parensExpr)
+      ws *> string "prevents the constraint" *> ws *> (unParens . formatExpr <$> quoted parensExpr)
 
 invalidQualifiedName ::
   TokenParsing m =>
@@ -283,6 +286,39 @@ kindMismatch =
     req = string "Expected kind" *> ws *> qname <* string "," <* ws
     found = string "but" *> ws *> qname *> string " has kind " *> qname
 
+formatEffect :: TypeExpr -> HaskellMessage
+formatEffect =
+  cons . format
+  where
+    format = \case
+      Expr.Apply [Expr.Single "Resumable", e, eff] ->
+        (formatTypeExprToplevel eff, Just (formatTypeExpr e))
+      Expr.Apply [eff, Expr.Single "!!", e] ->
+        (formatTypeExprToplevel eff, Just (formatTypeExpr e))
+      Expr.Apply (Expr.Single "Resumable" : e : rest) ->
+        (Text.intercalate " " (formatTypeExpr <$> rest), Just (formatTypeExpr e))
+      Expr.Parens par ->
+        format par
+      e ->
+        (formatTypeExpr e, Nothing)
+    cons (eff, resume) =
+      PolysemyEffect eff resume
+
+polysemyCouldNotDeduce ::
+  TokenParsing m =>
+  m HaskellMessage
+polysemyCouldNotDeduce =
+  formatEffect <$> (intro *> parens typeExpr)
+  where
+    intro =
+      string "Could not deduce:" *> ws *> optional (string "Polysemy.Internal.Union.") *> string "LocateEffect" *> ws
+
+polysemyUnhandled ::
+  TokenParsing m =>
+  m HaskellMessage
+polysemyUnhandled =
+  string "Unhandled effect" *> ws *> between (char '\'') (char '\'') (formatEffect <$> typeExpr)
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -315,6 +351,8 @@ parseMessage =
         dataCtorNotInScope,
         nonExhausivePatterns,
         kindMismatch,
+        polysemyCouldNotDeduce,
+        polysemyUnhandled,
         verbatim
       ]
 
@@ -359,6 +397,10 @@ formatMessage (Verbatim txt) =
   Text.lines txt
 formatMessage (KindMismatch found req) =
   [kindMismatchMarker, found, req]
+formatMessage (PolysemyEffect eff (Just err)) =
+  [[text|!effect: #{eff} !! #{err}|]]
+formatMessage (PolysemyEffect eff Nothing) =
+  [[text|!effect: #{eff}|]]
 
 formatLocation :: Location -> Text
 formatLocation (Location path line _) =

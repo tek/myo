@@ -188,7 +188,31 @@ haskellOutput =
     /path/to/File.hs:36:1: error:
     • Expected kind ‘Tree -> Constraint’,
         but ‘Tree a b c’ has kind ‘Constraint’
-    |]
+    |],
+    "",
+    [text|
+    /path/to/File.hs:36:1: error:
+    • Could not deduce: Polysemy.Internal.Union.LocateEffect
+                              (Resumable
+                                e0
+                                (Polysemy.AtomicState.AtomicState
+                                    Foo.SomeType))
+                              r
+                            ~ '()
+            arising from a use of ‘someFunc’
+    |],
+    "",
+    [text|
+    /path/to/File.hs:36:1: error:
+    • Could not deduce: Polysemy.Internal.Union.LocateEffect ((AtomicState SomeType) !! Error) r ~ '()
+            arising from a use of ‘someFunc’
+    |],
+    "",
+    [text|
+    /path/to/File.hs:36:1: error:
+    • Unhandled effect 'Resumable e (AtomicState SomeType)'
+    |],
+    ""
     ]
 
 target :: Vector Text
@@ -304,6 +328,15 @@ target = Vector.fromList [
   "kind mismatch",
   "Constraint",
   "Tree -> Constraint",
+  "",
+  "/path/to/File.hs \57505 36",
+  "!effect: AtomicState SomeType !! e0",
+  "",
+  "/path/to/File.hs \57505 36",
+  "!effect: AtomicState SomeType !! Error",
+  "",
+  "/path/to/File.hs \57505 36",
+  "!effect: AtomicState SomeType !! e",
   ""
   ]
 

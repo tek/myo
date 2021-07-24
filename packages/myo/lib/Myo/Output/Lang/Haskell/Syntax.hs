@@ -1,6 +1,6 @@
 module Myo.Output.Lang.Haskell.Syntax where
 
-import qualified Data.Map as Map (fromList)
+import qualified Data.Map as Map
 import Ribosome.Data.Syntax (
   HiLink(..),
   Highlight(..),
@@ -31,6 +31,10 @@ kindMismatchMarker =
 noInstanceMarker :: Text
 noInstanceMarker =
   "\\s*!instance:"
+
+noEffectMarker :: Text
+noEffectMarker =
+  "\\s*!effect:"
 
 notInScopeMarker :: Text
 notInScopeMarker = [r|\%(variable\|type\) not in scope|]
@@ -117,7 +121,7 @@ errorMessage =
     contains2 =
       ",MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName"
     contains3 =
-      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataCtorNotInScope"
+      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataCtorNotInScope,MyoHsNoEffect"
 
 foundReq :: SyntaxItem
 foundReq =
@@ -344,6 +348,46 @@ dataCtor :: SyntaxItem
 dataCtor =
   simpleMessage "DataCtorNotInScope" "Code" dataCtorNotInScopeMarker
 
+noEffect :: SyntaxItem
+noEffect =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxRegion "MyoHsNoEffect" noEffectMarker errorEnd Nothing
+    options = ["contained"]
+    params = Map.fromList [("contains", "MyoHsNoEffectHead")]
+
+noEffectHead :: SyntaxItem
+noEffectHead =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsNoEffectHead" ("\\s*" <> noEffectMarker <> ".*$")
+    options = ["contained", "skipnl"]
+    params = Map.fromList [("contains", "MyoHsNoEffectBang")]
+
+noEffectBang :: SyntaxItem
+noEffectBang =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsNoEffectBang" "!"
+    options = ["contained"]
+    params = Map.fromList [("nextgroup", "MyoHsNoEffectKw")]
+
+noEffectKw :: SyntaxItem
+noEffectKw =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsNoEffectKw" "effect\\ze:"
+    options = ["contained", "skipwhite"]
+    params = Map.fromList [("nextgroup", "MyoHsNoEffectEffect")]
+
+noEffectEffect :: SyntaxItem
+noEffectEffect =
+  item { siOptions = options, siParams = params }
+  where
+    item = syntaxMatch "MyoHsNoEffectEffect" ".*$"
+    options = ["contained", "skipnl"]
+    params = Map.empty
+
 sync :: SyntaxItem
 sync =
   syntaxVerbatim "syntax sync minlines=10"
@@ -424,6 +468,18 @@ hlAmbiguousTypeVarMethod :: HiLink
 hlAmbiguousTypeVarMethod =
   HiLink "MyoHsAmbiguousTypeVarMethod" "MyoHsCode"
 
+hlEffectBang :: HiLink
+hlEffectBang =
+  HiLink "MyoHsNoEffectBang" "Error"
+
+hlNoEffectKw :: HiLink
+hlNoEffectKw =
+  HiLink "MyoHsNoEffectKw" "Directory"
+
+hlEffect :: HiLink
+hlEffect =
+  HiLink "MyoHsNoEffectEffect" "Type"
+
 haskellSyntax :: Syntax
 haskellSyntax =
   Syntax (items ++ [sync]) highlights hilinks
@@ -435,12 +491,12 @@ haskellSyntax =
         notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
         invalidImportName, invalidImportNameHead, moduleNameMismatch, unknownModule, unknownModuleHead,
         invalidQualifiedName, runtimeError, ambiguousTypeVar, ambiguousTypeVarVar, ambiguousTypeVarMethod, patterns,
-        dataCtor
+        dataCtor, noEffect, noEffectBang, noEffectKw, noEffectHead, noEffectEffect
       ]
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =
       [
         hlError, hlPath, hlLineNumber, hlBang, hlNoInstanceKw, hlNotInScope, hlModule, hlDoNotationResDiscarded,
         hlInvalidImportName, hlModuleNameMismatch, hlUnknownModule, hlInvalidQualifiedName, hlAmbiguousTypeVar,
-        hlAmbiguousTypeVarVar, hlAmbiguousTypeVarMethod
+        hlAmbiguousTypeVarVar, hlAmbiguousTypeVarMethod, hlEffect, hlEffectBang, hlNoEffectKw
       ]
