@@ -1,19 +1,19 @@
 module Myo.Proteome where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Data.Map ((!?))
 import qualified Data.Map as Map (fromList)
 import Ribosome.Api.Autocmd (uautocmd)
 import Ribosome.Config.Setting (settingMaybe, settingOr, updateSetting)
 import Ribosome.Data.Setting (Setting)
 
-import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec(CommandSettingCodec))
+import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (AddShellCommandOptions))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
+import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
 import qualified Myo.Settings as Settings
 import Myo.Ui.Data.AddPaneOptions (AddPaneOptions)
-import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions(..))
-import Myo.Ui.Data.UiSettingCodec (UiSettingCodec(UiSettingCodec))
+import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions (..))
+import Myo.Ui.Data.UiSettingCodec (UiSettingCodec (UiSettingCodec))
 
 unset ::
   NvimE e m =>

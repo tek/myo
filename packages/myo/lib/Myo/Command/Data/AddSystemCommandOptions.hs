@@ -1,6 +1,5 @@
 module Myo.Command.Data.AddSystemCommandOptions where
 
-
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Orphans ()
 
