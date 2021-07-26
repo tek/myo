@@ -1,7 +1,7 @@
 module Myo.Tmux.Run where
 
 import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
-import Chiasma.Command.Pane (capturePane, panePid, pipePane, quitCopyMode, sendKeys, paneTarget)
+import Chiasma.Command.Pane (panePid, pipePane, quitCopyMode, sendKeys, paneTarget)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Data.Views (Views, ViewsError)

@@ -3,8 +3,9 @@ module Myo.System.Proc where
 import Conduit (ConduitT, runConduit, sinkList, (.|))
 import Data.Attoparsec.Text (parseOnly)
 import Data.Conduit.List (unfoldM)
-import Path (absdir, toFilePath)
+import Path (Abs, Dir, absdir, toFilePath)
 import Path.IO (listDir)
+import Relude.Extra (dup)
 import Ribosome.Control.Exception (catchAnyAs)
 import System.FilePath ((</>))
 import Text.Parser.Char (CharParsing, anyChar, noneOf, spaces)
@@ -13,8 +14,7 @@ import Text.Parser.Token (TokenParsing, decimal, parens)
 import Text.RE.PCRE.Text (RE, matchedText, re, (?=~))
 import UnliftIO.Directory (doesPathExist)
 
-import Myo.Command.Data.Pid (Pid(Pid))
-import Relude.Extra (dup)
+import Myo.Command.Data.Pid (Pid (Pid))
 
 procStatPpid :: (Alternative m, CharParsing m, TokenParsing m, Monad m) => m Pid
 procStatPpid = do
