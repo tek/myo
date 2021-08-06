@@ -105,6 +105,12 @@ qname :: TokenParsing m => m Text
 qname =
   unwords <$> qnames (noneOf ('\n' : ' ' : rqs)) whiteSpace
 
+qType ::
+  TokenParsing m =>
+  m Text
+qType =
+  formatTypeExprToplevel <$> quoted typeExpr
+
 ws :: TokenParsing m => m ()
 ws =
   skipOptional whiteSpace
@@ -116,8 +122,8 @@ foundReq1 ::
 foundReq1 =
   flip FoundReq1 <$> req <*> found
   where
-    req = string "Couldn't match expected type" *> ws *> qname <* ws
-    found = string "with actual type" *> ws *> qname
+    req = string "Couldn't match expected type" *> ws *> qType <* ws
+    found = string "with actual type" *> ws *> qType
 
 foundReq2 ::
   TokenParsing m =>
@@ -126,9 +132,9 @@ foundReq2 =
   FoundReq2 <$> found <*> req <* skipMany anyChar
   where
     found =
-      string "Couldn't match type " *> qname
+      string "Couldn't match type " *> qType
     req =
-      ws *> string "with" *> ws *> skipOptional (string "actual type") *> ws *> qname
+      ws *> string "with" *> ws *> skipOptional (string "actual type") *> ws *> qType
 
 typeNotInScope ::
   TokenParsing m =>
@@ -188,7 +194,7 @@ noInstance1 ::
   TokenParsing m =>
   m HaskellMessage
 noInstance1 =
-  NoInstance . formatExpr <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf lqs) *> qname)
+  NoInstance . formatExpr <$> (string "No instance for" *> ws *> parens parensExpr) <*> (many (noneOf lqs) *> qType)
 
 noInstance2 ::
   TokenParsing m =>
@@ -203,7 +209,7 @@ doNotationResultDiscarded ::
   TokenParsing m =>
   m HaskellMessage
 doNotationResultDiscarded =
-  DoNotationResultDiscarded <$> (string "A do-notation statement discarded a result of type" *> ws *> qname)
+  DoNotationResultDiscarded <$> (string "A do-notation statement discarded a result of type" *> ws *> qType)
 
 invalidImportName ::
   TokenParsing m =>

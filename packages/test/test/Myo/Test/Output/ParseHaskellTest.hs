@@ -232,7 +232,7 @@ target = Vector.fromList [
   "/path/to/File.hs \57505 5",
   "type mismatch",
   "t0 Data1 -> StateT (ReaderT e0) ()",
-  "StateT (ReaderT (GHC.Conc.Sync.TVar Data)) a0",
+  "StateT (ReaderT (TVar Data)) a0",
   "",
   "/path/to/File.hs \57505 17",
   "redundant name imports",

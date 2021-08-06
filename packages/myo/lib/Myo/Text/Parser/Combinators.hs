@@ -152,7 +152,7 @@ typeExpr =
   Apply <$> many ((try pars <|> try bracks <|> plain) <* ws)
   where
     plain =
-      Single . toText <$> some (noneOf " ()[]\n'")
+      Single . toText <$> some (noneOf " ()[]\n‘'’")
     pars =
       Parens <$> parens typeExpr
     bracks =
