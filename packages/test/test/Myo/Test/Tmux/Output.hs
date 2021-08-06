@@ -3,6 +3,14 @@ module Myo.Test.Tmux.Output where
 import qualified Data.Text as Text
 import Hedgehog (TestT, (===))
 
+cleanLine :: Text -> Text
+cleanLine l =
+  Text.strip (fromMaybe l (Text.stripPrefix "bash-4.4$" l))
+
+cleanLines :: [Text] -> [Text]
+cleanLines =
+  fmap cleanLine
+
 containsLine ::
   Monad m =>
   HasCallStack =>
@@ -11,4 +19,4 @@ containsLine ::
   TestT m ()
 containsLine target ls =
   withFrozenCallStack do
-    True === any (Text.isSuffixOf target) ls
+    True === any (Text.isSuffixOf target) (cleanLines ls)

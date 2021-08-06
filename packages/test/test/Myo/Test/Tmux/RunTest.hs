@@ -1,23 +1,23 @@
 module Myo.Test.Tmux.RunTest where
 
-import Chiasma.Codec.Data.PaneMode (PaneMode(PaneMode))
+import Chiasma.Codec.Data.PaneMode (PaneMode (PaneMode))
 import Chiasma.Command.Pane (capturePane, copyMode, paneMode)
-import Chiasma.Data.Ident (Ident(Str))
-import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Chiasma.Data.Ident (Ident (Str))
+import Chiasma.Data.TmuxId (PaneId (PaneId))
 import Hedgehog ((===))
+import Ribosome.Test.Await (awaitEqual)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Tmux.Run (runTmux)
 
 import Myo.Command.Add (myoAddSystemCommand)
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
 import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Myo)
 import Myo.Init (initialize'')
+import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Test.Unit (MyoTest, tmuxTestDef)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Toggle (myoTogglePane)
-import qualified Data.Text as Text
-import Ribosome.Test.Await (awaitEqual)
 
 line1 :: Text
 line1 = "line 1"
@@ -42,12 +42,12 @@ setup = do
 runAndCheck :: MyoTest ()
 runAndCheck = do
   lift (myoRun (identText ident))
-  awaitEqual True checks (runTmux (capturePane (PaneId 1)))
+  awaitEqual True checks (runTmux (cleanLines <$> capturePane (PaneId 1)))
   where
     checks output =
       check line1 output && check line2 output
     check line =
-      any (Text.isSuffixOf line)
+      any ((==) line)
 
 runSysTest :: MyoTest ()
 runSysTest = do

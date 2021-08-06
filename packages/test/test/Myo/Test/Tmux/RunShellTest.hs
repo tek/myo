@@ -1,7 +1,7 @@
 module Myo.Test.Tmux.RunShellTest where
 
 import Chiasma.Command.Pane (capturePane)
-import Chiasma.Data.TmuxId (PaneId(PaneId))
+import Chiasma.Data.TmuxId (PaneId (PaneId))
 import Hedgehog ((===))
 import Ribosome.Config.Setting (updateSetting)
 import Ribosome.Test.Await (await, awaitEqual_)
@@ -9,16 +9,16 @@ import Ribosome.Test.Run (UnitTest)
 import Ribosome.Tmux.Run (runTmux)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
-import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions(AddShellCommandOptions))
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
+import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (AddShellCommandOptions))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
 import Myo.Command.Execution (isCommandRunning)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRunIdent)
 import qualified Myo.Settings as Settings (processTimeout)
+import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Test.Unit (MyoTest, tmuxTestDef)
 import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
-import qualified Data.Text as Text
 
 line1 :: Text
 line1 =
@@ -40,7 +40,7 @@ firstCondition ::
   [Text] ->
   MyoTest ()
 firstCondition output = do
-  Just True === (Text.isSuffixOf "cat" <$> listToMaybe output)
+  Just "cat" === listToMaybe output
   cmdLines === (takeEnd 2 output)
 
 secondCondition ::
@@ -78,7 +78,7 @@ tmuxRunShellTest = do
     cmdIdent = "text"
     r = Just "tmux"
     paneContent =
-      runTmux $ capturePane (PaneId 1)
+      cleanLines <$> runTmux (capturePane (PaneId 1))
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
