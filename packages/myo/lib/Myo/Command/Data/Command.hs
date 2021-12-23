@@ -1,9 +1,9 @@
 module Myo.Command.Data.Command where
 
-import Chiasma.Data.Ident (Identifiable(..))
-import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
-import Data.Text.Prettyprint.Doc (Pretty(..), nest, vsep, (<+>))
+import Chiasma.Data.Ident (Identifiable (..))
+import Data.Aeson (FromJSON, ToJSON (toEncoding), defaultOptions, genericToEncoding)
 import Prelude hiding (lines)
+import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
 import Myo.Orphans ()

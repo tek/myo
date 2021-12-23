@@ -6,8 +6,8 @@ module Myo.Log (
 import qualified Chiasma.Data.Views as Views (log)
 import Chiasma.Ui.ShowTree (printViewTree)
 import qualified Control.Lens as Lens (toListOf, view)
-import Data.Text.Prettyprint.Doc (line)
-import Data.Text.Prettyprint.Doc.Util (putDocW)
+import Prettyprinter (line)
+import Prettyprinter.Util (putDocW)
 import Ribosome.Log (debug, err, info, prefixed)
 
 import Myo.Data.Env (Env)

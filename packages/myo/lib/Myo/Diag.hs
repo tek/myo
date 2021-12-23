@@ -1,6 +1,6 @@
 module Myo.Diag where
 
-import Data.Text.Prettyprint.Doc (Doc, line, pretty, vsep)
+import Prettyprinter (Doc, line, pretty, vsep)
 import Ribosome.Control.Monad.Ribo (inspectErrors)
 import Ribosome.Data.Errors (Errors)
 import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)

@@ -1,32 +1,24 @@
 module Myo.Command.CommandMenu where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(..))
+import qualified Chiasma.Data.Ident as Ident (Ident (..))
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Conduit (yield)
-import qualified Control.Lens as Lens (view)
-import Control.Monad.Catch (MonadThrow)
-import Control.Monad.Trans.Resource (MonadResource)
+import Control.Monad.Catch (MonadCatch, MonadThrow)
 import qualified Data.Map as Map
 import qualified Data.Text as Text
 import qualified Data.UUID as UUID
 import Ribosome.Data.PersistError (PersistError)
-import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchSize)
+import Ribosome.Data.ScratchOptions (defaultScratchOptions)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Menu.Action (menuQuit, menuQuitWith)
-import Ribosome.Menu.Data.Menu (Menu)
-import Ribosome.Menu.Data.MenuConsumerAction (MenuConsumerAction)
-import qualified Ribosome.Menu.Data.MenuItem as MenuItem
+import qualified Ribosome.Menu.Consumer as Consumer
+import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 import Ribosome.Menu.Data.MenuResult (MenuResult)
-import Ribosome.Menu.Prompt.Data.Prompt (Prompt)
-import Ribosome.Menu.Prompt.Data.PromptConfig (PromptConfig(PromptConfig))
-import Ribosome.Menu.Prompt.Nvim (getCharC, nvimPromptRenderer)
-import Ribosome.Menu.Prompt.Run (basicTransition)
-import Ribosome.Menu.Run (nvimMenu)
-import Ribosome.Menu.Simple (defaultMenu, selectedMenuItem)
+import Ribosome.Menu.Items.Read (withFocusM)
+import Ribosome.Menu.Prompt (defaultPrompt)
+import Ribosome.Menu.Run (staticNvimMenu)
 import Ribosome.Msgpack.Error (DecodeError)
 
-import Myo.Command.Data.Command (Command(Command))
+import Myo.Command.Data.Command (Command (Command))
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandState as CommandState
@@ -50,14 +42,9 @@ runCommand ::
   MonadDeepError e TreeModError m =>
   MonadDeepState s CommandState m =>
   MonadDeepState s Env m =>
-  Menu Ident ->
-  Prompt ->
-  m (MenuConsumerAction m (), Menu Ident)
-runCommand menu _ =
-  maybe (menuQuit menu) runQuit (Lens.view MenuItem.meta <$> selectedMenuItem menu)
-  where
-    runQuit ident =
-      menuQuitWith (myoRunIdent ident) menu
+  MenuWidget m Ident ()
+runCommand =
+  withFocusM myoRunIdent
 
 menuItemName :: Ident -> Maybe Text -> Text
 menuItemName ident displayName =
@@ -71,36 +58,34 @@ menuItemName ident displayName =
 commandMenu ::
   NvimE e m =>
   MonadRibo m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   MonadDeepState s CommandState m =>
   MonadDeepError e DecodeError m =>
   MonadDeepError e CommandError m =>
-  (Menu Ident -> Prompt -> m (MenuConsumerAction m a, Menu Ident)) ->
-  m (MenuResult a)
+  MenuWidget m Ident () ->
+  m (MenuResult ())
 commandMenu execute =
-  run =<< getL @CommandState CommandState.commands
+  run . fmap menuItem =<< getL @CommandState CommandState.commands
   where
     run [] =
       throwHoist CommandError.NoCommands
     run entries =
-      nvimMenu (scratchOptions (length entries)) (items entries) handler promptConfig Nothing
-    items entries =
-      yield (menuItem <$> entries)
+      staticNvimMenu scratchOptions entries handler promptConfig
     menuItem (Command _ ident lines' _ _ displayName _ _ _) =
       simpleMenuItem ident (menuItemText ident lines' displayName)
     menuItemText ident lines' displayName =
       Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']
     handler =
-      defaultMenu (Map.fromList [("cr", execute)])
+      Consumer.withMappings (Map.fromList [("cr", execute)])
     promptConfig =
-      PromptConfig (getCharC 0.033) basicTransition nvimPromptRenderer []
-    scratchOptions count =
-      scratchSize count $ defaultScratchOptions "myo-commands"
+      defaultPrompt []
+    scratchOptions =
+      defaultScratchOptions "myo-commands"
 
 myoCommands ::
   NvimE e m =>
-  MonadResource m =>
+  MonadCatch m =>
   MonadBaseControl IO m =>
   MyoRender s e m =>
   MonadDeepError e DecodeError m =>
@@ -112,7 +97,6 @@ myoCommands ::
   MonadDeepError e TreeModError m =>
   MonadDeepState s CommandState m =>
   MonadDeepState s Env m =>
-  MonadThrow m =>
   m ()
 myoCommands =
   void $ commandMenu runCommand

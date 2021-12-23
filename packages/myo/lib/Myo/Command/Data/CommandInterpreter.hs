@@ -1,7 +1,7 @@
 module Myo.Command.Data.CommandInterpreter where
 
-import Data.Aeson (FromJSON, ToJSON(toEncoding), defaultOptions, genericToEncoding)
-import Data.Text.Prettyprint.Doc (Pretty(..), emptyDoc, (<+>))
+import Data.Aeson (FromJSON, ToJSON (toEncoding), defaultOptions, genericToEncoding)
+import Prettyprinter (Pretty (..), emptyDoc, (<+>))
 
 import Myo.Data.String.Pretty (backtick)
 import Myo.Orphans ()
