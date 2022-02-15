@@ -1,43 +1,43 @@
 module Myo.Tmux.Run where
 
-import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid(panePid))
-import Chiasma.Command.Pane (panePid, pipePane, quitCopyMode, sendKeys, paneTarget)
+import qualified Chiasma.Codec.Data.PanePid as PanePid (PanePid (panePid))
+import Chiasma.Command.Pane (panePid, paneTarget, pipePane, quitCopyMode, sendKeys)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId)
+import Chiasma.Data.TmuxThunk (TmuxThunk)
 import Chiasma.Data.Views (Views, ViewsError)
 import Chiasma.Monad.Stream (TmuxProg)
 import qualified Chiasma.Monad.Stream as Chiasma (runTmux)
-import Chiasma.Native.Api (TmuxNative(TmuxNative))
+import qualified Chiasma.Monad.Tmux as Tmux
+import Chiasma.Native.Api (TmuxNative (TmuxNative))
 import qualified Chiasma.View.State as Views (paneId)
+import Control.Monad.Free (MonadFree)
+import Data.List (dropWhileEnd)
 import qualified Data.Text as Text
-import qualified Myo.Control.Concurrent.Wait as Ribosome (waitIOPredDef)
 import Path (Abs, File, Path)
 import Path.IO (doesFileExist, removeFile)
 import Prelude hiding (state)
 import Ribosome.Api.Echo (echo, echon)
+import Ribosome.Config.Setting (settingMaybe)
+import qualified Ribosome.Config.Settings as Settings (tmuxSocket)
 import Ribosome.Control.Exception (tryAny)
 import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 import qualified System.Posix.Signals as Signal
 import System.Posix.Signals (Signal)
 
-import Myo.Command.Data.Command (Command(Command))
+import Myo.Command.Data.Command (Command (Command))
 import Myo.Command.Data.Execution (ExecutionState)
-import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Starting, Pending, Unknown))
-import Myo.Command.Data.Pid (Pid(Pid))
+import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState (Pending, Starting, Unknown))
+import Myo.Command.Data.Pid (Pid (Pid))
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask(RunTask), RunTaskDetails)
-import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
+import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails)
+import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails (..))
 import Myo.Command.Kill (signalPid)
 import Myo.Command.Log (pipePaneToSocket)
+import qualified Myo.Control.Concurrent.Wait as Ribosome (waitIOPredDef)
 import Myo.Control.Concurrent.Wait (waitIOPredDef)
 import Myo.System.Proc (childPids)
-import Ribosome.Config.Setting (settingMaybe)
-import qualified Ribosome.Config.Settings as Settings (tmuxSocket)
-import Control.Monad.Free (MonadFree)
-import Chiasma.Data.TmuxThunk (TmuxThunk)
-import qualified Chiasma.Monad.Tmux as Tmux
-import Data.List (dropWhileEnd)
 
 tmuxCanRun :: RunTask -> Bool
 tmuxCanRun (RunTask _ _ details) =
@@ -163,10 +163,10 @@ tmuxRun (RunTask (Command _ commandIdent lines' _ _ _ _ kill _) logPath details)
     run _ =
       unit
     runUi paneId = do
-        quitCopyMode paneId
-        send paneId
+      quitCopyMode paneId
+      send paneId
     send paneId =
-      sendKeys paneId lines'
+      sendKeys paneId [] lines'
 
 taskPane :: RunTaskDetails -> Maybe Ident
 taskPane = \case

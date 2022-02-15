@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,6 +26,8 @@ library
   exposed-modules:
       Keep
   other-modules:
+      Paths_myo_test
+  autogen-modules:
       Paths_myo_test
   hs-source-dirs:
       lib
@@ -171,6 +173,8 @@ test-suite myo-unit
       Myo.Test.Tmux.TogglePaneTest
       Myo.Test.Tmux.UpdateTest
       Myo.Test.Unit
+      Paths_myo_test
+  autogen-modules:
       Paths_myo_test
   hs-source-dirs:
       test

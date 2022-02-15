@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.34.6.
 --
 -- see: https://github.com/sol/hpack
 
@@ -312,6 +312,8 @@ library
 executable myo
   main-is: Main.hs
   other-modules:
+      Paths_myo
+  autogen-modules:
       Paths_myo
   hs-source-dirs:
       app

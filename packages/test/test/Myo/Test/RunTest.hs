@@ -21,7 +21,7 @@ import Myo.Command.Run (myoLine, myoRunIdent)
 import Myo.Command.Runner (addRunner, extractRunError)
 import Myo.Command.Subproc.Runner (addSubprocessRunner)
 import Myo.Data.Env (Myo)
-import Myo.Test.Unit (MyoTest, intTestDef, testDef)
+import Myo.Test.Unit (MyoTest, intTestDef, tmuxTestDef)
 
 testError :: Text
 testError = "error"
@@ -46,8 +46,8 @@ addDummyRunner runner =
     checkDummy _ =
       return $ return ExecutionState.Unknown
 
-check :: [Text] -> MyoTest ()
-check target = do
+checkReport :: [Text] -> MyoTest ()
+checkReport target = do
   loggedError <- inspectErrors $ Lens.view $ Errors.componentErrors . Lens.at (ComponentName cname)
   let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError
   Just target === errorReport
@@ -58,11 +58,11 @@ runSystemTest = do
   myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just runnerIdent) Nothing Nothing Nothing Nothing Nothing Nothing
   lift (addDummyRunner runDummy)
   lift (myoRunIdent ident)
-  check [testError]
+  checkReport [testError]
 
 test_runSystem :: UnitTest
 test_runSystem =
-  testDef runSystemTest
+  tmuxTestDef runSystemTest
 
 cmdline :: Text
 cmdline = "echo 'hello"
@@ -75,11 +75,11 @@ runLineSingleTest :: MyoTest ()
 runLineSingleTest = do
   lift (addDummyRunner lineRunner)
   lift (myoLine (RunLineOptions (Just cmdline) Nothing Nothing (Just runnerIdent) Nothing Nothing Nothing Nothing))
-  check [cmdline]
+  checkReport [cmdline]
 
 test_runLineSingle :: UnitTest
 test_runLineSingle =
-  testDef runLineSingleTest
+  tmuxTestDef runLineSingleTest
 
 runLineCmdTest :: MyoTest ()
 runLineCmdTest =
@@ -103,4 +103,4 @@ runSubprocTest = do
 
 test_runSubproc :: UnitTest
 test_runSubproc =
-  testDef runSubprocTest
+  tmuxTestDef runSubprocTest

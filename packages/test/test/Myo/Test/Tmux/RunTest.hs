@@ -38,7 +38,6 @@ setup = do
       AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing Nothing Nothing Nothing Nothing
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
--- output may be interleaved, so the `line 2` might be prefixed by `bash-4.4 $`
 runAndCheck :: MyoTest ()
 runAndCheck = do
   lift (myoRun (identText ident))

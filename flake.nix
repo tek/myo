@@ -17,24 +17,26 @@
       ribosome-test = minimal (source.package ribosome "test");
     };
 
-  in hix.flake {
+  in hix.lib.flake ({ config, ...}: {
     base = ./.;
     inherit overrides;
     deps = [ribosome];
-    compat = false;
+    compat.enable = false;
     packages = {
       myo = ./packages/myo;
       myo-test = ./packages/test;
     };
     main = "myo";
     versionFile = "ops/hpack/packages/meta.yaml";
-    runConfig = p: { extraShellInputs = [p.pkgs.neovim]; };
-    modify = _: outputs: rec {
+    ghcid.shellConfig =
+    let pkgs = config.devGhc.pkgs;
+    in { buildInputs = [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode]; };
+    output.amend = _: outputs: rec {
       apps.myo = {
         type = "app";
         program = "${outputs.packages.myo}/bin/myo";
       };
       defaultApp = apps.myo;
     };
-  };
+  });
 }

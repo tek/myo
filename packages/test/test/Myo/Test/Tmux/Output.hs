@@ -5,7 +5,7 @@ import Hedgehog (TestT, (===))
 
 cleanLine :: Text -> Text
 cleanLine l =
-  Text.strip (fromMaybe l (Text.stripPrefix "bash-4.4$" l))
+  Text.strip (fromMaybe l (Text.stripPrefix "$ " l))
 
 cleanLines :: [Text] -> [Text]
 cleanLines =

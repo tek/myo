@@ -99,7 +99,7 @@ monitorTest = do
   sleep 1
   where
     send =
-      lift . runTmux . sendKeys (PaneId 1)
+      lift . runTmux . sendKeys  (PaneId 1) []
 
 test_monitor :: UnitTest
 test_monitor = do

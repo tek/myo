@@ -14,7 +14,7 @@ import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (events)
 import Myo.Output.ParseReport (compileReport)
 import Myo.Test.Output.Echo (addEchoCommand, addEchoHandler)
-import Myo.Test.Unit (MyoTest, testDef)
+import Myo.Test.Unit (MyoTest, tmuxTestDef)
 import Ribosome.Test.Await (awaitEqual)
 
 lines' :: [Text]
@@ -37,4 +37,4 @@ parsePreviousTest = do
 
 test_parsePrevious :: UnitTest
 test_parsePrevious =
-  testDef parsePreviousTest
+  tmuxTestDef parsePreviousTest

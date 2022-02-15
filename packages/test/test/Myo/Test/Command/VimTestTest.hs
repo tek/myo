@@ -11,7 +11,7 @@ import Myo.Command.Subproc.Runner (addSubprocessRunner)
 import Myo.Command.Test (myoVimTest, testName)
 import Myo.Data.Env (Myo)
 import Myo.Settings (testRunner)
-import Myo.Test.Unit (MyoTest, testDef)
+import Myo.Test.Unit (MyoTest, tmuxTestDef)
 
 mockVimTestFunctions :: FilePath -> Myo ()
 mockVimTestFunctions fname = do
@@ -32,4 +32,4 @@ vimTestTest = do
 
 test_vimTest :: UnitTest
 test_vimTest =
-  testDef vimTestTest
+  tmuxTestDef vimTestTest
