@@ -261,4 +261,4 @@ parseHaskell =
 
 haskellOutputParser :: OutputParser
 haskellOutputParser =
-  OutputParser parseHaskell
+  OutputParser parseHaskell pure

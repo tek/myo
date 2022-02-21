@@ -9,16 +9,21 @@ import Prelude hiding (text)
 import Text.Parser.Char (CharParsing, anyChar, char, newline, text)
 import Text.Parser.Combinators (choice, manyTill, skipMany, skipOptional, try)
 import Text.Parser.Token (TokenParsing, integer, natural)
-import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll)
+import Text.RE.PCRE.Text (RE, SearchReplace, ed, searchReplaceAll, searchReplaceFirst)
 
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError (Parse))
+import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents (OutputEvents))
 import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
-import Myo.Output.Data.ParsedOutput (ParsedOutput)
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import Myo.Output.Lang.Nix.Data.NixEvent (NixEvent (NixEvent))
 import Myo.Output.Lang.Nix.Report (nixReport)
 import Myo.Text.Parser.Combinators (anyTillChar, colon, minus, skipLine, tillEol, ws)
+import Path.IO (getCurrentDir, doesFileExist)
+import Path (toFilePath, parseRelFile, (</>))
+import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
 
 number :: TokenParsing m => Integer -> m Char -> m Integer
 number base baseDigit =
@@ -99,23 +104,11 @@ parseNixErrors =
       [
         Just <$> traceEvent,
         Nothing <$ skipLine
-        ]
-
-removeProgressIndicator1RE :: SearchReplace RE Text
-removeProgressIndicator1RE =
-  [ed|Progress \d+/\d+: [^ ]+///|]
-
-removeProgressIndicator2RE :: SearchReplace RE Text
-removeProgressIndicator2RE =
-  [ed|Progress \d+/\d+///|]
+      ]
 
 removeControlCharsRE :: SearchReplace RE Text
 removeControlCharsRE =
   [ed|(\x9b|\x1b\[)[0-?]*[ -\/]*[@-~]///|]
-
-removeModulePrefixRE :: SearchReplace RE Text
-removeModulePrefixRE =
-  [ed|^ *[^> ]+\w *> ///|]
 
 sanitizeNixOutput :: Text -> Text
 sanitizeNixOutput =
@@ -128,6 +121,32 @@ parseNix :: Text -> Either OutputError ParsedOutput
 parseNix =
   nixReport <=< mapLeft (OutputError.Parse . toText) . parseOnly parseNixErrors . sanitizeNixOutput
 
+storePathRE :: SearchReplace RE Text
+storePathRE =
+  [ed|^/nix/store/[^/]+/(.*)///$1|]
+
+adaptPath :: OutputEvent -> IO OutputEvent
+adaptPath = \case
+  OutputEvent (OutputEventMeta (Just (Location p line col)) level) ls -> do
+    (newPath, newLines) <- case parseRelFile (toString (searchReplaceFirst storePathRE p)) of
+      Right localPath -> do
+        cwd <- getCurrentDir
+        exists <- doesFileExist (cwd </> localPath)
+        pure (if exists then (toText (toFilePath localPath), sanitizeLine <$> ls) else (p, ls))
+      Left _ ->
+        pure (p, ls)
+    pure (OutputEvent (OutputEventMeta (Just (Location newPath line col)) level) newLines)
+  e ->
+    pure e
+  where
+    sanitizeLine (ReportLine e t) =
+      ReportLine e (searchReplaceFirst storePathRE t)
+
+adaptPaths :: ParsedOutput -> IO ParsedOutput
+adaptPaths (ParsedOutput syntax (OutputEvents events)) = do
+  eventsWithLocalPaths <- traverse adaptPath events
+  pure (ParsedOutput syntax (OutputEvents eventsWithLocalPaths))
+
 nixOutputParser :: OutputParser
 nixOutputParser =
-  OutputParser parseNix
+  OutputParser parseNix adaptPaths

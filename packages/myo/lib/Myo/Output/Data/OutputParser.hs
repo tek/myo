@@ -5,8 +5,12 @@ import qualified Text.Show
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 
-newtype OutputParser =
-  OutputParser (Text -> Either OutputError ParsedOutput)
+data OutputParser =
+  OutputParser {
+    parse :: Text -> Either OutputError ParsedOutput,
+    sanitize :: ParsedOutput -> IO ParsedOutput
+  }
 
-instance Text.Show.Show OutputParser where
- show _ = "OutputParser"
+instance Show OutputParser where
+ show _ =
+   "OutputParser"

@@ -120,4 +120,4 @@ parseScala =
 
 scalaOutputParser :: OutputParser
 scalaOutputParser =
-  OutputParser parseScala
+  OutputParser parseScala pure

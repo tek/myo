@@ -138,12 +138,19 @@ handlersForLang lang = do
   result <- getL @CommandState $ CommandState.outputHandlers . at lang
   hoistMaybe (OutputError.NoHandler lang) result
 
-parseWith :: MonadDeepError s OutputError m => OutputParser -> Text -> m ParsedOutput
-parseWith (OutputParser parser) =
-  hoistEither . parser
+parseWith ::
+  MonadIO m =>
+  MonadDeepError s OutputError m =>
+  OutputParser ->
+  Text ->
+  m ParsedOutput
+parseWith (OutputParser parser sanitize) =
+  liftIO . sanitize <=< hoistEither . parser
 
 parseWithLang ::
-  (MonadDeepError e OutputError m, MonadDeepState s CommandState m) =>
+  MonadIO m =>
+  MonadDeepError e OutputError m =>
+  MonadDeepState s CommandState m =>
   CommandLanguage ->
   Text ->
   m [ParsedOutput]
