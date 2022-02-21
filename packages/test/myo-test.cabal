@@ -153,6 +153,7 @@ test-suite myo-unit
       Myo.Test.Output.EmptyOutputTest
       Myo.Test.Output.HaskellRenderTest
       Myo.Test.Output.ParseHaskellTest
+      Myo.Test.Output.ParseNixTest
       Myo.Test.Output.ParseScalaTest
       Myo.Test.Output.ParseTest
       Myo.Test.Output.PathTest

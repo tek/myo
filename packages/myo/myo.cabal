@@ -96,6 +96,10 @@ library
       Myo.Output.Lang.Haskell.Parser
       Myo.Output.Lang.Haskell.Report
       Myo.Output.Lang.Haskell.Syntax
+      Myo.Output.Lang.Nix.Data.NixEvent
+      Myo.Output.Lang.Nix.Parser
+      Myo.Output.Lang.Nix.Report
+      Myo.Output.Lang.Nix.Syntax
       Myo.Output.Lang.Report
       Myo.Output.Lang.Scala.Data.ScalaEvent
       Myo.Output.Lang.Scala.Parser
