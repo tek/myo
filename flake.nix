@@ -32,11 +32,13 @@
     let pkgs = config.devGhc.pkgs;
     in { buildInputs = [pkgs.neovim pkgs.tmux pkgs.rxvt-unicode]; };
     output.amend = _: outputs: rec {
-      apps.myo = {
-        type = "app";
-        program = "${outputs.packages.myo}/bin/myo";
+      apps = rec {
+        myo = {
+          type = "app";
+          program = "${outputs.packages.myo}/bin/myo";
+        };
+        default = myo;
       };
-      defaultApp = apps.myo;
     };
   });
 }
