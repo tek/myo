@@ -1,35 +1,52 @@
 module Myo.Ui.Toggle where
 
+import Chiasma.Codec.Data (Pane)
+import Chiasma.Data.CodecError (CodecError)
+import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Panes (Panes)
+import Chiasma.Data.RenderError (RenderError)
+import Chiasma.Data.TmuxCommand (TmuxCommand)
+import Chiasma.Data.Views (Views)
+import Chiasma.Effect.Codec (Codec)
+import Chiasma.Effect.TmuxClient (ScopedTmux)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
+import Ribosome (Rpc)
 
 import Myo.Orphans ()
+import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Lens.Toggle (openOnePane, toggleOneLayout, toggleOnePane)
-import Myo.Ui.Render (MyoRender, myoRender)
+import Myo.Ui.Render (renderTmux)
+
+type ToggleStack encode decode =
+  [
+    ScopedTmux () encode decode, 
+    Codec TmuxCommand encode decode !! CodecError,
+    Codec (Panes Pane) encode decode !! CodecError
+  ]
 
 ensurePaneOpen ::
-  MonadIO m =>
-  MonadDeepError e TreeModError m =>
-  MyoRender s e m =>
+  Members (ToggleStack encode decode) r =>
+  Members [AtomicState Views, AtomicState UiState, Stop RenderError, Rpc, Stop TreeModError] r =>
   Ident ->
-  m ()
+  Sem r ()
 ensurePaneOpen ident = do
   openOnePane ident
-  myoRender
+  renderTmux
 
 myoTogglePane ::
-  MonadDeepError e TreeModError m =>
-  MyoRender s e m =>
+  Members (ToggleStack encode decode) r =>
+  Members [AtomicState Views, AtomicState UiState, Stop RenderError, Rpc, Stop TreeModError] r =>
   Ident ->
-  m ()
+  Sem r ()
 myoTogglePane ident = do
   toggleOnePane ident
-  void myoRender
+  void renderTmux
 
 myoToggleLayout ::
-  MonadDeepError e TreeModError m =>
-  MyoRender s e m =>
+  Members (ToggleStack encode decode) r =>
+  Members [AtomicState Views, AtomicState UiState, Stop RenderError, Rpc, Stop TreeModError] r =>
   Ident ->
-  m ()
+  Sem r ()
 myoToggleLayout ident = do
   toggleOneLayout ident
-  void myoRender
+  void renderTmux

@@ -11,7 +11,7 @@ import Myo.Settings
 
 defaultVars :: IO Vars
 defaultVars =
-  return def
+  pure def
 
 defaultTestConfigWith :: Vars -> TestConfig
 defaultTestConfigWith = E.defaultTestConfigWith "myo"

@@ -38,7 +38,7 @@ ui2 =
     (Just [def { AddLayoutOptions.ident = Just (Ident.Str "test"), AddLayoutOptions.layout = Ident.Str "make" }])
     (Just [def { AddPaneOptions.ident = Just (Ident.Str "pane"), AddPaneOptions.layout = Ident.Str "test" }])
 
-paneData :: MonadDeepState s UiState m => m [Text]
+paneData :: Member (AtomicState Env) r => m [Text]
 paneData =
   (>>= extractS) <$> getL @UiState UiState.spaces
   where
@@ -46,15 +46,14 @@ paneData =
     extractW (Window _ layout) = bifoldMap viewName viewName layout
     viewName (View ident _ _ _) = [identText ident]
 
-$(return [])
+$(pure [])
 
 plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
 plugin tmp = do
   ribo <- newRibosome "myo" def { _tempDir = tmp }
-  return $ riboPlugin "myo" ribo [$(rpcHandler sync 'paneData)] [] handleError variables
+  pure $ riboPlugin "myo" ribo [$(rpcHandler sync 'paneData)] [] handleError variables
 
 getUiData ::
-  NvimE e m =>
   m [Text]
 getUiData =
   vimCallFunction "PaneData" []

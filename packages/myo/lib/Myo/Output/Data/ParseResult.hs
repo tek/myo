@@ -1,5 +1,7 @@
 module Myo.Output.Data.ParseResult where
 
+import Chiasma.Data.Ident (Ident)
+
 import Myo.Output.Data.ParsedOutput (ParsedOutput)
 
 data ParseResult =
@@ -7,6 +9,4 @@ data ParseResult =
     _command :: Ident,
     _output :: [ParsedOutput]
   }
-  deriving (Eq, Show)
-
-makeClassy ''ParseResult
+  deriving stock (Eq, Show)

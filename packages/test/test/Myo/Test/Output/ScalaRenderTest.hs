@@ -123,17 +123,14 @@ syntaxTarget = [
   ]
 
 setupHighlights ::
-  MonadDeepError e DecodeError m =>
-  NvimE e m =>
   m ()
 setupHighlights =
   void $ executeSyntax (Syntax [] [syntaxHighlight "Error" [("ctermfg", "1"), ("cterm", "bold")]] [])
 
-myoSyntax :: NvimE e m => m [Text]
 myoSyntax = do
   syntax <- parse <$> vimCommandOutput "syntax"
   hi <- parse <$> vimCommandOutput "hi"
-  return $ syntax <> hi
+  pure $ syntax <> hi
   where
     parse = Text.dropWhileEnd (' ' ==) <$$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"

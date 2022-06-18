@@ -1,8 +1,7 @@
 module Myo.Command.Data.CommandError where
 
-import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
-import Ribosome.Error.Report.Class (ReportError(..))
-import System.Log (Priority(ERROR, NOTICE))
+import Log (Severity (Error, Warn))
+import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
 
 data CommandError =
   Misc Text
@@ -16,32 +15,30 @@ data CommandError =
   NoSuchHistoryIdent Text
   |
   NoHistory
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
-deepPrisms ''CommandError
-
-instance ReportError CommandError where
-  errorReport (Misc err) =
-    ErrorReport (pre <> " " <> err) [pre, err] ERROR
+instance ToErrorMessage CommandError where
+  toErrorMessage (Misc err) =
+    ErrorMessage (pre <> " " <> err) [pre, err] Error
     where
       pre = "command error:"
-  errorReport (NoSuchCommand context ident) =
-    ErrorReport err ["In context `" <> context <>"`:", err] NOTICE
+  toErrorMessage (NoSuchCommand context ident) =
+    ErrorMessage err ["In context `" <> context <>"`:", err] Warn
     where
       err = "no command with ident `" <> ident <> "`"
-  errorReport NoCommands =
-    ErrorReport err [err] NOTICE
+  toErrorMessage NoCommands =
+    ErrorMessage err [err] Warn
     where
       err = "no commands have been created yet"
-  errorReport (NoSuchHistoryIndex index) =
-    ErrorReport err [err] NOTICE
+  toErrorMessage (NoSuchHistoryIndex index) =
+    ErrorMessage err [err] Warn
     where
       err = "no history entry at index " <> show index
-  errorReport (NoSuchHistoryIdent ident) =
-    ErrorReport err [err] NOTICE
+  toErrorMessage (NoSuchHistoryIdent ident) =
+    ErrorMessage err [err] Warn
     where
       err = "no history entry with ident `" <> ident <> "`"
-  errorReport NoHistory =
-    ErrorReport err ["CommandError.NoHistory"] NOTICE
+  toErrorMessage NoHistory =
+    ErrorMessage err ["CommandError.NoHistory"] Warn
     where
       err = "no history yet"

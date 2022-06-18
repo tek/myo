@@ -9,27 +9,21 @@ import Myo.Output.Data.ReportLine (ReportLine)
 
 data OutputEventMeta =
   OutputEventMeta {
-     _location :: Maybe Location,
-     _level :: Int
+    location :: Maybe Location,
+    level :: Int
   }
-  deriving (Eq, Show)
-
-makeClassy ''OutputEventMeta
+  deriving stock (Eq, Show)
 
 data OutputEvent =
   OutputEvent {
-     _meta :: OutputEventMeta,
-    _lines :: Vector (ReportLine EventIndex.Relative)
+    meta :: OutputEventMeta,
+    lines :: Vector (ReportLine EventIndex.Relative)
   }
-  deriving (Eq, Show)
-
-makeClassy ''OutputEvent
+  deriving stock (Eq, Show)
 
 data LangOutputEvent a =
   LangOutputEvent {
-    _event :: OutputEventMeta,
-    _langData :: a
+    event :: OutputEventMeta,
+    langData :: a
   }
-  deriving (Eq, Show)
-
-makeClassy ''LangOutputEvent
+  deriving stock (Eq, Show)

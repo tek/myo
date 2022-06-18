@@ -1,10 +1,10 @@
 module Myo.Command.Data.Execution where
 
-import Chiasma.Data.Ident (Identifiable(..))
-import Data.Hourglass (Elapsed)
+import Chiasma.Data.Ident (Ident, Identifiable (..))
+import qualified Chronos
+import Exon (exon)
 import Network.Socket (Socket)
-import Prelude hiding (state)
-import qualified Text.Show
+import Text.Show (showParen, showsPrec)
 
 import Myo.Command.Data.Pid (Pid)
 
@@ -20,32 +20,29 @@ data ExecutionState =
   Stopped
   |
   Unknown
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data ExecutionMonitor =
   ExecutionMonitor {
-    _state :: ExecutionState,
-    _startTime :: Elapsed,
-    _socket :: Maybe Socket,
-    _checkPending :: IO ExecutionState
+    state :: ExecutionState,
+    startTime :: Chronos.Time,
+    socket :: Maybe Socket,
+    checkPending :: IO ExecutionState
   }
+  deriving stock (Generic)
 
-makeClassy ''ExecutionMonitor
-
-instance Text.Show.Show ExecutionMonitor where
-  show (ExecutionMonitor s t _ _) =
-    "ExecutionMonitor" <> show (s, t)
+instance Show ExecutionMonitor where
+  showsPrec d (ExecutionMonitor s t _ _) =
+    showParen (d > 10) [exon|ExecutionMonitor #{showsPrec 11 s} #{showsPrec 11 t}|]
 
 data Execution =
   Execution {
-    _ident :: Ident,
-    _log :: ByteString,
-    _logs :: [ByteString],
-    _monitor :: ExecutionMonitor
+    ident :: Ident,
+    log :: ByteString,
+    logs :: [ByteString],
+    monitor :: ExecutionMonitor
   }
-  deriving Show
-
-makeClassy ''Execution
+  deriving stock (Show, Generic)
 
 instance Identifiable Execution where
-  identify = _ident
+  identify = ident

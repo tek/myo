@@ -1,5 +1,7 @@
 module Myo.Command.Data.ParseOptions where
 
+import Chiasma.Data.Ident (Ident)
+import Ribosome (MsgpackDecode)
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Orphans ()
@@ -10,4 +12,5 @@ data ParseOptions =
     command :: Maybe Ident,
     lang :: Maybe CommandLanguage
   }
-  deriving (Eq, Show, Generic, MsgpackDecode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode)

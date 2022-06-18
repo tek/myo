@@ -15,10 +15,10 @@ import Myo.Test.Unit (MyoTest, tmuxTestDef)
 
 mockVimTestFunctions :: FilePath -> Myo ()
 mockVimTestFunctions fname = do
-  defineFunction "MyoTestDetermineRunner" ["file"] ["return 'cat'"]
-  defineFunction "MyoTestExecutable" ["runner"] ["return 'cat'"]
-  defineFunction "MyoTestBuildPosition" ["runner", "pos"] ["return ['" <> toText fname <> "']"]
-  defineFunction "MyoTestBuildArgs" ["runner", "args"] ["return a:args"]
+  defineFunction "MyoTestDetermineRunner" ["file"] ["pure 'cat'"]
+  defineFunction "MyoTestExecutable" ["runner"] ["pure 'cat'"]
+  defineFunction "MyoTestBuildPosition" ["runner", "pos"] ["pure ['" <> toText fname <> "']"]
+  defineFunction "MyoTestBuildArgs" ["runner", "args"] ["pure a:args"]
 
 vimTestTest :: MyoTest ()
 vimTestTest = do

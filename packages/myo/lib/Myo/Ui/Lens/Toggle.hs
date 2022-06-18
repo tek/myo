@@ -1,7 +1,8 @@
 module Myo.Ui.Lens.Toggle where
 
+import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
+import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError (..))
 import Chiasma.Ui.Data.View (ViewTree)
 import Chiasma.Ui.ViewTree (
   ToggleResult,
@@ -9,7 +10,7 @@ import Chiasma.Ui.ViewTree (
   toggleLayoutOpenTraversal',
   togglePaneOpenTraversal',
   )
-import qualified Chiasma.Ui.ViewTree as ToggleResult (ToggleResult(..))
+import qualified Chiasma.Ui.ViewTree as ToggleResult (ToggleResult (..))
 import Control.Lens (Traversal')
 
 import Myo.Ui.Data.UiState (UiState)
@@ -46,35 +47,34 @@ liftLayoutError =
   liftError TreeModError.LayoutMissing TreeModError.AmbiguousLayout
 
 toggleOne ::
-  MonadDeepState s UiState m =>
-  MonadDeepError e TreeModError m =>
+  Members [AtomicState UiState, Stop TreeModError] r =>
   (Ident -> ToggleResult UiState -> Either TreeModError UiState) ->
   (Traversal' UiState ViewTree -> Ident -> UiState -> ToggleResult UiState) ->
   Ident ->
-  m ()
+  Sem r ()
 toggleOne err trans ident =
-  modifyM $ hoistEither . err ident . trans uiTreesLens ident
+  stopEither =<< atomicState' \ s ->
+    case err ident (trans uiTreesLens ident s) of
+      Right a -> (a, Right ())
+      Left e -> (s, Left e)
 
 toggleOnePane ::
-  MonadDeepState s UiState m =>
-  MonadDeepError e TreeModError m =>
+  Members [AtomicState UiState, Stop TreeModError] r =>
   Ident ->
-  m ()
+  Sem r ()
 toggleOnePane =
   toggleOne liftPaneError togglePaneOpenTraversal'
 
 openOnePane ::
-  MonadDeepState s UiState m =>
-  MonadDeepError e TreeModError m =>
+  Members [AtomicState UiState, Stop TreeModError] r =>
   Ident ->
-  m ()
+  Sem r ()
 openOnePane =
   toggleOne liftPaneError ensurePaneOpenTraversal'
 
 toggleOneLayout ::
-  MonadDeepState s UiState m =>
-  MonadDeepError e TreeModError m =>
+  Members [AtomicState UiState, Stop TreeModError] r =>
   Ident ->
-  m ()
+  Sem r ()
 toggleOneLayout =
   toggleOne liftLayoutError toggleLayoutOpenTraversal'

@@ -2,9 +2,7 @@ module Myo.Command.Data.CommandLog where
 
 data CommandLog =
   CommandLog {
-    _previous :: [ByteString],
-     _current :: ByteString
+    previous :: [ByteString],
+    current :: ByteString
   }
-  deriving (Eq, Show)
-
-deepLenses ''CommandLog
+  deriving stock (Eq, Show)

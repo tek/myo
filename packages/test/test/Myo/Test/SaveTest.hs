@@ -34,8 +34,7 @@ line =
   "log line"
 
 getOutput ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Member (AtomicState Env) r =>
   m ([ByteString], ByteString)
 getOutput = do
   extract <$> catchAs @CommandError Nothing (commandLog ident)
@@ -46,22 +45,21 @@ getOutput = do
       ([], "")
 
 pushOutput ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState Env) r =>
   m ()
 pushOutput =
   appendLog ident "log line"
 
-$(return [])
+$(pure [])
 
 plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
 plugin tmp = do
   ribo <- newRibosome "myo" def { _tempDir = tmp }
-  return $ riboPlugin "myo" ribo (rpcHandlers ++ handlers) [] handleError variables
+  pure $ riboPlugin "myo" ribo (rpcHandlers ++ handlers) [] handleError variables
   where
     handlers = [$(rpcHandler sync 'getOutput), $(rpcHandler sync 'pushOutput)]
 
 outputLog ::
-  NvimE e m =>
   m ([Text], Text)
 outputLog =
   vimCallFunction "GetOutput" []

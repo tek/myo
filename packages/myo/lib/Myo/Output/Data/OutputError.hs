@@ -1,11 +1,10 @@
 module Myo.Output.Data.OutputError where
 
-import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
-import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Error.Report.Class (ReportError(..))
-import System.Log (Priority(ERROR, NOTICE))
+import Chiasma.Data.Ident (Ident, identText)
+import Log (Severity (Error, Warn))
+import Ribosome (ErrorMessage (ErrorMessage), SettingError, ToErrorMessage (..))
 
-import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
+import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
 
 data OutputError =
@@ -30,40 +29,38 @@ data OutputError =
   Internal Text
   |
   NotParsed
-  deriving Show
+  deriving stock (Show)
 
-deepPrisms ''OutputError
-
-instance ReportError OutputError where
-  errorReport (Command e) =
-    errorReport e
-  errorReport (NoLang ident) =
-    ErrorReport msg [msg] NOTICE
+instance ToErrorMessage OutputError where
+  toErrorMessage (Command e) =
+    toErrorMessage e
+  toErrorMessage (NoLang ident) =
+    ErrorMessage msg [msg] Warn
     where
       msg = "command `" <> identText ident <> "` has no language"
-  errorReport (Setting e) =
-    errorReport e
-  errorReport (NoHandler (CommandLanguage lang)) =
-    ErrorReport msg [msg] NOTICE
+  toErrorMessage (Setting e) =
+    toErrorMessage e
+  toErrorMessage (NoHandler (CommandLanguage lang)) =
+    ErrorMessage msg [msg] Warn
     where
       msg = "no output handler for language `" <> lang <> "`"
-  errorReport (Parse err) =
-    ErrorReport msg ["OutputError.Parse:", err] NOTICE
+  toErrorMessage (Parse err) =
+    ErrorMessage msg ["OutputError.Parse:", err] Warn
     where
       msg = "failed to parse command output"
-  errorReport (NoEvents ident) =
-    ErrorReport msg [msg] NOTICE
+  toErrorMessage (NoEvents ident) =
+    ErrorMessage msg [msg] Warn
     where
       msg = "no events in output of command `" <> ident <> "`"
-  errorReport (NoOutput ident) =
-    ErrorReport msg [msg] NOTICE
+  toErrorMessage (NoOutput ident) =
+    ErrorMessage msg [msg] Warn
     where
       msg = "command `" <> ident <> "` has not generated any output"
-  errorReport NoLocation =
-    ErrorReport "this event is not associated with a location" ["OutputError.NoLocation"] NOTICE
-  errorReport FileNonexistent =
-    ErrorReport "this event's file is nonexistent" ["OutputError.FileNonexistent"] NOTICE
-  errorReport (Internal msg) =
-    ErrorReport "internal error" ["OutputError.Internal:", msg] ERROR
-  errorReport NotParsed =
-    ErrorReport "no command output has been parsed" ["OutputError.NotParsed"] NOTICE
+  toErrorMessage NoLocation =
+    ErrorMessage "this event is not associated with a location" ["OutputError.NoLocation"] Warn
+  toErrorMessage FileNonexistent =
+    ErrorMessage "this event's file is nonexistent" ["OutputError.FileNonexistent"] Warn
+  toErrorMessage (Internal msg) =
+    ErrorMessage "internal error" ["OutputError.Internal:", msg] Error
+  toErrorMessage NotParsed =
+    ErrorMessage "no command output has been parsed" ["OutputError.NotParsed"] Warn

@@ -1,122 +1,121 @@
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Myo.Plugin where
 
-import qualified Data.Map as Map (fromList)
-import Data.MessagePack (Object)
-import Neovim (Neovim, NeovimPlugin, Plugin, wrapPlugin)
-import Neovim.Plugin.Classes (AutocmdOptions(AutocmdOptions), CommandOption(CmdComplete))
-import Path (Abs, Dir, Path)
-import Ribosome.Control.Ribosome (Ribosome)
-import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Error.Report (reportError)
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Plugin (RpcDef, autocmd, autocmdOptions, cmd, riboPlugin, rpcHandler, rpcHandlerDef, sync)
-import Ribosome.Plugin.Mapping (MappingHandler, mappingHandler)
+import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, withAsync_)
+import Ribosome (
+  BootError,
+  CompleteStyle (CompleteFiltered),
+  Errors,
+  Execution (Async),
+  Rpc,
+  RpcError,
+  RpcHandler,
+  Scratch,
+  SettingError,
+  Settings,
+  rpc,
+  runNvimHandlersIO,
+  )
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
-import Myo.Command.CommandMenu (myoCommands)
 import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.HistoryMenu (myoHistory)
-import Myo.Command.Log (myoLogs)
-import Myo.Command.Output (myoNext, myoPrev, outputQuit, outputSelect)
-import Myo.Command.Parse (myoParse, myoParseLatest)
-import Myo.Command.Run (myo, myoLine, myoLineCmd, myoReRun, myoRun)
-import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
-import Myo.Command.Update (updateCommands)
-import Myo.Complete (myoCompleteCommand)
-import Myo.Data.Env (Env, Myo)
-import Myo.Data.Error (Error)
+import Myo.Command.Data.LogDir (LogDir)
+import Myo.Command.Data.RunEvent (RunEvent)
+-- import Myo.Command.Run (myoRun)
+import Myo.Data.Env (Env)
 import Myo.Diag (myoDiag)
-import Myo.Init (initialize, myoStage4)
-import Myo.Output.Data.OutputError (OutputError)
-import Myo.Proteome (myoProteomeLoaded)
-import Myo.Quit (myoQuit)
-import Myo.Save (myoSave)
 import Myo.Ui.Data.UiState (UiState)
-import Myo.Ui.Focus (myoFocus)
-import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
-import Myo.Ui.Update (updateUi)
 
-handleError :: Error -> Myo ()
-handleError =
-  reportError "myo"
+-- rpcHandlers :: [[RpcDef (Ribo Env Error)]]
+-- rpcHandlers =
+--   [
+--     $(rpcHandler (cmd []) 'myoLogs),
+--     $(rpcHandlerDef 'myoTogglePane),
+--     $(rpcHandlerDef 'myoToggleLayout),
+--     $(rpcHandler (cmd []) 'myoFocus),
+--     $(rpcHandlerDef 'myoReRun),
+--     $(rpcHandlerDef 'myoLine),
+--     $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myoLineCmd),
+--     $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myo),
+--     $(rpcHandlerDef 'myoParse),
+--     $(rpcHandler (cmd []) 'myoParseLatest),
+--     $(rpcHandlerDef 'myoPrev),
+--     $(rpcHandlerDef 'myoNext),
+--     $(rpcHandlerDef 'myoSave),
+--     $(rpcHandlerDef 'myoVimTest),
+--     $(rpcHandler (cmd []) 'myoHistory),
+--     $(rpcHandler (cmd []) 'myoCommands),
+--     $(rpcHandlerDef 'myoStage4),
+--     $(rpcHandler sync 'myoTestDetermineRunner),
+--     $(rpcHandler sync 'myoTestExecutable),
+--     $(rpcHandler sync 'myoTestBuildPosition),
+--     $(rpcHandler sync 'myoTestBuildArgs),
+--     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
+--     $(rpcHandler (autocmd "BufWritePre") 'myoSave),
+--     $(rpcHandler (
+--     autocmd "User" . autocmdOptions (AutocmdOptions "MyoProject" False Nothing)) 'myoMyoLoaded)
+--     ]
 
-rpcHandlers :: [[RpcDef (Ribo Env Error)]]
-rpcHandlers =
+-- mappingOutputQuit ::
+--   MappingHandler m
+-- mappingOutputQuit =
+--   mappingHandler "output-quit" outputQuit
+
+-- mappingOutputSelect ::
+--   MappingHandler m
+-- mappingOutputSelect =
+--   mappingHandler "output-select" outputSelect
+
+-- mappings ::
+--   [MappingHandler m]
+-- mappings =
+--   [mappingOutputQuit, mappingOutputSelect]
+
+-- variables ::
+--   Map Text (Object -> m ())
+-- variables =
+--   Map.fromList [("myo_commands", updateCommands), ("myo_ui", updateUi)]
+
+type MyoStack =
   [
-    $(rpcHandler (cmd []) 'myoDiag),
-    $(rpcHandler (cmd []) 'myoLogs),
-    $(rpcHandlerDef 'myoAddSystemCommand),
-    $(rpcHandlerDef 'myoAddShellCommand),
-    $(rpcHandlerDef 'myoTogglePane),
-    $(rpcHandlerDef 'myoToggleLayout),
-    $(rpcHandler (cmd []) 'myoFocus),
-    $(rpcHandler (cmd [CmdComplete "custom,MyoCompleteCommand"]) 'myoRun),
-    $(rpcHandler sync 'myoCompleteCommand),
-    $(rpcHandlerDef 'myoReRun),
-    $(rpcHandlerDef 'myoLine),
-    $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myoLineCmd),
-    $(rpcHandler (cmd [CmdComplete "shellcmd"]) 'myo),
-    $(rpcHandlerDef 'myoParse),
-    $(rpcHandler (cmd []) 'myoParseLatest),
-    $(rpcHandlerDef 'myoPrev),
-    $(rpcHandlerDef 'myoNext),
-    $(rpcHandlerDef 'myoSave),
-    $(rpcHandlerDef 'myoVimTest),
-    $(rpcHandler (cmd []) 'myoHistory),
-    $(rpcHandler (cmd []) 'myoCommands),
-    $(rpcHandlerDef 'myoStage4),
-    $(rpcHandler sync 'myoTestDetermineRunner),
-    $(rpcHandler sync 'myoTestExecutable),
-    $(rpcHandler sync 'myoTestBuildPosition),
-    $(rpcHandler sync 'myoTestBuildArgs),
-    $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
-    $(rpcHandler (autocmd "BufWritePre") 'myoSave),
-    $(rpcHandler (
-    autocmd "User" . autocmdOptions (AutocmdOptions "ProteomeProject" False Nothing)) 'myoProteomeLoaded)
-    ]
+    AtomicState Env,
+    AtomicState UiState,
+    AtomicState CommandState,
+    ChanEvents RunEvent,
+    ChanConsumer RunEvent,
+    Reader LogDir
+  ]
 
-mappingOutputQuit ::
-  MonadRibo m =>
-  NvimE e m =>
-  MappingHandler m
-mappingOutputQuit =
-  mappingHandler "output-quit" outputQuit
+handlers ::
+  Members MyoStack r =>
+  Members [Settings !! se, Scratch !! RpcError, Errors] r =>
+  [RpcHandler r]
+handlers =
+  rpc "ProDiag" Async myoDiag
+  <>
+  rpc "MyoAddSystemCommand" Async myoAddSystemCommand
+  <>
+  rpc "MyoAddShellCommand" Async myoAddShellCommand
+  -- <>
+  -- completeWith CompleteFiltered myoCompleteCommand (rpc "MyoRun" Async myoRun)
 
-mappingOutputSelect ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e DecodeError m =>
-  MonadDeepError e OutputError m =>
-  MappingHandler m
-mappingOutputSelect =
-  mappingHandler "output-select" outputSelect
 
-mappings ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e DecodeError m =>
-  MonadDeepError e OutputError m =>
-  [MappingHandler m]
-mappings =
-  [mappingOutputQuit, mappingOutputSelect]
+prepare ::
+  Sem r ()
+prepare = do
+  unit
 
-variables ::
-  MonadRibo m =>
-  NvimE e m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e DecodeError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s UiState m =>
-  Map Text (Object -> m ())
-variables =
-  Map.fromList [("myo_commands", updateCommands), ("myo_ui", updateUi)]
+interpretMyoStack ::
+  Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
+  InterpretersFor MyoStack r
+interpretMyoStack sem =
+  runReader undefined $
+  interpretEventsChan $
+  interpretAtomic def $
+  interpretAtomic def $
+  interpretAtomic def do
+    withAsync_ prepare sem
 
-plugin' :: Ribosome Env -> Plugin (Ribosome Env)
-plugin' env =
-  riboPlugin "myo" env rpcHandlers mappings handleError variables
-
-plugin :: Path Abs Dir -> Neovim e NeovimPlugin
-plugin =
-  wrapPlugin . plugin' <=< initialize
+myo :: IO ()
+myo =
+  runNvimHandlersIO @MyoStack "myo" interpretMyoStack handlers

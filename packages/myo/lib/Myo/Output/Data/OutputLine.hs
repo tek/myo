@@ -5,4 +5,4 @@ data OutputLine =
      _text :: Text,
      _indent :: Maybe Int
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

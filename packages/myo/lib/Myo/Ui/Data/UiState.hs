@@ -7,10 +7,9 @@ import Myo.Ui.Data.Space (Space)
 
 data UiState =
   UiState {
-    _spaces :: [Space],
-    _views :: Views,
-    _vimPaneId :: Maybe PaneId
+    spaces :: [Space],
+    views :: Views,
+    vimPaneId :: Maybe PaneId
   }
-  deriving (Eq, Show, Generic, Default)
-
-deepLenses ''UiState
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (Default)

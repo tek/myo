@@ -5,15 +5,15 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           myo-test
-version:        0.1.1.0
-synopsis:       Neovim Layout and Command Manager, Tests
-description:    Please see the README on GitHub at <https://github.com/tek/myo>
+version:        0.1.0.0
+synopsis:       Myo tests
+description:    See https://hackage.haskell.org/package/myo/docs/Myo.html
 category:       Neovim
 homepage:       https://github.com/tek/myo#readme
 bug-reports:    https://github.com/tek/myo/issues
 author:         Torsten Schmits
-maintainer:     tek@tryp.io
-copyright:      2021 Torsten Schmits
+maintainer:     hackage@tryp.io
+copyright:      2022 Torsten Schmits
 license:        BSD-2-Clause-Patent
 license-file:   LICENSE
 build-type:     Simple
@@ -25,10 +25,6 @@ source-repository head
 library
   exposed-modules:
       Keep
-  other-modules:
-      Paths_myo_test
-  autogen-modules:
-      Paths_myo_test
   hs-source-dirs:
       lib
   default-extensions:
@@ -48,6 +44,7 @@ library
       DeriveLift
       DeriveTraversable
       DerivingStrategies
+      DerivingVia
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
@@ -77,6 +74,7 @@ library
       RankNTypes
       RecordWildCards
       RecursiveDo
+      RoleAnnotations
       ScopedTypeVariables
       StandaloneDeriving
       TemplateHaskell
@@ -89,50 +87,19 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
+      StandaloneKindSignatures
+      OverloadedLabels
+      ImpredicativeTypes
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      aeson
-    , base ==4.*
-    , bytestring
-    , chiasma
-    , composition
-    , composition-extra
-    , conduit
-    , containers
-    , cornea
-    , data-default
-    , directory
-    , either
-    , exceptions
-    , filepath
-    , free
-    , hslogger
-    , lens
-    , lifted-async
-    , lifted-base
-    , messagepack
-    , monad-control
-    , mtl
-    , myo
-    , nvim-hs
-    , path
-    , path-io
-    , prettyprinter
-    , prettyprinter-ansi-terminal
-    , process
-    , relude >=0.7 && <1.2
-    , resourcet
-    , ribosome
-    , template-haskell
-    , text
-    , transformers
-    , typed-process
-    , unix
-    , unliftio
+      base >=4.12 && <5
+    , incipit >=0.3
+    , polysemy
+    , polysemy-plugin
   mixins:
       base hiding (Prelude)
-    , myo hiding (Myo.Prelude)
-    , myo (Myo.Prelude as Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 test-suite myo-unit
@@ -162,6 +129,7 @@ test-suite myo-unit
       Myo.Test.Output.ScalaRenderTest
       Myo.Test.Output.SelectTest
       Myo.Test.ProcTest
+      Myo.Test.Run
       Myo.Test.RunTest
       Myo.Test.SaveTest
       Myo.Test.SocketTest
@@ -174,9 +142,6 @@ test-suite myo-unit
       Myo.Test.Tmux.TogglePaneTest
       Myo.Test.Tmux.UpdateTest
       Myo.Test.Unit
-      Paths_myo_test
-  autogen-modules:
-      Paths_myo_test
   hs-source-dirs:
       test
   default-extensions:
@@ -196,6 +161,7 @@ test-suite myo-unit
       DeriveLift
       DeriveTraversable
       DerivingStrategies
+      DerivingVia
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
@@ -225,6 +191,7 @@ test-suite myo-unit
       RankNTypes
       RecordWildCards
       RecursiveDo
+      RoleAnnotations
       ScopedTypeVariables
       StandaloneDeriving
       TemplateHaskell
@@ -237,57 +204,33 @@ test-suite myo-unit
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints -threaded -rtsopts -with-rtsopts=-N
+      StandaloneKindSignatures
+      OverloadedLabels
+      ImpredicativeTypes
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
-    , base ==4.*
-    , bytestring
+    , base >=4.12 && <5
     , chiasma
-    , composition
-    , composition-extra
-    , conduit
-    , conduit-extra
-    , containers
-    , cornea
-    , data-default
-    , directory
-    , either
-    , exceptions
-    , filepath
-    , free
-    , hedgehog
-    , hslogger
+    , exon
+    , incipit >=0.3
     , lens
     , lens-regex-pcre
-    , lifted-async
-    , lifted-base
-    , messagepack
-    , monad-control
-    , mtl
     , myo
-    , network
-    , nvim-hs
     , path
     , path-io
-    , prettyprinter
-    , prettyprinter-ansi-terminal
-    , process
-    , relude >=0.7 && <1.2
-    , resourcet
+    , pcre-heavy
+    , polysemy
+    , polysemy-plugin
+    , polysemy-test
     , ribosome
+    , ribosome-host
+    , ribosome-menu
     , ribosome-test
-    , stm-conduit
+    , streamly
     , tasty
-    , tasty-hedgehog
-    , template-haskell
-    , text
-    , transformers
-    , typed-process
-    , unix
-    , unliftio
-    , vector
   mixins:
       base hiding (Prelude)
-    , myo hiding (Myo.Prelude)
-    , myo (Myo.Prelude as Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

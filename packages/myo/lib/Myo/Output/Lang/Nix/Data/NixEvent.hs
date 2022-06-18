@@ -7,4 +7,4 @@ data NixEvent =
      _location :: Location,
      _message :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

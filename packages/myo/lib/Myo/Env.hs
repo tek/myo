@@ -1,40 +1,42 @@
 module Myo.Env where
 
 import Chiasma.Data.Views (Views)
-import Control.Monad.Catch (MonadThrow)
-import Path (parseRelDir, toFilePath, (</>), Path, Abs, Dir, parseAbsDir)
-import Path.IO (createDirIfMissing, getTempDir)
+import Path (Abs, Dir, Path, parseRelDir, (</>))
+import Path.IO (createDirIfMissing, createTempDir, getTempDir, removeDirRecur)
 import System.Posix.User (getEffectiveUserName)
 
 import Myo.Ui.Data.Space (Space)
+import qualified Myo.Ui.Data.UiState as UiState
 import Myo.Ui.Data.UiState (UiState)
-import qualified Myo.Ui.Data.UiState as UiState (_spaces)
-import Chiasma.Test.Tmux (withTempDir)
+
+withTempDir ::
+  Members [Resource, Embed IO] r =>
+  Path Abs Dir ->
+  (Path Abs Dir -> Sem r a) ->
+  Sem r a
+withTempDir targetDir =
+  bracket (createTempDir targetDir "temp") (tryAny_ . removeDirRecur)
 
 myoViews ::
-  MonadDeepState s Views m =>
-  m Views
+  Member (AtomicState UiState) r =>
+  Sem r Views
 myoViews =
-  get
+  atomicGets UiState.views
 
 myoSpaces ::
-  MonadDeepState s UiState m =>
-  m [Space]
+  Member (AtomicState UiState) r =>
+  Sem r [Space]
 myoSpaces =
-  gets UiState._spaces
+  atomicGets UiState.spaces
 
 bracketMyoTempDir ::
-  MonadIO m =>
-  MonadThrow m =>
-  MonadBaseControl IO m =>
-  (Path Abs Dir -> m a) ->
-  m a
+  Members [Resource, Embed IO] r =>
+  (Path Abs Dir -> Sem r a) ->
+  Sem r a
 bracketMyoTempDir thunk = do
-  name <- liftIO getEffectiveUserName
+  name <- embed getEffectiveUserName
   tmp <- getTempDir
-  sub <- parseRelDir ("myo-" <> name)
+  sub <- embed (parseRelDir ("myo-" <> name))
   let base = tmp </> sub
   createDirIfMissing True base
-  withTempDir (toFilePath base) \ fp -> do
-    path <- parseAbsDir fp
-    thunk path
+  withTempDir base thunk

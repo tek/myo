@@ -1,19 +1,19 @@
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Myo.Command.Subproc.Run where
 
-import Control.Concurrent.Lifted (fork)
+import Chiasma.Data.Ident (Ident)
+import Conc (timeout)
 import qualified Data.Text as Text
-import Myo.Command.Data.CommandState (CommandState)
 import qualified Network.Socket as Socket
-import Network.Socket (ShutdownCmd(ShutdownBoth), SockAddr(SockAddrUnix), connect, socketToHandle)
-import Path (Abs, File, Path, toFilePath)
+import Network.Socket (ShutdownCmd (ShutdownBoth), SockAddr (SockAddrUnix), connect, socketToHandle)
+import Path (Abs, Dir, File, Path, toFilePath)
 import Path.IO (doesFileExist, removeFile)
+import Polysemy.Chronos (ChronosTime)
+import Polysemy.Process (SystemProcess, withSystemProcess)
 import Ribosome.Api.Path (nvimCwd)
-import Ribosome.Control.Concurrent.Wait (waitIOPredDef)
-import Ribosome.Control.Exception (tryAny)
-import Ribosome.Error.Report (reportError')
 import qualified System.Exit as ExitCode
-import qualified System.IO as IOMode (IOMode(WriteMode))
-import System.Process (getPid)
+import qualified System.IO as IOMode (IOMode (WriteMode))
+import System.IO (Handle, IOMode (ReadWriteMode, WriteMode))
 import System.Process.Typed (
   proc,
   setStderr,
@@ -24,98 +24,115 @@ import System.Process.Typed (
   useHandleClose,
   waitExitCode,
   )
+import qualified Time
+import Time (MilliSeconds (MilliSeconds), Seconds (Seconds))
 
-import Myo.Command.Data.Command (Command(..))
-import Myo.Command.Data.Execution (ExecutionState(..))
-import Myo.Command.Data.Pid (Pid(Pid))
+import Myo.Command.Data.Command (Command (..))
+import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.Execution (ExecutionState (..))
+import Myo.Command.Data.Pid (Pid (Pid))
 import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunError as RunError (RunError(..))
-import Myo.Command.Data.RunTask (RunTask(..), RunTaskDetails(..))
-import Myo.Command.Execution (setExecutionState)
-import Myo.Command.Parse (commandOutput)
+import qualified Myo.Command.Data.RunError as RunError (RunError (..))
+import Myo.Command.Data.RunTask (RunTask (..), RunTaskDetails (..))
+-- import Myo.Command.Execution (setExecutionState)
+-- import Myo.Command.Parse (commandOutput)
 import Myo.Data.Env (Env)
-import Myo.Data.Error (Error)
 import Myo.Network.Socket (unixSocket)
 
 waitForSocket ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e RunError m =>
+  Members [ChronosTime, Race, Embed IO, Stop RunError] r =>
   Path Abs File ->
-  m ()
+  Sem r ()
 waitForSocket logPath =
-  waitIOPredDef (pure logPath) doesFileExist >>= \case
-    Right _ -> return ()
-    Left _ -> throwHoist RunError.SocketFailure
+  timeout unit (Seconds 3) (Time.while (MilliSeconds 50) (not <$> doesFileExist logPath)) >>= \case
+    Right () -> pure ()
+    Left () -> stop RunError.SocketFailure
 
-subprocess ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s Env m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e RunError m =>
-  String ->
-  Ident ->
+-- TODO original was Socket.Datagram
+withSocket ::
+  Members [Stop RunError, Resource, Embed IO] r =>
   Path Abs File ->
-  [Text] ->
-  m ()
-subprocess cwd ident logPath (cmd : args) = do
-  waitForSocket logPath
-  socket <- unixSocket
-  result <- runExceptT @Error $ do
-    liftIO $ connect socket (SockAddrUnix (toFilePath logPath))
-    handle <- liftIO $ socketToHandle socket IOMode.WriteMode
-    let stream = useHandleClose handle
-    prc <- startProcess . setStdout stream . setStderr stream . setWorkingDir cwd $ proc (toString cmd) (toString <$> args)
-    pid <- liftIO $ getPid (unsafeProcessHandle prc)
-    setExecutionState ident (maybe Unknown (Tracked . Pid . fromIntegral) pid)
-    check =<< waitExitCode prc
-    setExecutionState ident Stopped
-  reportError' @Error "subproc" result
-  void $ tryAny $ liftIO $ Socket.shutdown socket ShutdownBoth
-  void $ tryAny $ removeFile logPath
+  (Handle -> Sem r a) ->
+  Sem r a
+withSocket path use =
+  bracket acquire release \ socket ->
+    use =<< embed (socketToHandle socket WriteMode)
   where
-    check ExitCode.ExitSuccess =
-      unit
-    check (ExitCode.ExitFailure _) = do
-      output <- commandOutput ident Nothing False
-      throwHoist $ RunError.SubprocFailed (Text.lines output)
-subprocess _ _ _ _ =
-  throwHoist $ RunError.InvalidCmdline "empty cmdline"
+    acquire = do
+      stopEitherAs RunError.SocketFailure =<< tryAny do
+        socket <- Socket.socket Socket.AF_UNIX Socket.Stream 0
+        socket <$ Socket.connect socket (Socket.SockAddrUnix (toFilePath path))
+    release =
+      tryAny_ . Socket.close
 
-runSubproc ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s Env m =>
-  MonadDeepError e RunError m =>
-  MonadDeepState s CommandState m =>
-  Ident ->
-  Text ->
-  Path Abs File ->
-  m ()
-runSubproc ident line logPath = do
-  cwd <- nvimCwd
-  void $ fork (subprocess cwd ident logPath (Text.words line))
+-- subprocess ::
+--   Member (Scoped res (SystemProcess !! err)) r =>
+--   Path Abs Dir ->
+--   Ident ->
+--   Path Abs File ->
+--   [Text] ->
+--   Sem r ()
+-- subprocess cwd ident logPath (cmd : args) =
+--   withSystemProcess do
+--     undefined
 
-runSubprocTask ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s Env m =>
-  MonadDeepError e RunError m =>
-  MonadDeepState s CommandState m =>
-  RunTask ->
-  m ()
-runSubprocTask (RunTask (Command _ ident lines' _ _ _ _ _ _) logPath details) =
-  case details of
-    System -> run ident lines'
-    UiSystem _ -> run ident lines'
-    UiShell _ _ -> throwHoist $ RunError.Unsupported "subproc" "shell"
-    Vim -> throwHoist $ RunError.Unsupported "subproc" "vim"
-  where
-    run ident' [line] =
-      runSubproc ident' line logPath
-    run _ _ =
-      throwHoist $ RunError.InvalidCmdline "proc command must have exactly one line"
+-- subprocess ::
+--   Member (AtomicState Env) r =>
+--   Member (AtomicState Env) r =>
+--   Path Abs Dir ->
+--   Ident ->
+--   Path Abs File ->
+--   [Text] ->
+--   Sem r ()
+-- subprocess cwd ident logPath (cmd : args) = do
+--   waitForSocket logPath
+--   socket <- unixSocket
+--   result <- runExceptT @Error do
+--     liftIO $ connect socket (SockAddrUnix (toFilePath logPath))
+--     handle <- liftIO $ socketToHandle socket IOMode.WriteMode
+--     let stream = useHandleClose handle
+--     prc <- startProcess . setStdout stream . setStderr stream . setWorkingDir cwd $ proc (toString cmd) (toString <$> args)
+--     pid <- liftIO $ getPid (unsafeProcessHandle prc)
+--     setExecutionState ident (maybe Unknown (Tracked . Pid . fromIntegral) pid)
+--     check =<< waitExitCode prc
+--     setExecutionState ident Stopped
+--   reportError' @Error "subproc" result
+--   void $ tryAny $ liftIO $ Socket.shutdown socket ShutdownBoth
+--   void $ tryAny $ removeFile logPath
+--   where
+--     check ExitCode.ExitSuccess =
+--       unit
+--     check (ExitCode.ExitFailure _) = do
+--       undefined
+--       -- output <- commandOutput ident Nothing False
+--       -- stop $ RunError.SubprocFailed (Text.lines output)
+-- subprocess _ _ _ _ =
+--   stop $ RunError.InvalidCmdline "empty cmdline"
+
+-- runSubproc ::
+--   Member (AtomicState Env) r =>
+--   Member (AtomicState Env) r =>
+--   Ident ->
+--   Text ->
+--   Path Abs File ->
+--   Sem r ()
+-- runSubproc ident line logPath = do
+--   cwd <- nvimCwd
+--   void $ async (subprocess cwd ident logPath (Text.words line))
+
+-- runSubprocTask ::
+--   Member (AtomicState Env) r =>
+--   Member (AtomicState Env) r =>
+--   RunTask ->
+--   Sem r ()
+-- runSubprocTask (RunTask (Command _ ident lines' _ _ _ _ _ _) logPath details) =
+--   case details of
+--     System -> run ident lines'
+--     UiSystem _ -> run ident lines'
+--     UiShell _ _ -> stop $ RunError.Unsupported "subproc" "shell"
+--     Vim -> stop $ RunError.Unsupported "subproc" "vim"
+--   where
+--     run ident' [line] =
+--       runSubproc ident' line logPath
+--     run _ _ =
+--       stop $ RunError.InvalidCmdline "proc command must have exactly one line"

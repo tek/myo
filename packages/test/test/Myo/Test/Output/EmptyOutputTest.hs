@@ -20,8 +20,8 @@ emptyOutputTest = do
   wins <- nvimListWins
   1 === length wins
   where
-    catchNoEvents (NoEvents _) = return ()
-    catchNoEvents e = throwHoist e
+    catchNoEvents (NoEvents _) = pure ()
+    catchNoEvents e = stop e
 
 test_emptyOutput :: UnitTest
 test_emptyOutput =

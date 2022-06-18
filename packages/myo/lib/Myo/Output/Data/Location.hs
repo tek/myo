@@ -6,4 +6,4 @@ data Location =
     _line :: Int,
     _col :: Maybe Int
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

@@ -1,24 +1,31 @@
 module Myo.Diag where
 
-import Prettyprinter (Doc, line, pretty, vsep)
-import Ribosome.Control.Monad.Ribo (inspectErrors)
-import Ribosome.Data.Errors (Errors)
-import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus, scratchSyntax)
-import Ribosome.Data.Syntax (
-  HiLink(..),
-  Syntax(Syntax),
-  SyntaxItem(..),
-  syntaxMatch,
+import qualified Data.Map.Strict as Map
+import Exon (exon)
+import Prettyprinter (Doc, line, nest, pretty, vsep)
+import Ribosome (
+  ErrorMessage (ErrorMessage),
+  Errors,
+  Handler,
+  HandlerTag,
+  RpcError,
+  Scratch,
+  Settings,
+  StoredError (StoredError),
+  resumeHandlerError,
   )
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Scratch (showInScratch)
+import qualified Ribosome.Errors as Errors
+import Ribosome.Host.Data.HandlerError (handlerTagName)
+import qualified Ribosome.Scratch as Scratch
+import Ribosome.Scratch (ScratchOptions (focus, name, syntax))
+import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
 import Myo.Command.Data.Command (Command)
+import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (commands)
 import Myo.Ui.Data.Space (Space)
+import qualified Myo.Ui.Data.UiState as UiState
 import Myo.Ui.Data.UiState (UiState)
-import qualified Myo.Ui.Data.UiState as UiState (spaces)
 
 headlineMatch :: SyntaxItem
 headlineMatch =
@@ -52,33 +59,45 @@ uiDiagnostics :: [Space] -> Doc a
 uiDiagnostics spaces =
   "## Ui" <> line <> (vsep . fmap pretty) spaces
 
-errorDiagnostics :: Errors -> Doc a
-errorDiagnostics errs =
-  "## Errors" <> line <> pretty errs
+storedError :: StoredError -> Doc a
+storedError (StoredError (ErrorMessage _ log _) _) =
+  case log of
+    [] -> mempty
+    (h : t) ->
+      nest 2 (vsep (pretty <$> ([exon|* #{h}|] : t)))
 
-diagnosticsData ::
-  MonadRibo m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s UiState m =>
-  m (Doc a)
-diagnosticsData = do
-  cmds <- getsL @CommandState CommandState.commands cmdDiagnostics
-  ui <- getsL @UiState UiState.spaces uiDiagnostics
-  errors <- inspectErrors errorDiagnostics
-  return $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
+tagErrors :: HandlerTag -> [StoredError] -> Doc a
+tagErrors t errs =
+  pretty [exon|### #{handlerTagName t}|] <> line <> vsep (storedError <$> errs)
+
+errorDiagnostics :: Map HandlerTag [StoredError] -> Doc a
+errorDiagnostics errs | null errs =
+  mempty
+errorDiagnostics errs =
+  "## Errors" <> line <> line <> vsep (uncurry tagErrors <$> Map.toAscList errs)
+
+diagnostics ::
+  Members [Settings !! se, AtomicState UiState, AtomicState CommandState, Errors] r =>
+  Sem r (Doc a)
+diagnostics = do
+  cmds <- atomicGets (cmdDiagnostics . CommandState.commands)
+  ui <- atomicGets (uiDiagnostics . UiState.spaces)
+  errors <- errorDiagnostics <$> Errors.get
+  pure $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
   where
     headline = "# Diagnostics"
 
 myoDiag ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s UiState m =>
-  MonadDeepError e DecodeError m =>
-  m ()
-myoDiag = do
-  content <- diagnosticsData
-  void $ showInScratch (lines . show $ content) options
+  Members [Settings !! se, Scratch !! RpcError, AtomicState UiState, AtomicState CommandState, Errors] r =>
+  Handler r ()
+myoDiag =
+  resumeHandlerError @Scratch do
+    content <- diagnostics
+    void $ Scratch.show (lines (show content)) options
   where
-    options = scratchFocus $ scratchSyntax [diagnosticsSyntax] $ defaultScratchOptions "myo-diagnostics"
+    options =
+      def {
+        name = "myo-diagnostics",
+        focus = True,
+        syntax = [diagnosticsSyntax]
+      }

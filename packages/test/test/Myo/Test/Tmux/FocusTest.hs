@@ -18,7 +18,7 @@ data PaneSelected =
      paneId :: PaneId,
      paneActive :: Bool
   }
-  deriving (Eq, Show, Generic, TmuxCodec)
+  deriving stock (Eq, Show, Generic, TmuxCodec)
 
 focusPaneTest :: MyoTest ()
 focusPaneTest = do

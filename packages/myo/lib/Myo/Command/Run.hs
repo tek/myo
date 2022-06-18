@@ -1,111 +1,71 @@
 module Myo.Command.Run where
 
-import Chiasma.Data.Ident (generateIdent)
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Chiasma.Ui.Data.TreeModError (TreeModError)
-import qualified Control.Lens as Lens (view)
-import Control.Monad.Catch (MonadThrow)
-import qualified Data.Text as Text
-import Ribosome.Data.PersistError (PersistError)
-import Ribosome.Data.SettingError (SettingError)
+import qualified Chiasma.Data.Ident as Ident
+import Chiasma.Data.Ident (Ident, generateIdent)
+import Ribosome (Handler, mapHandlerError)
 
-import Myo.Command.Command (commandByIdent, commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
-import Myo.Command.Data.Command (Command(..))
-import qualified Myo.Command.Data.Command as Command (ident)
-import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Command (commandByIdent, mayCommandByIdent, shellCommand, systemCommand)
+import qualified Myo.Command.Data.Command as Command
+import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunError as RunError (RunError(NoLinesSpecified))
-import Myo.Command.Data.RunLineOptions (RunLineOptions(RunLineOptions))
-import Myo.Command.Data.RunTask (RunTask(RunTask))
-import qualified Myo.Command.Data.RunTask as RunTask (RunTask(..))
-import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails(..))
-import Myo.Command.Execution (closeOutputSocket, isCommandActive, pushExecution)
-import Myo.Command.History (lookupHistory, pushHistory)
-import Myo.Command.Log (pushCommandLog)
-import Myo.Command.Monitor (monitorCommand)
-import Myo.Command.RunTask (runTask)
-import Myo.Command.Runner (findRunner)
-import Myo.Data.Env (Env, Runner(Runner, runnerCheckPending))
+import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions))
 import Myo.Data.Maybe (orFalse)
+import qualified Myo.Effect.Controller as Controller
+import Myo.Effect.Controller (Controller)
 import Myo.Orphans ()
-import Myo.Save (preCommandSave)
-import Myo.Ui.Data.ToggleError (ToggleError)
-import Myo.Ui.Render (MyoRender)
-import Myo.Ui.Toggle (ensurePaneOpen)
 
-preRunSystem ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepState s CommandState m =>
-  RunTask ->
-  Runner ->
-  m ()
-preRunSystem task@(RunTask (Command _ cmdIdent _ _ _ _ _ _ _) log _) runner = do
-  checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
-  closeOutputSocket cmdIdent
-  pushExecution cmdIdent checkPending
-  monitorCommand cmdIdent log
+-- preRunSystem ::
+--   Member (AtomicState Env) r =>
+--   RunTask ->
+--   Runner ->
+--   m ()
+-- preRunSystem task@(RunTask (Command _ cmdIdent _ _ _ _ _ _ _) log _) runner = do
+--   checkPending <- hoistEither =<< liftIO (runnerCheckPending runner task)
+--   closeOutputSocket cmdIdent
+--   pushExecution cmdIdent checkPending
+--   monitorCommand cmdIdent log
 
-preRun ::
-  MonadRibo m =>
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
-  RunTask ->
-  Runner ->
-  m ()
-preRun task@(RunTask _ _ (RunTaskDetails.UiSystem ident)) runner = do
-  ensurePaneOpen ident
-  preRunSystem task runner
-preRun (RunTask _ _ (RunTaskDetails.UiShell shellIdent _)) _ = do
-  active <- isCommandActive shellIdent
-  unless active $ do
-    logDebug $ "starting inactive shell command `" <> identText shellIdent <> "`"
-    myoRun (identText shellIdent)
-preRun task@(RunTask _ _ RunTaskDetails.System) runner = do
-  preRunSystem task runner
-preRun _ _ =
-  return ()
+-- preRun ::
+--   MyoRender s e m =>
+--   Member (AtomicState Env) r =>
+--   RunTask ->
+--   Runner ->
+--   m ()
+-- preRun task@(RunTask _ _ (RunTaskDetails.UiSystem ident)) runner = do
+--   ensurePaneOpen ident
+--   preRunSystem task runner
+-- preRun (RunTask _ _ (RunTaskDetails.UiShell shellIdent _)) _ = do
+--   active <- isCommandActive shellIdent
+--   unless active do
+--     Log.debug $ "starting inactive shell command `" <> identText shellIdent <> "`"
+--     myoRun (identText shellIdent)
+-- preRun task@(RunTask _ _ RunTaskDetails.System) runner = do
+--   preRunSystem task runner
+-- preRun _ _ =
+--   pure ()
 
-postRun ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
-  MonadThrow m =>
-  RunTask ->
-  m ()
-postRun (RunTask cmd _ (RunTaskDetails.UiSystem _)) =
-  pushHistory cmd
-postRun (RunTask cmd _ (RunTaskDetails.UiShell _ _)) =
-  pushHistory cmd
-postRun _ =
-  return ()
+-- postRun ::
+--   Member (AtomicState Env) r =>
+--   RunTask ->
+--   m ()
+-- postRun (RunTask cmd _ (RunTaskDetails.UiSystem _)) =
+--   pushHistory cmd
+-- postRun (RunTask cmd _ (RunTaskDetails.UiShell _ _)) =
+--   pushHistory cmd
+-- postRun _ =
+--   pure ()
 
-executeRunner ::
-  MonadRibo m =>
-  MonadDeepError e RunError m =>
-  Runner ->
-  RunTask ->
-  m ()
-executeRunner (Runner _ _ run _ _) task = do
-  logDebug $ "executing runner for command `" <> identText ident <> "`"
-  hoistEither =<< liftIO (run task)
-  where
-    ident = Lens.view Command.ident . RunTask.rtCommand $ task
+-- executeRunner ::
+--   Runner ->
+--   RunTask ->
+--   m ()
+-- executeRunner (Runner _ _ run _ _) task = do
+--   Log.debug $ "executing runner for command `" <> identText ident <> "`"
+--   hoistEither =<< liftIO (run task)
+--   where
+--     ident = Lens.view Command.ident . RunTask.command $ task
 
 -- |Main entry point for running commands that ensures consistency.
 -- Saves all buffers, updating the 'lastSave' timestamp.
@@ -114,145 +74,70 @@ executeRunner (Runner _ _ run _ _) task = do
 -- that output is redirected to this socket.
 -- Pushes the command into the history.
 runCommand ::
-  MonadRibo m =>
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
+  Members [Controller !! RunError, AtomicState CommandState] r =>
   Command ->
-  m ()
+  Sem r ()
 runCommand cmd = do
-  preCommandSave
-  pushCommandLog (Lens.view Command.ident cmd)
-  task <- runTask cmd
-  runner <- findRunner task
-  preRun task runner
-  executeRunner runner task
-  void $ postRun task
+  -- preCommandSave
+  -- pushCommandLog (Lens.view Command.ident cmd)
+  _ <- Controller.runCommand cmd !! \ _ -> undefined
+  unit
+  -- task <- runTask cmd
+  -- runner <- findRunner task
+  -- preRun task runner
+  -- executeRunner runner task
+  -- void $ postRun task
 
 myoRunIdent ::
-  MonadRibo m =>
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
+  Members [Controller !! RunError, AtomicState CommandState] r =>
   Ident ->
-  m ()
-myoRunIdent =
-  runCommand <=< commandByIdent "run"
+  Handler r ()
+myoRunIdent i =
+  mapHandlerError do
+    runCommand =<< commandByIdent "run" i
 
-myoRun ::
-  MonadRibo m =>
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
-  Text ->
-  m ()
-myoRun =
-  runCommand <=< commandByIdentOrName "run" . Text.strip
+-- myoRun ::
+--   MyoRender s e m =>
+--   Member (AtomicState Env) r =>
+--   Text ->
+--   m ()
+-- myoRun =
+--   runCommand <=< commandByIdentOrName "run" . Text.strip
 
-myoReRun ::
-  MonadRibo m =>
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
-  Either Ident Int ->
-  m ()
-myoReRun =
-  runCommand <=< lookupHistory
+-- myoReRun ::
+--   MyoRender s e m =>
+--   Member (AtomicState Env) r =>
+--   Either Ident Int ->
+--   m ()
+-- myoReRun =
+--   runCommand <=< lookupHistory
 
 defaultTarget :: Ident
 defaultTarget =
   Ident.Str "make"
 
 myoLine ::
-  MonadRibo m =>
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
+  Members [Controller !! RunError, AtomicState CommandState, Embed IO] r =>
   RunLineOptions ->
-  m ()
-myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) = do
-  ident <- generateIdent
-  lines' <- hoistMaybe RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
-  target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
-  runCommand $ cmd ident target lines'
+  Handler r ()
+myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) =
+  mapHandlerError do
+    ident <- generateIdent
+    lines' <- stopNote RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
+    target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
+    runCommand (cmd ident target lines')
   where
     cmd ident target lines' =
       cons target ident lines' runner lang Nothing (orFalse skipHistory) (orFalse kill) (orFalse capture)
     cons =
       either shellCommand (systemCommand . Just)
     findTarget target =
-      maybe (Right target) (Left . Lens.view Command.ident) <$> mayCommandByIdent target
+      maybe (Right target) (Left . Command.ident) <$> mayCommandByIdent target
 
-myoLineCmd ::
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
-  Text ->
-  m ()
-myoLineCmd line' =
-  myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
-
-myo ::
-  MyoRender s e m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepError e PersistError m =>
-  MonadDeepError e RunError m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e ToggleError m =>
-  MonadDeepError e TreeModError m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepState s Env m =>
-  MonadThrow m =>
-  Text ->
-  m ()
-myo =
-  myoLineCmd
+-- myoLineCmd ::
+--   MyoRender s e m =>
+--   Member (AtomicState Env) r =>
+--   Text ->
+--   m ()
+-- myoLineCmd line' =
+--   myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing Nothing Nothing)

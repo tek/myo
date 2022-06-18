@@ -1,5 +1,8 @@
 module Myo.Command.Data.RunLineOptions where
 
+import Chiasma.Data.Ident (Ident)
+import Ribosome (MsgpackDecode, MsgpackEncode)
+
 import Myo.Command.Data.Command (CommandLanguage)
 
 data RunLineOptions =
@@ -13,4 +16,5 @@ data RunLineOptions =
     kill :: Maybe Bool,
     capture :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode, Default)

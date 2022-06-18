@@ -1,5 +1,8 @@
 module Myo.Command.Data.AddSystemCommandOptions where
 
+import Chiasma.Data.Ident (Ident)
+import Ribosome (MsgpackDecode, MsgpackEncode)
+
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Orphans ()
 
@@ -15,4 +18,9 @@ data AddSystemCommandOptions =
     kill :: Maybe Bool,
     capture :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode)
+
+cons :: Ident -> [Text] -> AddSystemCommandOptions
+cons i l =
+  AddSystemCommandOptions i l Nothing Nothing Nothing Nothing Nothing Nothing Nothing

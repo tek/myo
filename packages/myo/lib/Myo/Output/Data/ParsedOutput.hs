@@ -1,20 +1,18 @@
 module Myo.Output.Data.ParsedOutput where
 
 import Control.Lens (allOf, each)
+import Data.Generics.Labels ()
 import Ribosome.Data.Syntax (Syntax)
 
 import Myo.Output.Data.OutputEvents (OutputEvents)
-import qualified Myo.Output.Data.OutputEvents as OutputEvents (events)
 
 data ParsedOutput =
   ParsedOutput {
-    _syntax :: Syntax,
-    _events :: OutputEvents
+    syntax :: Syntax,
+    events :: OutputEvents
   }
-  deriving (Eq, Show)
-
-makeClassy ''ParsedOutput
+  deriving stock (Eq, Show, Generic)
 
 allEmpty :: [ParsedOutput] -> Bool
 allEmpty =
-  allOf (each . events . OutputEvents.events) null
+  allOf (each . #events . #events) null

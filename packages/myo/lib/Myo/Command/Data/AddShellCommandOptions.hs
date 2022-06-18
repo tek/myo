@@ -1,5 +1,7 @@
 module Myo.Command.Data.AddShellCommandOptions where
 
+import Chiasma.Data.Ident (Ident)
+import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Orphans ()
@@ -16,4 +18,5 @@ data AddShellCommandOptions =
     kill :: Maybe Bool,
     capture :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode)

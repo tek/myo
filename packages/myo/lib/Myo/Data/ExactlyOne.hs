@@ -6,7 +6,7 @@ data ExactlyOne a =
   Multiple
   |
   One a
-  deriving (Eq, Show, Functor)
+  deriving stock (Eq, Show, Functor)
 
 foldForOne :: (a -> ExactlyOne a) -> [a] -> ExactlyOne [a]
 foldForOne f =

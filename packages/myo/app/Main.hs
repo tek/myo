@@ -1,8 +1,5 @@
-import Neovim (neovim, defaultConfig, plugins)
-
-import Myo.Env (bracketMyoTempDir)
-import Myo.Plugin (plugin)
+import Myo.Plugin (myo)
 
 main :: IO ()
 main =
-  bracketMyoTempDir $ \dir -> neovim defaultConfig { plugins = [plugin dir] }
+  myo

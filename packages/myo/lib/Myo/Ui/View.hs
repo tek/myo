@@ -1,48 +1,40 @@
 module Myo.Ui.View where
 
-import Chiasma.Data.Views (Views)
+import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError(..))
+import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError (..))
 import Chiasma.Ui.Data.View (
   LayoutView,
-  Pane(Pane),
+  Pane (Pane),
   PaneView,
-  Tree(..),
-  TreeSub(..),
-  View(View),
+  Tree (..),
+  TreeSub (..),
+  View (View),
   ViewTree,
   consLayout,
   )
 import qualified Chiasma.Ui.Data.View as View (_ident)
-import Chiasma.Ui.Data.ViewState (ViewState(ViewState))
+import Chiasma.Ui.Data.ViewState (ViewState (ViewState))
 import Chiasma.Ui.Lens.Ident (matchIdentL)
-import Control.Lens (Lens', Traversal', each, has, mapMOf, transformM)
+import Control.Lens (Traversal', each, has, mapMOf, transformM)
 import Control.Lens.Setter ((%~), (<>~))
+import Data.Generics.Labels ()
 
-import Myo.Data.Env (Env)
-import qualified Myo.Data.Env as Env (ui)
-import Myo.Ui.Data.Space (Space(Space))
-import qualified Myo.Ui.Data.Space as Space (windows)
+import Myo.Ui.Data.Space (Space (Space))
 import Myo.Ui.Data.UiState (UiState)
-import qualified Myo.Ui.Data.UiState as UiState (spaces, views)
-import Myo.Ui.Data.ViewCoords (ViewCoords(ViewCoords))
-import Myo.Ui.Data.Window (Window(Window))
-import qualified Myo.Ui.Data.Window as Window (layout)
+import Myo.Ui.Data.ViewCoords (ViewCoords (ViewCoords))
+import Myo.Ui.Data.Window (Window (Window))
 
-envSpacesLens :: Lens' Env [Space]
-envSpacesLens = Env.ui . UiState.spaces
-
-envViewsLens :: Lens' Env Views
-envViewsLens = Env.ui . UiState.views
-
-insertSpace :: ∀ s m. MonadDeepState s UiState m => Space -> m ()
+insertSpace ::
+  Member (AtomicState UiState) r =>
+  Space ->
+  Sem r ()
 insertSpace space =
-  modify @UiState $ UiState.spaces <>~ [space]
+  atomicModify' (#spaces <>~ [space])
 
-createSpace :: MonadDeepState s UiState m => Ident -> m Space
-createSpace ident = do
-  insertSpace space
-  return space
+createSpace :: Member (AtomicState UiState) r => Ident -> Sem r Space
+createSpace ident =
+  space <$ insertSpace space
   where
     space = Space ident []
 
@@ -50,31 +42,41 @@ insertWindowIntoSpace :: Window -> Space -> Space
 insertWindowIntoSpace w (Space i wins) = Space i (w:wins)
 
 spaceLens :: Ident -> Traversal' [Space] Space
-spaceLens = matchIdentL
+spaceLens =
+  matchIdentL
 
 spaceWindowLens :: Ident -> Ident -> Traversal' [Space] Window
-spaceWindowLens spaceIdent windowIdent = spaceLens spaceIdent . Space.windows . matchIdentL windowIdent
+spaceWindowLens spaceIdent windowIdent =
+  spaceLens spaceIdent . #windows . matchIdentL windowIdent
 
-envSpaceLens :: Ident -> Traversal' Env Space
-envSpaceLens ident = envSpacesLens . spaceLens ident
+uiSpaceLens :: Ident -> Traversal' UiState Space
+uiSpaceLens ident =
+  #spaces . spaceLens ident
 
-doesSpaceExist :: Ident -> Env -> Bool
-doesSpaceExist = has . envSpaceLens
+doesSpaceExist :: Ident -> UiState -> Bool
+doesSpaceExist i =
+  has (uiSpaceLens i)
 
-createWindow :: MonadDeepState s Env m => ViewCoords -> m (Maybe Window)
+createWindow ::
+  Member (AtomicState UiState) r =>
+  ViewCoords ->
+  Sem r (Maybe Window)
 createWindow (ViewCoords spaceIdent windowIdent layoutIdent) = do
-  exists <- gets $ doesSpaceExist spaceIdent
-  modify $ envSpaceLens spaceIdent %~ insertWindowIntoSpace window
-  return $ if exists then Just window else Nothing
+  atomicState' \ s ->
+    if doesSpaceExist spaceIdent s
+    then (s & uiSpaceLens spaceIdent %~ insertWindowIntoSpace window, Just window)
+    else (s, Nothing)
   where
-    window = Window windowIdent (Tree rootLayout [])
-    rootLayout = consLayout layoutIdent
+    window =
+      Window windowIdent (Tree rootLayout [])
+    rootLayout =
+      consLayout layoutIdent
 
 windowLayoutLens :: Ident -> Traversal' [Window] ViewTree
-windowLayoutLens ident = matchIdentL ident . Window.layout
+windowLayoutLens ident = matchIdentL ident . #layout
 
 spacesLayoutLens :: Ident -> Ident -> Traversal' [Space] ViewTree
-spacesLayoutLens spaceIdent windowIdent = spaceWindowLens spaceIdent windowIdent . Window.layout
+spacesLayoutLens spaceIdent windowIdent = spaceWindowLens spaceIdent windowIdent . #layout
 
 insertLayoutIfNonexistent :: Ident -> LayoutView -> ViewTree -> Maybe ViewTree
 insertLayoutIfNonexistent _ (View newIdent _ _ _) (Tree (View currentIdent _ _ _) _) | newIdent == currentIdent =
@@ -87,67 +89,67 @@ insertPaneIfNonexistent :: Ident -> PaneView -> ViewTree -> Maybe ViewTree
 insertPaneIfNonexistent targetLayout pane (Tree layout@(View currentLayout _ _ _) sub) = do
   traverse_ match sub
   let newSub = if currentLayout == targetLayout then TreeLeaf pane : sub else sub
-  return (Tree layout newSub)
+  pure (Tree layout newSub)
   where
     paneIdent = View._ident pane
     match (TreeLeaf (View i _ _ _)) = if paneIdent == i then Nothing else Just ()
     match _ = Just ()
 
-envTreeLens :: ViewCoords -> Traversal' Env ViewTree
-envTreeLens (ViewCoords spaceIdent windowIdent _) =
-  envSpacesLens . spacesLayoutLens spaceIdent windowIdent
-
-envTreesLens :: Traversal' Env ViewTree
-envTreesLens = envSpacesLens . each . Space.windows . each . Window.layout
+uiTreeLens :: ViewCoords -> Traversal' UiState ViewTree
+uiTreeLens (ViewCoords spaceIdent windowIdent _) =
+  #spaces . spacesLayoutLens spaceIdent windowIdent
 
 uiTreesLens :: Traversal' UiState ViewTree
-uiTreesLens = UiState.spaces . each . Space.windows . each . Window.layout
+uiTreesLens =
+  #spaces . each . #windows . each . #layout
 
 insertViewEnv ::
   (Ident -> View a -> ViewTree -> Maybe ViewTree) ->
   ViewCoords ->
   View a ->
-  Env ->
-  Maybe Env
+  UiState ->
+  Maybe UiState
 insertViewEnv insert coords@(ViewCoords _ _ layoutIdent) view =
-  mapMOf (envTreeLens coords) (transformM $ insert layoutIdent view)
+  mapMOf (uiTreeLens coords) (transformM $ insert layoutIdent view)
 
-insertLayoutEnv :: ViewCoords -> LayoutView -> Env -> Maybe Env
+insertLayoutEnv :: ViewCoords -> LayoutView -> UiState -> Maybe UiState
 insertLayoutEnv =
   insertViewEnv insertLayoutIfNonexistent
 
-insertPaneEnv :: ViewCoords -> PaneView -> Env -> Maybe Env
+insertPaneEnv :: ViewCoords -> PaneView -> UiState -> Maybe UiState
 insertPaneEnv =
   insertViewEnv insertPaneIfNonexistent
 
 modifyTree ::
-  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
-  (Env -> Either TreeModError Env) ->
-  m ()
-modifyTree =
-  put <=< hoistEither <=< gets
+  Members [AtomicState UiState, Stop TreeModError] r =>
+  (UiState -> Either TreeModError UiState) ->
+  Sem r ()
+modifyTree f =
+  stopEither =<< atomicState' \ s -> case f s of
+    Right a -> (a, Right ())
+    Left e -> (s, Left e)
 
 modifyTreeMaybe ::
-  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
-  (Env -> Maybe Env) ->
+  Members [AtomicState UiState, Stop TreeModError] r =>
+  (UiState -> Maybe UiState) ->
   TreeModError ->
-  m ()
+  Sem r ()
 modifyTreeMaybe trans err =
-  modifyTree $ maybe (Left err) Right . trans
+  modifyTree (maybe (Left err) Right . trans)
 
 insertLayout ::
-  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
+  Members [AtomicState UiState, Stop TreeModError] r =>
   ViewCoords ->
   LayoutView ->
-  m ()
+  Sem r ()
 insertLayout coords view =
   modifyTreeMaybe (insertLayoutEnv coords view) (TreeModError.LayoutExists view)
 
 insertPane ::
-  (MonadDeepError e TreeModError m, MonadDeepState s Env m) =>
+  Members [AtomicState UiState, Stop TreeModError] r =>
   ViewCoords ->
   PaneView ->
-  m ()
+  Sem r ()
 insertPane coords view =
   modifyTreeMaybe (insertPaneEnv coords view) (TreeModError.PaneExists view)
 

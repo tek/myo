@@ -1,41 +1,38 @@
 module Myo.Command.Data.Command where
 
-import Chiasma.Data.Ident (Identifiable (..))
-import Data.Aeson (FromJSON, ToJSON (toEncoding), defaultOptions, genericToEncoding)
+import Chiasma.Data.Ident (Ident, Identifiable (..))
+import Polysemy.Time.Json (json)
 import Prelude hiding (lines)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
+import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
 import Myo.Orphans ()
 
 newtype CommandLanguage =
   CommandLanguage Text
-  deriving (Eq, Show, Ord, Generic)
+  deriving stock (Eq, Show, Ord, Generic)
   deriving newtype (MsgpackDecode, MsgpackEncode, IsString)
 
-instance ToJSON CommandLanguage where
-  toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON CommandLanguage
+json ''CommandLanguage
 
 data Command =
   Command {
-    _interpreter :: CommandInterpreter,
-    _ident :: Ident,
-    _lines :: [Text],
-    _runner :: Maybe Ident,
-    _lang :: Maybe CommandLanguage,
-    _displayName :: Maybe Text,
-    _skipHistory :: Bool,
-    _kill :: Bool,
-    _capture :: Bool
+    interpreter :: CommandInterpreter,
+    ident :: Ident,
+    lines :: [Text],
+    runner :: Maybe Ident,
+    lang :: Maybe CommandLanguage,
+    displayName :: Maybe Text,
+    skipHistory :: Bool,
+    kill :: Bool,
+    capture :: Bool
   }
-  deriving (Eq, Show, Generic)
-
-makeClassy ''Command
+  deriving stock (Eq, Show, Generic)
 
 instance Identifiable Command where
-  identify = _ident
+  identify =
+    ident
 
 instance Pretty Command where
   pretty (Command iprt ident' lines' runner' lang' displayName' skipHistory' kill' capture') =
@@ -60,7 +57,4 @@ instance Pretty Command where
       prettyLang (CommandLanguage a) = "language:" <+> pretty a
       prettyName n = "name:" <+> pretty n
 
-instance ToJSON Command where
-  toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON Command
+json ''Command

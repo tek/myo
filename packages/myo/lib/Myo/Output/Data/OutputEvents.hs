@@ -5,9 +5,7 @@ import Myo.Output.Data.OutputEvent (OutputEvent)
 
 newtype OutputEvents =
   OutputEvents {
-    _events :: Vector OutputEvent
+    events :: Vector OutputEvent
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show, Generic)
   deriving newtype (Semigroup, Monoid)
-
-makeClassy ''OutputEvents

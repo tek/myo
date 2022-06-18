@@ -1,16 +1,15 @@
 
 module Myo.Command.Data.RunError where
 
+import Chiasma.Data.Ident (identText)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
-import Ribosome.Data.ErrorReport (ErrorReport(ErrorReport))
-import Ribosome.Error.Report.Class (ReportError(..))
-import Ribosome.Orphans ()
-import System.Log (Priority(NOTICE, DEBUG, ERROR))
+import Log (Severity (Debug, Error, Warn))
+import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (..))
 
-import qualified Myo.Command.Data.Command as Cmd (Command(Command))
-import Myo.Command.Data.CommandError (CommandError(..))
-import Myo.Command.Data.RunTask (RunTask(RunTask))
+import qualified Myo.Command.Data.Command as Cmd (Command (Command))
+import Myo.Command.Data.CommandError (CommandError (..))
+import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Ui.Data.ToggleError (ToggleError)
 
 data RunError =
@@ -39,44 +38,44 @@ data RunError =
   NoLinesSpecified
   |
   SubprocFailed [Text]
-  deriving Show
+  deriving stock (Show)
 
-deepPrisms ''RunError
-
-instance ReportError RunError where
-  errorReport (Command e) = errorReport e
-  errorReport (NoRunner task@(RunTask (Cmd.Command _ ident _ _ _ _ _ _ _) _ _)) =
-    ErrorReport user ["no runner for task:", show task] NOTICE
+instance ToErrorMessage RunError where
+  toErrorMessage (Command e) = toErrorMessage e
+  toErrorMessage (NoRunner task@(RunTask (Cmd.Command _ ident _ _ _ _ _ _ _) _ _)) =
+    ErrorMessage user ["no runner for task:", show task] Warn
     where
       user = "no runner available for command `" <> identText ident <> "`"
-  errorReport (Toggle e) =
-    errorReport e
-  errorReport (Views e) = errorReport e
-  errorReport (Tmux e) = errorReport e
-  errorReport (IOEmbed e) =
-    ErrorReport "internal error" ["embedded IO had unexpected error:", e] DEBUG
-  errorReport SocketFailure =
-    ErrorReport "internal error" ["could not create listener socket"] ERROR
-  errorReport (InvalidShell command@(Cmd.Command _ ident _ _ _ _ _ _ _)) =
-    ErrorReport msg ["RunError.InvalidShell:", show command] ERROR
+  toErrorMessage (Toggle e) =
+    toErrorMessage e
+  toErrorMessage (Views e) =
+      ErrorMessage "tmux error" ["RunError.Views:", show e] Error
+  toErrorMessage (Tmux e) =
+      ErrorMessage "tmux error" ["RunError.Tmux:", show e] Error
+  toErrorMessage (IOEmbed e) =
+    ErrorMessage "internal error" ["embedded IO had unexpected error:", e] Debug
+  toErrorMessage SocketFailure =
+    ErrorMessage "internal error" ["could not create listener socket"] Error
+  toErrorMessage (InvalidShell command@(Cmd.Command _ ident _ _ _ _ _ _ _)) =
+    ErrorMessage msg ["RunError.InvalidShell:", show command] Error
     where
       msg = "invalid command for shell: " <> show ident
-  errorReport (InvalidCmdline err) =
-    ErrorReport msg [msg] NOTICE
+  toErrorMessage (InvalidCmdline err) =
+    ErrorMessage msg [msg] Warn
     where
       msg =
         "invalid command line: " <> err
-  errorReport (Unsupported runner tpe) =
-    ErrorReport msg [msg] NOTICE
+  toErrorMessage (Unsupported runner tpe) =
+    ErrorMessage msg [msg] Warn
     where
       msg =
         "runner `" <> runner <> "` does not support " <> tpe <> " commands"
-  errorReport (VimTest e) =
-    ErrorReport "vim-test failed" ["RunError.VimTest:", e] ERROR
-  errorReport NoLinesSpecified =
-    ErrorReport "no lines specified for command" ["RunError.NoLinesSpecified"] NOTICE
-  errorReport (SubprocFailed err) =
-    ErrorReport ("subprocess failed" <> userErr err) ("RunError.SubprocFailed" : err) NOTICE
+  toErrorMessage (VimTest e) =
+    ErrorMessage "vim-test failed" ["RunError.VimTest:", e] Error
+  toErrorMessage NoLinesSpecified =
+    ErrorMessage "no lines specified for command" ["RunError.NoLinesSpecified"] Warn
+  toErrorMessage (SubprocFailed err) =
+    ErrorMessage ("subprocess failed" <> userErr err) ("RunError.SubprocFailed" : err) Warn
     where
       userErr [] = ""
       userErr (e : _) = ": " <> e

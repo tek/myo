@@ -26,7 +26,6 @@ import Myo.Test.Output.Cat (addCatCommand)
 import Myo.Test.Unit (MyoTest, testWithDef, tmuxTestDef)
 
 watcher ::
-  (MonadIO m, MonadBaseControl IO m) =>
   TBMChan ByteString ->
   TBMChan ByteString ->
   m ()
@@ -34,7 +33,6 @@ watcher listenChan resultChan =
   void $ fork $ runConduit $ sourceTBMChan listenChan .| sinkTBMChan resultChan
 
 listen ::
-  (MonadIO m, MonadBaseControl IO m) =>
   TBMChan ByteString ->
   Socket ->
   m ()
@@ -51,8 +49,8 @@ chanResult chan = do
   case next of
     Just (Just a) -> do
       recur <- chanResult chan
-      return (a : recur)
-    _ -> return []
+      pure (a : recur)
+    _ -> pure []
 
 socketTest :: MyoTest ()
 socketTest = do

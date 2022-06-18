@@ -1,5 +1,8 @@
 module Myo.Ui.Data.AddPaneOptions where
 
+import Chiasma.Data.Ident (Ident)
+import Ribosome (MsgpackDecode, MsgpackEncode)
+
 import Myo.Orphans ()
 
 data AddPaneOptions =
@@ -17,4 +20,5 @@ data AddPaneOptions =
     position :: Maybe Float,
     pin :: Maybe Bool
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode, Default)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (Default, MsgpackDecode, MsgpackEncode)

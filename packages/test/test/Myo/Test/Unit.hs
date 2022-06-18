@@ -1,7 +1,6 @@
 module Myo.Test.Unit where
 
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
-import Control.Monad.Catch (MonadThrow)
 import Hedgehog (TestT)
 import Neovim.Plugin (Plugin)
 import Ribosome.Config.Setting (updateSetting)
@@ -39,8 +38,6 @@ test =
 
 withTempDir ::
   MonadIO m =>
-  MonadThrow m =>
-  MonadBaseControl IO m =>
   Env ->
   (Env -> m a) ->
   m a
@@ -51,7 +48,6 @@ withTempDir env thunk =
       thunk env { _tempDir = tempdir }
 
 testWith ::
-  MonadThrow m =>
   MyoTesting m n =>
   Env ->
   TestT n a ->
@@ -64,7 +60,6 @@ testWith env thunk vars =
       unitTest (defaultTestConfigWith vars) env' thunk
 
 testWithDef ::
-  MonadThrow m =>
   MyoTesting m n =>
   TestT n a ->
   Vars ->
@@ -73,7 +68,6 @@ testWithDef =
   testWith def
 
 testDef ::
-  MonadThrow m =>
   MyoTesting m n =>
   TestT n a ->
   TestT m a
@@ -91,7 +85,6 @@ withTmux thunk (TmuxNative (Just socket)) = do
 withTmux _ _ = fail "no socket in test tmux"
 
 tmuxTest ::
-  MonadThrow m =>
   MyoTesting m n =>
   (TestConfig -> TestConfig) ->
   TestT n a ->
@@ -103,7 +96,6 @@ tmuxTest reconf thunk =
       Ribosome.tmuxTest (testConf reconf) env thunk
 
 tmuxGuiTest ::
-  MonadThrow m =>
   MyoTesting m n =>
   (TestConfig -> TestConfig) ->
   TestT n a ->
@@ -115,7 +107,6 @@ tmuxGuiTest reconf thunk =
       Ribosome.tmuxGuiTest (testConf reconf) env thunk
 
 tmuxTestDef ::
-  MonadThrow m =>
   MyoTesting m n =>
   TestT n a ->
   TestT m a
@@ -123,7 +114,6 @@ tmuxTestDef =
   tmuxTest def
 
 tmuxGuiTestDef ::
-  MonadThrow m =>
   MyoTesting m n =>
   TestT n a ->
   TestT m a
@@ -143,8 +133,6 @@ intTest reconf plug thunk = do
 intTestDef ::
   MonadIO m =>
   MonadFail m =>
-  MonadThrow m =>
-  MonadBaseControl IO m =>
   TestT (Ribo Env Error) a ->
   TestT m a
 intTestDef thunk =

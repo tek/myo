@@ -1,66 +1,59 @@
 module Myo.Command.Log where
 
 import Chiasma.Command.Pane (pipePane)
+import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
-import Chiasma.Data.TmuxThunk (TmuxThunk)
-import Control.Lens (Lens', (?~), (^.))
-import qualified Control.Lens as Lens (at, over, view)
-import Control.Monad.Base (MonadBase)
-import Control.Monad.Free (MonadFree)
+import Chiasma.TmuxApi (Tmux)
+import Control.Lens (Lens', at, view, (%~), (?~), (^.))
 import qualified Data.ByteString as ByteString (null)
 import Data.Char (isAlphaNum)
-import qualified Data.Map as Map (keys, toList)
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text (concatMap, lines, singleton)
+import Exon (exon)
+import qualified Log
 import Network.Socket (Socket)
-import Path (Abs, Dir, File, Path, parseRelFile, toFilePath, (</>))
-import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchFocus)
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Scratch (showInScratch)
+import Path (Abs, File, Path, parseRelFile, toFilePath, (</>))
+import Ribosome (Handler, RpcError, Scratch, resumeHandlerError)
+import qualified Ribosome.Scratch as Scratch
+import Ribosome.Scratch (ScratchOptions (focus, name))
 
+import Myo.AtomicState (atomicView)
 import Myo.Command.Command (mainCommand, mainCommandIdent)
+import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)
-import qualified Myo.Command.Data.Command as Command (displayName, ident, interpreter)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandInterpreter (CommandInterpreter(Shell))
-import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell))
+import Myo.Command.Data.CommandLog (CommandLog (CommandLog))
+import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState, Logs)
-import qualified Myo.Command.Data.CommandState as CommandState (logPaths, logs)
+import Myo.Command.Data.LogDir (LogDir (LogDir))
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
-import Myo.Data.Env (Env)
-import qualified Myo.Data.Env as Env (tempDir)
 import Myo.Network.Socket (socketBind)
 
 logPathLens :: Ident -> Lens' CommandState (Maybe (Path Abs File))
-logPathLens ident = CommandState.logPaths . Lens.at ident
+logPathLens ident =
+  #logPaths . at ident
 
 logPathByIdent ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m (Maybe (Path Abs File))
+  Sem r (Maybe (Path Abs File))
 logPathByIdent ident =
-  getL $ logPathLens ident
-
-logTempDir ::
-  MonadDeepState s Env m =>
-  m (Path Abs Dir)
-logTempDir =
-  getL @Env Env.tempDir
+  atomicGets (view (logPathLens ident))
 
 insertLogPath ::
-  MonadDeepError e RunError m =>
-  MonadDeepState s Env m =>
-  MonadDeepState s CommandState m =>
+  Members [Reader LogDir, AtomicState CommandState, Stop RunError] r =>
   Ident ->
-  m (Path Abs File)
+  Sem r (Path Abs File)
 insertLogPath ident = do
-  base <- logTempDir
-  fileName <- hoistMaybe invalidIdent (parseFileName)
+  LogDir base <- ask
+  fileName <- stopNote invalidIdent parseFileName
   let logPath = base </> fileName
-  modify $ logPathLens ident ?~ logPath
-  return logPath
+  atomicModify' (logPathLens ident ?~ logPath)
+  pure logPath
   where
     parseFileName =
       parseRelFile (toString ("pane-" <> identT))
@@ -70,53 +63,48 @@ insertLogPath ident = do
       identText ident
 
 commandLogPath ::
-  MonadDeepError e RunError m =>
-  MonadDeepState s Env m =>
-  MonadDeepState s CommandState m =>
+  Members [Reader LogDir, AtomicState CommandState, Stop RunError] r =>
   Ident ->
-  m (Path Abs File)
+  Sem r (Path Abs File)
 commandLogPath ident = do
   existing <- logPathByIdent ident
-  maybe (insertLogPath ident) return existing
+  maybe (insertLogPath ident) pure existing
 
 commandLogSocketBind ::
-  MonadDeepError e RunError m =>
-  MonadDeepState s Env m =>
-  MonadDeepState s CommandState m =>
-  MonadBase IO m =>
+  Members [Reader LogDir, AtomicState CommandState, Stop RunError, Embed IO] r =>
   Ident ->
-  m Socket
+  Sem r Socket
 commandLogSocketBind =
   socketBind <=< commandLogPath
 
 pipePaneToSocket ::
-  MonadFree TmuxThunk m =>
+  Member Tmux r =>
   PaneId ->
   Path Abs File ->
-  m ()
+  Sem r ()
 pipePaneToSocket paneId logPath =
   pipePane paneId cmd
   where
     cmd = "'socat STDIN UNIX-SENDTO:" <> (Text.concatMap escape . toText . toFilePath) logPath <> "'"
     escape c = prefix c <> Text.singleton c
     prefix c | isAlphaNum c = ""
-    prefix _ | otherwise = "\\"
+    prefix _  = "\\"
 
 logLens :: Ident -> Lens' CommandState (Maybe CommandLog)
-logLens ident = CommandState.logs . Lens.at ident
+logLens ident =
+  #logs . at ident
 
-commandLogs :: MonadDeepState s CommandState m => m Logs
+commandLogs :: Member (AtomicState CommandState) r => Sem r Logs
 commandLogs =
-  getL @CommandState CommandState.logs
+  atomicGets CommandState.logs
 
 mainCommandOrHistory ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m Command
+  Sem r Command
 mainCommandOrHistory ident = do
   cmd <- commandOrHistoryByIdent ident
-  recurse cmd (cmd ^. Command.interpreter)
+  recurse cmd (cmd ^. #interpreter)
   where
     recurse cmd = \case
       Shell target ->
@@ -125,67 +113,62 @@ mainCommandOrHistory ident = do
         pure cmd
 
 mainCommandOrHistoryIdent ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m Ident
+  Sem r Ident
 mainCommandOrHistoryIdent ident =
-  recurse =<< (Lens.view Command.interpreter <$> commandOrHistoryByIdent ident)
+  recurse . Command.interpreter =<< commandOrHistoryByIdent ident
   where
     recurse (Shell target) =
       mainCommandIdent target
     recurse _ =
-      return ident
+      pure ident
 
 mayMainCommandOrHistory ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m Ident
+  Sem r Ident
 mayMainCommandOrHistory ident =
-  recurse =<< (fmap (Lens.view Command.interpreter) <$> mayCommandOrHistoryByIdent ident)
+  recurse . fmap Command.interpreter =<< mayCommandOrHistoryByIdent ident
   where
     recurse (Just (Shell target)) =
       mayMainCommandOrHistory target
     recurse _ =
-      return ident
+      pure ident
 
 commandLogBy ::
   Eq a =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Lens' Command a ->
   a ->
-  m (Maybe CommandLog)
+  Sem r (Maybe CommandLog)
 commandLogBy ident lens a = do
   cmd <- commandOrHistoryBy ident lens a
-  logIdent <- mainCommandOrHistoryIdent (Lens.view Command.ident cmd)
-  getL (logLens logIdent)
+  logIdent <- mainCommandOrHistoryIdent (Command.ident cmd)
+  atomicView (logLens logIdent)
 
 commandLog ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m (Maybe CommandLog)
+  Sem r (Maybe CommandLog)
 commandLog ident =
-  commandLogBy (show ident) Command.ident ident
+  commandLogBy (show ident) #ident ident
 
 commandLogByName ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
-  m (Maybe CommandLog)
+  Sem r (Maybe CommandLog)
 commandLogByName name =
-  commandLogBy name Command.displayName (Just name)
+  commandLogBy name #displayName (Just name)
 
 appendLog ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
   ByteString ->
-  m ()
+  Sem r ()
 appendLog ident bytes =
-  modify $ Lens.over (logLens ident) append
+  atomicModify' (logLens ident %~ append)
   where
     append (Just (CommandLog prev cur)) =
       Just (CommandLog prev (cur <> bytes))
@@ -193,16 +176,14 @@ appendLog ident bytes =
       Just (CommandLog [] bytes)
 
 pushCommandLog ::
-  MonadRibo m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Log] r =>
   Ident ->
-  m ()
+  Sem r ()
 pushCommandLog ident = do
   logIdent <- mayMainCommandOrHistory ident
   let logIdentT = identText logIdent
-  logDebug @Text [text|pushing command log for `#{logIdentT}`|]
-  modifyL (logLens logIdent) (fmap push)
+  Log.debug [exon|pushing command log for `#{logIdentT}`|]
+  atomicModify' (logLens logIdent %~ fmap push)
   where
     push (CommandLog prev cur) | ByteString.null cur =
       CommandLog prev cur
@@ -210,27 +191,25 @@ pushCommandLog ident = do
       CommandLog (cur : prev) ""
 
 pushCommandLogs ::
-  MonadRibo m =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
-  m ()
+  Members [AtomicState CommandState, Log] r =>
+  Sem r ()
 pushCommandLogs = do
-  idents <- getsL @CommandState CommandState.logs Map.keys
+  idents <- atomicGets (Map.keys . CommandState.logs)
   traverse_ pushCommandLog idents
 
 myoLogs ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e DecodeError m =>
-  MonadDeepState s CommandState m =>
-  m ()
-myoLogs = do
-  logs <- commandLogs
-  void $ showInScratch ("# Command Logs" : "" : intercalate [""] (logLines logs)) options
+  Members [AtomicState CommandState, Scratch !! RpcError, Log] r =>
+  Handler r ()
+myoLogs =
+  resumeHandlerError @Scratch do
+    logs <- commandLogs
+    void $ Scratch.show ("# Command Logs" : "" : intercalate [""] (logLines logs)) options
   where
     options =
-      scratchFocus $ defaultScratchOptions "myo-command-logs"
+      def {
+        name = "myo-command-logs",
+        focus = True
+      }
     logLines logs =
       uncurry formatLog <$> Map.toList logs
     formatLog ident (CommandLog previous current) =

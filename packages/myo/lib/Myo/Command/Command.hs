@@ -1,85 +1,81 @@
 module Myo.Command.Command where
 
 import qualified Chiasma.Data.Ident as Ident
+import Chiasma.Data.Ident (Ident, identText)
 import Control.Lens (Lens', filtered, firstOf, folded, views)
-import Ribosome.Control.Monad.Ribo (inspectHeadE)
 
-import Myo.Command.Data.Command (Command(Command), CommandLanguage, _interpreter)
 import qualified Myo.Command.Data.Command as Command
+import Myo.Command.Data.Command (Command (Command), CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (CommandError(NoSuchCommand, NoCommands))
-import Myo.Command.Data.CommandInterpreter (CommandInterpreter(System, Shell))
-import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Command.Data.CommandError as CommandError (CommandError (NoCommands, NoSuchCommand))
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
 import qualified Myo.Command.Data.CommandState as CommandState
+import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.HistoryEntry as HistoryEntry
 
 mayCommandBy ::
   Eq a =>
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Lens' Command a ->
   a ->
-  m (Maybe Command)
+  Sem r (Maybe Command)
 mayCommandBy lens a =
-  gets f
+  atomicGets f
   where
     f :: CommandState -> Maybe Command
-    f = firstOf (CommandState.commands . folded . filtered (views lens (a ==)))
+    f = firstOf (#commands . folded . filtered (views lens (a ==)))
 
 noSuchCommand ::
-  MonadDeepError e CommandError m =>
+  Member (Stop CommandError) r =>
   Text ->
   Text ->
   Maybe a ->
-  m a
+  Sem r a
 noSuchCommand context query =
-  hoistMaybe (CommandError.NoSuchCommand context query)
+  stopNote (CommandError.NoSuchCommand context query)
 
 commandBy ::
   Eq a =>
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Text ->
   Lens' Command a ->
   a ->
-  m Command
+  Sem r Command
 commandBy context ident lens a =
   noSuchCommand context ident =<< mayCommandBy lens a
 
 mayCommandByIdent ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m (Maybe Command)
+  Sem r (Maybe Command)
 mayCommandByIdent =
-  mayCommandBy Command.ident
+  mayCommandBy #ident
 
 commandByIdent ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Ident ->
-  m Command
+  Sem r Command
 commandByIdent context ident =
-  commandBy context (show ident) Command.ident ident
+  commandBy context (show ident) #ident ident
 
 commandByName ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Text ->
-  m Command
+  Sem r Command
 commandByName context name =
-  commandBy context name Command.displayName (Just name)
+  commandBy context name #displayName (Just name)
 
 commandByIdentOrName ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Text ->
-  m Command
+  Sem r Command
 commandByIdentOrName context query = do
   byIdent <- mayCommandByIdent (Ident.Str query)
-  byName <- mayCommandBy Command.displayName (Just query)
+  byName <- mayCommandBy #displayName (Just query)
   noSuchCommand context query (byIdent <|> byName)
 
 systemCommand ::
@@ -111,46 +107,44 @@ shellCommand target =
   Command (Shell target)
 
 latestCommand ::
-  (MonadDeepError e CommandError m, MonadDeepState s CommandState m) =>
-  m Command
+  Members [AtomicState CommandState, Stop CommandError] r =>
+  Sem r Command
 latestCommand =
-  HistoryEntry._command <$> inspectHeadE @CommandState CommandError.NoCommands CommandState.history
+  fmap HistoryEntry.command . stopNote CommandError.NoCommands . head =<< atomicGets CommandState.history
 
 mayMainCommand ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m (Maybe Command)
+  Sem r (Maybe Command)
 mayMainCommand ident =
   check =<< mayCommandByIdent ident
   where
     check = \case
-      Just (Command { _interpreter = Shell target }) ->
+      Just (Command { interpreter = Shell target }) ->
         mayMainCommand target
       cmd ->
         pure cmd
 
 mainCommand ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m Command
+  Sem r Command
 mainCommand ident =
   err =<< mayMainCommand ident
   where
     err =
-      hoistMaybe (CommandError.NoSuchCommand "mainCommand" (identText ident))
+      stopNote (CommandError.NoSuchCommand "mainCommand" (identText ident))
 
 mayMainCommandIdent ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m (Maybe Ident)
+  Sem r (Maybe Ident)
 mayMainCommandIdent =
-  fmap (fmap Command._ident) . mayMainCommand
+  fmap (fmap Command.ident) . mayMainCommand
 
 mainCommandIdent ::
-  MonadDeepError e CommandError m =>
-  MonadDeepState s CommandState m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m Ident
+  Sem r Ident
 mainCommandIdent =
-  fmap Command._ident . mainCommand
+  fmap Command.ident . mainCommand

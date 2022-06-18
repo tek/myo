@@ -1,6 +1,7 @@
 module Myo.Command.Data.CommandInterpreter where
 
-import Data.Aeson (FromJSON, ToJSON (toEncoding), defaultOptions, genericToEncoding)
+import Chiasma.Data.Ident (Ident)
+import Polysemy.Time.Json (json)
 import Prettyprinter (Pretty (..), emptyDoc, (<+>))
 
 import Myo.Data.String.Pretty (backtick)
@@ -19,7 +20,9 @@ data CommandInterpreter =
     vimSilent :: Bool,
     vimTarget :: Maybe Ident
   }
-  deriving (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic)
+
+json ''CommandInterpreter
 
 instance Pretty CommandInterpreter where
   pretty (System target) =
@@ -42,8 +45,3 @@ instance Pretty CommandInterpreter where
         "(silent)"
       prettySilent False =
         emptyDoc
-
-instance ToJSON CommandInterpreter where
-  toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON CommandInterpreter

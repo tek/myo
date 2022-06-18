@@ -1,106 +1,115 @@
 module Myo.Test.RunTest where
 
-import Chiasma.Data.Ident (Ident(Str))
-import qualified Control.Lens as Lens (at, view)
-import Hedgehog (evalMaybe, (===))
-import Ribosome.Control.Monad.Ribo (inspectErrors)
-import qualified Ribosome.Data.ErrorReport as ErrorReport (user)
-import Ribosome.Data.Errors (ComponentName(ComponentName))
-import qualified Ribosome.Data.Errors as Errors (componentErrors, report)
-import Ribosome.Error.Report (reportError)
-import Ribosome.Nvim.Api.IO (vimCommand)
-import Ribosome.Test.Run (UnitTest)
+import Chiasma.Data.Ident (Ident (Str))
+import qualified Data.Map.Strict as Map
+import Log (Severity (Error))
+import Polysemy.Test (Hedgehog, UnitTest, assertJust, evalMaybe, (===))
+import Ribosome (
+  ErrorMessage (ErrorMessage),
+  Errors,
+  HandlerTag,
+  HostError,
+  StoredError (StoredError),
+  ToErrorMessage (toErrorMessage),
+  reportError,
+  )
+import qualified Ribosome.Errors as Errors
+import Ribosome.Test (testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Command (Command(Command))
-import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState(Unknown))
-import Myo.Command.Data.RunLineOptions (RunLineOptions(RunLineOptions))
-import Myo.Command.Data.RunTask (RunTask(RunTask))
+import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
+import Myo.Command.Data.AddSystemCommandOptions (runner)
+import Myo.Command.Data.Command (Command (Command), lines)
+import Myo.Command.Data.RunLineOptions (line, runner)
+import Myo.Command.Data.RunTask (RunTask (RunTask), command)
 import Myo.Command.Run (myoLine, myoRunIdent)
-import Myo.Command.Runner (addRunner, extractRunError)
-import Myo.Command.Subproc.Runner (addSubprocessRunner)
-import Myo.Data.Env (Myo)
-import Myo.Test.Unit (MyoTest, intTestDef, tmuxTestDef)
+import Myo.Data.ProcessCommand (ProcessCommand)
+import qualified Myo.Effect.Executor as Executor
+import Myo.Effect.Executor (Executor)
+import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.Executor.Process (interpretExecutorProcessNative)
+import Myo.Test.Run (myoTest)
+
+newtype RunTestError =
+  RunTestError { unTestError :: [Text] }
+  deriving stock (Eq, Show)
+  deriving newtype (Ord)
+
+instance ToErrorMessage RunTestError where
+  toErrorMessage (RunTestError e) =
+    ErrorMessage (unlines e) e Error
 
 testError :: Text
-testError = "error"
+testError =
+  "error"
 
-cname :: Text
-cname = "test"
+htag :: HandlerTag
+htag = "test"
 
 runnerIdent :: Ident
 runnerIdent =
   Str "dummy"
 
-runDummy :: RunTask -> Myo ()
-runDummy _ =
-  reportError cname ([testError] :: [Text])
+ident :: Ident
+ident =
+  Str "cmd"
 
-addDummyRunner ::
-  (RunTask -> Myo ()) ->
-  Myo ()
-addDummyRunner runner =
-  addRunner runnerIdent (extractRunError runner) (extractRunError checkDummy) (const True) Nothing
-  where
-    checkDummy _ =
-      return $ return ExecutionState.Unknown
-
-checkReport :: [Text] -> MyoTest ()
+checkReport ::
+  Members [Hedgehog IO, Errors] r =>
+  [Text] ->
+  Sem r ()
 checkReport target = do
-  loggedError <- inspectErrors $ Lens.view $ Errors.componentErrors . Lens.at (ComponentName cname)
-  let errorReport = fmap (Lens.view $ Errors.report . ErrorReport.user) <$> loggedError
-  Just target === errorReport
+  loggedError <- Map.lookup htag <$> Errors.get
+  assertJust [target] (fmap user <$> loggedError)
+  where
+    user (StoredError (ErrorMessage _ l _) _) =
+      l
 
-runSystemTest :: MyoTest ()
-runSystemTest = do
-  let ident = Str "cmd"
-  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls"] (Just runnerIdent) Nothing Nothing Nothing Nothing Nothing Nothing
-  lift (addDummyRunner runDummy)
-  lift (myoRunIdent ident)
-  checkReport [testError]
+interpretExecutorDummy ::
+  Member (DataLog HostError) r =>
+  InterpreterFor (Executor ()) r
+interpretExecutorDummy =
+  interpret \case
+    Executor.Accept _ ->
+      pure (Just ())
+    Executor.Run _ ->
+      Nothing <$ reportError (Just htag) (RunTestError [testError])
 
 test_runSystem :: UnitTest
 test_runSystem =
-  tmuxTestDef runSystemTest
+  myoTest $ interpretExecutorDummy $ interpretController @'[()] do
+    testHandler do
+      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
+      myoRunIdent ident
+    checkReport [testError]
 
 cmdline :: Text
-cmdline = "echo 'hello"
+cmdline = "echo 'hello'"
 
-lineRunner :: RunTask -> Myo ()
-lineRunner (RunTask (Command _ _ lines' _ _ _ _ _ _) _ _) =
-  reportError cname lines'
-
-runLineSingleTest :: MyoTest ()
-runLineSingleTest = do
-  lift (addDummyRunner lineRunner)
-  lift (myoLine (RunLineOptions (Just cmdline) Nothing Nothing (Just runnerIdent) Nothing Nothing Nothing Nothing))
-  checkReport [cmdline]
+interpretExecutorDummySingleLine ::
+  Member (DataLog HostError) r =>
+  InterpreterFor (Executor [Text]) r
+interpretExecutorDummySingleLine =
+  interpret \case
+    Executor.Accept RunTask {command = Command {lines = l}} ->
+      pure (Just l)
+    Executor.Run l ->
+      Nothing <$ reportError (Just htag) (RunTestError l)
 
 test_runLineSingle :: UnitTest
 test_runLineSingle =
-  tmuxTestDef runLineSingleTest
-
-runLineCmdTest :: MyoTest ()
-runLineCmdTest =
-  vimCommand "MyoLine echo 'hello'"
-
-test_runLineCmd :: UnitTest
-test_runLineCmd =
-  intTestDef runLineCmdTest
-
-runSubprocTest :: MyoTest ()
-runSubprocTest = do
-  let ident = Str "cmd"
-  lift addSubprocessRunner
-  myoAddSystemCommand $ AddSystemCommandOptions ident ["ls -234234"] (Just runnerIdent) Nothing Nothing Nothing Nothing Nothing Nothing
-  lift (myoRunIdent ident)
-  sleep 1
-  lift (myoRunIdent ident)
-  sleep 1
-  loggedError <- evalMaybe =<< lift (inspectErrors (Lens.view $ Errors.componentErrors . Lens.at (ComponentName "subproc")))
-  2 === length loggedError
+  myoTest $ interpretExecutorDummy $ interpretController @'[()] do
+    testHandler do
+      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
+      myoLine def { line = Just cmdline, runner = Just runnerIdent }
+    checkReport [cmdline]
 
 test_runSubproc :: UnitTest
 test_runSubproc =
-  tmuxTestDef runSubprocTest
+  myoTest $ interpretExecutorProcessNative $ interpretController @'[ProcessCommand] do
+    testHandler do
+      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { runner = Just runnerIdent }
+      myoRunIdent ident
+      myoRunIdent ident
+    loggedError <- evalMaybe =<< Map.lookup "command" <$> Errors.get
+    2 === length loggedError

@@ -1,7 +1,9 @@
 module Myo.Settings where
 
-import Chiasma.Ui.Data.ViewGeometry (ViewGeometry(ViewGeometry))
-import Ribosome.Data.Setting (Setting(Setting))
+import Chiasma.Data.Ident (Ident)
+import Chiasma.Ui.Data.ViewGeometry (ViewGeometry (ViewGeometry))
+import Path (Dir, Path, Rel)
+import Ribosome.Data.Setting (Setting (Setting))
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
@@ -83,8 +85,16 @@ proteomeMainType :: Setting Text
 proteomeMainType =
   Setting "proteome_main_type" False Nothing
 
+proteomeMainTypeDir :: Setting (Path Rel Dir)
+proteomeMainTypeDir =
+  Setting "proteome_main_type" False Nothing
+
 proteomeMainName :: Setting Text
 proteomeMainName =
+  Setting "proteome_main_name" False Nothing
+
+proteomeMainNameDir :: Setting (Path Rel Dir)
+proteomeMainNameDir =
   Setting "proteome_main_name" False Nothing
 
 saveInterval :: Setting Double

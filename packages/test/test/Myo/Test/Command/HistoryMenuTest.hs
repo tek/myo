@@ -34,7 +34,6 @@ history =
 
 exec ::
   MonadIO m =>
-  MonadBaseControl IO m =>
   MenuWidget m i Text
 exec =
   Just . maybe MenuAction.abort (MenuAction.success . pure) <$> menuRead (withFocusItem (pure . MenuItem._text))

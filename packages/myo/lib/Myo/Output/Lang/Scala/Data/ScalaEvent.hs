@@ -6,7 +6,7 @@ data EventType =
   Error
   |
   Warning
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data ScalaEvent =
   ScalaEvent {
@@ -17,4 +17,4 @@ data ScalaEvent =
      _codeIndent :: Int,
      _code :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

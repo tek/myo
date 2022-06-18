@@ -1,134 +1,121 @@
 module Myo.Ui.Default where
 
-import qualified Chiasma.Codec.Data.PaneCoords as Codec (PaneCoords(PaneCoords))
-import qualified Chiasma.Codec.Data.PanePid as Codec (PanePid(PanePid))
-import Chiasma.Command.Pane (pane, panePids)
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Chiasma.Data.TmuxId (PaneId(..), SessionId(..), WindowId(..))
-import qualified Chiasma.Data.View as Tmux (View(View))
-import Chiasma.Data.Views (Views(Views))
-import Chiasma.Monad.Stream (TmuxProg)
-import Chiasma.Ui.Data.View (
-  Pane(..),
-  Tree(..),
-  TreeSub(..),
-  View(..),
-  ViewTree,
-  consLayout,
-  consLayoutVertical,
-  consPane,
-  )
-import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
-import Control.Lens (findMOf)
-import qualified Control.Lens as Lens (each)
-import Ribosome.Api.Process (vimPid)
-import Ribosome.Config.Setting (setting)
-import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
+-- import qualified Chiasma.Codec.Data.PaneCoords as Codec (PaneCoords(PaneCoords))
+-- import qualified Chiasma.Codec.Data.PanePid as Codec (PanePid(PanePid))
+-- import Chiasma.Command.Pane (pane, panePids)
+-- import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+-- import Chiasma.Data.TmuxId (PaneId(..), SessionId(..), WindowId(..))
+-- import qualified Chiasma.Data.View as Tmux (View(View))
+-- import Chiasma.Data.Views (Views(Views))
+-- import Chiasma.Monad.Stream (TmuxProg)
+-- import Chiasma.Ui.Data.View (
+--   Pane(..),
+--   Tree(..),
+--   TreeSub(..),
+--   View(..),
+--   ViewTree,
+--   consLayout,
+--   consLayoutVertical,
+--   consPane,
+--   )
+-- import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
+-- import Control.Lens (findMOf)
+-- import qualified Control.Lens as Lens (each)
+-- import Ribosome.Api.Process (vimPid)
+-- import Ribosome.Config.Setting (setting)
+-- import Ribosome.Data.SettingError (SettingError)
+-- import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
 
-import Myo.Command.Data.Pid (Pid(Pid))
-import Myo.Orphans ()
-import qualified Myo.Settings as Settings (vimPaneGeometry)
-import Myo.System.Proc (ppids)
-import Myo.Ui.Data.Space (Space(Space))
-import Myo.Ui.Data.UiState (UiState)
-import qualified Myo.Ui.Data.UiState as UiState (vimPaneId)
-import Myo.Ui.Data.Window (Window(Window))
-import Myo.Ui.View (insertSpace)
+-- import Myo.Command.Data.Pid (Pid(Pid))
+-- import Myo.Orphans ()
+-- import qualified Myo.Settings as Settings (vimPaneGeometry)
+-- import Myo.System.Proc (ppids)
+-- import Myo.Ui.Data.Space (Space(Space))
+-- import Myo.Ui.Data.UiState (UiState)
+-- import qualified Myo.Ui.Data.UiState as UiState (vimPaneId)
+-- import Myo.Ui.Data.Window (Window(Window))
+-- import Myo.Ui.View (insertSpace)
 
-insertInitialViews :: SessionId -> WindowId -> PaneId -> Views -> Views
-insertInitialViews sid wid pid (Views sessions windows panes viewsLog) =
-  Views
-    (Tmux.View (Ident.Str "vim") (Just sid) : sessions)
-    (Tmux.View (Ident.Str "vim") (Just wid) : windows)
-    (Tmux.View (Ident.Str "vim") (Just pid) : panes)
-    viewsLog
+-- insertInitialViews :: SessionId -> WindowId -> PaneId -> Views -> Views
+-- insertInitialViews sid wid pid (Views sessions windows panes viewsLog) =
+--   Views
+--     (Tmux.View (Ident.Str "vim") (Just sid) : sessions)
+--     (Tmux.View (Ident.Str "vim") (Just wid) : windows)
+--     (Tmux.View (Ident.Str "vim") (Just pid) : panes)
+--     viewsLog
 
-vimTree :: ViewGeometry -> ViewTree
-vimTree vimGeometry =
-  Tree vimLayout [TreeLeaf vimPane]
-  where
-    vimLayout = (consLayoutVertical (Ident.Str "vim")) { _geometry = vimGeometry }
-    vimPane = (consPane (Ident.Str "vim")) { _extra = Pane True False Nothing }
+-- vimTree :: ViewGeometry -> ViewTree
+-- vimTree vimGeometry =
+--   Tree vimLayout [TreeLeaf vimPane]
+--   where
+--     vimLayout = (consLayoutVertical (Ident.Str "vim")) { _geometry = vimGeometry }
+--     vimPane = (consPane (Ident.Str "vim")) { _extra = Pane True False Nothing }
 
-makeTree :: ViewTree
-makeTree =
-  Tree (consLayoutVertical (Ident.Str "make")) [
-    TreeLeaf ((consPane (Ident.Str "make")) { _extra = Pane False True Nothing })
-    ]
+-- makeTree :: ViewTree
+-- makeTree =
+--   Tree (consLayoutVertical (Ident.Str "make")) [
+--     TreeLeaf ((consPane (Ident.Str "make")) { _extra = Pane False True Nothing })
+--     ]
 
-mainTree :: ViewGeometry -> ViewTree
-mainTree vimGeometry =
-  Tree (consLayout (Ident.Str "main")) [TreeNode (vimTree vimGeometry), TreeNode makeTree]
+-- mainTree :: ViewGeometry -> ViewTree
+-- mainTree vimGeometry =
+--   Tree (consLayout (Ident.Str "main")) [TreeNode (vimTree vimGeometry), TreeNode makeTree]
 
-setupDefaultUi ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepState s UiState m =>
-  m ()
-setupDefaultUi = do
-  vimGeometry <- setting Settings.vimPaneGeometry
-  insertSpace $ Space (Ident.Str "vim") [Window (Ident.Str "vim") (mainTree vimGeometry)]
+-- setupDefaultUi ::
+--   Member (AtomicState Env) r =>
+--   m ()
+-- setupDefaultUi = do
+--   vimGeometry <- setting Settings.vimPaneGeometry
+--   insertSpace $ Space (Ident.Str "vim") [Window (Ident.Str "vim") (mainTree vimGeometry)]
 
-setupDefaultTestUi ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepState s Views m =>
-  MonadDeepState s UiState m =>
-  m ()
-setupDefaultTestUi = do
-  setupDefaultUi
-  modify $ insertInitialViews (SessionId 0) (WindowId 0) (PaneId 0)
+-- setupDefaultTestUi ::
+--   Member (AtomicState Env) r =>
+--   Member (AtomicState Env) r =>
+--   m ()
+-- setupDefaultTestUi = do
+--   setupDefaultUi
+--   modify $ insertInitialViews (SessionId 0) (WindowId 0) (PaneId 0)
 
-containsVimPid ::
-  MonadIO m =>
-  MonadBaseControl IO m =>
-  Codec.PanePid ->
-  Pid ->
-  m Bool
-containsVimPid (Codec.PanePid _ panePid) =
-  fmap (Pid panePid `elem`) <$> ppids
+-- containsVimPid ::
+--   MonadIO m =>
+--   Codec.PanePid ->
+--   Pid ->
+--   m Bool
+-- containsVimPid (Codec.PanePid _ panePid) =
+--   fmap (Pid panePid `elem`) <$> ppids
 
-detectVimPidPane ::
-  Nvim m =>
-  MonadIO m =>
-  MonadFail m =>
-  MonadBaseControl IO m =>
-  Pid ->
-  TmuxProg m Codec.PaneCoords
-detectVimPidPane vpid = do
-  mainPids <- panePids
-  result <- runMaybeT (findId mainPids)
-  maybe (fail "could not find vim pid in any tmux pane") return result
-  where
-    findId pids = do
-      (Codec.PanePid paneId _) <- MaybeT $ lift (findMOf Lens.each (`containsVimPid` vpid) pids)
-      MaybeT $ pane paneId
+-- detectVimPidPane ::
+--   Nvim m =>
+--   MonadIO m =>
+--   MonadFail m =>
+--   Pid ->
+--   TmuxProg m Codec.PaneCoords
+-- detectVimPidPane vpid = do
+--   mainPids <- panePids
+--   result <- runMaybeT (findId mainPids)
+--   maybe (fail "could not find vim pid in any tmux pane") pure result
+--   where
+--     findId pids = do
+--       (Codec.PanePid paneId _) <- MaybeT $ lift (findMOf Lens.each (`containsVimPid` vpid) pids)
+--       MaybeT $ pane paneId
 
-detectVimPane ::
-  MonadIO m =>
-  MonadFail m =>
-  Nvim m =>
-  MonadBaseControl IO m =>
-  TmuxProg m Codec.PaneCoords
-detectVimPane = do
-  result <- runExceptT @RpcError vimPid
-  either (fail . show) detectVimPidPane (Pid <$> result)
+-- detectVimPane ::
+--   MonadIO m =>
+--   MonadFail m =>
+--   Nvim m =>
+--   TmuxProg m Codec.PaneCoords
+-- detectVimPane = do
+--   result <- runExceptT @RpcError vimPid
+--   either (fail . show) detectVimPidPane (Pid <$> result)
 
-detectDefaultUi ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadFail m =>
-  MonadBaseControl IO m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepState s Views m =>
-  MonadDeepState s UiState m =>
-  RunTmux m =>
-  m ()
-detectDefaultUi = do
-  setupDefaultUi
-  (Codec.PaneCoords sid wid pid) <- runRiboTmux detectVimPane
-  modify $ insertInitialViews sid wid pid
-  setL @UiState UiState.vimPaneId (Just pid)
+-- detectDefaultUi ::
+--   MonadFail m =>
+--   Member (AtomicState Env) r =>
+--   Member (AtomicState Env) r =>
+--   RunTmux m =>
+--   m ()
+-- detectDefaultUi = do
+--   setupDefaultUi
+--   (Codec.PaneCoords sid wid pid) <- runRiboTmux detectVimPane
+--   modify $ insertInitialViews sid wid pid
+--   setL @UiState UiState.vimPaneId (Just pid)

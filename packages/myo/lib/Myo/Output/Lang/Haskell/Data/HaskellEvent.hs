@@ -10,7 +10,7 @@ data EventType =
   RuntimeError
   |
   Patterns
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data HaskellEvent =
   HaskellEvent {
@@ -18,4 +18,4 @@ data HaskellEvent =
      _eventType :: EventType,
      _messages :: NonEmpty Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

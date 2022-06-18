@@ -1,5 +1,8 @@
 module Myo.Ui.Data.AddLayoutOptions where
 
+import Chiasma.Data.Ident (Ident)
+import Ribosome (MsgpackDecode, MsgpackEncode)
+
 import Myo.Orphans ()
 
 data AddLayoutOptions =
@@ -15,4 +18,5 @@ data AddLayoutOptions =
     weight :: Maybe Float,
     position :: Maybe Float
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode, Default)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (Default, MsgpackDecode, MsgpackEncode)

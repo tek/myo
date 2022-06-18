@@ -1,231 +1,203 @@
 module Myo.Command.History where
 
-import Chiasma.Data.Ident (sameIdent)
-import Control.Lens (Lens', element, filtered, firstOf, folded, view, views)
-import Control.Monad.Catch (MonadThrow)
-import Path (Dir, File, Path, Rel, dirname, parent, parseRelDir, relfile, (</>))
-import Path.IO (getCurrentDir)
-import Ribosome.Config.Setting (settingMaybe)
-import Ribosome.Control.Lock (lockOrSkip)
-import Ribosome.Data.PersistError (PersistError)
-import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Persist (mayPersistLoad, persistStore)
+import Chiasma.Data.Ident (Ident, sameIdent)
+import Control.Lens (Lens', element, filtered, firstOf, folded, views, (%~))
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
+import Data.List.Extra (nubOrdOn)
+import Path (Dir, File, Path, Rel, dirname, parent, relfile, (</>))
+import Ribosome (Persist, Rpc, SettingError, Settings, lockOrSkip_)
+import Ribosome.Api (nvimCwd)
+import qualified Ribosome.Persist as Persist
+import qualified Ribosome.Settings as Settings
 
+import Myo.AtomicState (atomicSet)
 import Myo.Command.Command (mayCommandBy)
 import Myo.Command.Data.Command (Command)
-import qualified Myo.Command.Data.Command as Command (displayName, ident, skipHistory)
+import qualified Myo.Command.Data.Command as Command (displayName, skipHistory)
+import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (
-  CommandError(NoSuchHistoryIndex, NoSuchHistoryIdent, NoSuchCommand),
-  )
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
-import Myo.Command.Data.HistoryEntry (HistoryEntry(HistoryEntry))
+import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (command)
-import qualified Myo.Settings as Settings (proteomeMainName, proteomeMainType)
+import Myo.Command.Data.LoadHistoryLock (LoadHistoryLock)
+import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock)
+import qualified Myo.Settings as Settings
 
 proteomePath ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadThrow m =>
-  m (Maybe (Path Rel Dir))
+  Member (Settings !! SettingError) r =>
+  Sem r (Maybe (Path Rel Dir))
 proteomePath =
-  runMaybeT ((</>) <$> fetch Settings.proteomeMainType <*> fetch Settings.proteomeMainName)
+  runMaybeT ((</>) <$> fetch Settings.proteomeMainTypeDir <*> fetch Settings.proteomeMainNameDir)
   where
     fetch s =
-      MaybeT $ traverse (parseRelDir . toString) =<< settingMaybe s
+      MaybeT (Settings.maybe s)
 
 fsPath ::
-  MonadIO m =>
-  m (Path Rel Dir)
+  Member Rpc r =>
+  Sem r (Path Rel Dir)
 fsPath = do
-  current <- getCurrentDir
-  return $ dirname (parent current) </> dirname current
+  current <- nvimCwd
+  pure $ dirname (parent current) </> dirname current
 
 subPath ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadThrow m =>
-  m (Path Rel File)
+  Members [Rpc, Settings !! SettingError] r =>
+  Sem r (Path Rel File)
 subPath =
-  (</> [relfile|history|]) <$> (maybe fsPath return =<< proteomePath)
+  (</> [relfile|history|]) <$> (maybe fsPath pure =<< proteomePath)
 
 history ::
-  MonadDeepState s CommandState m =>
-  m [HistoryEntry]
+  Member (AtomicState CommandState) r =>
+  Sem r [HistoryEntry]
 history =
-  getL @CommandState CommandState.history
+  atomicGets CommandState.history
 
 storeHistoryAt ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadThrow m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
+  Members [Persist [HistoryEntry], AtomicState CommandState] r =>
   Path Rel File ->
-  m ()
+  Sem r ()
 storeHistoryAt path =
-  persistStore path =<< history
+  Persist.store (Just path) =<< history
 
 storeHistory ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadThrow m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
-  m ()
+  Members [Rpc, Settings !! SettingError] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Sync StoreHistoryLock, Resource] r =>
+  Sem r ()
 storeHistory =
-  lockOrSkip "store-history" . storeHistoryAt =<< subPath
+  lockOrSkip_ @StoreHistoryLock do
+    storeHistoryAt =<< subPath
 
 loadHistoryFrom ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e PersistError m =>
-  MonadThrow m =>
+  Members [Persist [HistoryEntry], AtomicState CommandState] r =>
   Path Rel File ->
-  m ()
+  Sem r ()
 loadHistoryFrom path =
-  traverse_ (setL @CommandState CommandState.history) =<< mayPersistLoad path
+  traverse_ (atomicSet #history) =<< Persist.load (Just path)
 
 loadHistory ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
-  MonadDeepError e PersistError m =>
-  MonadThrow m =>
-  m ()
+  Members [Rpc, Settings !! SettingError] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Sync LoadHistoryLock, Resource] r =>
+  Sem r ()
 loadHistory =
-  lockOrSkip "load-history" . loadHistoryFrom =<< subPath
+  lockOrSkip_ @LoadHistoryLock do
+    loadHistoryFrom =<< subPath
 
 duplicateHistoryEntry :: Command -> HistoryEntry -> Bool
 duplicateHistoryEntry cmd (HistoryEntry historyCmd) =
   sameIdent cmd historyCmd
 
 pushHistory ::
-  NvimE e m =>
-  MonadRibo m =>
-  MonadBaseControl IO m =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e SettingError m =>
-  MonadThrow m =>
+  Members [Rpc, Settings !! SettingError] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Sync StoreHistoryLock, Resource] r =>
   Command ->
-  m ()
+  Sem r ()
 pushHistory cmd =
-  unless (view Command.skipHistory cmd) $ do
-    modifyL @CommandState CommandState.history prep
+  unless (Command.skipHistory cmd) do
+    atomicModify' (#history %~ prep)
     storeHistory
   where
-    prep es = HistoryEntry cmd : filter (not . duplicateHistoryEntry cmd) es
+    prep es =
+      nubOrdOn (duplicateHistoryEntry cmd) (HistoryEntry cmd : es)
 
 lookupHistoryIndex ::
-  MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Int ->
-  m Command
+  Sem r Command
 lookupHistoryIndex index =
-  view HistoryEntry.command <$> (err =<< gets @CommandState (firstOf (CommandState.history . element index)))
+  HistoryEntry.command <$> (err =<< atomicGets (firstOf (#history . element index)))
   where
-    err = hoistMaybe (CommandError.NoSuchHistoryIndex index)
+    err =
+      stopNote (CommandError.NoSuchHistoryIndex index)
 
 lookupHistoryIdent ::
-  MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m Command
+  Sem r Command
 lookupHistoryIdent ident =
-  view HistoryEntry.command <$> (err =<< gets @CommandState lens)
+  HistoryEntry.command <$> (err =<< atomicGets lens)
   where
     lens =
-      firstOf (CommandState.history . folded . filtered (sameIdent ident))
+      firstOf (#history . folded . filtered (sameIdent ident))
     err =
-      hoistMaybe (CommandError.NoSuchHistoryIdent (show ident))
+      stopNote (CommandError.NoSuchHistoryIdent (show ident))
 
 lookupHistory ::
-  MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Either Ident Int ->
-  m Command
+  Sem r Command
 lookupHistory =
   either lookupHistoryIdent lookupHistoryIndex
 
 mayHistoryBy ::
   Eq a =>
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Lens' Command a ->
   a ->
-  m (Maybe Command)
+  Sem r (Maybe Command)
 mayHistoryBy lens a =
-  fmap (view HistoryEntry.command) <$> gets @CommandState entryLens
+  fmap HistoryEntry.command <$> atomicGets entryLens
   where
     entryLens =
-      firstOf (CommandState.history . folded . filtered (views (HistoryEntry.command . lens) (a ==)))
+      firstOf (#history . folded . filtered (views (#command . lens) (a ==)))
 
 historyBy ::
   Eq a =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Lens' Command a ->
   a ->
-  m Command
+  Sem r Command
 historyBy ident lens =
   err <=< mayHistoryBy lens
   where
     err =
-      hoistMaybe (CommandError.NoSuchHistoryIdent ident)
+      stopNote (CommandError.NoSuchHistoryIdent ident)
 
 mayCommandOrHistoryBy ::
   Eq a =>
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Lens' Command a ->
   a ->
-  m (Maybe Command)
+  Sem r (Maybe Command)
 mayCommandOrHistoryBy lens a =
   hist =<< mayCommandBy lens a
   where
     hist =
-      maybe (mayHistoryBy lens a) (return . Just)
+      maybe (mayHistoryBy lens a) (pure . Just)
 
 commandOrHistoryBy ::
   Eq a =>
-  MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
   Lens' Command a ->
   a ->
-  m Command
+  Sem r Command
 commandOrHistoryBy ident lens a =
   err =<< mayCommandOrHistoryBy lens a
   where
     err =
-      hoistMaybe (CommandError.NoSuchCommand "commandOrHistoryBy" ident)
+      stopNote (CommandError.NoSuchCommand "commandOrHistoryBy" ident)
 
 mayCommandOrHistoryByIdent ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m (Maybe Command)
+  Sem r (Maybe Command)
 mayCommandOrHistoryByIdent =
-  mayCommandOrHistoryBy Command.ident
+  mayCommandOrHistoryBy #ident
 
 commandOrHistoryByIdent ::
-  MonadDeepState s CommandState m =>
-  MonadDeepError e CommandError m =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
   Ident ->
-  m Command
+  Sem r Command
 commandOrHistoryByIdent ident =
-  commandOrHistoryBy (show ident) Command.ident ident
+  commandOrHistoryBy (show ident) #ident ident
 
 displayNameByIdent ::
-  MonadDeepState s CommandState m =>
+  Member (AtomicState CommandState) r =>
   Ident ->
-  m Text
+  Sem r Text
 displayNameByIdent ident =
-  select <$> mayCommandOrHistoryBy Command.ident ident
+  select <$> mayCommandOrHistoryBy #ident ident
   where
     select =
-      fromMaybe (show ident) . (>>= view Command.displayName)
+      fromMaybe (show ident) . (>>= Command.displayName)

@@ -1,6 +1,7 @@
 module Myo.Command.Data.RunningCommand where
 
-import Chiasma.Data.Ident (Identifiable(..))
+import Chiasma.Data.Ident (Ident, Identifiable (..))
+
 import Myo.Command.Data.Pid (Pid)
 
 data RunningCommand =
@@ -8,7 +9,8 @@ data RunningCommand =
     runningCommandIdent :: Ident,
     runningCommandPid :: Pid
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 instance Identifiable RunningCommand where
-  identify = runningCommandIdent
+  identify =
+    runningCommandIdent

@@ -1,7 +1,9 @@
 module Myo.Command.Data.RunTask where
 
-import Myo.Command.Data.Command (Command)
+import Chiasma.Data.Ident (Ident)
 import Path (Abs, File, Path)
+
+import Myo.Command.Data.Command (Command)
 
 data RunTaskDetails =
   Vim
@@ -16,12 +18,12 @@ data RunTaskDetails =
     shell :: Ident,
     pane :: Ident
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 data RunTask =
   RunTask {
-    rtCommand :: Command,
-    rtLog :: Path Abs File,
-    rtDetails :: RunTaskDetails
+    command :: Command,
+    log :: Path Abs File,
+    details :: RunTaskDetails
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

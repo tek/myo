@@ -1,5 +1,7 @@
 module Myo.Ui.Data.UiSettingCodec where
 
+import Ribosome (MsgpackDecode, MsgpackEncode)
+
 import Myo.Ui.Data.AddLayoutOptions (AddLayoutOptions)
 import Myo.Ui.Data.AddPaneOptions (AddPaneOptions)
 
@@ -8,4 +10,5 @@ data UiSettingCodec =
     layouts :: Maybe [AddLayoutOptions],
     panes :: Maybe [AddPaneOptions]
   }
-  deriving (Eq, Show, Generic, MsgpackDecode, MsgpackEncode)
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode)

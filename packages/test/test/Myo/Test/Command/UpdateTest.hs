@@ -38,21 +38,20 @@ codec :: [AddSystemCommandOptions] -> CommandSettingCodec
 codec cmds =
   CommandSettingCodec (Just cmds) Nothing
 
-cmdData :: MonadDeepState s CommandState m => m [(Text, [Text])]
+cmdData :: Member (AtomicState Env) r => m [(Text, [Text])]
 cmdData =
-  fmap extract <$> getL @CommandState CommandState.commands
+  fmap extract <$> atomicGets CommandState.commands
   where
     extract (Command _ ident lines' _ _ _ _ _ _) = (identText ident, lines')
 
-$(return [])
+$(pure [])
 
 plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
 plugin tmp = do
   ribo <- newRibosome "myo" def { _tempDir = tmp }
-  return $ riboPlugin "myo" ribo [$(rpcHandler sync 'cmdData)] [] handleError variables
+  pure $ riboPlugin "myo" ribo [$(rpcHandler sync 'cmdData)] [] handleError variables
 
 getCmdData ::
-  NvimE e m =>
   m [(Text, [Text])]
 getCmdData =
   vimCallFunction "CmdData" []

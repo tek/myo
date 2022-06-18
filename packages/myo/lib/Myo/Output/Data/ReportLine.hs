@@ -5,4 +5,4 @@ data ReportLine a =
     _event :: a,
     _text :: Text
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

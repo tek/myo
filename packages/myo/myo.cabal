@@ -5,21 +5,18 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           myo
-version:        0.1.1.0
+version:        0.1.0.0
 synopsis:       Neovim Layout and Command Manager
-description:    Please see the README on GitHub at <https://github.com/tek/myo>
+description:    See https://hackage.haskell.org/package/myo/docs/Myo.html
 category:       Neovim
 homepage:       https://github.com/tek/myo#readme
 bug-reports:    https://github.com/tek/myo/issues
 author:         Torsten Schmits
-maintainer:     tek@tryp.io
-copyright:      2021 Torsten Schmits
+maintainer:     hackage@tryp.io
+copyright:      2022 Torsten Schmits
 license:        BSD-2-Clause-Patent
 license-file:   LICENSE
 build-type:     Simple
-extra-source-files:
-    readme.md
-    changelog.md
 
 source-repository head
   type: git
@@ -27,6 +24,7 @@ source-repository head
 
 library
   exposed-modules:
+      Myo.AtomicState
       Myo.Command.Add
       Myo.Command.Command
       Myo.Command.CommandMenu
@@ -39,16 +37,22 @@ library
       Myo.Command.Data.CommandSettingCodec
       Myo.Command.Data.CommandState
       Myo.Command.Data.Execution
+      Myo.Command.Data.ExecutionLock
       Myo.Command.Data.HistoryEntry
+      Myo.Command.Data.LoadHistoryLock
+      Myo.Command.Data.LogDir
       Myo.Command.Data.MonitorEvent
       Myo.Command.Data.ParseOptions
       Myo.Command.Data.PendingCommand
       Myo.Command.Data.Pid
       Myo.Command.Data.RunError
+      Myo.Command.Data.RunEvent
       Myo.Command.Data.RunLineOptions
       Myo.Command.Data.RunningCommand
       Myo.Command.Data.RunTask
+      Myo.Command.Data.StoreHistoryLock
       Myo.Command.Data.VimTestPosition
+      Myo.Command.Effect.ExecutionStates
       Myo.Command.Execution
       Myo.Command.History
       Myo.Command.HistoryMenu
@@ -67,15 +71,19 @@ library
       Myo.Command.Update
       Myo.Complete
       Myo.Control.Concurrent.Wait
-      Myo.Control.Monad.Except
       Myo.Data.Env
-      Myo.Data.Error
       Myo.Data.ExactlyOne
       Myo.Data.Maybe
+      Myo.Data.ProcessCommand
       Myo.Data.String.Pretty
       Myo.Diag
+      Myo.Effect.CommandLog
+      Myo.Effect.Controller
+      Myo.Effect.Executor
       Myo.Env
       Myo.Init
+      Myo.Interpreter.Controller
+      Myo.Interpreter.Executor.Process
       Myo.Log
       Myo.Network.Socket
       Myo.Orphans
@@ -107,7 +115,6 @@ library
       Myo.Output.Lang.Scala.Syntax
       Myo.Output.ParseReport
       Myo.Plugin
-      Myo.Prelude
       Myo.Proteome
       Myo.Quit
       Myo.Save
@@ -134,11 +141,6 @@ library
       Myo.Ui.UpsertView
       Myo.Ui.View
       Myo.Vim.Runner
-  other-modules:
-      Prelude
-      Paths_myo
-  autogen-modules:
-      Paths_myo
   hs-source-dirs:
       lib
   default-extensions:
@@ -158,6 +160,7 @@ library
       DeriveLift
       DeriveTraversable
       DerivingStrategies
+      DerivingVia
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
@@ -187,6 +190,7 @@ library
       RankNTypes
       RecordWildCards
       RecursiveDo
+      RoleAnnotations
       ScopedTypeVariables
       StandaloneDeriving
       TemplateHaskell
@@ -199,126 +203,60 @@ library
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      AllowAmbiguousTypes
-      ApplicativeDo
-      BangPatterns
-      BinaryLiterals
-      BlockArguments
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DeriveAnyClass
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveTraversable
-      DerivingStrategies
-      DisambiguateRecordFields
-      DoAndIfThenElse
-      DuplicateRecordFields
-      EmptyDataDecls
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
-      FunctionalDependencies
-      GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      LiberalTypeSynonyms
-      MultiParamTypeClasses
-      MultiWayIf
-      NamedFieldPuns
-      OverloadedStrings
-      PackageImports
-      PartialTypeSignatures
-      PatternGuards
-      PatternSynonyms
-      PolyKinds
-      QuantifiedConstraints
-      QuasiQuotes
-      RankNTypes
-      RecordWildCards
-      RecursiveDo
-      ScopedTypeVariables
-      StandaloneDeriving
-      TemplateHaskell
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      TypeFamilyDependencies
-      TypeOperators
-      TypeSynonymInstances
-      UndecidableInstances
-      UnicodeSyntax
-      ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints
+      StandaloneKindSignatures
+      OverloadedLabels
+      ImpredicativeTypes
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin
   build-depends:
-      aeson
+      Glob
+    , aeson
     , attoparsec
-    , base ==4.*
-    , bytestring
+    , base >=4.12 && <5
     , chiasma
-    , composition
-    , composition-extra
-    , conduit
-    , conduit-extra
-    , containers
-    , cornea
-    , data-default
-    , directory
-    , either
-    , exceptions
-    , filepath
-    , free
+    , chronos
+    , exon
+    , extra
+    , filepattern
+    , first-class-families
+    , generic-lens
+    , generics-sop
     , hashable
-    , hourglass
-    , hslogger
+    , incipit >=0.3
     , lens
-    , lifted-async
-    , lifted-base
+    , lens-regex-pcre
     , messagepack
-    , monad-control
-    , mono-traversable
-    , mtl
     , network
-    , nvim-hs
     , parsers
     , path
     , path-io
+    , pcre-light
+    , polysemy
+    , polysemy-chronos
+    , polysemy-plugin
+    , polysemy-process
+    , polysemy-time
     , prettyprinter
-    , prettyprinter-ansi-terminal
-    , process
     , raw-strings-qq
-    , regex-with-pcre
-    , relude >=0.7 && <1.2
-    , resourcet
     , ribosome
+    , ribosome-host
+    , ribosome-menu
     , stm-chans
-    , stm-conduit
+    , streamly
     , string-interpolate
     , stringsearch
-    , template-haskell
-    , text
     , transformers
-    , transformers-base
     , typed-process
     , unix
-    , unliftio
     , uuid
     , vector
   mixins:
       base hiding (Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010
 
 executable myo
   main-is: Main.hs
-  other-modules:
-      Paths_myo
-  autogen-modules:
-      Paths_myo
   hs-source-dirs:
       app
   default-extensions:
@@ -338,6 +276,7 @@ executable myo
       DeriveLift
       DeriveTraversable
       DerivingStrategies
+      DerivingVia
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
@@ -367,6 +306,7 @@ executable myo
       RankNTypes
       RecordWildCards
       RecursiveDo
+      RoleAnnotations
       ScopedTypeVariables
       StandaloneDeriving
       TemplateHaskell
@@ -379,119 +319,18 @@ executable myo
       UndecidableInstances
       UnicodeSyntax
       ViewPatterns
-      AllowAmbiguousTypes
-      ApplicativeDo
-      BangPatterns
-      BinaryLiterals
-      BlockArguments
-      ConstraintKinds
-      DataKinds
-      DefaultSignatures
-      DeriveAnyClass
-      DeriveDataTypeable
-      DeriveFoldable
-      DeriveFunctor
-      DeriveGeneric
-      DeriveTraversable
-      DerivingStrategies
-      DisambiguateRecordFields
-      DoAndIfThenElse
-      DuplicateRecordFields
-      EmptyDataDecls
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
-      FunctionalDependencies
-      GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
-      LambdaCase
-      LiberalTypeSynonyms
-      MultiParamTypeClasses
-      MultiWayIf
-      NamedFieldPuns
-      OverloadedStrings
-      PackageImports
-      PartialTypeSignatures
-      PatternGuards
-      PatternSynonyms
-      PolyKinds
-      QuantifiedConstraints
-      QuasiQuotes
-      RankNTypes
-      RecordWildCards
-      RecursiveDo
-      ScopedTypeVariables
-      StandaloneDeriving
-      TemplateHaskell
-      TupleSections
-      TypeApplications
-      TypeFamilies
-      TypeFamilyDependencies
-      TypeOperators
-      TypeSynonymInstances
-      UndecidableInstances
-      UnicodeSyntax
-      ViewPatterns
-  ghc-options: -Wall -Wredundant-constraints -Wsimplifiable-class-constraints -threaded -rtsopts -with-rtsopts=-N
+      StandaloneKindSignatures
+      OverloadedLabels
+      ImpredicativeTypes
+  ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , attoparsec
-    , base ==4.*
-    , bytestring
-    , chiasma
-    , composition
-    , composition-extra
-    , conduit
-    , conduit-extra
-    , containers
-    , cornea
-    , data-default
-    , directory
-    , either
-    , exceptions
-    , filepath
-    , free
-    , hashable
-    , hourglass
-    , hslogger
-    , lens
-    , lifted-async
-    , lifted-base
-    , messagepack
-    , monad-control
-    , mono-traversable
-    , mtl
+      base >=4.12 && <5
+    , incipit >=0.3
     , myo
-    , network
-    , nvim-hs
-    , parsers
-    , path
-    , path-io
-    , prettyprinter
-    , prettyprinter-ansi-terminal
-    , process
-    , raw-strings-qq
-    , regex-with-pcre
-    , relude >=0.7 && <1.2
-    , resourcet
-    , ribosome
-    , stm-chans
-    , stm-conduit
-    , string-interpolate
-    , stringsearch
-    , template-haskell
-    , text
-    , transformers
-    , transformers-base
-    , typed-process
-    , unix
-    , unliftio
-    , uuid
-    , vector
+    , polysemy
+    , polysemy-plugin
   mixins:
       base hiding (Prelude)
-    , myo hiding (Myo.Prelude)
-    , myo (Myo.Prelude as Prelude)
+    , incipit (Incipit as Prelude)
+    , incipit hiding (Incipit)
   default-language: Haskell2010

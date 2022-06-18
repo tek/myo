@@ -1,24 +1,22 @@
 module Myo.Ui.Data.Space where
 
-import Chiasma.Data.Ident (Identifiable(..))
-import Prettyprinter (Pretty(..), nest, vsep, (<+>))
+import Chiasma.Data.Ident (Ident, Identifiable (..))
+import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 
 import Myo.Ui.Data.Window (Window)
 
 data Space =
   Space {
-    _ident :: Ident,
-    _windows :: [Window]
+    ident :: Ident,
+    windows :: [Window]
   }
-  deriving (Eq, Show)
-
-makeClassy ''Space
+  deriving stock (Eq, Show, Generic)
 
 instance Identifiable Space where
-  identify = _ident
+  identify = ident
 
 instance Pretty Space where
-  pretty (Space ident' windows') =
-    nest 2 . vsep $ header : (pretty <$> windows')
+  pretty Space {..} =
+    nest 2 . vsep $ header : (pretty <$> windows)
     where
-      header = "⬚" <+> pretty ident'
+      header = "⬚" <+> pretty ident
