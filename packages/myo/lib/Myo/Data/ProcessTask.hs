@@ -1,9 +1,9 @@
-module Myo.Data.ProcessCommand where
+module Myo.Data.ProcessTask where
 
 import Chiasma.Data.Ident (Ident)
 
-data ProcessCommand =
-  ProcessCommand {
+data ProcessTask =
+  ProcessTask {
     ident :: Ident,
     cmd :: (String, [String])
   }

@@ -2,6 +2,7 @@
 module Myo.Command.Data.RunError where
 
 import Chiasma.Data.Ident (identText)
+import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Log (Severity (Debug, Error, Warn))
@@ -11,6 +12,7 @@ import qualified Myo.Command.Data.Command as Cmd (Command (Command))
 import Myo.Command.Data.CommandError (CommandError (..))
 import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Ui.Data.ToggleError (ToggleError)
+import Chiasma.Ui.Data.TreeModError (TreeModError)
 
 data RunError =
   Command CommandError
@@ -38,6 +40,10 @@ data RunError =
   NoLinesSpecified
   |
   SubprocFailed [Text]
+  |
+  Render RenderError
+  |
+  TreeMod TreeModError
   deriving stock (Show)
 
 instance ToErrorMessage RunError where
@@ -79,3 +85,7 @@ instance ToErrorMessage RunError where
     where
       userErr [] = ""
       userErr (e : _) = ": " <> e
+  toErrorMessage (Render e) =
+    ErrorMessage "tmux error" ["RunError.Render:", show e] Error
+  toErrorMessage (TreeMod e) =
+    ErrorMessage "tmux error" ["RunError.TreeMod:", show e] Error

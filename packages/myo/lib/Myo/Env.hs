@@ -1,6 +1,5 @@
 module Myo.Env where
 
-import Chiasma.Data.Views (Views)
 import Path (Abs, Dir, Path, parseRelDir, (</>))
 import Path.IO (createDirIfMissing, createTempDir, getTempDir, removeDirRecur)
 import System.Posix.User (getEffectiveUserName)
@@ -16,12 +15,6 @@ withTempDir ::
   Sem r a
 withTempDir targetDir =
   bracket (createTempDir targetDir "temp") (tryAny_ . removeDirRecur)
-
-myoViews ::
-  Member (AtomicState UiState) r =>
-  Sem r Views
-myoViews =
-  atomicGets UiState.views
 
 myoSpaces ::
   Member (AtomicState UiState) r =>

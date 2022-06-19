@@ -1,21 +1,25 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 module Myo.Plugin where
 
+import Chiasma.Data.Views (Views)
 import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, withAsync_)
 import Ribosome (
   BootError,
   CompleteStyle (CompleteFiltered),
   Errors,
   Execution (Async),
+  HostError,
   Rpc,
   RpcError,
   RpcHandler,
   Scratch,
   SettingError,
   Settings,
+  reportError,
   rpc,
   runNvimHandlersIO,
   )
+import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.CommandState (CommandState)
@@ -24,7 +28,9 @@ import Myo.Command.Data.RunEvent (RunEvent)
 -- import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env)
 import Myo.Diag (myoDiag)
+import qualified Myo.Settings as Settings
 import Myo.Ui.Data.UiState (UiState)
+import Myo.Ui.Default (detectDefaultUi)
 
 -- rpcHandlers :: [[RpcDef (Ribo Env Error)]]
 -- rpcHandlers =
@@ -80,6 +86,7 @@ type MyoStack =
   [
     AtomicState Env,
     AtomicState UiState,
+    AtomicState Views,
     AtomicState CommandState,
     ChanEvents RunEvent,
     ChanConsumer RunEvent,
@@ -101,16 +108,21 @@ handlers =
 
 
 prepare ::
+  Members [Settings !! SettingError, AtomicState UiState, DataLog HostError] r =>
   Sem r ()
 prepare = do
-  unit
+  resuming @_ @Settings (reportError (Just "ui")) do
+    detect <- Settings.get Settings.detectUi
+    when detect detectDefaultUi
 
 interpretMyoStack ::
+  Member (DataLog HostError) r =>
   Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoStack sem =
   runReader undefined $
   interpretEventsChan $
+  interpretAtomic def $
   interpretAtomic def $
   interpretAtomic def $
   interpretAtomic def do

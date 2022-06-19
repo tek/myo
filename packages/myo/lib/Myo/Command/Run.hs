@@ -2,9 +2,10 @@ module Myo.Command.Run where
 
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident, generateIdent)
-import Ribosome (Handler, mapHandlerError)
+import qualified Data.Text as Text
+import Ribosome (Handler, HostError, mapHandlerError, reportError)
 
-import Myo.Command.Command (commandByIdent, mayCommandByIdent, shellCommand, systemCommand)
+import Myo.Command.Command (commandByIdent, commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandState (CommandState)
@@ -74,13 +75,13 @@ import Myo.Orphans ()
 -- that output is redirected to this socket.
 -- Pushes the command into the history.
 runCommand ::
-  Members [Controller !! RunError, AtomicState CommandState] r =>
+  Members [Controller !! RunError, AtomicState CommandState, DataLog HostError] r =>
   Command ->
   Sem r ()
 runCommand cmd = do
   -- preCommandSave
   -- pushCommandLog (Lens.view Command.ident cmd)
-  _ <- Controller.runCommand cmd !! \ _ -> undefined
+  _ <- Controller.runCommand cmd !! \ e -> reportError (Just "command") e
   unit
   -- task <- runTask cmd
   -- runner <- findRunner task
@@ -89,20 +90,20 @@ runCommand cmd = do
   -- void $ postRun task
 
 myoRunIdent ::
-  Members [Controller !! RunError, AtomicState CommandState] r =>
+  Members [Controller !! RunError, AtomicState CommandState, DataLog HostError] r =>
   Ident ->
   Handler r ()
 myoRunIdent i =
   mapHandlerError do
     runCommand =<< commandByIdent "run" i
 
--- myoRun ::
---   MyoRender s e m =>
---   Member (AtomicState Env) r =>
---   Text ->
---   m ()
--- myoRun =
---   runCommand <=< commandByIdentOrName "run" . Text.strip
+myoRun ::
+  Members [Controller !! RunError, AtomicState CommandState, DataLog HostError] r =>
+  Text ->
+  Handler r ()
+myoRun ident =
+  mapHandlerError do
+    runCommand =<< commandByIdentOrName "run" (Text.strip ident)
 
 -- myoReRun ::
 --   MyoRender s e m =>
@@ -117,7 +118,7 @@ defaultTarget =
   Ident.Str "make"
 
 myoLine ::
-  Members [Controller !! RunError, AtomicState CommandState, Embed IO] r =>
+  Members [Controller !! RunError, AtomicState CommandState, Embed IO, DataLog HostError] r =>
   RunLineOptions ->
   Handler r ()
 myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) =

@@ -212,7 +212,10 @@ test-suite myo-unit
       aeson
     , base >=4.12 && <5
     , chiasma
+    , chiasma-test
     , exon
+    , extra
+    , hedgehog
     , incipit >=0.3
     , lens
     , lens-regex-pcre
@@ -221,6 +224,7 @@ test-suite myo-unit
     , path-io
     , pcre-heavy
     , polysemy
+    , polysemy-chronos
     , polysemy-plugin
     , polysemy-test
     , ribosome

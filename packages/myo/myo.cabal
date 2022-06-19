@@ -51,11 +51,14 @@ library
       Myo.Command.Data.RunningCommand
       Myo.Command.Data.RunTask
       Myo.Command.Data.StoreHistoryLock
+      Myo.Command.Data.TmuxTask
       Myo.Command.Data.VimTestPosition
       Myo.Command.Effect.ExecutionStates
       Myo.Command.Execution
       Myo.Command.History
       Myo.Command.HistoryMenu
+      Myo.Command.Interpreter.Executor.Null
+      Myo.Command.Interpreter.Executor.Tmux
       Myo.Command.Kill
       Myo.Command.Log
       Myo.Command.Monitor
@@ -74,7 +77,7 @@ library
       Myo.Data.Env
       Myo.Data.ExactlyOne
       Myo.Data.Maybe
-      Myo.Data.ProcessCommand
+      Myo.Data.ProcessTask
       Myo.Data.String.Pretty
       Myo.Diag
       Myo.Effect.CommandLog

@@ -19,6 +19,9 @@ import Ribosome (
   )
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
 import Ribosome.Test (StackWith, TestConfig (TestConfig), runEmbedTest, testHandler, testPluginEmbed)
+import Ribosome.Test.Data.TestConfig (TmuxTestConfig (core))
+import qualified Ribosome.Test.EmbedTmux as Tmux
+import Ribosome.Test.EmbedTmux (testPluginEmbedTmuxConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Plugin (MyoStack)
@@ -33,15 +36,22 @@ withLogDir sem = do
   d <- Test.tempDir [reldir|log|]
   runReader (LogDir d) sem
 
-interpretMyoStackTest ::
+interpretMyoTestStack ::
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
-interpretMyoStackTest =
+interpretMyoTestStack =
   withLogDir .
   interpretEventsChan .
   interpretAtomic def .
   interpretAtomic def .
+  interpretAtomic def .
   interpretAtomic def
+
+testConfig ::
+  HostConfig ->
+  TestConfig
+testConfig (HostConfig conf) =
+  TestConfig False (PluginConfig "myo" (HostConfig conf { dataLogConc = False }))
 
 myoTestConf ::
   HasCallStack =>
@@ -49,8 +59,8 @@ myoTestConf ::
   Sem MyoTestStack () ->
   UnitTest
 myoTestConf conf test =
-  runEmbedTest (TestConfig False (PluginConfig "myo" conf)) do
-    interpretMyoStackTest $ noHandlers $ testPluginEmbed $ testHandler do
+  runEmbedTest (testConfig conf) do
+    interpretMyoTestStack $ noHandlers $ testPluginEmbed $ testHandler do
       test
 
 myoTest ::
@@ -58,7 +68,7 @@ myoTest ::
   Sem MyoTestStack () ->
   UnitTest
 myoTest =
-  myoTestConf (HostConfig def { dataLogConc = False })
+  myoTestConf def
 
 myoTestDebug ::
   HasCallStack =>
@@ -66,3 +76,29 @@ myoTestDebug ::
   UnitTest
 myoTestDebug =
   myoTestConf (setStderr Debug def)
+
+type MyoTmuxTestStack =
+  Stop HandlerError : Tmux.EmbedTmuxWith MyoStack
+
+myoEmbedTmuxTestConf ::
+  HasCallStack =>
+  HostConfig ->
+  Sem MyoTmuxTestStack () ->
+  UnitTest
+myoEmbedTmuxTestConf conf test =
+  testPluginEmbedTmuxConf @MyoStack def { core = testConfig conf } (interpretMyoTestStack . noHandlers) do
+    testHandler test
+
+myoEmbedTmuxTest ::
+  HasCallStack =>
+  Sem MyoTmuxTestStack () ->
+  UnitTest
+myoEmbedTmuxTest =
+  myoEmbedTmuxTestConf def
+
+myoEmbedTmuxTestDebug ::
+  HasCallStack =>
+  Sem MyoTmuxTestStack () ->
+  UnitTest
+myoEmbedTmuxTestDebug =
+  myoEmbedTmuxTestConf (setStderr Debug def)

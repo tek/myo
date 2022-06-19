@@ -20,7 +20,7 @@ data Command =
   Command {
     interpreter :: CommandInterpreter,
     ident :: Ident,
-    lines :: [Text],
+    cmdLines :: [Text],
     runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
     displayName :: Maybe Text,

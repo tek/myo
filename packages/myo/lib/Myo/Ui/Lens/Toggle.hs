@@ -2,7 +2,7 @@ module Myo.Ui.Lens.Toggle where
 
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError (..))
+import qualified Chiasma.Ui.Data.TreeModError as TreeModError
 import Chiasma.Ui.Data.View (ViewTree)
 import Chiasma.Ui.ViewTree (
   ToggleResult,
@@ -10,7 +10,7 @@ import Chiasma.Ui.ViewTree (
   toggleLayoutOpenTraversal',
   togglePaneOpenTraversal',
   )
-import qualified Chiasma.Ui.ViewTree as ToggleResult (ToggleResult (..))
+import qualified Chiasma.Ui.ViewTree as ToggleResult
 import Control.Lens (Traversal')
 
 import Myo.Ui.Data.UiState (UiState)

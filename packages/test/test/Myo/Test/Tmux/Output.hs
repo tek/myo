@@ -1,7 +1,7 @@
 module Myo.Test.Tmux.Output where
 
 import qualified Data.Text as Text
-import Hedgehog (TestT, (===))
+import Polysemy.Test (Hedgehog, assert)
 
 cleanLine :: Text -> Text
 cleanLine l =
@@ -12,11 +12,11 @@ cleanLines =
   fmap cleanLine
 
 containsLine ::
-  Monad m =>
   HasCallStack =>
+  Member (Hedgehog IO) r =>
   Text ->
   [Text] ->
-  TestT m ()
+  Sem r ()
 containsLine target ls =
   withFrozenCallStack do
-    True === any (Text.isSuffixOf target) (cleanLines ls)
+    assert (any (Text.isSuffixOf target) (cleanLines ls))
