@@ -2,17 +2,19 @@
   description = "Neovim Layout and Command Manager";
 
   inputs.ribosome.url = git+https://git.tryp.io/tek/ribosome?ref=polysemy;
+  inputs.prelate.url = git+https://git.tryp.io/tek/prelate;
 
-  outputs = { ribosome, ... }:
+  outputs = { ribosome, prelate, ... }:
   let
     inherit (ribosome.inputs) hix;
 
-    overrides = { buildInputs, fast, pkgs, ... }:
+    overrides = { buildInputs, fast, pkgs, source, ... }:
     let
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     in {
       myo = fast;
       myo-test = fast inputs;
+      prelate = source.package prelate "prelate";
     };
 
   in hix.lib.flake ({ config, lib, ...}: {
@@ -31,8 +33,8 @@
     };
     ghcid.shellConfig.buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux];
     ghci = {
-      preludePackage = "incipit";
-      preludeModule = "Incipit";
+      preludePackage = "prelate";
+      preludeModule = "Prelate";
       args = ["-fplugin=Polysemy.Plugin"];
       extensions = ["StandaloneKindSignatures" "OverloadedLabels" "ImpredicativeTypes"];
     };

@@ -1,7 +1,6 @@
 module Myo.Command.Data.Command where
 
 import Chiasma.Data.Ident (Ident, Identifiable (..))
-import Polysemy.Time.Json (json)
 import Prelude hiding (lines)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 import Ribosome (MsgpackDecode, MsgpackEncode)

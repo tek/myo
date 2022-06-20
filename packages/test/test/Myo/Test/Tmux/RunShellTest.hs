@@ -2,23 +2,24 @@ module Myo.Test.Tmux.RunShellTest where
 
 import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.TmuxId (PaneId (PaneId))
-import Hedgehog ((===))
-import Ribosome.Config.Setting (updateSetting)
-import Ribosome.Test.Await (await, awaitEqual_)
-import Ribosome.Test.Run (UnitTest)
-import Ribosome.Tmux.Run (runTmux)
+import Polysemy.Test (UnitTest, assert, assertEq, assertJust, (===))
+import qualified Ribosome.Settings as Settings
+import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (AddShellCommandOptions))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
-import Myo.Command.Execution (isCommandRunning)
-import Myo.Command.Kill (killCommand)
+-- import Myo.Command.Execution (isCommandRunning)
+import Myo.Command.Interpreter.Executor.Null (interpretExecutorNull)
+import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+-- import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRunIdent)
+import Myo.Interpreter.Controller (interpretController)
 import qualified Myo.Settings as Settings (processTimeout)
+import Myo.Test.Run (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
-import Myo.Test.Unit (MyoTest, tmuxTestDef)
-import Myo.Tmux.Runner (addTmuxRunner)
 import Myo.Ui.Default (setupDefaultTestUi)
+import Chiasma.Tmux (withTmux)
 
 line1 :: Text
 line1 =
@@ -38,48 +39,47 @@ takeEnd count xs =
 
 firstCondition ::
   [Text] ->
-  MyoTest ()
-firstCondition output = do
-  Just "cat" === listToMaybe output
-  cmdLines === (takeEnd 2 output)
+  Sem r ()
+firstCondition out = do
+  assertJust "cat" (listToMaybe out)
+  cmdLines === (takeEnd 2 out)
 
 secondCondition ::
   [Text] ->
-  MyoTest ()
-secondCondition output =
-  (cmdLines ++ cmdLines) === takeEnd 4 output
+  Sem r ()
+secondCondition out =
+  (cmdLines ++ cmdLines) === takeEnd 4 out
 
 thirdCondition ::
   [Text] ->
-  MyoTest ()
-thirdCondition output = do
-  15 === length output
-  secondCondition output
-
-tmuxRunShellTest :: MyoTest ()
-tmuxRunShellTest = do
-  updateSetting Settings.processTimeout 2
-  lift addTmuxRunner
-  setupDefaultTestUi
-  myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] r (Just "make") Nothing Nothing Nothing Nothing Nothing
-  myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines r shellIdent Nothing Nothing Nothing Nothing Nothing
-  lift (myoRunIdent cmdIdent)
-  awaitEqual_ True (isCommandRunning shellIdent)
-  await firstCondition paneContent
-  lift (myoRunIdent cmdIdent)
-  await secondCondition paneContent
-  killCommand shellIdent
-  awaitEqual_ False (isCommandRunning shellIdent)
-  lift (myoRunIdent cmdIdent)
-  awaitEqual_ True (isCommandRunning shellIdent)
-  await thirdCondition paneContent
-  where
-    shellIdent = "cat"
-    cmdIdent = "text"
-    r = Just "tmux"
-    paneContent =
-      cleanLines <$> runTmux (capturePane (PaneId 1))
+  Sem r ()
+thirdCondition out = do
+  15 === length out
+  secondCondition out
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
-  tmuxTestDef tmuxRunShellTest
+  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController $ testHandler do
+    Settings.update Settings.processTimeout 2
+    setupDefaultTestUi
+    myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] r (Just "make") Nothing Nothing Nothing Nothing Nothing
+    myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines r shellIdent Nothing Nothing Nothing Nothing Nothing
+    myoRunIdent cmdIdent
+    assertWait (isCommandRunning shellIdent) assert
+    assertWait paneContent firstCondition
+    myoRunIdent cmdIdent
+    assertWait paneContent secondCondition
+    killCommand shellIdent
+    assertWait (isCommandRunning shellIdent) (assert . not)
+    myoRunIdent cmdIdent
+    assertWait (isCommandRunning shellIdent) assert
+    assertWait paneContent thirdCondition
+    where
+      shellIdent =
+        "cat"
+      cmdIdent =
+        "text"
+      r =
+        Just "tmux"
+      paneContent =
+        cleanLines <$> withTmux (capturePane (PaneId 1))

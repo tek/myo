@@ -1,6 +1,6 @@
 module Myo.Output.Data.ParsedOutput where
 
-import Control.Lens (allOf, each)
+import Control.Lens (allOf)
 import Data.Generics.Labels ()
 import Ribosome.Data.Syntax (Syntax)
 

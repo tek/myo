@@ -3,7 +3,7 @@ module Myo.Test.Output.CycleTest where
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Ribosome.Config.Setting (updateSetting)
+import Ribosome.Config.Setting (Settings.update)
 import Ribosome.Nvim.Api.Data (Window)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Tmux (tmuxTestDef)
@@ -55,7 +55,7 @@ cycleTestRender = do
 
 outputPrevTest :: MyoTest ()
 outputPrevTest = do
-  updateSetting Settings.outputSelectFirst False
+  Settings.update Settings.outputSelectFirst False
   ow <- cycleTestRender
   currentCursorIs 3 4
   cursorIs 5 0 ow
@@ -69,7 +69,7 @@ test_outputPrev =
 
 outputNextTest :: MyoTest ()
 outputNextTest = do
-  updateSetting Settings.outputSelectFirst True
+  Settings.update Settings.outputSelectFirst True
   ow <- cycleTestRender
   currentCursorIs 9 2
   cursorIs 0 0 ow

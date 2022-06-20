@@ -4,7 +4,6 @@ import Chiasma.Command.Pane (pipePane)
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.TmuxApi (Tmux)
-import Control.Lens (Lens', at, view, (%~), (?~), (^.))
 import qualified Data.ByteString as ByteString (null)
 import Data.Char (isAlphaNum)
 import qualified Data.Map.Strict as Map
@@ -17,7 +16,6 @@ import Ribosome (Handler, RpcError, Scratch, resumeHandlerError)
 import qualified Ribosome.Scratch as Scratch
 import Ribosome.Scratch (ScratchOptions (focus, name))
 
-import Myo.AtomicState (atomicView)
 import Myo.Command.Command (mainCommand, mainCommandIdent)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)

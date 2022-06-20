@@ -4,7 +4,7 @@ module Myo.Proteome where
 -- import Data.Map ((!?))
 -- import qualified Data.Map as Map (fromList)
 -- import Ribosome.Api.Autocmd (uautocmd)
--- import Ribosome.Config.Setting (Settings.maybe, settingOr, updateSetting)
+-- import Ribosome.Config.Setting (Settings.maybe, settingOr, Settings.update)
 -- import Ribosome.Data.Setting (Setting)
 
 -- import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (AddShellCommandOptions))
@@ -75,9 +75,9 @@ module Myo.Proteome where
 --   whenM (unset Settings.ui) (set stack pro testPro)
 --   where
 --     set stack pro testPro =
---       updateSetting Settings.ui (UiSettingCodec Nothing (Just haskellPanes)) *>
---       updateSetting Settings.commands (CommandSettingCodec (Just (haskellSystemCommands stack pro testPro)) Nothing) *>
---       updateSetting Settings.testLang "haskell"
+--       Settings.update Settings.ui (UiSettingCodec Nothing (Just haskellPanes)) *>
+--       Settings.update Settings.commands (CommandSettingCodec (Just (haskellSystemCommands stack pro testPro)) Nothing) *>
+--       Settings.update Settings.testLang "haskell"
 
 -- scalaPanes :: [AddPaneOptions]
 -- scalaPanes =
@@ -109,10 +109,10 @@ module Myo.Proteome where
 --   whenM (unset Settings.ui) set
 --   where
 --     set =
---       updateSetting Settings.ui (UiSettingCodec Nothing (Just scalaPanes)) *>
---       updateSetting Settings.commands (CommandSettingCodec (Just scalaSystemCommands) (Just scalaShellCommands)) *>
---       updateSetting Settings.testShell "sbt" *>
---       updateSetting Settings.testLang "scala"
+--       Settings.update Settings.ui (UiSettingCodec Nothing (Just scalaPanes)) *>
+--       Settings.update Settings.commands (CommandSettingCodec (Just scalaSystemCommands) (Just scalaShellCommands)) *>
+--       Settings.update Settings.testShell "sbt" *>
+--       Settings.update Settings.testLang "scala"
 
 -- builtins ::
 --   Map Text (m ())

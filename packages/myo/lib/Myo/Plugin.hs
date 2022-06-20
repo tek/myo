@@ -1,7 +1,13 @@
 {-# OPTIONS_GHC -Wno-unused-imports #-}
 module Myo.Plugin where
 
+import Chiasma.Codec.Data.PaneMode (PaneMode)
+import Chiasma.Data.CodecError (CodecError)
+import Chiasma.Data.Panes (Panes)
+import Chiasma.Data.TmuxRequest (TmuxRequest)
 import Chiasma.Data.Views (Views)
+import Chiasma.Effect.Codec (Codec)
+import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, withAsync_)
 import Ribosome (
   BootError,
@@ -90,7 +96,8 @@ type MyoStack =
     AtomicState CommandState,
     ChanEvents RunEvent,
     ChanConsumer RunEvent,
-    Reader LogDir
+    Reader LogDir,
+    Codec (Panes PaneMode) (Const TmuxRequest) (Const [Text]) !! CodecError
   ]
 
 handlers ::
@@ -120,6 +127,7 @@ interpretMyoStack ::
   Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoStack sem =
+  interpretCodecPanes $
   runReader undefined $
   interpretEventsChan $
   interpretAtomic def $

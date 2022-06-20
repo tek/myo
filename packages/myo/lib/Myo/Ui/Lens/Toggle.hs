@@ -1,18 +1,19 @@
 module Myo.Ui.Lens.Toggle where
 
 import Chiasma.Data.Ident (Ident)
-import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError
+import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Chiasma.Ui.Data.View (ViewTree)
+import qualified Chiasma.Ui.ViewTree as ToggleResult
 import Chiasma.Ui.ViewTree (
   ToggleResult,
   ensurePaneOpenTraversal',
   toggleLayoutOpenTraversal',
   togglePaneOpenTraversal',
   )
-import qualified Chiasma.Ui.ViewTree as ToggleResult
-import Control.Lens (Traversal')
 
+import qualified Myo.Ui.Data.ToggleError as ToggleError
+import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.View (uiTreesLens)
 
@@ -59,22 +60,25 @@ toggleOne err trans ident =
       Left e -> (s, Left e)
 
 toggleOnePane ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ToggleError] r =>
   Ident ->
   Sem r ()
-toggleOnePane =
-  toggleOne liftPaneError togglePaneOpenTraversal'
+toggleOnePane i =
+  mapStop ToggleError.Tree do
+    toggleOne liftPaneError togglePaneOpenTraversal' i
 
 openOnePane ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ToggleError] r =>
   Ident ->
   Sem r ()
-openOnePane =
-  toggleOne liftPaneError ensurePaneOpenTraversal'
+openOnePane i =
+  mapStop ToggleError.Tree do
+    toggleOne liftPaneError ensurePaneOpenTraversal' i
 
 toggleOneLayout ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ToggleError] r =>
   Ident ->
   Sem r ()
-toggleOneLayout =
-  toggleOne liftLayoutError toggleLayoutOpenTraversal'
+toggleOneLayout i =
+  mapStop ToggleError.Tree do
+    toggleOne liftLayoutError toggleLayoutOpenTraversal' i

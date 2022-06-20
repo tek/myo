@@ -1,7 +1,7 @@
 module Myo.Command.History where
 
 import Chiasma.Data.Ident (Ident, sameIdent)
-import Control.Lens (Lens', element, filtered, firstOf, folded, views, (%~))
+import Control.Lens (element, firstOf, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (nubOrdOn)
 import Path (Dir, File, Path, Rel, dirname, parent, relfile, (</>))
@@ -10,7 +10,6 @@ import Ribosome.Api (nvimCwd)
 import qualified Ribosome.Persist as Persist
 import qualified Ribosome.Settings as Settings
 
-import Myo.AtomicState (atomicSet)
 import Myo.Command.Command (mayCommandBy)
 import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.Command as Command (displayName, skipHistory)

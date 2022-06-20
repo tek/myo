@@ -3,7 +3,7 @@ module Myo.Test.Unit where
 import Chiasma.Native.Api (TmuxNative(TmuxNative))
 import Hedgehog (TestT)
 import Neovim.Plugin (Plugin)
-import Ribosome.Config.Setting (updateSetting)
+import Ribosome.Config.Setting (Settings.update)
 import Ribosome.Config.Settings (tmuxSocket)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Test.Embed (TestConfig(..), Vars)
@@ -79,8 +79,8 @@ withTmux ::
   TmuxNative ->
   Myo ()
 withTmux thunk (TmuxNative (Just socket)) = do
-  _ <- updateSetting Settings.detectUi True
-  _ <- updateSetting tmuxSocket socket
+  _ <- Settings.update Settings.detectUi True
+  _ <- Settings.update tmuxSocket socket
   thunk
 withTmux _ _ = fail "no socket in test tmux"
 
@@ -142,4 +142,4 @@ intTestDef thunk =
       ribo <- newRibosome "myo" def
       intTest pure (plugin' ribo) (lift (disableTmux *> initialize'') *> thunk)
     disableTmux =
-      updateSetting Settings.detectUi False
+      Settings.update Settings.detectUi False

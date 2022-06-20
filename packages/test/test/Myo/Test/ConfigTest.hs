@@ -1,7 +1,7 @@
 module Myo.Test.ConfigTest where
 
 import Hedgehog ((===))
-import Ribosome.Config.Setting (setting, updateSetting)
+import Ribosome.Config.Setting (setting, Settings.update)
 import Ribosome.Test.Run (UnitTest)
 
 import Myo.Proteome (myoProteomeLoaded)
@@ -10,7 +10,7 @@ import Myo.Test.Unit (MyoTest, testDef)
 
 proteomeConfigTest :: MyoTest ()
 proteomeConfigTest = do
-  updateSetting Settings.proteomeMainType "scala"
+  Settings.update Settings.proteomeMainType "scala"
   myoProteomeLoaded
   ("sbt" ===) =<< setting Settings.testShell
 

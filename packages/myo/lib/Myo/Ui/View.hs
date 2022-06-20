@@ -16,9 +16,9 @@ import Chiasma.Ui.Data.View (
 import qualified Chiasma.Ui.Data.View as View (_ident)
 import Chiasma.Ui.Data.ViewState (ViewState (ViewState))
 import Chiasma.Ui.Lens.Ident (matchIdentL)
-import Control.Lens (Traversal', each, has, mapMOf, transformM)
-import Control.Lens.Setter ((%~), (<>~))
+import Control.Lens (mapMOf, transformM)
 import Data.Generics.Labels ()
+import Prelude hiding (view)
 
 import Myo.Ui.Data.Space (Space (Space))
 import Myo.Ui.Data.UiState (UiState)

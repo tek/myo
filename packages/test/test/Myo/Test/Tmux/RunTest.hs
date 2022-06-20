@@ -1,16 +1,20 @@
 module Myo.Test.Tmux.RunTest where
 
-import Chiasma.Command.Pane (capturePane)
+import Chiasma.Codec.Data (Pane)
+import Chiasma.Codec.Data.PaneMode (PaneMode (PaneMode))
+import Chiasma.Command.Pane (capturePane, copyMode, paneMode)
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Ident (Ident (Str), identText)
+import Chiasma.Data.Panes (Panes)
+import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxId (PaneId (PaneId))
 import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (NativeCommandCodec)
 import Chiasma.Effect.TmuxClient (NativeTmux)
-import Chiasma.Tmux (withTmux)
+import Chiasma.Tmux (withTmux, withTmuxApis)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime)
-import Polysemy.Test (Hedgehog, TestError, UnitTest, assert)
+import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust)
 import Ribosome (HostError, SettingError, Settings, resumeHandlerError)
 import Ribosome.Test (assertWait, testHandler)
 
@@ -27,6 +31,8 @@ import Myo.Test.Run (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (setupDefaultTestUi)
+import Myo.Ui.Toggle (myoTogglePane)
+import Chiasma.TmuxApi (TmuxApi)
 
 line1 :: Text
 line1 = "line 1"
@@ -57,16 +63,9 @@ runAndCheck ::
   Sem r ()
 runAndCheck = do
   testHandler (myoRun (identText ident))
-  withTmux $ restop $ assertWait
-    do
-      cleanLines <$> capturePane (PaneId 1)
-    checks
-  where
-    checks out = do
-      check line1 out
-      check line2 out
-    check line =
-      assert . elem line
+  withTmux $ restop $ assertWait (cleanLines <$> capturePane (PaneId 1)) \ out -> do
+    assert (elem line1 out)
+    assert (elem line2 out)
 
 test_tmuxRunSys :: UnitTest
 test_tmuxRunSys =
@@ -74,18 +73,16 @@ test_tmuxRunSys =
     setup
     runAndCheck
 
--- quitCopyModeTest :: MyoTest ()
--- quitCopyModeTest = do
---   lift do
---     setup
---     myoTogglePane "make"
---     runTmux (copyMode pid)
---   (Just (PaneMode pid "copy-mode") ===) =<< lift (runTmux (paneMode pid))
---   runAndCheck
---   where
---     pid =
---       PaneId 1
-
--- test_quitCopyMode :: UnitTest
--- test_quitCopyMode =
---   tmuxTestDef quitCopyModeTest
+test_quitCopyMode :: UnitTest
+test_quitCopyMode =
+  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController do
+    setup
+    testHandler (myoTogglePane "make")
+    withTmuxApis @[TmuxCommand, Panes PaneMode, Panes Pane] $
+      restop @CodecError $ restop @CodecError @(TmuxApi (Panes PaneMode)) do
+        copyMode pid
+        assertJust (PaneMode pid "copy-mode") =<< paneMode pid
+    runAndCheck
+  where
+    pid =
+      PaneId 1

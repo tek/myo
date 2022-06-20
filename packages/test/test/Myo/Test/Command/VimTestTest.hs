@@ -1,7 +1,7 @@
 module Myo.Test.Command.VimTestTest where
 
 import Ribosome.Api.Function (defineFunction)
-import Ribosome.Config.Setting (updateSetting)
+import Ribosome.Config.Setting (Settings.update)
 import Ribosome.Test.Await (awaitEqual_)
 import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Unit (fixture)
@@ -23,7 +23,7 @@ mockVimTestFunctions fname = do
 vimTestTest :: MyoTest ()
 vimTestTest = do
   fname <- fixture "vim-test/file"
-  updateSetting testRunner "proc"
+  Settings.update testRunner "proc"
   lift do
     mockVimTestFunctions fname
     addSubprocessRunner

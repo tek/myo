@@ -1,7 +1,8 @@
 module Myo.Command.Interpreter.Executor.Tmux where
 
 import Chiasma.Codec.Data (Pane)
-import Chiasma.Command.Pane (sendKeys)
+import Chiasma.Codec.Data.PaneMode (PaneMode)
+import Chiasma.Command.Pane (quitCopyMode, sendKeys)
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.Panes (Panes)
@@ -13,7 +14,7 @@ import Chiasma.Data.TmuxRequest (TmuxRequest)
 import Chiasma.Data.Views (Views, ViewsError)
 import Chiasma.Effect.Codec (Codec)
 import Chiasma.Effect.TmuxClient (ScopedTmux)
-import Chiasma.Tmux (withTmuxApis)
+import Chiasma.Tmux (withTmuxApis_)
 import qualified Chiasma.View as Views
 import Exon (exon)
 
@@ -47,25 +48,26 @@ paneIdForIdent paneIdent =
   stopEither =<< atomicGets (Views.paneId paneIdent)
 
 runInTmux ::
+  ∀ r .
   -- ∀ eres r .
   -- Member (Events eres RunEvent) r =>
   Member (Codec TmuxCommand (Const TmuxRequest) (Const [Text]) !! CodecError) r =>
   Member (Codec (Panes Pane) (Const TmuxRequest) (Const [Text]) !! CodecError) r =>
-  Members [ScopedTmux () (Const TmuxRequest) (Const [Text]), AtomicState UiState, Embed IO] r =>
+  Member (Codec (Panes PaneMode) (Const TmuxRequest) (Const [Text]) !! CodecError) r =>
+  Members [ScopedTmux () (Const TmuxRequest) (Const [Text]), Stop CodecError, AtomicState UiState, Embed IO] r =>
   TmuxTask ->
   Sem r (Maybe [Text])
 runInTmux (TmuxTask paneId Command {cmdLines}) =
-  withTmuxApis @[TmuxCommand, Panes _] $ resuming tmuxError do
+  withTmuxApis_ @[TmuxCommand, Panes Pane, Panes PaneMode] @CodecError do
+    quitCopyMode paneId
     sendKeys paneId (cmdline cmdLines)
     pure Nothing
-  where
-    tmuxError e =
-      pure (Just [show e])
 
 interpretExecutorTmux ::
   -- Member (Events eres RunEvent) r =>
   Member (Codec TmuxCommand (Const TmuxRequest) (Const [Text]) !! CodecError) r =>
   Member (Codec (Panes Pane) (Const TmuxRequest) (Const [Text]) !! CodecError) r =>
+  Member (Codec (Panes PaneMode) (Const TmuxRequest) (Const [Text]) !! CodecError) r =>
   Members [ScopedTmux () (Const TmuxRequest) (Const [Text]) !! TmuxError, AtomicState UiState, Embed IO] r =>
   Member (AtomicState Views) r =>
   InterpreterFor (Executor TmuxTask !! RunError) r
@@ -77,4 +79,5 @@ interpretExecutorTmux =
     Executor.Accept _ ->
       pure Nothing
     Executor.Run task@(TmuxTask _ Command {ident}) ->
-      runInTmux task !! \ (e :: TmuxError) -> pure (Just [[exon|tmux execution failed for #{identText ident}|], show e])
+      mapStop RunError.TmuxCodec do
+        runInTmux task !! \ (e :: TmuxError) -> pure (Just [[exon|tmux execution failed for #{identText ident}|], show e])

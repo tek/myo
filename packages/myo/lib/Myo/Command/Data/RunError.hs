@@ -1,10 +1,12 @@
 
 module Myo.Command.Data.RunError where
 
+import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Ident (identText)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
+import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Debug, Error, Warn))
 import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (..))
 
@@ -12,7 +14,6 @@ import qualified Myo.Command.Data.Command as Cmd (Command (Command))
 import Myo.Command.Data.CommandError (CommandError (..))
 import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Ui.Data.ToggleError (ToggleError)
-import Chiasma.Ui.Data.TreeModError (TreeModError)
 
 data RunError =
   Command CommandError
@@ -24,6 +25,8 @@ data RunError =
   Views ViewsError
   |
   Tmux TmuxError
+  |
+  TmuxCodec CodecError
   |
   IOEmbed Text
   |
@@ -58,6 +61,8 @@ instance ToErrorMessage RunError where
       ErrorMessage "tmux error" ["RunError.Views:", show e] Error
   toErrorMessage (Tmux e) =
       ErrorMessage "tmux error" ["RunError.Tmux:", show e] Error
+  toErrorMessage (TmuxCodec e) =
+      ErrorMessage "tmux codec error" ["RunError.TmuxCodec:", show e] Error
   toErrorMessage (IOEmbed e) =
     ErrorMessage "internal error" ["embedded IO had unexpected error:", e] Debug
   toErrorMessage SocketFailure =

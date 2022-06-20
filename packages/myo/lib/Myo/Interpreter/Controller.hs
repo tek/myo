@@ -3,7 +3,6 @@ module Myo.Interpreter.Controller where
 import Chiasma.Data.Ident (identText)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.Views (Views)
-import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Exon (exon)
 import Log (Severity (Error))
@@ -23,6 +22,7 @@ import Myo.Data.ProcessTask (ProcessTask)
 import Myo.Effect.Controller (Controller (RunCommand))
 import qualified Myo.Effect.Executor as Executor
 import Myo.Effect.Executor (Executor)
+import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Toggle (ToggleStack, ensurePaneOpen)
 
@@ -44,8 +44,7 @@ handleError Command {ident} errors =
 prepare ::
   ∀ enc dec r .
   Members (ToggleStack enc dec) r =>
-  Members [Rpc, AtomicState UiState, AtomicState Views, Stop RenderError] r =>
-  Member (Stop TreeModError) r =>
+  Members [Rpc, AtomicState UiState, AtomicState Views, Stop RenderError, Stop ToggleError] r =>
   RunTask ->
   Sem r ()
 prepare = \case
@@ -68,7 +67,7 @@ runCommand ::
   Members (ToggleStack enc dec) r =>
   Members [Executor ProcessTask !! RunError, Executor TmuxTask !! RunError] r =>
   Members [Rpc, AtomicState UiState, AtomicState Views, Stop RunError, Stop RenderError] r =>
-  Members [Reader LogDir, AtomicState CommandState, DataLog HostError, Stop TreeModError] r =>
+  Members [Reader LogDir, AtomicState CommandState, DataLog HostError, Stop ToggleError] r =>
   Command ->
   Sem r ()
 runCommand cmd = do

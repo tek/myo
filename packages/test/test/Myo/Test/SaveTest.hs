@@ -4,7 +4,7 @@ import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Neovim (Plugin(..))
 import Path (Abs, Dir, Path)
 import Ribosome.Api.Autocmd (doautocmd)
-import Ribosome.Config.Setting (updateSetting)
+import Ribosome.Config.Setting (Settings.update)
 import Ribosome.Control.Ribosome (Ribosome, newRibosome)
 import Ribosome.Nvim.Api.IO (vimCallFunction)
 import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
@@ -66,7 +66,7 @@ outputLog =
 
 saveTest :: MyoTest ()
 saveTest = do
-  updateSetting Settings.saveInterval 0.0
+  Settings.update Settings.saveInterval 0.0
   myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
   doautocmd False "BufWritePre"
   awaitEqual_ ([], "") outputLog

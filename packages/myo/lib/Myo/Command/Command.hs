@@ -2,7 +2,7 @@ module Myo.Command.Command where
 
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident, identText)
-import Control.Lens (Lens', filtered, firstOf, folded, views)
+import Control.Lens (firstOf, views)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command), CommandLanguage)

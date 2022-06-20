@@ -1,6 +1,5 @@
 module Myo.Command.Add where
 
-import Control.Lens ((%~))
 import Ribosome (Handler)
 
 import Myo.Command.Command (shellCommand, systemCommand)

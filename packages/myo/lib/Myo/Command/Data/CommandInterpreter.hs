@@ -1,7 +1,6 @@
 module Myo.Command.Data.CommandInterpreter where
 
 import Chiasma.Data.Ident (Ident)
-import Polysemy.Time.Json (json)
 import Prettyprinter (Pretty (..), emptyDoc, (<+>))
 
 import Myo.Data.String.Pretty (backtick)

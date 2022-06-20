@@ -1,5 +1,6 @@
 module Myo.Test.Run where
 
+import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Conc (interpretAtomic, interpretEventsChan)
 import Log (Severity (Debug))
 import Path (reldir)
@@ -40,6 +41,7 @@ interpretMyoTestStack ::
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
+  interpretCodecPanes .
   withLogDir .
   interpretEventsChan .
   interpretAtomic def .
