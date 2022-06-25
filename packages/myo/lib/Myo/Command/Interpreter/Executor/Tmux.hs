@@ -24,7 +24,7 @@ import Ribosome (HostError)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command), ident)
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
-import Myo.Command.Data.Pid (Pid)
+import Process (Pid)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (UiShell, UiSystem))

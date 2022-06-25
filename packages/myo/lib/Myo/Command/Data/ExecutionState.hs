@@ -1,5 +1,5 @@
 module Myo.Command.Data.ExecutionState where
-import Myo.Command.Data.Pid (Pid)
+import Process (Pid)
 
 data ExecutionState =
   Pending

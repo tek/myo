@@ -4,7 +4,7 @@ import Chiasma.Data.Ident (Ident)
 import System.Posix.Signals (Signal)
 import qualified System.Posix.Signals as Signal (killProcess, signalProcess)
 
-import Myo.Command.Data.Pid (Pid)
+import Process (Pid)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Command.Execution (executionPid)

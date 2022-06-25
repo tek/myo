@@ -2,7 +2,7 @@ module Myo.Command.Data.RunningCommand where
 
 import Chiasma.Data.Ident (Ident, Identifiable (..))
 
-import Myo.Command.Data.Pid (Pid)
+import Process (Pid)
 
 data RunningCommand =
   RunningCommand {

@@ -28,7 +28,7 @@ module Myo.Tmux.Run where
 -- import Myo.Command.Data.Command (Command (Command))
 -- import Myo.Command.Data.Execution (ExecutionState)
 -- import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState (Pending, Starting, Unknown))
--- import Myo.Command.Data.Pid (Pid (Pid))
+-- import Process (Pid (Pid))
 -- import qualified Myo.Command.Data.RunError as RunError
 -- import Myo.Command.Data.RunError (RunError)
 -- import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails)
@@ -171,7 +171,7 @@ module Myo.Tmux.Run where
 --   PaneId ->
 --   m [Text]
 -- capturePaneClean paneId = do
---   lines' <- Tmux.readRaw "capture-pane" (paneTarget paneId <> ["-p", "-J"])
+--   lines' <- TmuxApi.send "capture-pane" (paneTarget paneId <> ["-p", "-J"])
 --   pure $ dropWhileEnd ("" ==) lines'
 
 -- tmuxCapture ::

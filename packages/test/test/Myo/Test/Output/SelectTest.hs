@@ -3,12 +3,9 @@ module Myo.Test.Output.SelectTest where
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Hedgehog ((===))
 import Ribosome.Api.Window (currentCursor)
 import Ribosome.Plugin.Mapping (executeMapping)
-import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Ui (windowCountIs)
-import Ribosome.Test.Unit (fixture)
 import System.FilePath ((</>))
 
 import Myo.Command.Data.CommandState (CommandState, OutputState(OutputState))
@@ -23,7 +20,7 @@ import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Plugin (mappingOutputSelect)
 import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (MyoTest, tmuxTest)
+import Myo.Test.Unit (tmuxTest)
 
 events :: Text -> Vector OutputEventMeta
 events file =
@@ -37,7 +34,7 @@ parsedOutput :: Text -> OutputEvents
 parsedOutput file =
   parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages)
 
-outputSelectTest :: MyoTest ()
+outputSelectTest :: Sem r ()
 outputSelectTest = do
   file <- fixture $ "output" </> "select" </> "File.hs"
   let po = parsedOutput (toText file)

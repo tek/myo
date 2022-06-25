@@ -5,12 +5,10 @@ import Data.Functor.Syntax ((<$$>))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Hedgehog ((===))
 import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
-import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Screenshot (assertScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
@@ -24,7 +22,7 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine(..))
 import Myo.Output.Lang.Scala.Syntax (scalaSyntax)
 import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (MyoTest, tmuxTest)
+import Myo.Test.Unit (tmuxTest)
 
 loc :: Location
 loc =
@@ -135,7 +133,7 @@ myoSyntax = do
     parse = Text.dropWhileEnd (' ' ==) <$$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"
 
-scalaRenderTest :: MyoTest ()
+scalaRenderTest :: Sem r ()
 scalaRenderTest = do
   lift initialize''
   setupHighlights

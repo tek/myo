@@ -144,6 +144,7 @@ in {
         "path-io"
         "pcre-heavy"
         "polysemy-chronos"
+        "polysemy-process"
         "polysemy-test"
         "ribosome"
         "ribosome-host"
@@ -151,6 +152,8 @@ in {
         "ribosome-test"
         "streamly"
         "tasty"
+        "unix"
+        "vector"
       ];
     };
   };

@@ -12,12 +12,10 @@ import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
 import Ribosome.Test.Await (awaitEqual_)
 import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Orphans ()
-import Ribosome.Test.Run (UnitTest)
 
 import Myo.Data.Env (Env(_tempDir))
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, variables)
-import Myo.Test.Unit (MyoTest)
 import qualified Myo.Ui.Data.AddLayoutOptions as AddLayoutOptions (AddLayoutOptions(layout, ident))
 import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions(layout, ident))
 import Myo.Ui.Data.Space (Space(Space))
@@ -58,7 +56,7 @@ getUiData ::
 getUiData =
   vimCallFunction "PaneData" []
 
-updateUiTest :: MyoTest ()
+updateUiTest :: Sem r ()
 updateUiTest = do
   setVar "myo_ui" ui1
   doautocmd False "CmdlineLeave"

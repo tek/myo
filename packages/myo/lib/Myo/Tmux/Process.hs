@@ -10,7 +10,7 @@ import Polysemy.Chronos (ChronosTime)
 import qualified Time
 import Time (MilliSeconds (..))
 
-import Myo.Command.Data.Pid (Pid (Pid))
+import Process (Pid (Pid))
 import qualified Myo.Effect.Proc as Proc
 import Myo.Effect.Proc (Proc)
 

@@ -3,17 +3,11 @@ module Myo.Test.Output.ParseHaskellTest where
 import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Hedgehog (evalEither, (===))
-import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Unit (fixtureContent)
 
-import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
 import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
-import Myo.Output.ParseReport (compileReport)
 
 haskellOutput :: Text
 haskellOutput =

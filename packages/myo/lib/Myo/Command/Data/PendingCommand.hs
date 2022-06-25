@@ -4,7 +4,7 @@ module Myo.Command.Data.PendingCommand where
 -- import Data.Hourglass (Elapsed)
 -- import qualified Text.Show
 
--- import Myo.Command.Data.Pid (Pid)
+-- import Process (Pid)
 
 -- data PendingCommand =
 --   PendingCommand {

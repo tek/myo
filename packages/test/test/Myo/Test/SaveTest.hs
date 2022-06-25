@@ -11,7 +11,6 @@ import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
 import Ribosome.Test.Await (awaitEqual_)
 import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Orphans ()
-import Ribosome.Test.Run (UnitTest)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
@@ -23,7 +22,6 @@ import Myo.Data.Env (Env(_tempDir))
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, rpcHandlers, variables)
 import qualified Myo.Settings as Settings (saveInterval)
-import Myo.Test.Unit (MyoTest)
 
 ident :: Ident
 ident =
@@ -64,7 +62,7 @@ outputLog ::
 outputLog =
   vimCallFunction "GetOutput" []
 
-saveTest :: MyoTest ()
+saveTest :: Sem r ()
 saveTest = do
   Settings.update Settings.saveInterval 0.0
   myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing

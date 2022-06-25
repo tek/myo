@@ -2,12 +2,9 @@ module Myo.Test.Tmux.ParseTest where
 
 import qualified Control.Lens as Lens (element, firstOf)
 import qualified Data.ByteString.Char8 as ByteString (lines)
-import Hedgehog (evalMaybe, (===))
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Window (currentLine)
 import Ribosome.Test.Await (await)
-import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Unit (fixture)
 
 import qualified Myo.Command.Data.CommandLog as CommandLog (_current)
 import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
@@ -17,7 +14,6 @@ import Myo.Command.Run (myoRunIdent)
 import Myo.Init (initialize'')
 import Myo.Test.Output.Echo (addEchoCommand, addEchoHandler)
 import Myo.Test.Tmux.Output (containsLine)
-import Myo.Test.Unit (MyoTest, tmuxTestDef)
 
 line1 :: Text
 line1 = "line 1"
@@ -25,7 +21,7 @@ line1 = "line 1"
 line2 :: Text
 line2 = "line 2"
 
-parseTmuxTest :: MyoTest ()
+parseTmuxTest :: Sem r ()
 parseTmuxTest = do
   lift initialize''
   lift . addEchoHandler =<< fixture "tmux/parse/file"
@@ -44,7 +40,7 @@ test_parseTmux :: UnitTest
 test_parseTmux =
   tmuxTestDef parseTmuxTest
 
-parseCaptureTmuxTest :: MyoTest ()
+parseCaptureTmuxTest :: Sem r ()
 parseCaptureTmuxTest = do
   lift initialize''
   lift . addEchoHandler =<< fixture "tmux/parse/file"

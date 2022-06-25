@@ -18,7 +18,7 @@ module Myo.Init where
 -- import Myo.Ui.Default (detectDefaultUi)
 -- import Myo.Vim.Runner (addVimRunner)
 
--- initialize'' :: Myo ()
+-- initialize'' :: Sem r ()
 -- initialize'' = do
 --   addSubprocessRunner
 --   addTmuxRunner
@@ -44,6 +44,6 @@ module Myo.Init where
 
 -- -- |depends on proteome
 -- myoStage4 ::
---   Myo ()
+--   Sem r ()
 -- myoStage4 =
 --   loadHistory

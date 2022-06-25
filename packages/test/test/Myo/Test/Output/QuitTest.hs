@@ -4,7 +4,6 @@ import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
 import Ribosome.Plugin.Mapping (executeMapping)
-import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Ui (windowCountIs)
 
 import Myo.Command.Output (compileAndRenderReport)
@@ -18,7 +17,7 @@ import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Plugin (mappingOutputQuit)
 import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (MyoTest, tmuxTest)
+import Myo.Test.Unit (tmuxTest)
 
 loc :: Location
 loc =
@@ -36,7 +35,7 @@ parsedOutput :: ParsedOutput
 parsedOutput =
   ParsedOutput haskellSyntax (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent events messages))
 
-outputQuitTest :: MyoTest ()
+outputQuitTest :: Sem r ()
 outputQuitTest = do
   lift initialize''
   storeParseResult (Ident.Str "test") [parsedOutput]

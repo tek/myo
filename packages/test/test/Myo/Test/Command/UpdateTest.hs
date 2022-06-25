@@ -11,7 +11,6 @@ import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
 import Ribosome.Test.Await (awaitEqual_)
 import Ribosome.Test.Embed (integrationTestDef)
 import Ribosome.Test.Orphans ()
-import Ribosome.Test.Run (UnitTest)
 
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.Command (Command(Command))
@@ -21,7 +20,6 @@ import qualified Myo.Command.Data.CommandState as CommandState (commands)
 import Myo.Data.Env (Env(_tempDir))
 import Myo.Env (bracketMyoTempDir)
 import Myo.Plugin (handleError, variables)
-import Myo.Test.Unit (MyoTest)
 
 commands1 :: [AddSystemCommandOptions]
 commands1 =
@@ -56,7 +54,7 @@ getCmdData ::
 getCmdData =
   vimCallFunction "CmdData" []
 
-updateCommandsTest :: MyoTest ()
+updateCommandsTest :: Sem r ()
 updateCommandsTest = do
   setVar "myo_commands" (codec commands1)
   doautocmd False "CmdlineLeave"

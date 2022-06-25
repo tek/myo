@@ -48,7 +48,7 @@ parseEcho file text' =
     eventMeta =
       OutputEventMeta (Just (Location file 0 Nothing)) 0
 
-addEchoHandler :: FilePath -> Myo ()
+addEchoHandler :: FilePath -> Sem r ()
 addEchoHandler file =
   addHandler lang (OutputHandler (OutputParser (parseEcho (toText file))))
 
@@ -56,7 +56,7 @@ addEchoCommand ::
   Text ->
   [Text] ->
   Bool ->
-  Myo Ident
+  Sem r Ident
 addEchoCommand runner lines' capture =
   ident <$ myoAddSystemCommand opts
   where

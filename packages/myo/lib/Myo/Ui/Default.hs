@@ -26,7 +26,7 @@ import Ribosome.Api.Process (vimPid)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Settings as Settings
 
-import Myo.Command.Data.Pid (Pid (Pid))
+import Process (Pid (Pid))
 import Myo.Orphans ()
 import qualified Myo.Settings as Settings
 -- import Myo.System.Proc (ppids)

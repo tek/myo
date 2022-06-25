@@ -44,7 +44,6 @@ library
       Myo.Command.Data.MonitorEvent
       Myo.Command.Data.ParseOptions
       Myo.Command.Data.PendingCommand
-      Myo.Command.Data.Pid
       Myo.Command.Data.RunError
       Myo.Command.Data.RunEvent
       Myo.Command.Data.RunLineOptions
@@ -123,7 +122,6 @@ library
       Myo.Output.Lang.Scala.Syntax
       Myo.Output.ParseReport
       Myo.Plugin
-      Myo.Proteome
       Myo.Quit
       Myo.Save
       Myo.Settings

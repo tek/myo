@@ -75,7 +75,7 @@ module Myo.Command.Test where
 --   [Object] ->
 --   m a
 -- vimTestCallWrap fun =
---   vimCallFunction ("MyoTest" <> fun)
+--   vimCallFunction ("Sem r" <> fun)
 
 -- assembleVimTestLine ::
 --   VimTestPosition ->

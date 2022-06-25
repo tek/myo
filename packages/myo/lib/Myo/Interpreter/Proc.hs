@@ -4,8 +4,6 @@ import Control.Monad.Extra (mapMaybeM)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT), runMaybeT)
 import Data.Attoparsec.Text (parseOnly)
 import Data.List (dropWhileEnd)
-import qualified Data.List.NonEmpty as NonEmpty
-import Data.List.NonEmpty ((<|))
 import Data.Text.IO (readFile)
 import Path (Abs, Dir, File, Path, absdir, dirname, parseRelDir, relfile, toFilePath, (</>))
 import Path.IO (doesPathExist, listDir)
@@ -13,7 +11,7 @@ import Text.Parser.Char (anyChar, noneOf, spaces)
 import Text.Parser.Combinators (skipMany)
 import Text.Parser.Token (TokenParsing, decimal, parens)
 
-import Myo.Command.Data.Pid (Pid (Pid))
+import Process (Pid (Pid))
 import Myo.Data.ProcError (ProcError (ProcError))
 import Myo.Effect.Proc (Proc (ChildPids, Exists, ParentPids))
 
@@ -48,16 +46,16 @@ ppid pid =
 ppids ::
   Member (Embed IO) r =>
   Pid ->
-  Sem r (NonEmpty Pid)
+  Sem r [Pid]
 ppids startPid =
-  NonEmpty.reverse <$> spin [startPid]
+  reverse <$> spin [] startPid
   where
-    spin parents@(pid :| _) =
+    spin parents pid =
       ppid pid >>= \case
         Just parent | elem @[] parent [pid, 0, 1] ->
           pure parents
         Just parent ->
-          spin (parent <| parents)
+          spin (parent : parents) parent
         Nothing ->
           pure parents
 

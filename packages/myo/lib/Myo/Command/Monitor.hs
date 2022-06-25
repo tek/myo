@@ -26,7 +26,7 @@ module Myo.Command.Monitor where
 -- import qualified Myo.Command.Data.CommandState as CommandState (executing, monitorChan)
 -- import Myo.Command.Data.Execution (Execution (Execution), ExecutionMonitor (ExecutionMonitor), ExecutionState (..))
 -- import Myo.Command.Data.MonitorEvent (MonitorEvent (CommandOutput, Tick))
--- import Myo.Command.Data.Pid (Pid)
+-- import Process (Pid)
 -- import Myo.Command.Execution (killExecution, modifyExecutionState, setExecutionState, storeOutputSocket)
 -- import Myo.Command.Log (appendLog)
 -- import Myo.Network.Socket (socketBind)

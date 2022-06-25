@@ -3,8 +3,6 @@ module Myo.Test.Output.ParseNixTest where
 import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Hedgehog (evalEither, (===))
-import Ribosome.Test.Run (UnitTest)
 
 import Myo.Command.Parse (parseWith)
 import Myo.Output.Data.OutputError (OutputError)

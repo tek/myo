@@ -1,14 +1,12 @@
 module Myo.Test.CompleteTest where
 
-import Hedgehog ((===))
-import Ribosome.Test.Run (UnitTest)
+import Polysemy.Test (UnitTest, (===))
 
-import Myo.Command.Data.Command (Command(Command))
+import Myo.Command.Data.Command (Command (Command))
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
-import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
-import Myo.Complete (completeCommand)
-import Myo.Test.Unit (MyoTest, testDef)
+import Myo.Complete (myoCompleteCommand)
+import Myo.Test.Run (myoTest)
 
 commands :: [Command]
 commands =
@@ -17,12 +15,9 @@ commands =
     cmd n =
       Command (CommandInterpreter.System def) n [] def def def False False False
 
-completeCommandTest :: MyoTest ()
-completeCommandTest = do
-  setL @CommandState CommandState.commands commands
-  result <- completeCommand "cmd-1"
-  ["cmd-15", "cmd-16"] === result
-
 test_completeCommand :: UnitTest
 test_completeCommand =
-  testDef completeCommandTest
+  myoTest do
+    atomicSet @CommandState #commands commands
+    result <- myoCompleteCommand "cmd-1"
+    ["cmd-15", "cmd-16"] === result

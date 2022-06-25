@@ -14,7 +14,7 @@ import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.Execution (Execution (Execution), ExecutionMonitor (ExecutionMonitor))
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
 import Myo.Command.Data.ExecutionState (ExecutionState (..))
-import Myo.Command.Data.Pid (Pid)
+import Process (Pid)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 

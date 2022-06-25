@@ -3,13 +3,11 @@ module Myo.Test.Output.HaskellRenderTest where
 import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import qualified Data.Vector as Vector (fromList)
-import Hedgehog ((===))
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
 import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
 import Ribosome.Msgpack.Error (DecodeError)
 import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
-import Ribosome.Test.Run (UnitTest)
 import Ribosome.Test.Screenshot (assertScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
@@ -22,7 +20,7 @@ import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (MyoTest, tmuxTest)
+import Myo.Test.Unit (tmuxTest)
 
 loc :: Location
 loc =
@@ -261,7 +259,7 @@ myoSyntax = do
     parse = fmap (Text.dropWhileEnd (' ' ==)) <$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"
 
-haskellRenderTest :: MyoTest ()
+haskellRenderTest :: Sem r ()
 haskellRenderTest = do
   lift initialize''
   setupHighlights

@@ -1,8 +1,6 @@
 module Myo.Test.Output.SanitizeTest where
 
-import Ribosome.Test.Run (UnitTest)
 import Myo.Command.Parse (sanitizeOutput)
-import Hedgehog ((===))
 
 outputData :: Text
 outputData =

@@ -111,8 +111,6 @@ test-suite myo-unit
       Myo.Test.Command.UpdateTest
       Myo.Test.Command.VimTestTest
       Myo.Test.CompleteTest
-      Myo.Test.Config
-      Myo.Test.ConfigTest
       Myo.Test.DiagTest
       Myo.Test.Output.Cat
       Myo.Test.Output.CycleTest
@@ -132,7 +130,6 @@ test-suite myo-unit
       Myo.Test.Run
       Myo.Test.RunTest
       Myo.Test.SaveTest
-      Myo.Test.SocketTest
       Myo.Test.Tmux.FocusTest
       Myo.Test.Tmux.Output
       Myo.Test.Tmux.ParseTest
@@ -141,7 +138,6 @@ test-suite myo-unit
       Myo.Test.Tmux.ToggleLayoutTest
       Myo.Test.Tmux.TogglePaneTest
       Myo.Test.Tmux.UpdateTest
-      Myo.Test.Unit
   hs-source-dirs:
       test
   default-extensions:
@@ -225,6 +221,7 @@ test-suite myo-unit
     , polysemy
     , polysemy-chronos
     , polysemy-plugin
+    , polysemy-process
     , polysemy-test
     , prelate >=0.1
     , ribosome
@@ -233,6 +230,8 @@ test-suite myo-unit
     , ribosome-test
     , streamly
     , tasty
+    , unix
+    , vector
   mixins:
       base hiding (Prelude)
     , prelate (Prelate as Prelude)

@@ -5,7 +5,6 @@ import Myo.Test.Command.HistoryMenuTest (test_historyMenu)
 import Myo.Test.Command.UpdateTest (test_updateCommands)
 import Myo.Test.Command.VimTestTest (test_vimTest)
 import Myo.Test.CompleteTest (test_completeCommand)
-import Myo.Test.ConfigTest (test_proteomeConfig)
 import Myo.Test.DiagTest (test_diag)
 import Myo.Test.Output.CycleTest (test_outputNext, test_outputPrev)
 import Myo.Test.Output.EmptyOutputTest (test_emptyOutput)
@@ -18,10 +17,9 @@ import Myo.Test.Output.QuitTest (test_outputQuit)
 import Myo.Test.Output.SanitizeTest (test_sanitize)
 import Myo.Test.Output.ScalaRenderTest (test_scalaRender)
 import Myo.Test.Output.SelectTest (test_outputSelect)
-import Myo.Test.ProcTest (test_childPids, test_ppid)
+import Myo.Test.ProcTest (test_proc)
 import Myo.Test.RunTest (test_runLineCmd, test_runLineSingle, test_runSubproc, test_runSystem)
 import Myo.Test.SaveTest (test_save)
-import Myo.Test.SocketTest (test_socket)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
 import Myo.Test.Tmux.ParseTest (test_parseCaptureTmux, test_parseTmux)
 import Myo.Test.Tmux.RunShellTest (test_tmuxRunShell)
@@ -29,7 +27,6 @@ import Myo.Test.Tmux.RunTest (test_quitCopyMode, test_tmuxRunSys)
 import Myo.Test.Tmux.ToggleLayoutTest (test_toggleLayout)
 import Myo.Test.Tmux.TogglePaneTest (test_shellPanePin, test_togglePane)
 import Myo.Test.Tmux.UpdateTest (test_updateUi)
-import Ribosome.Test.Run (unitTest)
 import Test.Tasty (TestTree, defaultMain, testGroup)
 
 tests :: TestTree
@@ -55,8 +52,7 @@ tests =
     unitTest "sanitize output messages" test_sanitize,
     unitTest "render scala messages" test_scalaRender,
     unitTest "select an event in the output window" test_outputSelect,
-    unitTest "determine the parent PID" test_ppid,
-    unitTest "determine child PIDs" test_childPids,
+    unitTest "determine parent and child pids" test_proc,
     unitTest "run a command with the system runner" test_runSystem,
     unitTest "run a single ad-hoc cmdline" test_runLineSingle,
     unitTest "run a single ad-hoc cmdline via command" test_runLineCmd,

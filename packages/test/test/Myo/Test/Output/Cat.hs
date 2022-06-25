@@ -6,8 +6,6 @@ import qualified Data.Vector as Vector (fromList, singleton)
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
 import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
-import Myo.Command.Parse (addHandler)
-import Myo.Data.Env (Myo)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -34,11 +32,11 @@ parseCat file text' =
     eventMeta =
       OutputEventMeta (Just (Location file 0 Nothing)) 0
 
-addCatHandler :: FilePath -> Myo ()
+addCatHandler :: FilePath -> Sem r ()
 addCatHandler file =
   addHandler lang (OutputHandler (OutputParser (parseCat (toText file))))
 
-addCatCommand :: Text -> Myo Ident
+addCatCommand :: Text -> Sem r Ident
 addCatCommand runner =
   ident <$ myoAddSystemCommand opts
   where

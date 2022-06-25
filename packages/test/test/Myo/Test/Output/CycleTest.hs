@@ -5,10 +5,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
 import Ribosome.Config.Setting (Settings.update)
 import Ribosome.Nvim.Api.Data (Window)
-import Ribosome.Test.Run (UnitTest)
-import Ribosome.Test.Tmux (tmuxTestDef)
 import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
-import Ribosome.Test.Unit (fixture)
 import System.FilePath ((</>))
 
 import Myo.Command.Output (compileAndRenderReport, myoNext, myoPrev)
@@ -21,7 +18,6 @@ import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), form
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Output.ParseReport (outputWindow)
 import qualified Myo.Settings as Settings (outputSelectFirst)
-import Myo.Test.Unit (MyoTest)
 
 loc1 :: Text -> Maybe Location
 loc1 file =
@@ -43,7 +39,7 @@ parsedOutput :: Text -> ParsedOutput
 parsedOutput file =
   ParsedOutput def (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages))
 
-cycleTestRender :: MyoTest Window
+cycleTestRender :: Sem r Window
 cycleTestRender = do
   file <- fixture $ "output" </> "select" </> "File.hs"
   let po = [parsedOutput (toText file)]
@@ -53,7 +49,7 @@ cycleTestRender = do
   windowCountIs 2
   outputWindow
 
-outputPrevTest :: MyoTest ()
+outputPrevTest :: Sem r ()
 outputPrevTest = do
   Settings.update Settings.outputSelectFirst False
   ow <- cycleTestRender
@@ -67,7 +63,7 @@ test_outputPrev :: UnitTest
 test_outputPrev =
   tmuxTestDef outputPrevTest
 
-outputNextTest :: MyoTest ()
+outputNextTest :: Sem r ()
 outputNextTest = do
   Settings.update Settings.outputSelectFirst True
   ow <- cycleTestRender
