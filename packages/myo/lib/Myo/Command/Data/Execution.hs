@@ -6,33 +6,18 @@ import Exon (exon)
 import Network.Socket (Socket)
 import Text.Show (showParen, showsPrec)
 
-import Myo.Command.Data.Pid (Pid)
-
-data ExecutionState =
-  Pending
-  |
-  Running
-  |
-  Starting Pid
-  |
-  Tracked Pid
-  |
-  Stopped
-  |
-  Unknown
-  deriving stock (Eq, Show)
+import Myo.Command.Data.ExecutionState (ExecutionState)
 
 data ExecutionMonitor =
   ExecutionMonitor {
     state :: ExecutionState,
     startTime :: Chronos.Time,
-    socket :: Maybe Socket,
-    checkPending :: IO ExecutionState
+    socket :: Maybe Socket
   }
   deriving stock (Generic)
 
 instance Show ExecutionMonitor where
-  showsPrec d (ExecutionMonitor s t _ _) =
+  showsPrec d (ExecutionMonitor s t _) =
     showParen (d > 10) [exon|ExecutionMonitor #{showsPrec 11 s} #{showsPrec 11 t}|]
 
 data Execution =
@@ -45,4 +30,5 @@ data Execution =
   deriving stock (Show, Generic)
 
 instance Identifiable Execution where
-  identify = ident
+  identify =
+    ident

@@ -1,20 +1,49 @@
 module Myo.Command.Effect.Executions where
 
 import Chiasma.Data.Ident (Ident)
-import Control.Lens (over)
 import Data.Generics.Labels ()
+import Prelude hiding (modify)
 
-import Myo.Command.Data.Execution (Execution, ExecutionState)
+import Myo.Command.Data.Execution (Execution)
+import Myo.Command.Data.ExecutionState (ExecutionState)
 
 data Executions :: Effect where
-  Update :: Ident -> (Execution -> Execution) -> Executions m ()
+  Get :: Ident -> Executions m (Maybe Execution)
+  Modify :: Ident -> (Execution -> (a, Maybe Execution)) -> Executions m (Maybe a)
+  Add :: Ident -> Executions m ()
+  Running :: Ident -> Executions m Bool
+  Active :: Ident -> Executions m Bool
 
 makeSem ''Executions
 
-updateState ::
+modify_ ::
+  Member Executions r =>
+  Ident ->
+  (Execution -> Maybe Execution) ->
+  Sem r ()
+modify_ i f =
+  void (modify i (((),) . f))
+
+modifyState ::
   Member Executions r =>
   Ident ->
   (ExecutionState -> ExecutionState) ->
   Sem r ()
-updateState i =
-  update i . over (#monitor . #state)
+modifyState i f =
+  modify_ i (Just . over (#monitor . #state) f)
+
+setState ::
+  Member Executions r =>
+  Ident ->
+  ExecutionState ->
+  Sem r ()
+setState i s =
+  modifyState i (const s)
+
+update ::
+  Member Executions r =>
+  Ident ->
+  (Execution -> (a, Execution)) ->
+  Sem r (Maybe a)
+update i f =
+  modify i (second Just . f)

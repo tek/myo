@@ -1,4 +1,3 @@
-
 module Myo.Command.Data.RunError where
 
 import Chiasma.Data.CodecError (CodecError)
@@ -47,6 +46,8 @@ data RunError =
   Render RenderError
   |
   TreeMod TreeModError
+  |
+  Proc Text
   deriving stock (Show)
 
 instance ToErrorMessage RunError where
@@ -94,3 +95,5 @@ instance ToErrorMessage RunError where
     ErrorMessage "tmux error" ["RunError.Render:", show e] Error
   toErrorMessage (TreeMod e) =
     ErrorMessage "tmux error" ["RunError.TreeMod:", show e] Error
+  toErrorMessage (Proc err) =
+    ErrorMessage "Could not determine tmux process ID" ["RunError.Proc:", show err] Error

@@ -29,7 +29,7 @@ import Time (MilliSeconds (MilliSeconds), Seconds (Seconds))
 
 import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.Data.Execution (ExecutionState (..))
+import Myo.Command.Data.ExecutionState (ExecutionState (..))
 import Myo.Command.Data.Pid (Pid (Pid))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError (..))

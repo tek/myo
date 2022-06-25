@@ -6,6 +6,7 @@ import Myo.Command.Data.Command (Command)
 
 data TmuxTask =
   TmuxTask {
+    shell :: Bool,
     pane :: PaneId,
     command :: Command
   }

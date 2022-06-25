@@ -2,13 +2,15 @@
 module Myo.Plugin where
 
 import Chiasma.Codec.Data.PaneMode (PaneMode)
+import Chiasma.Codec.Data.PanePid (PanePid)
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxRequest (TmuxRequest)
 import Chiasma.Data.Views (Views)
-import Chiasma.Effect.Codec (Codec)
+import Chiasma.Effect.Codec (Codec, NativeCodec)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, withAsync_)
+import Polysemy.Chronos (ChronosTime)
 import Ribosome (
   BootError,
   CompleteStyle (CompleteFiltered),
@@ -31,9 +33,14 @@ import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.RunEvent (RunEvent)
+import Myo.Command.Effect.Executions (Executions)
+import Myo.Command.Interpreter.Executions (interpretExecutions)
 -- import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env)
+import Myo.Data.ProcError (ProcError)
 import Myo.Diag (myoDiag)
+import Myo.Effect.Proc (Proc)
+import Myo.Interpreter.Proc (interpretProc)
 import qualified Myo.Settings as Settings
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (detectDefaultUi)
@@ -90,6 +97,7 @@ import Myo.Ui.Default (detectDefaultUi)
 
 type MyoStack =
   [
+    Executions,
     AtomicState Env,
     AtomicState UiState,
     AtomicState Views,
@@ -97,7 +105,9 @@ type MyoStack =
     ChanEvents RunEvent,
     ChanConsumer RunEvent,
     Reader LogDir,
-    Codec (Panes PaneMode) (Const TmuxRequest) (Const [Text]) !! CodecError
+    NativeCodec (Panes PaneMode),
+    NativeCodec (Panes PanePid),
+    Proc !! ProcError
   ]
 
 handlers ::
@@ -123,17 +133,20 @@ prepare = do
     when detect detectDefaultUi
 
 interpretMyoStack ::
-  Member (DataLog HostError) r =>
+  Members [DataLog HostError, ChronosTime] r =>
   Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoStack sem =
+  interpretProc $
+  interpretCodecPanes $
   interpretCodecPanes $
   runReader undefined $
   interpretEventsChan $
   interpretAtomic def $
   interpretAtomic def $
   interpretAtomic def $
-  interpretAtomic def do
+  interpretAtomic def $
+  interpretExecutions do
     withAsync_ prepare sem
 
 myo :: IO ()

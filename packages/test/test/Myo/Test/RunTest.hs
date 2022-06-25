@@ -111,5 +111,5 @@ test_runSubproc =
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { runner = Just runnerIdent }
       myoRunIdent ident
       myoRunIdent ident
-    loggedError <- evalMaybe =<< Map.lookup "command" <$> Errors.get
+    loggedError <- evalMaybe . Map.lookup "command" =<< Errors.get
     2 === length loggedError

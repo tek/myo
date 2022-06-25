@@ -3,9 +3,9 @@ module Myo.Command.Run where
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident, generateIdent)
 import qualified Data.Text as Text
-import Ribosome (Handler, HostError, mapHandlerError, reportError)
+import Ribosome (Handler, HostError, mapHandlerError, reportError, resumeHandlerError)
 
-import Myo.Command.Command (commandByIdent, commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
+import Myo.Command.Command (commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandState (CommandState)
@@ -94,8 +94,8 @@ myoRunIdent ::
   Ident ->
   Handler r ()
 myoRunIdent i =
-  mapHandlerError do
-    runCommand =<< commandByIdent "run" i
+  resumeHandlerError do
+    Controller.runIdent i
 
 myoRun ::
   Members [Controller !! RunError, AtomicState CommandState, DataLog HostError] r =>

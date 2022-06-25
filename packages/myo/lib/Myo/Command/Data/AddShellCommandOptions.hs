@@ -20,3 +20,7 @@ data AddShellCommandOptions =
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackDecode, MsgpackEncode)
+
+cons :: Ident -> [Text] -> Ident -> AddShellCommandOptions
+cons i l t =
+  AddShellCommandOptions i l Nothing t Nothing Nothing Nothing Nothing Nothing

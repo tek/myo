@@ -2,8 +2,9 @@ module Myo.Test.Run where
 
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Conc (interpretAtomic, interpretEventsChan)
-import Log (Severity (Debug))
+import Log (Severity (Debug, Trace))
 import Path (reldir)
+import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, UnitTest)
 import Ribosome (
@@ -25,6 +26,8 @@ import qualified Ribosome.Test.EmbedTmux as Tmux
 import Ribosome.Test.EmbedTmux (testPluginEmbedTmuxConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
+import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
 
 type MyoTestStack =
@@ -38,16 +41,20 @@ withLogDir sem = do
   runReader (LogDir d) sem
 
 interpretMyoTestStack ::
+  Member ChronosTime r =>
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
+  interpretProc .
+  interpretCodecPanes .
   interpretCodecPanes .
   withLogDir .
   interpretEventsChan .
   interpretAtomic def .
   interpretAtomic def .
   interpretAtomic def .
-  interpretAtomic def
+  interpretAtomic def .
+  interpretExecutions
 
 testConfig ::
   HostConfig ->
@@ -104,3 +111,10 @@ myoEmbedTmuxTestDebug ::
   UnitTest
 myoEmbedTmuxTestDebug =
   myoEmbedTmuxTestConf (setStderr Debug def)
+
+myoEmbedTmuxTestTrace ::
+  HasCallStack =>
+  Sem MyoTmuxTestStack () ->
+  UnitTest
+myoEmbedTmuxTestTrace =
+  myoEmbedTmuxTestConf (setStderr Trace def)

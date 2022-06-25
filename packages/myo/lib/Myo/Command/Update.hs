@@ -1,6 +1,5 @@
 module Myo.Command.Update where
 
-import Control.Lens ((.~))
 import Data.MessagePack (Object)
 import Ribosome (fromMsgpack)
 

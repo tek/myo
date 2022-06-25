@@ -1,25 +1,31 @@
 module Myo.Test.Tmux.RunShellTest where
 
 import Chiasma.Command.Pane (capturePane)
+import Chiasma.Data.CodecError (CodecError)
+import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxId (PaneId (PaneId))
-import Polysemy.Test (UnitTest, assert, assertEq, assertJust, (===))
+import Chiasma.Effect.Codec (NativeCodec)
+import Chiasma.Effect.TmuxClient (NativeTmux)
+import Chiasma.Tmux (withTmux_)
+import Polysemy.Test (Hedgehog, UnitTest, assert, (===))
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
-import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (AddShellCommandOptions))
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
--- import Myo.Command.Execution (isCommandRunning)
+import qualified Myo.Command.Data.AddShellCommandOptions as AddShellCommandOptions
+import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (runner))
+import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (runner, target))
+import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Executor.Null (interpretExecutorNull)
 import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
--- import Myo.Command.Kill (killCommand)
+import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Run (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
-import Chiasma.Tmux (withTmux)
 
 line1 :: Text
 line1 =
@@ -33,53 +39,63 @@ cmdLines :: [Text]
 cmdLines =
   [line1, line2]
 
-takeEnd :: Int -> [a] -> [a]
-takeEnd count xs =
-  drop (length xs - count) xs
+output1 :: [Text]
+output1 =
+  [
+    line1,
+    line1,
+    line2,
+    line2
+  ]
 
 firstCondition ::
+  Member (Hedgehog IO) r =>
   [Text] ->
   Sem r ()
 firstCondition out = do
-  assertJust "cat" (listToMaybe out)
-  cmdLines === (takeEnd 2 out)
+  "cat" : output1 === out
 
 secondCondition ::
+  Member (Hedgehog IO) r =>
   [Text] ->
   Sem r ()
 secondCondition out =
-  (cmdLines ++ cmdLines) === takeEnd 4 out
+  "cat" : output1 ++ output1 === out
 
 thirdCondition ::
+  Member (Hedgehog IO) r =>
   [Text] ->
   Sem r ()
 thirdCondition out = do
-  15 === length out
-  secondCondition out
+  "cat" : output1 ++ output1 ++ ["Killed", "cat"] ++ output1 === out
+
+paneContent ::
+  Members [NativeTmux, NativeCodec TmuxCommand, Stop CodecError] r =>
+  Sem r [Text]
+paneContent =
+  cleanLines <$> withTmux_ (capturePane (PaneId 1))
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
   myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController $ testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
-    myoAddSystemCommand $ AddSystemCommandOptions shellIdent ["cat"] r (Just "make") Nothing Nothing Nothing Nothing Nothing
-    myoAddShellCommand $ AddShellCommandOptions cmdIdent cmdLines r shellIdent Nothing Nothing Nothing Nothing Nothing
+    myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["cat"]) { runner, target = Just "make" }
+    myoAddShellCommand (AddShellCommandOptions.cons cmdIdent cmdLines shellIdent) { runner }
     myoRunIdent cmdIdent
-    assertWait (isCommandRunning shellIdent) assert
+    assertWait (Executions.running shellIdent) assert
     assertWait paneContent firstCondition
     myoRunIdent cmdIdent
     assertWait paneContent secondCondition
     killCommand shellIdent
-    assertWait (isCommandRunning shellIdent) (assert . not)
+    assertWait (Executions.running shellIdent) (assert . not)
     myoRunIdent cmdIdent
-    assertWait (isCommandRunning shellIdent) assert
+    assertWait (Executions.running shellIdent) assert
     assertWait paneContent thirdCondition
     where
       shellIdent =
         "cat"
       cmdIdent =
         "text"
-      r =
+      runner =
         Just "tmux"
-      paneContent =
-        cleanLines <$> withTmux (capturePane (PaneId 1))

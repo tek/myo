@@ -1,8 +1,10 @@
 {
   description = "Neovim Layout and Command Manager";
 
-  inputs.ribosome.url = git+https://git.tryp.io/tek/ribosome?ref=polysemy;
-  inputs.prelate.url = git+https://git.tryp.io/tek/prelate;
+  inputs = {
+    ribosome.url = git+https://git.tryp.io/tek/ribosome?ref=polysemy;
+    prelate.url = git+https://git.tryp.io/tek/prelate;
+  };
 
   outputs = { ribosome, prelate, ... }:
   let
@@ -12,7 +14,7 @@
     let
       inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
     in {
-      myo = fast;
+      myo = buildInputs [pkgs.socat] fast;
       myo-test = fast inputs;
       prelate = source.package prelate "prelate";
     };
@@ -29,9 +31,9 @@
     main = "myo-test";
     hpack = {
       packages = import ./ops/hpack.nix { inherit config lib; };
-      defaultApp = "proteome";
+      defaultApp = "myo";
     };
-    ghcid.shellConfig.buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux];
+    ghcid.shellConfig.buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux pkgs.socat];
     ghci = {
       preludePackage = "prelate";
       preludeModule = "Prelate";

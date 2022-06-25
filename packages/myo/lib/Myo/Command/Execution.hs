@@ -1,22 +1,22 @@
 module Myo.Command.Execution where
 
 import Chiasma.Data.Ident (Ident, identText)
-import Conc (lock)
-import Control.Lens (Lens', (%~))
-import qualified Control.Lens as Lens (_Just, at, mapMOf, set, view)
+import qualified Control.Lens as Lens (_Just, at, mapMOf, set)
 import Exon (exon)
 import qualified Log
 import Network.Socket (Socket)
 import qualified Network.Socket as Socket (close)
+import Polysemy.Chronos (ChronosTime)
 import qualified Time
 
-import Myo.AtomicState (atomicSet, atomicView)
 import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.Data.Execution (Execution (Execution), ExecutionMonitor (ExecutionMonitor), ExecutionState (..))
-import qualified Myo.Command.Data.Execution as ExecutionState (ExecutionState (..))
-import Myo.Command.Data.ExecutionLock (ExecutionLock (ExecutionLock))
+import Myo.Command.Data.Execution (Execution (Execution), ExecutionMonitor (ExecutionMonitor))
+import qualified Myo.Command.Data.ExecutionState as ExecutionState
+import Myo.Command.Data.ExecutionState (ExecutionState (..))
 import Myo.Command.Data.Pid (Pid)
+import qualified Myo.Command.Effect.Executions as Executions
+import Myo.Command.Effect.Executions (Executions)
 
 executionLens :: Ident -> Lens' CommandState (Maybe Execution)
 executionLens ident =
@@ -50,7 +50,7 @@ removeExecution ident = do
   atomicSet (executionLens ident) Nothing
 
 killExecution ::
-  Members [AtomicState CommandState, Log] r =>
+  Members [Executions, AtomicState CommandState, Log, Embed IO] r =>
   Ident ->
   Sem r ()
 killExecution ident = do
@@ -59,85 +59,22 @@ killExecution ident = do
   removeExecution ident
 
 pushExecution ::
-  Members [AtomicState CommandState, Log] r =>
+  Members [AtomicState CommandState, ChronosTime, Log] r =>
   Ident ->
-  IO ExecutionState ->
   Sem r ()
-pushExecution ident checkPending = do
+pushExecution ident = do
   Log.debug $ "pushing execution `" <> identText ident <> "`"
   archiveExecution ident
   now <- Time.now
   atomicSet (executionLens ident) (Just (Execution ident "" [] (monitor now)))
   where
     monitor now =
-      ExecutionMonitor ExecutionState.Pending now Nothing checkPending
-
-findExecution ::
-  Members [AtomicState CommandState, Log] r =>
-  Ident ->
-  Sem r (Maybe Execution)
-findExecution ident =
-  gets $ Lens.view $ executionLens ident
-
-executionRunning ::
-  Execution ->
-  Sem r Bool
-executionRunning (Execution _ _ _ (ExecutionMonitor state _ _ _)) =
-  check state
-  where
-    check (Tracked _) =
-      undefined
-      -- processExists pid
-    check (Starting _) =
-      pure False
-    check Running =
-      pure True
-    check Pending =
-      pure False
-    check Unknown =
-      pure False
-    check Stopped =
-      pure False
-
-executionActive ::
-  Execution ->
-  Sem r Bool
-executionActive (Execution _ _ _ (ExecutionMonitor state _ _ _)) =
-  check state
-  where
-    check (Tracked _) =
-      undefined
-      -- processExists pid
-    check (Starting _) =
-      undefined
-      -- processExists pid
-    check Running =
-      pure True
-    check Pending =
-      pure True
-    check Unknown =
-      pure False
-    check Stopped =
-      pure False
-
-isCommandRunning ::
-  Members [AtomicState CommandState, Log] r =>
-  Ident ->
-  Sem r Bool
-isCommandRunning =
-  maybe (pure False) executionRunning <=< findExecution
-
-isCommandActive ::
-  Members [AtomicState CommandState, Log] r =>
-  Ident ->
-  Sem r Bool
-isCommandActive =
-  maybe (pure False) executionActive <=< findExecution
+      ExecutionMonitor ExecutionState.Pending now Nothing
 
 executionPid ::
   Execution ->
   Maybe Pid
-executionPid (Execution _ _ _ (ExecutionMonitor (Tracked pid) _ _ _)) =
+executionPid (Execution _ _ _ (ExecutionMonitor (Tracked pid) _ _)) =
   Just pid
 executionPid _ =
   Nothing
@@ -183,15 +120,12 @@ storeOutputSocket socket ident = do
   modifyExecution (Lens.mapMOf (#monitor . #socket) (const (pure $ Just socket))) ident
 
 closeOutputSocket ::
-  Members [AtomicState CommandState, Log] r =>
+  Members [Executions, AtomicState CommandState, Log, Embed IO] r =>
   Ident ->
   Sem r ()
 closeOutputSocket ident = do
   Log.debug [exon|closing output socket for `#{identText ident}`|]
-  atomicState' \ s ->
-    let sock = 
-    case s ^. executionLens ident of
-  atomicPut =<< Lens.mapMOf (executionLens ident . Lens._Just . #monitor . #socket) close =<< atomicGet
+  traverse_ close =<< Executions.update ident (#monitor . #socket <<.~ Nothing)
   where
     close socket =
-      Nothing <$ tryAny_ (traverse_ Socket.close socket)
+      tryAny_ (traverse_ Socket.close socket)
