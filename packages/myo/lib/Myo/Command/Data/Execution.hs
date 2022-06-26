@@ -2,33 +2,42 @@ module Myo.Command.Data.Execution where
 
 import Chiasma.Data.Ident (Ident, Identifiable (..))
 import qualified Chronos
-import Exon (exon)
-import Network.Socket (Socket)
-import Text.Show (showParen, showsPrec)
+import Process (Pid)
+import Text.Show (show)
 
-import Myo.Command.Data.ExecutionState (ExecutionState)
+import Myo.Command.Data.ExecutionState (ExecutionState (Tracked))
 
-data ExecutionMonitor =
-  ExecutionMonitor {
-    state :: ExecutionState,
-    startTime :: Chronos.Time,
-    socket :: Maybe Socket
+data ExecutionSync =
+  ExecutionSync {
+    wait :: MVar (),
+    kill :: MVar ()
   }
   deriving stock (Generic)
 
-instance Show ExecutionMonitor where
-  showsPrec d (ExecutionMonitor s t _) =
-    showParen (d > 10) [exon|ExecutionMonitor #{showsPrec 11 s} #{showsPrec 11 t}|]
+instance Show ExecutionSync where
+  show _ =
+    "ExecutionSync"
 
 data Execution =
   Execution {
     ident :: Ident,
-    log :: ByteString,
-    logs :: [ByteString],
-    monitor :: ExecutionMonitor
+    -- log :: ByteString,
+    -- logs :: [ByteString],
+    state :: ExecutionState,
+    startTime :: Chronos.Time,
+    sync :: ExecutionSync
   }
   deriving stock (Show, Generic)
 
 instance Identifiable Execution where
   identify =
     ident
+
+pid ::
+  Execution ->
+  Maybe Pid
+pid = \case
+  Execution {state = Tracked p} ->
+    Just p
+  _ ->
+    Nothing

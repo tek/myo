@@ -2,20 +2,20 @@ module Myo.Ui.Focus where
 
 import Chiasma.Command.Pane (selectPane)
 import Chiasma.Data.Ident (Ident)
-import Chiasma.Data.TmuxCommand (TmuxCommand)
-import Chiasma.Data.Views (Views, ViewsError)
-import Chiasma.Effect.Codec (Codec)
-import Chiasma.Effect.TmuxClient (TmuxClient)
-import Chiasma.Tmux (withTmux)
+import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Data.Views (Views)
+import Chiasma.Effect.Codec (NativeCommandCodecE)
+import Chiasma.Effect.TmuxClient (NativeTmux)
+import Chiasma.Tmux (withTmux_)
 import qualified Chiasma.View.State as Views (paneId)
+import Ribosome (Handler, mapHandlerError)
+
+import Myo.Data.ViewError (codecError, resumeTmuxError, viewsError)
 
 myoFocus ::
-  ∀ err encode decode resource r .
-  Members [AtomicState Views, Stop ViewsError] r =>
-  Members [Scoped resource (TmuxClient encode decode), Codec TmuxCommand encode decode !! err, Stop err] r =>
+  Members [AtomicState Views, NativeTmux !! TmuxError, NativeCommandCodecE] r =>
   Ident ->
-  Sem r ()
+  Handler r ()
 myoFocus i =
-  withTmux $ restop do
-    p <- Views.paneId i
-    selectPane p
+  mapHandlerError $ codecError $ resumeTmuxError $ withTmux_ do
+      selectPane =<< viewsError (Views.paneId i)

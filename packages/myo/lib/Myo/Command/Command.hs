@@ -5,7 +5,7 @@ import Chiasma.Data.Ident (Ident, identText)
 import Control.Lens (firstOf, views)
 
 import qualified Myo.Command.Data.Command as Command
-import Myo.Command.Data.Command (Command (Command), CommandLanguage)
+import Myo.Command.Data.Command (Command (Command))
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandError as CommandError (CommandError (NoCommands, NoSuchCommand))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
@@ -82,29 +82,17 @@ systemCommand ::
   Maybe Ident ->
   Ident ->
   [Text] ->
-  Maybe Ident ->
-  Maybe CommandLanguage ->
-  Maybe Text ->
-  Bool ->
-  Bool ->
-  Bool ->
   Command
 systemCommand target =
-  Command (System target)
+  Command.cons (System target)
 
 shellCommand ::
   Ident ->
   Ident ->
   [Text] ->
-  Maybe Ident ->
-  Maybe CommandLanguage ->
-  Maybe Text ->
-  Bool ->
-  Bool ->
-  Bool ->
   Command
 shellCommand target =
-  Command (Shell target)
+  Command.cons (Shell target)
 
 latestCommand ::
   Members [AtomicState CommandState, Stop CommandError] r =>

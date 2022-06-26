@@ -3,7 +3,7 @@ module Myo.Complete where
 import qualified Chiasma.Data.Ident as Ident
 import qualified Data.Text as Text
 
-import Myo.Command.Data.Command (Command (Command))
+import Myo.Command.Data.Command (Command (Command), displayName, ident)
 import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
 
@@ -15,9 +15,9 @@ myoCompleteCommand prefix = do
   cmds <- atomicGets CommandState.commands
   pure (catMaybes (match <$> cmds))
   where
-    match (Command _ (Ident.Str ident) _ _ _ _ _ _ _) | isPrefix ident =
+    match Command { ident = Ident.Str ident } | isPrefix ident =
       Just ident
-    match (Command _ _ _ _ _ (Just name) _ _ _) | isPrefix name =
+    match Command { displayName = Just name } | isPrefix name =
       Just name
     match _ =
       Nothing

@@ -1,11 +1,13 @@
 module Myo.Command.Update where
 
 import Data.MessagePack (Object)
+import Prelude hiding (lines)
 import Ribosome (fromMsgpack)
 
 import Myo.Command.Command (shellCommand, systemCommand)
-import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (AddShellCommandOptions))
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
+import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (..))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (..))
+import Myo.Command.Data.Command (Command (..))
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
@@ -20,7 +22,23 @@ updateCommands o = do
   CommandSettingCodec system shell <- stopEitherWith CommandError.Misc (fromMsgpack o)
   atomicModify' (#commands .~ ((createShell <$> fold shell) ++ (createSystem <$> fold system)))
   where
-    createSystem (AddSystemCommandOptions ident lines' runner target lang name skipHistory kill capture) =
-      systemCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill) (orFalse capture)
-    createShell (AddShellCommandOptions ident lines' runner target lang name skipHistory kill capture) =
-      shellCommand target ident lines' runner lang name (orFalse skipHistory) (orFalse kill) (orFalse capture)
+    createSystem :: AddSystemCommandOptions -> Command
+    createSystem AddSystemCommandOptions {..} =
+      (systemCommand target ident lines) {
+        runner,
+        lang,
+        displayName,
+        skipHistory = orFalse skipHistory,
+        kill = orFalse kill,
+        capture = orFalse capture
+      }
+    createShell :: AddShellCommandOptions -> Command
+    createShell AddShellCommandOptions {..} =
+      (shellCommand target ident lines) {
+        runner,
+        lang,
+        displayName,
+        skipHistory = orFalse skipHistory,
+        kill = orFalse kill,
+        capture = orFalse capture
+      }

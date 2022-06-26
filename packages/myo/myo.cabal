@@ -33,6 +33,7 @@ library
       Myo.Command.Data.CommandError
       Myo.Command.Data.CommandInterpreter
       Myo.Command.Data.CommandLog
+      Myo.Command.Data.CommandOutput
       Myo.Command.Data.CommandSettingCodec
       Myo.Command.Data.CommandState
       Myo.Command.Data.Execution
@@ -49,16 +50,20 @@ library
       Myo.Command.Data.RunLineOptions
       Myo.Command.Data.RunningCommand
       Myo.Command.Data.RunTask
+      Myo.Command.Data.SocketReaderError
       Myo.Command.Data.StoreHistoryLock
       Myo.Command.Data.TmuxTask
       Myo.Command.Data.VimTestPosition
       Myo.Command.Effect.Executions
+      Myo.Command.Effect.SocketReader
       Myo.Command.Execution
       Myo.Command.History
       Myo.Command.HistoryMenu
+      Myo.Command.Interpreter.CommandLog
       Myo.Command.Interpreter.Executions
       Myo.Command.Interpreter.Executor.Null
       Myo.Command.Interpreter.Executor.Tmux
+      Myo.Command.Interpreter.SocketReader
       Myo.Command.Kill
       Myo.Command.Log
       Myo.Command.Monitor
@@ -80,6 +85,7 @@ library
       Myo.Data.ProcError
       Myo.Data.ProcessTask
       Myo.Data.String.Pretty
+      Myo.Data.ViewError
       Myo.Diag
       Myo.Effect.CommandLog
       Myo.Effect.Controller
@@ -107,6 +113,8 @@ library
       Myo.Output.Data.ParseResult
       Myo.Output.Data.ReportLine
       Myo.Output.Data.String
+      Myo.Output.Effect.CommandOutput
+      Myo.Output.Interpreter.CommandOutput
       Myo.Output.Lang.Haskell.Data.HaskellEvent
       Myo.Output.Lang.Haskell.Parser
       Myo.Output.Lang.Haskell.Report
@@ -126,7 +134,7 @@ library
       Myo.Save
       Myo.Settings
       Myo.Text.Parser.Combinators
-      Myo.Tmux.Process
+      Myo.Tmux.Proc
       Myo.Tmux.Quit
       Myo.Tmux.Run
       Myo.Tmux.Runner
@@ -224,6 +232,7 @@ library
     , extra
     , filepattern
     , first-class-families
+    , foldl
     , generic-lens
     , generics-sop
     , hashable

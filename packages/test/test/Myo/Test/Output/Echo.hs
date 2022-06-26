@@ -1,26 +1,27 @@
 module Myo.Test.Output.Echo where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Control.Lens (IndexedTraversal', (.~))
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
+import Chiasma.Data.Ident (Ident (Str))
+import Control.Lens (IndexedTraversal')
 import Control.Lens.Regex.Text (Match, group, regex)
 import qualified Data.Text as Text (stripPrefix)
 import qualified Data.Vector as Vector (fromList, singleton)
+import Path (Abs, File, Path)
 import Prelude hiding (group)
+import Ribosome (Handler)
+import Ribosome.Path (pathText)
 
 import Myo.Command.Add (myoAddSystemCommand)
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Command (CommandLanguage(CommandLanguage))
-import Myo.Command.Parse (addHandler)
-import Myo.Data.Env (Myo)
-import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
-import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
-import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
-import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
-import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
+import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
+import Myo.Command.Data.AddSystemCommandOptions (capture, lang, runner, target)
+import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
+import Myo.Command.Data.CommandState (CommandState)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative (Relative))
+import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents (OutputEvents))
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import Myo.Output.Data.ReportLine (ReportLine (ReportLine))
 
 stripPromptRegex :: IndexedTraversal' Int Text Match
 stripPromptRegex =
@@ -30,12 +31,16 @@ stripPrompt :: Text -> Text
 stripPrompt =
   stripPromptRegex . group 0 .~ ""
 
-lang :: CommandLanguage
-lang = CommandLanguage "echo"
+echoLang :: CommandLanguage
+echoLang =
+  CommandLanguage "echo"
 
-parseEcho :: Text -> Text -> Either OutputError ParsedOutput
+parseEcho ::
+  Path Abs File ->
+  Text ->
+  Sem r ParsedOutput
 parseEcho file text' =
-  Right (ParsedOutput def events)
+  pure (ParsedOutput def events)
   where
     events =
       OutputEvents (Vector.fromList (uncurry event <$> zip matching [0..]))
@@ -46,22 +51,24 @@ parseEcho file text' =
     rline lineText index =
       ReportLine (EventIndex.Relative index) lineText
     eventMeta =
-      OutputEventMeta (Just (Location file 0 Nothing)) 0
-
-addEchoHandler :: FilePath -> Sem r ()
-addEchoHandler file =
-  addHandler lang (OutputHandler (OutputParser (parseEcho (toText file))))
+      OutputEventMeta (Just (Location (pathText file) 0 Nothing)) 0
 
 addEchoCommand ::
+  Member (AtomicState CommandState) r =>
   Text ->
   [Text] ->
   Bool ->
-  Sem r Ident
+  Handler r Ident
 addEchoCommand runner lines' capture =
   ident <$ myoAddSystemCommand opts
   where
     opts =
-      AddSystemCommandOptions ident cmds (Just (Ident.Str runner)) makeIdent (Just lang) Nothing Nothing Nothing (Just capture)
+      (AddSystemCommandOptions.cons ident cmds) {
+        runner = Just (Str runner),
+        target = makeIdent,
+        lang = Just echoLang,
+        capture = Just capture
+      }
     ident =
       Ident.Str "cmd"
     makeIdent =

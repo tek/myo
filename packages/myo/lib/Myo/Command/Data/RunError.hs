@@ -9,6 +9,7 @@ import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Debug, Error, Warn))
 import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (..))
 
+import Myo.Command.Data.Command (ident)
 import qualified Myo.Command.Data.Command as Cmd (Command (Command))
 import Myo.Command.Data.CommandError (CommandError (..))
 import Myo.Command.Data.RunTask (RunTask (RunTask))
@@ -52,7 +53,7 @@ data RunError =
 
 instance ToErrorMessage RunError where
   toErrorMessage (Command e) = toErrorMessage e
-  toErrorMessage (NoRunner task@(RunTask (Cmd.Command _ ident _ _ _ _ _ _ _) _ _)) =
+  toErrorMessage (NoRunner task@(RunTask (Cmd.Command {ident}) _ _)) =
     ErrorMessage user ["no runner for task:", show task] Warn
     where
       user = "no runner available for command `" <> identText ident <> "`"
@@ -68,7 +69,7 @@ instance ToErrorMessage RunError where
     ErrorMessage "internal error" ["embedded IO had unexpected error:", e] Debug
   toErrorMessage SocketFailure =
     ErrorMessage "internal error" ["could not create listener socket"] Error
-  toErrorMessage (InvalidShell command@(Cmd.Command _ ident _ _ _ _ _ _ _)) =
+  toErrorMessage (InvalidShell command@(Cmd.Command {ident})) =
     ErrorMessage msg ["RunError.InvalidShell:", show command] Error
     where
       msg = "invalid command for shell: " <> show ident

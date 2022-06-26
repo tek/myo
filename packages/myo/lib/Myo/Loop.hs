@@ -18,3 +18,15 @@ untilJust interval action =
       action >>= \case
         Just a -> pure a
         Nothing -> Time.sleep interval *> spin
+
+useWhileJust ::
+  Sem r (Maybe a) ->
+  (a -> Sem r ()) ->
+  Sem r ()
+useWhileJust acquire use =
+  spin
+  where
+    spin =
+      acquire >>= traverse_ \ a -> do
+        use a
+        spin

@@ -7,7 +7,7 @@ import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxRequest (TmuxRequest)
 import Chiasma.Data.Views (Views)
-import Chiasma.Effect.Codec (Codec, NativeCodec)
+import Chiasma.Effect.Codec (Codec, NativeCodec, NativeCodecE)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, withAsync_)
 import Polysemy.Chronos (ChronosTime)
@@ -105,8 +105,8 @@ type MyoStack =
     ChanEvents RunEvent,
     ChanConsumer RunEvent,
     Reader LogDir,
-    NativeCodec (Panes PaneMode),
-    NativeCodec (Panes PanePid),
+    NativeCodecE (Panes PaneMode),
+    NativeCodecE (Panes PanePid),
     Proc !! ProcError
   ]
 

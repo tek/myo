@@ -9,5 +9,4 @@ data OutputHandler =
     -- _reporter :: OutputReporter a,
     -- _syntax :: OutputSyntax a
   }
-
-deriving instance Show OutputHandler
+  deriving stock (Show)

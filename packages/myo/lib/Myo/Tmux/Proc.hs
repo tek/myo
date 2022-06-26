@@ -1,16 +1,15 @@
-module Myo.Tmux.Process where
+module Myo.Tmux.Proc where
 
 import Chiasma.Codec.Data.PanePid (PanePid (PanePid))
 import qualified Chiasma.Data.Panes as Panes
 import Chiasma.Data.Panes (TmuxPanes)
 import Chiasma.Data.TmuxId (PaneId)
 import qualified Chiasma.Effect.TmuxApi as Tmux
-import Control.Monad.Extra (whileM)
 import Polysemy.Chronos (ChronosTime)
-import qualified Time
-import Time (MilliSeconds (..))
-
 import Process (Pid (Pid))
+import qualified Time
+import Time (MilliSeconds (..), while)
+
 import qualified Myo.Effect.Proc as Proc
 import Myo.Effect.Proc (Proc)
 
@@ -23,8 +22,7 @@ panePid paneId = do
   pure (Pid pid)
 
 -- |Wait for a process's children to settle.
--- If the process has no children, return 'Nothing' immediately.
--- If the process has children, wait for 100ms and query again.
+-- Read the children, wait for 100ms and query again.
 -- If the process has the same single child before and after waiting, return it.
 -- If this check failed for five times, return the potential first child.
 commandPid ::
@@ -34,8 +32,6 @@ commandPid ::
 commandPid parent =
   spin (1 :: Int) =<< Proc.childPids parent
   where
-    spin _ [] =
-      pure Nothing
     spin n children = do
       Time.sleep (MilliSeconds 100)
       check n children =<< Proc.childPids parent
@@ -46,10 +42,16 @@ commandPid parent =
     check n _ new =
       spin (n + 1) new
 
+shellBusy ::
+  Member Proc r =>
+  Pid ->
+  Sem r Bool
+shellBusy shellPid =
+  not . null <$> Proc.childPids shellPid
+
 waitForRunningProcess ::
   Members [Proc, ChronosTime] r =>
   Pid ->
   Sem r ()
 waitForRunningProcess parent =
-  whileM do
-    isJust <$> commandPid parent
+  while (MilliSeconds 100) (shellBusy parent)

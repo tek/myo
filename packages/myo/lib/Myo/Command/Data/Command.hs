@@ -25,7 +25,8 @@ data Command =
     displayName :: Maybe Text,
     skipHistory :: Bool,
     kill :: Bool,
-    capture :: Bool
+    capture :: Bool,
+    maxLogBytes :: Int
   }
   deriving stock (Eq, Show, Generic)
 
@@ -34,26 +35,39 @@ instance Identifiable Command where
     ident
 
 instance Pretty Command where
-  pretty (Command iprt ident' lines' runner' lang' displayName' skipHistory' kill' capture') =
+  pretty (Command {..}) =
     nest 2 . vsep $ header : info
     where
       header =
-        "*" <+> pretty ident'
+        "*" <+> pretty ident
       info =
         prettyIprt : prettyLines : opt
       opt =
         catMaybes [
-          prettyRunner <$> runner',
-          prettyLang <$> lang',
-          prettyName <$> displayName',
-          Just $ "skip history:" <+> pretty skipHistory',
-          Just $ "kill" <+> pretty kill',
-          Just $ "capture:" <+> pretty capture'
+          prettyRunner <$> runner,
+          prettyLang <$> lang,
+          prettyName <$> displayName,
+          Just $ "skip history:" <+> pretty skipHistory,
+          Just $ "kill" <+> pretty kill,
+          Just $ "capture:" <+> pretty capture
           ]
-      prettyIprt = "interpreter:" <+> pretty iprt
+      prettyIprt = "interpreter:" <+> pretty interpreter
       prettyRunner r = "runner:" <+> pretty r
-      prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> lines')
+      prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> cmdLines)
       prettyLang (CommandLanguage a) = "language:" <+> pretty a
       prettyName n = "name:" <+> pretty n
 
 json ''Command
+
+cons :: CommandInterpreter -> Ident -> [Text] -> Command
+cons interpreter ident cmdLines =
+  Command {
+    runner = Nothing,
+    lang = Nothing,
+    displayName = Nothing,
+    skipHistory = False,
+    kill = False,
+    capture = False,
+    maxLogBytes = 100000,
+    ..
+  }

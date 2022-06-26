@@ -42,19 +42,23 @@ logPathByIdent ::
 logPathByIdent ident =
   atomicGets (view (logPathLens ident))
 
+logPath ::
+  Member (Reader LogDir) r =>
+  Ident ->
+  Sem r (Maybe (Path Abs File))
+logPath ident =
+  ask <&> \ (LogDir base) ->
+    (base </>) <$> parseRelFile [exon|pane-#{toString (identText ident)}|]
+
 insertLogPath ::
   Members [Reader LogDir, AtomicState CommandState, Stop RunError] r =>
   Ident ->
   Sem r (Path Abs File)
 insertLogPath ident = do
-  LogDir base <- ask
-  fileName <- stopNote invalidIdent parseFileName
-  let logPath = base </> fileName
-  atomicModify' (logPathLens ident ?~ logPath)
-  pure logPath
+  p <- stopNote invalidIdent =<< logPath ident
+  atomicModify' (logPathLens ident ?~ p)
+  pure p
   where
-    parseFileName =
-      parseRelFile (toString ("pane-" <> identT))
     invalidIdent =
       RunError.Command (CommandError.Misc ("invalid command ident: " <> identT))
     identT =
@@ -80,10 +84,10 @@ pipePaneToSocket ::
   PaneId ->
   Path Abs File ->
   Sem r ()
-pipePaneToSocket paneId logPath =
+pipePaneToSocket paneId path =
   pipePane paneId cmd
   where
-    cmd = "'socat STDIN UNIX-SENDTO:" <> (Text.concatMap escape . toText . toFilePath) logPath <> "'"
+    cmd = "'socat STDIN UNIX-SENDTO:" <> (Text.concatMap escape . toText . toFilePath) path <> "'"
     escape c = prefix c <> Text.singleton c
     prefix c | isAlphaNum c = ""
     prefix _  = "\\"
@@ -179,8 +183,7 @@ pushCommandLog ::
   Sem r ()
 pushCommandLog ident = do
   logIdent <- mayMainCommandOrHistory ident
-  let logIdentT = identText logIdent
-  Log.debug [exon|pushing command log for `#{logIdentT}`|]
+  Log.debug [exon|pushing command log for `#{identText logIdent}`|]
   atomicModify' (logLens logIdent %~ fmap push)
   where
     push (CommandLog prev cur) | ByteString.null cur =

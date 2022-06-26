@@ -7,22 +7,23 @@ import Data.List (dropWhileEnd)
 import Data.Text.IO (readFile)
 import Path (Abs, Dir, File, Path, absdir, dirname, parseRelDir, relfile, toFilePath, (</>))
 import Path.IO (doesPathExist, listDir)
+import Process (Pid (Pid))
+import qualified System.Posix.Signals as Signal
 import Text.Parser.Char (anyChar, noneOf, spaces)
 import Text.Parser.Combinators (skipMany)
 import Text.Parser.Token (TokenParsing, decimal, parens)
 
-import Process (Pid (Pid))
 import Myo.Data.ProcError (ProcError (ProcError))
-import Myo.Effect.Proc (Proc (ChildPids, Exists, ParentPids))
+import Myo.Effect.Proc (Proc (ChildPids, Exists, Kill, ParentPids))
 
 procStatPpid ::
   Monad m =>
   TokenParsing m =>
   m Pid
 procStatPpid = do
-  pp <- skipMany decimal >> spaces >> parens (many (noneOf ")")) >> spaces >> anyChar >> spaces >> decimal
+  pp <- skipMany decimal *> spaces *> parens (many (noneOf ")")) *> spaces *> anyChar *> spaces *> decimal
   skipMany anyChar
-  pure . Pid $ fromIntegral pp
+  pure (fromIntegral pp)
 
 parseProcStatPpid :: Text -> Maybe Pid
 parseProcStatPpid =
@@ -94,3 +95,5 @@ interpretProc =
     Exists pid -> do
       path <- stopNote (ProcError "path failure") (procStatPath pid)
       stopTryIOError (ProcError . show) (doesPathExist path)
+    Kill pid ->
+      tryIOError_ (Signal.signalProcess (Signal.softwareTermination) (fromIntegral pid))

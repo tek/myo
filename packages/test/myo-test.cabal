@@ -130,7 +130,9 @@ test-suite myo-unit
       Myo.Test.Run
       Myo.Test.RunTest
       Myo.Test.SaveTest
+      Myo.Test.Tmux.CommandLogTest
       Myo.Test.Tmux.FocusTest
+      Myo.Test.Tmux.KillTest
       Myo.Test.Tmux.Output
       Myo.Test.Tmux.ParseTest
       Myo.Test.Tmux.RunShellTest

@@ -4,7 +4,7 @@ import Chiasma.Command.Pane (capturePane)
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxId (PaneId (PaneId))
-import Chiasma.Effect.Codec (NativeCodec)
+import Chiasma.Effect.Codec (NativeCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Polysemy.Test (Hedgehog, UnitTest, assert, (===))
@@ -70,7 +70,7 @@ thirdCondition out = do
   "cat" : output1 ++ output1 ++ ["Killed", "cat"] ++ output1 === out
 
 paneContent ::
-  Members [NativeTmux, NativeCodec TmuxCommand, Stop CodecError] r =>
+  Members [NativeTmux, NativeCodecE TmuxCommand, Stop CodecError] r =>
   Sem r [Text]
 paneContent =
   cleanLines <$> withTmux_ (capturePane (PaneId 1))

@@ -7,36 +7,48 @@ import Chiasma.Command.Pane (quitCopyMode, sendKeys)
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.Panes (Panes)
+import Chiasma.Data.PipePaneParams (target)
 import Chiasma.Data.SendKeysParams (Key (Lit))
-import Chiasma.Data.TmuxCommand (TmuxCommand)
+import qualified Chiasma.Data.Target as Target
+import Chiasma.Data.TmuxCommand (TmuxCommand (PipePane))
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxId (PaneId, formatId)
 import Chiasma.Data.Views (Views, ViewsError)
-import Chiasma.Effect.Codec (NativeCodec, NativeCodecs)
+import Chiasma.Effect.Codec (NativeCodecE, NativeCodecsE, NativeCommandCodecE)
+import qualified Chiasma.Effect.TmuxApi as Tmux
 import Chiasma.Effect.TmuxClient (NativeTmux)
-import Chiasma.Tmux (withTmuxApis_)
+import Chiasma.Tmux (withPanes_, withTmuxApis_, withTmux_)
 import qualified Chiasma.View as Views
+import Conc (race_)
+import qualified Data.Text as Text
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Ribosome (HostError)
+import Process (Pid)
+import Ribosome (HostError, ToErrorMessage, resumeReportError)
+import Time (MilliSeconds (MilliSeconds), while)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command), ident)
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
-import Process (Pid)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (UiShell, UiSystem))
-import Myo.Command.Data.TmuxTask (TmuxTask (TmuxTask))
+import Myo.Command.Data.TmuxTask (TaskType (Kill, Shell, Wait), TmuxTask (TmuxTask), command, pane, taskType)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
+import qualified Myo.Command.Effect.SocketReader as SocketReader
+import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
+import Myo.Command.Log (pipePaneToSocket)
 import Myo.Data.ProcError (ProcError, unProcError)
+import qualified Myo.Effect.CommandLog as CommandLog
+import Myo.Effect.CommandLog (CommandLog)
 import qualified Myo.Effect.Executor as Executor
 import Myo.Effect.Executor (Executor)
 import qualified Myo.Effect.Proc as Proc
 import Myo.Effect.Proc (Proc)
-import Myo.Tmux.Process (panePid, waitForRunningProcess)
+import Myo.Loop (useWhileJust)
+import Myo.Tmux.Proc (commandPid, panePid, shellBusy, waitForRunningProcess)
 import Myo.Ui.Data.UiState (UiState)
 
 acceptCommand ::
@@ -44,9 +56,14 @@ acceptCommand ::
   PaneId ->
   Command ->
   Maybe TmuxTask
-acceptCommand shell pid = \case
-  cmd ->
-    Just (TmuxTask shell pid cmd)
+acceptCommand shell pane command@Command {kill} =
+  Just TmuxTask {..}
+  where
+    taskType =
+      case (shell, kill) of
+        (True, _) -> Shell
+        (False, True) -> Kill
+        (False, False) -> Wait
 
 cmdline :: [Text] -> [Key]
 cmdline =
@@ -59,60 +76,189 @@ paneIdForIdent ::
 paneIdForIdent paneIdent =
   stopEither =<< atomicGets (Views.paneId paneIdent)
 
-track :: ()
-track =
-  undefined
+pollPid ::
+  Members [Executions, Proc !! ProcError, ChronosTime] r =>
+  Ident ->
+  Pid ->
+  Sem r ()
+pollPid ident shellPid = do
+  resumeAs @_ @Proc Nothing (commandPid shellPid) >>= traverse_ \ pid -> do
+    Executions.setState ident (ExecutionState.Tracked pid)
+    while (MilliSeconds 500) do
+      False <! Proc.exists pid
 
+sanitizeOutput :: Text -> Text
+sanitizeOutput =
+  Text.replace "\r\n" "\n"
+
+readOutput ::
+  Members [SocketReader, CommandLog] r =>
+  Ident ->
+  Sem r ()
+readOutput ident =
+  useWhileJust SocketReader.chunk \ chunk ->
+    CommandLog.append ident (sanitizeOutput (decodeUtf8 chunk))
+
+type MonitorStack =
+  [
+    CommandLog,
+    Proc !! ProcError,
+    Executions,
+    NativeTmux,
+    NativeCodecE (Panes PanePid),
+    DataLog HostError,
+    ChronosTime,
+    Race,
+    Log,
+    Embed IO
+  ]
+
+-- TODO this needs to listen to events or an MVar (in Executions?) to allow an rpc handler to kill the monitor, e.g.
+-- when a new command in the same pane with kill = True is run
+-- otoh if the process is killed, `pollPid` will terminate
+-- but if the process runs so short that no pid could be obtained, this won't work
 monitor ::
-  Members [Proc !! ProcError, Executions, NativeTmux, NativeCodec (Panes PanePid), DataLog HostError, ChronosTime, Log] r =>
-  Bool ->
+  Members MonitorStack r =>
+  Member SocketReader r =>
   Ident ->
   PaneId ->
   Pid ->
   Sem r ()
-monitor shell ident paneId shellPid = do
+monitor ident paneId shellPid = do
   Log.debug [exon|Monitoring tmux command `#{identText ident}` in #{formatId paneId}|]
-  unless shell do
-    resume_ @ProcError $ Proc.childPid shellPid >>= traverse_ \ pid ->
-      Executions.setState ident (ExecutionState.Tracked pid)
+  race_ (Executions.waitKill ident) (race_ (pollPid ident shellPid) (readOutput ident))
 
-type TmuxRunStack =
-  NativeCodecs [TmuxCommand, Panes Pane, Panes PaneMode, Panes PanePid] ++ [
+start ::
+  Members (NativeCodecsE [TmuxCommand, Panes PaneMode]) r =>
+  Members [NativeTmux, Stop CodecError, Log] r =>
+  TmuxTask ->
+  Sem r ()
+start TmuxTask {pane, command = Command {ident, cmdLines}} =
+  withTmuxApis_ @[TmuxCommand, Panes PaneMode] @CodecError do
+    quitCopyMode pane
+    Log.debug [exon|Sending command `#{identText ident}` to tmux pane #{formatId pane}|]
+    sendKeys pane (cmdline cmdLines)
+
+pipingToSocket ::
+  Members [NativeTmux, SocketReader, NativeCommandCodecE, Stop CodecError, Resource] r =>
+  PaneId ->
+  Sem r a ->
+  Sem r a
+pipingToSocket pane ma =
+  bracket_ acquire release ma
+  where
+    acquire = do
+      socket <- SocketReader.path
+      withTmux_ do
+        pipePaneToSocket pane socket
+    release =
+      withTmux_ do
+        Tmux.send (PipePane def { target = Target.Pane pane })
+
+type StartMonitoredStack socket sre =
+  MonitorStack ++ NativeCodecsE [TmuxCommand, Panes PaneMode] ++ [
+    ScopedSocketReader socket !! sre,
+    Stop CodecError,
+    Resource
+  ]
+
+startMonitored ::
+  ToErrorMessage sre =>
+  Members (StartMonitoredStack socket sre) r =>
+  Pid ->
+  TmuxTask ->
+  Sem r ()
+startMonitored shellPid task@TmuxTask {pane, command = Command {ident}} =
+  resumeReportError (Just "tmux") $ socketReader ident $ pipingToSocket pane do
+    start task
+    monitor ident pane shellPid
+
+startTask ::
+  ToErrorMessage sre =>
+  Members (StartMonitoredStack socket sre) r =>
+  Pid ->
+  TmuxTask ->
+  Sem r ()
+startTask shellPid = \case
+  task@TmuxTask {taskType = Shell} ->
+    start task
+  task ->
+    startMonitored shellPid task
+
+type TmuxRunStack socket sre =
+  NativeCodecsE [TmuxCommand, Panes Pane, Panes PaneMode, Panes PanePid] ++ [
+    ScopedSocketReader socket !! sre,
     Executions,
+    CommandLog,
     Proc !! ProcError,
     DataLog HostError,
     AtomicState UiState,
     Log,
     ChronosTime,
     Async,
+    Race,
     Embed IO
   ]
 
+waitForCommand ::
+  Members [Executions, Log] r =>
+  TmuxTask ->
+  Sem r ()
+waitForCommand (TmuxTask {taskType, command = Command {ident}}) = do
+  when (taskType == Kill) do
+    Log.debug [exon|Killing running command `#{identText ident}`|]
+    Executions.kill ident
+  unless (taskType == Shell) do
+    Log.debug [exon|Waiting for running command `#{identText ident}`|]
+    Executions.wait ident
+
+waitForProcess ::
+  Members [Executions, Proc !! ProcError, Log, ChronosTime, Stop RunError] r =>
+  Pid ->
+  TmuxTask ->
+  Sem r ()
+waitForProcess shellPid TmuxTask {taskType, command = Command {ident}} = do
+  whenM (False <! shellBusy shellPid) do
+    when (taskType == Kill) do
+      Log.debug [exon|Killing running process to start `#{identText ident}`|]
+      Executions.kill ident
+    unless (taskType == Shell) do
+      Log.debug [exon|Waiting for running process to start `#{identText ident}`|]
+      resumeHoist @_ @Proc (RunError.Proc . unProcError) (waitForRunningProcess shellPid)
+
+prepare ::
+  Member Executions r =>
+  TmuxTask ->
+  Sem r ()
+prepare (TmuxTask {command = Command {ident}}) =
+  Executions.start ident
+
+finalizeState ::
+  Member Executions r =>
+  Ident ->
+  Sem r ()
+finalizeState ident =
+  Executions.stop ident
+
 runInTmux ::
-  ∀ r .
-  -- ∀ eres r .
-  -- Member (Events eres RunEvent) r =>
-  Members TmuxRunStack r =>
-  Members [NativeTmux, Stop RunError] r =>
+  ∀ socket sre r .
+  ToErrorMessage sre =>
+  Members (TmuxRunStack socket sre) r =>
+  Members [NativeTmux, Resource, Stop RunError] r =>
   TmuxTask ->
   Sem r (Maybe [Text])
-runInTmux (TmuxTask shell paneId Command {ident, cmdLines}) = do
+runInTmux task@TmuxTask {pane, command = Command {ident}} = do
   mapStop RunError.TmuxCodec do
-    shellPid <- withTmuxApis_ @[TmuxCommand, Panes Pane, Panes PaneMode, Panes PanePid] @CodecError do
-      shellPid <- panePid paneId
-      unless shell do
-        Log.debug [exon|Waiting for running process to finish for command `#{identText ident}`|]
-        resumeHoist @_ @Proc (RunError.Proc . unProcError) (waitForRunningProcess shellPid)
-      quitCopyMode paneId
-      Log.debug [exon|Sending command `#{identText ident}` to tmux pane #{formatId paneId}|]
-      shellPid <$ sendKeys paneId (cmdline cmdLines)
-    monitor shell ident paneId shellPid
-    pure Nothing
+    waitForCommand task
+    bracket_ (prepare task) (finalizeState ident) do
+      shellPid <- withPanes_ @PanePid @CodecError (panePid pane)
+      startTask shellPid task
+      pure Nothing
 
 interpretExecutorTmux ::
-  -- Member (Events eres RunEvent) r =>
-  Members TmuxRunStack r =>
-  Members [NativeTmux !! TmuxError, AtomicState Views] r =>
+  ToErrorMessage sre =>
+  Members (TmuxRunStack socket sre) r =>
+  Members [NativeTmux !! TmuxError, AtomicState Views, Resource] r =>
   InterpreterFor (Executor TmuxTask !! RunError) r
 interpretExecutorTmux =
   interpretResumable \case

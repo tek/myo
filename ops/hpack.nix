@@ -92,6 +92,7 @@ in {
       "extra"
       "filepattern"
       "first-class-families"
+      "foldl"
       "generic-lens"
       "generics-sop"
       "hashable"

@@ -24,7 +24,7 @@ module Myo.Command.Monitor where
 
 -- import Myo.Command.Data.CommandState (CommandState)
 -- import qualified Myo.Command.Data.CommandState as CommandState (executing, monitorChan)
--- import Myo.Command.Data.Execution (Execution (Execution), ExecutionMonitor (ExecutionMonitor), ExecutionState (..))
+-- import Myo.Command.Data.Execution (Execution (Execution), ExecutionSync (ExecutionSync), ExecutionState (..))
 -- import Myo.Command.Data.MonitorEvent (MonitorEvent (CommandOutput, Tick))
 -- import Process (Pid)
 -- import Myo.Command.Execution (killExecution, modifyExecutionState, setExecutionState, storeOutputSocket)
@@ -100,7 +100,7 @@ module Myo.Command.Monitor where
 --   Member (AtomicState Env) r =>
 --   Execution ->
 --   m ()
--- checkExecuting (Execution ident _ _ (ExecutionMonitor state started _ checkPending)) = do
+-- checkExecuting (Execution ident _ _ (ExecutionSync state started _ checkPending)) = do
 --   catchAny (showDebug "checking execution:") $ check state
 --   promoteTimedOutExecution ident started state
 --   where

@@ -6,7 +6,7 @@ import Log (Severity (Debug, Trace))
 import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
-import Polysemy.Test (Test, UnitTest)
+import Polysemy.Test (Test, UnitTest, TestError (TestError))
 import Ribosome (
   BootError,
   HandlerError,
@@ -29,6 +29,7 @@ import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
+import Chiasma.Data.CodecError (CodecError)
 
 type MyoTestStack =
   Stop HandlerError : StackWith MyoStack
@@ -87,7 +88,7 @@ myoTestDebug =
   myoTestConf (setStderr Debug def)
 
 type MyoTmuxTestStack =
-  Stop HandlerError : Tmux.EmbedTmuxWith MyoStack
+  Stop HandlerError : Stop CodecError : Tmux.EmbedTmuxWith MyoStack
 
 myoEmbedTmuxTestConf ::
   HasCallStack =>
@@ -96,7 +97,7 @@ myoEmbedTmuxTestConf ::
   UnitTest
 myoEmbedTmuxTestConf conf test =
   testPluginEmbedTmuxConf @MyoStack def { core = testConfig conf } (interpretMyoTestStack . noHandlers) do
-    testHandler test
+    stopToErrorWith (TestError . show) $ testHandler test
 
 myoEmbedTmuxTest ::
   HasCallStack =>

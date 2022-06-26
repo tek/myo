@@ -128,8 +128,8 @@ myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill 
     target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
     runCommand (cmd ident target lines')
   where
-    cmd ident target lines' =
-      cons target ident lines' runner lang Nothing (orFalse skipHistory) (orFalse kill) (orFalse capture)
+    cmd ident target cmdLines =
+      (cons target ident cmdLines) { runner, lang, skipHistory = orFalse skipHistory, kill = orFalse kill, capture = orFalse capture }
     cons =
       either shellCommand (systemCommand . Just)
     findTarget target =

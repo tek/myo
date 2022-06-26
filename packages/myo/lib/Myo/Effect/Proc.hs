@@ -6,6 +6,7 @@ data Proc :: Effect where
   ChildPids :: Pid -> Proc m [Pid]
   ParentPids :: Pid -> Proc m [Pid]
   Exists :: Pid -> Proc m Bool
+  Kill :: Pid -> Proc m ()
 
 makeSem ''Proc
 

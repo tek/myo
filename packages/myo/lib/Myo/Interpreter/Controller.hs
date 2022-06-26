@@ -86,9 +86,8 @@ prepare ::
   RunTask ->
   Sem r ()
 prepare = \case
-  RunTask Command {ident = cmdIdent} _ (RunTaskDetails.UiSystem ident) -> do
+  RunTask _ _ (RunTaskDetails.UiSystem ident) -> do
     preparePane ident
-    Executions.add cmdIdent
   RunTask _ _ (RunTaskDetails.UiShell shellIdent _) ->
     unlessM (Executions.active shellIdent) do
       Log.debug [exon|Starting inactive shell command `#{identText shellIdent}`|]
