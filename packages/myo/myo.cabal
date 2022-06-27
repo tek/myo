@@ -54,6 +54,7 @@ library
       Myo.Command.Data.StoreHistoryLock
       Myo.Command.Data.TmuxTask
       Myo.Command.Data.VimTestPosition
+      Myo.Command.Effect.CommandLog
       Myo.Command.Effect.Executions
       Myo.Command.Effect.SocketReader
       Myo.Command.Execution
@@ -87,14 +88,15 @@ library
       Myo.Data.String.Pretty
       Myo.Data.ViewError
       Myo.Diag
-      Myo.Effect.CommandLog
       Myo.Effect.Controller
       Myo.Effect.Executor
+      Myo.Effect.MState
       Myo.Effect.Proc
       Myo.Env
       Myo.Init
       Myo.Interpreter.Controller
       Myo.Interpreter.Executor.Process
+      Myo.Interpreter.MState
       Myo.Interpreter.Proc
       Myo.Log
       Myo.Loop

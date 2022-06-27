@@ -20,6 +20,7 @@ import Myo.Test.Output.SelectTest (test_outputSelect)
 import Myo.Test.ProcTest (test_proc)
 import Myo.Test.RunTest (test_runLineCmd, test_runLineSingle, test_runSubproc, test_runSystem)
 import Myo.Test.SaveTest (test_save)
+import Myo.Test.Tmux.CommandLogTest (test_tmuxTruncCommandLog)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
 import Myo.Test.Tmux.ParseTest (test_parseCaptureTmux, test_parseTmux)
 import Myo.Test.Tmux.RunShellTest (test_tmuxRunShell)
@@ -32,6 +33,7 @@ import Test.Tasty (TestTree, defaultMain, testGroup)
 tests :: TestTree
 tests =
   testGroup "all" [
+    unitTest "truncate the command log for a tmux command" test_tmuxTruncCommandLog,
     unitTest "run a command from the menu" test_commandMenu,
     unitTest "select a command in the history menu" test_historyMenu,
     unitTest "update commands via variable watcher" test_updateCommands,

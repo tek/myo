@@ -1,8 +1,8 @@
 module Myo.Command.Interpreter.Executions where
 
 import Chiasma.Data.Ident (Ident, identText)
-import Conc (interpretAtomic)
 import qualified Control.Lens as Lens
+import Control.Lens (mapMOf)
 import qualified Data.Map.Strict as Map
 import Exon (exon)
 import qualified Log
@@ -16,19 +16,20 @@ import Myo.Command.Data.ExecutionState (ExecutionState (..))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Data.ProcError (ProcError)
+import Myo.Effect.MState (MState, mmodify, mreads, mstate, mtrans)
 import qualified Myo.Effect.Proc as Proc
 import Myo.Effect.Proc (Proc)
+import Myo.Interpreter.MState (interpretMState)
 
--- TODO replace with MState
 type ExecutionsState =
-  AtomicState (Map Ident Execution)
+  MState (Map Ident Execution)
 
 getExecution ::
   Member ExecutionsState r =>
   Ident ->
   Sem r (Maybe Execution)
 getExecution =
-  atomicGets . Map.lookup
+  mreads . Map.lookup
 
 withExecution ::
   Member ExecutionsState r =>
@@ -52,10 +53,10 @@ modifyExecution ::
   (Execution -> Sem r Execution) ->
   Sem r ()
 modifyExecution ident f =
-  atomicPut =<< Lens.mapMOf (at ident . Lens._Just) f =<< atomicGet
+  mtrans (mapMOf (at ident . Lens._Just) f)
 
 getState ::
-  Member (AtomicState (Map Ident Execution)) r =>
+  Member ExecutionsState r =>
   Ident ->
   Sem r (Maybe ExecutionState)
 getState i =
@@ -113,15 +114,15 @@ waitFor i =
   getExecution i >>= traverse_ \ e -> embed (readMVar (e ^. #sync . #wait))
 
 interpretExecutions ::
-  Members [Proc !! ProcError, ChronosTime, Log, Embed IO] r =>
+  Members [Proc !! ProcError, ChronosTime, Log, Resource, Race, Embed IO] r =>
   InterpreterFor Executions r
 interpretExecutions =
-  interpretAtomic (mempty :: Map Ident Execution) .
+  interpretMState (mempty :: Map Ident Execution) .
   reinterpret \case
     Executions.Get i ->
       getExecution i
     Executions.Modify i f ->
-      atomicState' \ s -> do
+      mstate \ s -> do
         case Map.lookup i s of
           Just e ->
             let (a, newE) = f e
@@ -134,7 +135,7 @@ interpretExecutions =
       now <- Time.now
       wait <- embed newEmptyMVar
       kill <- embed newEmptyMVar
-      atomicModify' (Map.insert i (Execution i ExecutionState.Pending now (ExecutionSync wait kill)))
+      mmodify (Map.insert i (Execution i ExecutionState.Pending now (ExecutionSync wait kill)))
     Executions.Stop i -> do
       modifyExecution i \ e@Execution {sync = ExecutionSync {wait}} ->
         (e & #state .~ ExecutionState.Stopped) <$ embed (tryPutMVar wait ())

@@ -20,7 +20,7 @@ import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withPanes_, withTmuxApis_, withTmux_)
 import qualified Chiasma.View as Views
 import Conc (race_)
-import qualified Data.Text as Text
+import Control.Lens.Regex.ByteString (match, regex)
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
@@ -35,14 +35,14 @@ import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (UiShell, UiSystem))
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Shell, Wait), TmuxTask (TmuxTask), command, pane, taskType)
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import qualified Myo.Command.Effect.SocketReader as SocketReader
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
 import Myo.Command.Log (pipePaneToSocket)
 import Myo.Data.ProcError (ProcError, unProcError)
-import qualified Myo.Effect.CommandLog as CommandLog
-import Myo.Effect.CommandLog (CommandLog)
 import qualified Myo.Effect.Executor as Executor
 import Myo.Effect.Executor (Executor)
 import qualified Myo.Effect.Proc as Proc
@@ -87,17 +87,16 @@ pollPid ident shellPid = do
     while (MilliSeconds 500) do
       False <! Proc.exists pid
 
-sanitizeOutput :: Text -> Text
+sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
-  Text.replace "\r\n" "\n"
+  [regex|\r\n|] . match .~ "\n"
 
 readOutput ::
   Members [SocketReader, CommandLog] r =>
   Ident ->
   Sem r ()
 readOutput ident =
-  useWhileJust SocketReader.chunk \ chunk ->
-    CommandLog.append ident (sanitizeOutput (decodeUtf8 chunk))
+  useWhileJust SocketReader.chunk (CommandLog.append ident . sanitizeOutput)
 
 type MonitorStack =
   [
@@ -113,10 +112,6 @@ type MonitorStack =
     Embed IO
   ]
 
--- TODO this needs to listen to events or an MVar (in Executions?) to allow an rpc handler to kill the monitor, e.g.
--- when a new command in the same pane with kill = True is run
--- otoh if the process is killed, `pollPid` will terminate
--- but if the process runs so short that no pid could be obtained, this won't work
 monitor ::
   Members MonitorStack r =>
   Member SocketReader r =>
@@ -205,12 +200,13 @@ waitForCommand ::
   TmuxTask ->
   Sem r ()
 waitForCommand (TmuxTask {taskType, command = Command {ident}}) = do
-  when (taskType == Kill) do
-    Log.debug [exon|Killing running command `#{identText ident}`|]
-    Executions.kill ident
-  unless (taskType == Shell) do
-    Log.debug [exon|Waiting for running command `#{identText ident}`|]
-    Executions.wait ident
+  whenM (Executions.active ident) do
+    when (taskType == Kill) do
+      Log.debug [exon|Killing running command `#{identText ident}`|]
+      Executions.kill ident
+    unless (taskType == Shell) do
+      Log.debug [exon|Waiting for running command `#{identText ident}`|]
+      Executions.wait ident
 
 waitForProcess ::
   Members [Executions, Proc !! ProcError, Log, ChronosTime, Stop RunError] r =>

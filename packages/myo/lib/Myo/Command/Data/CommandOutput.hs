@@ -1,8 +1,11 @@
 module Myo.Command.Data.CommandOutput where
 
+import Data.ByteString.Builder (Builder)
+
 data CommandOutput =
   CommandOutput {
-    history :: [Text],
-    current :: Seq Text
+    prev :: Maybe (Either Text Builder),
+    currentBuilt :: Maybe Text,
+    current :: Seq ByteString,
+    currentSize :: Int
   }
-  deriving stock (Eq, Show)
