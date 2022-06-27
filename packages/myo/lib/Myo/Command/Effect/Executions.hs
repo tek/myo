@@ -2,7 +2,7 @@ module Myo.Command.Effect.Executions where
 
 import Chiasma.Data.Ident (Ident)
 import Data.Generics.Labels ()
-import Prelude hiding (get, modify)
+import Prelude hiding (get, modify, stop)
 import Process (Pid)
 
 import qualified Myo.Command.Data.Execution as Execution
@@ -60,3 +60,11 @@ pid ::
   Sem r (Maybe Pid)
 pid i =
   (>>= Execution.pid) <$> get i
+
+withExecution ::
+  Members [Executions, Resource] r =>
+  Ident ->
+  Sem r a ->
+  Sem r a
+withExecution ident =
+  bracket_ (start ident) (stop ident)

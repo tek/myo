@@ -23,14 +23,13 @@ import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
+import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Effect.Executor as Executor
 import Myo.Effect.Executor (Executor)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Run (myoEmbedTmuxTestDebug)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
-import Data.Semigroup (Sum(Sum))
-import qualified Data.ByteString as ByteString
 
 paneContent ::
   Members [NativeTmux, NativeCodecE TmuxCommand, Stop CodecError] r =>
@@ -40,7 +39,8 @@ paneContent =
 
 test_tmuxTruncCommandLog :: UnitTest
 test_tmuxTruncCommandLog =
-  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 100 $ interpretExecutorTmux $ testHandler do
+  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 100 $ interpretTmuxMonitor $
+  interpretExecutorTmux $ testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     thread1 <- testHandlerAsync do
@@ -50,9 +50,7 @@ test_tmuxTruncCommandLog =
       sendKeys 0 [k]
       sendKeys 0 [k]
       sendKeys 0 [k]
-    dbgs =<< CommandLog.chunks cmdIdent
-    dbgs . fmap (foldMap (Sum . ByteString.length)) =<< CommandLog.chunks cmdIdent
-    assertWait (fmap (take 7 . Text.lines) <$> CommandLog.get cmdIdent) (assertJust target)
+    assertWait (fmap Text.lines <$> CommandLog.get cmdIdent) (assertJust target)
     Executions.kill cmdIdent
     assertWait (Executions.running cmdIdent) (assert . not)
     assertEq Nothing =<< thread1

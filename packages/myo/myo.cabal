@@ -52,11 +52,13 @@ library
       Myo.Command.Data.RunTask
       Myo.Command.Data.SocketReaderError
       Myo.Command.Data.StoreHistoryLock
+      Myo.Command.Data.TmuxMonitorError
       Myo.Command.Data.TmuxTask
       Myo.Command.Data.VimTestPosition
       Myo.Command.Effect.CommandLog
       Myo.Command.Effect.Executions
       Myo.Command.Effect.SocketReader
+      Myo.Command.Effect.TmuxMonitor
       Myo.Command.Execution
       Myo.Command.History
       Myo.Command.HistoryMenu
@@ -65,6 +67,7 @@ library
       Myo.Command.Interpreter.Executor.Null
       Myo.Command.Interpreter.Executor.Tmux
       Myo.Command.Interpreter.SocketReader
+      Myo.Command.Interpreter.TmuxMonitor
       Myo.Command.Kill
       Myo.Command.Log
       Myo.Command.Monitor
