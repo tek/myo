@@ -17,7 +17,6 @@ import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (runner))
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (runner, target))
 import qualified Myo.Command.Effect.Executions as Executions
-import Myo.Command.Interpreter.Executor.Null (interpretExecutorNull)
 import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRunIdent)
@@ -26,6 +25,7 @@ import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Run (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
+import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
 
 line1 :: Text
 line1 =
@@ -77,7 +77,8 @@ paneContent =
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
-  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController $ testHandler do
+  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["cat"]) { runner, target = Just "make" }

@@ -9,8 +9,8 @@ import Polysemy.Test (UnitTest, assertEq)
 import Ribosome (mapHandlerError)
 import Ribosome.Test (assertWait, testHandler)
 
-import Myo.Command.Interpreter.Executor.Null (interpretExecutorNull)
 import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
 import Myo.Data.ViewError (codecError)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Run (myoEmbedTmuxTest)
@@ -28,7 +28,7 @@ data PaneSelected =
 
 test_focusPane :: UnitTest
 test_focusPane =
-  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController $
+  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
   interpretCodecPanes @PaneSelected $ testHandler do
     setupDefaultTestUi
     myoTogglePane "make"

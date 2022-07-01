@@ -1,6 +1,6 @@
 module Myo.Command.History where
 
-import Chiasma.Data.Ident (Ident, sameIdent)
+import Chiasma.Data.Ident (Ident, identText, sameIdent)
 import Control.Lens (element, firstOf, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (nubOrdOn)
@@ -199,4 +199,4 @@ displayNameByIdent ident =
   select <$> mayCommandOrHistoryBy #ident ident
   where
     select =
-      fromMaybe (show ident) . (>>= Command.displayName)
+      fromMaybe (identText ident) . (>>= Command.displayName)

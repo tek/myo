@@ -8,7 +8,7 @@ import qualified Data.Map.Strict as Map
 import Data.Sequence (Seq ((:<|)), (|>))
 
 import Myo.Command.Data.CommandOutput (CommandOutput (..))
-import Myo.Command.Effect.CommandLog (CommandLog (Append, Archive, Chunks, Get, GetPrev))
+import Myo.Command.Effect.CommandLog (CommandLog (Append, Archive, ArchiveAll, Chunks, Get, GetPrev, Set))
 
 trunc1 :: Int -> CommandOutput -> CommandOutput
 trunc1 maxSize =
@@ -48,7 +48,10 @@ build =
 
 buildCurrent :: CommandOutput -> CommandOutput
 buildCurrent old =
-  old { currentBuilt = Just (build (builder (current old))) }
+  old {
+    currentBuilt = Just (fromMaybe "" (currentBuilt old) <> build (builder (current old))),
+    current = mempty
+  }
 
 buildPrev :: CommandOutput -> Maybe Text
 buildPrev =
@@ -63,6 +66,10 @@ archive CommandOutput {..} =
     currentSize = 0
   }
 
+setCurrent :: Text -> CommandOutput -> CommandOutput
+setCurrent text CommandOutput {..} =
+  CommandOutput {currentBuilt = Just text, ..}
+
 interpretCommandLog ::
   Member (Embed IO) r =>
   Int ->
@@ -70,11 +77,14 @@ interpretCommandLog ::
 interpretCommandLog maxSize =
   interpretAtomic (mempty :: Map Ident CommandOutput) .
   reinterpret \case
+    Set ident text ->
+      atomicModify' (Map.alter (Just . setCurrent text . fromMaybe def) ident . Map.adjust archive ident)
     Append ident chunk ->
-      atomicModify' \ s ->
-        Map.alter (Just . append maxSize chunk) ident s
+      atomicModify' (Map.alter (Just . append maxSize chunk) ident)
     Archive ident ->
       atomicModify' (Map.adjust archive ident)
+    ArchiveAll ->
+      atomicModify' (fmap archive)
     Chunks ident ->
       atomicGets (fmap current . Map.lookup ident)
     Get ident ->

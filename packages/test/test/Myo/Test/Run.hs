@@ -6,7 +6,7 @@ import Log (Severity (Debug, Trace))
 import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
-import Polysemy.Test (Test, UnitTest, TestError (TestError))
+import Polysemy.Test (Test, UnitTest)
 import Ribosome (
   BootError,
   HandlerError,
@@ -16,6 +16,7 @@ import Ribosome (
   RpcError,
   SettingError,
   Settings,
+  mapHandlerError,
   noHandlers,
   setStderr,
   )
@@ -27,9 +28,10 @@ import Ribosome.Test.EmbedTmux (testPluginEmbedTmuxConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
+import Myo.Data.ViewError (ViewError)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
-import Chiasma.Data.CodecError (CodecError)
 
 type MyoTestStack =
   Stop HandlerError : StackWith MyoStack
@@ -46,6 +48,7 @@ interpretMyoTestStack ::
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
+  interpretExecutorFail .
   interpretProc .
   interpretCodecPanes .
   interpretCodecPanes .
@@ -88,7 +91,7 @@ myoTestDebug =
   myoTestConf (setStderr Debug def)
 
 type MyoTmuxTestStack =
-  Stop HandlerError : Stop CodecError : Tmux.EmbedTmuxWith MyoStack
+  Stop ViewError : Stop HandlerError : Tmux.EmbedTmuxWith MyoStack
 
 myoEmbedTmuxTestConf ::
   HasCallStack =>
@@ -97,7 +100,7 @@ myoEmbedTmuxTestConf ::
   UnitTest
 myoEmbedTmuxTestConf conf test =
   testPluginEmbedTmuxConf @MyoStack def { core = testConfig conf } (interpretMyoTestStack . noHandlers) do
-    stopToErrorWith (TestError . show) $ testHandler test
+    testHandler $ mapHandlerError test
 
 myoEmbedTmuxTest ::
   HasCallStack =>

@@ -13,10 +13,10 @@ import Chiasma.Tmux (withTmuxApis)
 import Ribosome (Rpc)
 import Ribosome.Api (nvimCwd)
 
-import Myo.Env (myoSpaces)
 import Myo.Ui.Data.Space (Space (Space))
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.Window (Window (Window))
+import Myo.Ui.Space (myoSpaces)
 
 renderTmux ::
   Member (Codec TmuxCommand encode decode !! CodecError) r =>

@@ -1,4 +1,4 @@
-module Myo.Interpreter.Executor.Process where
+module Myo.Command.Interpreter.Executor.Process where
 
 import Chiasma.Data.Ident (Ident)
 import Conc (PScoped)
@@ -21,12 +21,14 @@ import System.Process.Typed (proc)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command, cmdLines))
+import qualified Myo.Command.Data.RunError as RunError
+import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunEvent as RunEvent
 import Myo.Command.Data.RunEvent (RunEvent (RunEvent))
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (System, UiSystem))
+import Myo.Command.Effect.Executor (Executor)
+import Myo.Command.Interpreter.Executor.Generic (captureUnsupported, interceptExecutor)
 import Myo.Data.ProcessTask (ProcessTask (ProcessTask))
-import qualified Myo.Effect.Executor as Executor
-import Myo.Effect.Executor (Executor)
 
 outputEvent ::
   Members [Events eres RunEvent, State [Text]] r =>
@@ -39,25 +41,28 @@ outputEvent ident = \case
 
 runProcess ::
   ∀ eres pres r .
+  Member (Stop RunError) r =>
   Members [Events eres RunEvent, PScoped (String, [String]) pres (Process Text (Either Text Text)) !! ProcessError] r =>
   ProcessTask ->
-  Sem r (Maybe [Text])
+  Sem r ()
 runProcess (ProcessTask ident cmd) =
   evalState mempty $ resuming checkError $ withProcess cmd do
     forever do
       outputEvent ident =<< Process.recv
   where
     checkError = \case
-      Unknown _ -> Just <$> get
-      Exit ExitSuccess -> pure Nothing
-      Exit (ExitFailure _) -> Just <$> get
+      Unknown _ -> failure
+      Exit ExitSuccess -> unit
+      Exit (ExitFailure _) -> failure
+    failure =
+      stop . RunError.SubprocFailed =<< get
 
 conf :: (String, [String]) -> Sem r SysProcConf
 conf (exe, args) =
   pure (proc exe args)
 
-acceptCommand :: Command -> Maybe ProcessTask
-acceptCommand = \case
+processTask :: Command -> Maybe ProcessTask
+processTask = \case
   Command {ident, cmdLines = [l]} ->
     case List.words (toString l) of
       (h : t) -> Just (ProcessTask ident (h, t))
@@ -65,24 +70,30 @@ acceptCommand = \case
   _ ->
     Nothing
 
+acceptCommand ::
+  RunTask ->
+  Sem r (Maybe ProcessTask)
+acceptCommand = \case
+  RunTask cmd System ->
+    pure (processTask cmd)
+  RunTask cmd (UiSystem _) ->
+    pure (processTask cmd)
+  _ ->
+    pure Nothing
+
 interpretExecutorProcess ::
-  ∀ eres pres r .
+  ∀ eres pres r a .
+  Member (Executor !! RunError) r =>
   Members [Events eres RunEvent, PScoped (String, [String]) pres (Process Text (Either Text Text)) !! ProcessError] r =>
-  InterpreterFor (Executor ProcessTask) r
+  Sem r a ->
+  Sem r a
 interpretExecutorProcess =
-  interpret \case
-    Executor.Accept (RunTask cmd _ System) ->
-      pure (acceptCommand cmd)
-    Executor.Accept (RunTask cmd _ (UiSystem _)) ->
-      pure (acceptCommand cmd)
-    Executor.Accept _ ->
-      pure Nothing
-    Executor.Run cmd ->
-      runProcess cmd
+  interceptExecutor acceptCommand runProcess (captureUnsupported "process")
 
 interpretExecutorProcessNative ::
-  Members [Events res RunEvent, Resource, Race, Async, Embed IO] r =>
-  InterpreterFor (Executor ProcessTask) r
+  Members [Executor !! RunError, Events res RunEvent, Resource, Race, Async, Embed IO] r =>
+  Sem r a ->
+  Sem r a
 interpretExecutorProcessNative =
   interpretProcessOutputTextLines @'Stderr .
   interpretProcessOutputLeft @'Stderr .
@@ -90,6 +101,5 @@ interpretExecutorProcessNative =
   interpretProcessOutputRight @'Stdout .
   interpretProcessInputText .
   interpretProcessNative def conf .
-  insertAt @1 .
   interpretExecutorProcess .
-  raiseUnder
+  insertAt @0

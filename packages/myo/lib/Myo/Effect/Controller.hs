@@ -7,5 +7,6 @@ import Myo.Command.Data.Command (Command)
 data Controller :: Effect where
   RunIdent :: Ident -> Controller m ()
   RunCommand :: Command -> Controller m ()
+  CaptureOutput :: Ident -> Controller m ()
 
 makeSem ''Controller

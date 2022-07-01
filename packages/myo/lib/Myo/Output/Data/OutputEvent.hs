@@ -12,18 +12,18 @@ data OutputEventMeta =
     location :: Maybe Location,
     level :: Int
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 data OutputEvent =
   OutputEvent {
     meta :: OutputEventMeta,
     lines :: Vector (ReportLine EventIndex.Relative)
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 data LangOutputEvent a =
   LangOutputEvent {
     event :: OutputEventMeta,
     langData :: a
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)

@@ -1,7 +1,6 @@
 module Myo.Command.Data.RunTask where
 
-import Chiasma.Data.Ident (Ident)
-import Path (Abs, File, Path)
+import Chiasma.Data.Ident (Ident, Identifiable (identify))
 
 import Myo.Command.Data.Command (Command)
 
@@ -23,7 +22,10 @@ data RunTaskDetails =
 data RunTask =
   RunTask {
     command :: Command,
-    log :: Path Abs File,
     details :: RunTaskDetails
   }
   deriving stock (Eq, Show)
+
+instance Identifiable RunTask where
+  identify =
+    identify . command

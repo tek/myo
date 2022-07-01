@@ -10,7 +10,7 @@ import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Chiasma.TmuxNative (withTmuxNative_)
 import qualified Data.Text as Text
-import Polysemy.Test (UnitTest, assert, assertEq, assertJust)
+import Polysemy.Test (UnitTest, assert, assertJust, evalEither)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 
@@ -21,11 +21,9 @@ import Myo.Command.Data.TmuxTask (TaskType (Wait), TmuxTask (TmuxTask))
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+import Myo.Command.Interpreter.Executor.Tmux (runInTmux)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
-import qualified Myo.Effect.Executor as Executor
-import Myo.Effect.Executor (Executor)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Run (myoEmbedTmuxTestDebug)
 import Myo.Test.Tmux.Output (cleanLines)
@@ -39,12 +37,11 @@ paneContent =
 
 test_tmuxTruncCommandLog :: UnitTest
 test_tmuxTruncCommandLog =
-  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 100 $ interpretTmuxMonitor $
-  interpretExecutorTmux $ testHandler do
+  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 100 $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     thread1 <- testHandlerAsync do
-      resumeAs @_ @(Executor _) (Just ["failed"]) (Executor.run (TmuxTask Wait 0 cmd))
+      runStop (runInTmux (TmuxTask Wait 0 cmd))
     assertWait (Executions.running cmdIdent) assert
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [k]
@@ -53,7 +50,7 @@ test_tmuxTruncCommandLog =
     assertWait (fmap Text.lines <$> CommandLog.get cmdIdent) (assertJust target)
     Executions.kill cmdIdent
     assertWait (Executions.running cmdIdent) (assert . not)
-    assertEq Nothing =<< thread1
+    evalEither =<< thread1
     where
       target =
         [l, l, l, l]

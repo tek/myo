@@ -13,6 +13,10 @@ data ParsedOutput =
   }
   deriving stock (Eq, Show, Generic)
 
+empty :: ParsedOutput -> Bool
+empty =
+  allOf (#events . #events) null
+
 allEmpty :: [ParsedOutput] -> Bool
 allEmpty =
   allOf (each . #events . #events) null

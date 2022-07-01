@@ -1,6 +1,8 @@
 module Myo.Command.Data.Command where
 
+import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident, Identifiable (..))
+import qualified Data.Text as Text
 import Prelude hiding (lines)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 import Ribosome (MsgpackDecode, MsgpackEncode)
@@ -71,3 +73,12 @@ cons interpreter ident cmdLines =
     maxLogBytes = 100000,
     ..
   }
+
+shortIdent :: Ident -> Text
+shortIdent = \case
+  Ident.Str n -> n
+  Ident.Uuid i -> Text.take 6 (show i)
+
+name :: Command -> Text
+name Command {..} =
+  fromMaybe (shortIdent ident) displayName

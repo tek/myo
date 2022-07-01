@@ -1,43 +1,40 @@
 module Myo.Command.Parse where
 
--- import Control.Lens (at, element, firstOf, over, view, (^.))
--- import Ribosome.Config.Setting (setting, Settings.maybe)
--- import Ribosome.Data.SettingError (SettingError)
--- import qualified Ribosome.Log as Log
--- import Ribosome.Msgpack.Error (DecodeError)
--- import Text.RE.PCRE.Text (RE, SearchReplace, ed, (*=~/))
+import Chiasma.Data.Ident (Ident)
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
+import Ribosome (Handler, HandlerError, Rpc, RpcError, Scratch, SettingError, Settings, mapHandlerError)
+import Ribosome.Errors (pluginHandlerErrors)
+import qualified Ribosome.Settings as Settings
 
--- import Myo.Command.Command (commandByIdent, latestCommand)
--- import Myo.Command.Data.Command (Command(Command), CommandLanguage(CommandLanguage))
--- import qualified Myo.Command.Data.Command as Command (ident)
--- import Myo.Command.Data.CommandError (CommandError)
--- import Myo.Command.Data.CommandLog (CommandLog, CommandLog(CommandLog))
--- import qualified Myo.Command.Data.CommandLog as CommandLog (current, previous)
--- import Myo.Command.Data.CommandState (CommandState, OutputState(OutputState))
--- import qualified Myo.Command.Data.CommandState as CommandState (output, outputHandlers)
--- import Myo.Command.Data.ParseOptions (ParseOptions(ParseOptions))
--- import Myo.Command.Data.RunError (RunError)
--- import Myo.Command.History (displayNameByIdent)
--- import Myo.Command.Log (commandLog, commandLogByName, mainCommandOrHistory)
--- import Myo.Command.Output (compileAndRenderReport)
--- import Myo.Command.RunTask (runTask)
--- import Myo.Command.Runner (findRunner)
--- import Myo.Data.Env (Env, Runner(Runner))
--- import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute))
--- import Myo.Output.Data.OutputError (OutputError)
--- import qualified Myo.Output.Data.OutputError as OutputError (OutputError(NoLang, NoHandler, NoOutput))
--- import Myo.Output.Data.OutputHandler (OutputHandler(OutputHandler))
--- import Myo.Output.Data.OutputParser (OutputParser(OutputParser))
--- import Myo.Output.Data.ParsedOutput (ParsedOutput)
--- import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (allEmpty, events, syntax)
--- import qualified Myo.Settings as Settings (displayResult, proteomeMainType)
+import Myo.Command.Command (commandByIdent, latestCommand)
+import qualified Myo.Command.Data.Command as Command
+import Myo.Command.Data.Command (Command (Command, ident, lang), CommandLanguage (CommandLanguage))
+import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.LogDir (LogDir)
+import Myo.Command.Data.OutputState (OutputState (OutputState))
+import Myo.Command.Data.ParseOptions (ParseOptions (ParseOptions))
+import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
+import Myo.Command.Output (compileAndRenderReport)
+import qualified Myo.Effect.Controller as Controller
+import Myo.Effect.Controller (Controller)
+import qualified Myo.Output.Data.EventIndex as EventIndex
+import qualified Myo.Output.Data.OutputError as OutputError
+import Myo.Output.Data.OutputError (OutputError)
+import qualified Myo.Output.Data.ParsedOutput as ParsedOutput
+import Myo.Output.Data.ParsedOutput (ParsedOutput)
+import qualified Myo.Output.Effect.Parsing as Parsing
+import Myo.Output.Effect.Parsing (Parsing)
+import qualified Myo.Settings as Settings
 
--- selectCommand ::
---   Member (AtomicState Env) r =>
---   Maybe Ident ->
---   m Command
--- selectCommand (Just ident) = commandByIdent "selectCommand" ident
--- selectCommand Nothing = latestCommand
+selectCommand ::
+  Members [AtomicState CommandState, Stop CommandError] r =>
+  Maybe Ident ->
+  Sem r Command
+selectCommand =
+  maybe latestCommand (commandByIdent "selectCommand")
 
 -- removeTerminalCodesRE :: SearchReplace RE Text
 -- removeTerminalCodesRE =
@@ -63,49 +60,14 @@ module Myo.Command.Parse where
 --     err =
 --       stop $ OutputError.NoOutput ident
 
--- logOrCapture ::
---   MonadIO m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   Command ->
---   Bool ->
---   m (Maybe CommandLog)
--- logOrCapture cmd = \case
---   True -> do
---     task <- runTask cmd
---     tryCapture task =<< findRunner task
---   False ->
---     commandLog (cmd ^. Command.ident)
---   where
---     tryCapture task = \case
---       Runner _ _ _ _ (Just capture) -> do
---         log <- hoistEither =<< liftIO (capture task)
---         pure (Just (CommandLog [] log))
---       _ ->
---         pure Nothing
-
--- logOrCaptureByIdent ::
---   MonadIO m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   Ident ->
---   Bool ->
---   m (Maybe CommandLog)
--- logOrCaptureByIdent ident capture = do
---   cmd <- mainCommandOrHistory ident
---   logOrCapture cmd capture
-
 -- commandOutput ::
---   MonadIO m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
 --   Ident ->
---   Maybe Natural ->
+--   Maybe Word ->
 --   Bool ->
---   m Text
+--   Sem r Text
 -- commandOutput ident index capture = do
 --   name <- displayNameByIdent ident
---   commandOutputResult name . (>>= select) =<< logOrCaptureByIdent ident capture
+--   commandOutputResult name . (>>= select) =<< CommandLog.get (cmd ^. #ident)
 --   where
 --     select =
 --       maybe (Just . view CommandLog.current) selectPrevious (fromIntegral <$> index)
@@ -119,93 +81,67 @@ module Myo.Command.Parse where
 -- commandOutputByName name =
 --   commandOutputResult name =<< fmap (view CommandLog.current) <$> commandLogByName name
 
--- handlersForLang ::
---   CommandLanguage ->
---   m [OutputHandler]
--- handlersForLang lang = do
---   result <- atomicGets $ CommandState.outputHandlers . at lang
---   stopNote (OutputError.NoHandler lang) result
+projectLanguage ::
+  Member (Settings !! SettingError) r =>
+  Sem r (Maybe CommandLanguage)
+projectLanguage =
+  fmap CommandLanguage <$> Settings.maybe Settings.proteomeMainType
 
--- parseWith ::
---   MonadIO m =>
---   OutputParser ->
---   Text ->
---   m ParsedOutput
--- parseWith (OutputParser parser sanitize) =
---   liftIO . sanitize <=< hoistEither . parser
+commandParseLang ::
+  Members [Settings !! SettingError, Stop OutputError] r =>
+  Command ->
+  Sem r CommandLanguage
+commandParseLang = \case
+  Command {lang = Just l} ->
+    pure l
+  Command {ident, lang = Nothing} ->
+    stopNote (OutputError.NoLang ident) =<< projectLanguage
 
--- parseWithLang ::
---   MonadIO m =>
---   Member (AtomicState Env) r =>
---   CommandLanguage ->
---   Text ->
---   m [ParsedOutput]
--- parseWithLang lang output = do
---   handlers <- handlersForLang lang
---   traverse parse handlers
---   where
---     parse (OutputHandler parser) =
---       parseWith parser output
+parseCommand ::
+  Members [Settings !! SettingError, Parsing !! OutputError] r =>
+  Members [Controller !! RunError, CommandLog, Reader LogDir, AtomicState CommandState, Stop OutputError] r =>
+  Command ->
+  Sem r (Maybe (NonEmpty ParsedOutput))
+parseCommand cmd =
+  mapStop OutputError.Command do
+    lang <- commandParseLang cmd
+    -- cmd <- mainCommandOrHistory ident
+    when (cmd ^. #capture) $ mapStop OutputError.Run do
+      restop (Controller.captureOutput (cmd ^. #ident))
+    restop @OutputError $ runMaybeT do
+      out <- MaybeT (CommandLog.get ident)
+      MaybeT (Parsing.parse lang out) <|> (MaybeT . Parsing.parse lang =<< MaybeT (CommandLog.getPrev ident))
+  where
+    ident =
+      cmd ^. #ident
 
--- parseCommandWithLang ::
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   CommandLanguage ->
---   Ident ->
---   Bool ->
---   m [ParsedOutput]
--- parseCommandWithLang lang ident capture =
---   ensureEvents =<< parseIndex Nothing
---   where
---     ensureEvents a =
---       if ParsedOutput.allEmpty a then parseIndex (Just 0) else pure a
---     parseIndex index = do
---       output <- commandOutput ident index capture
---       Log.showDebug "parse output:" output
---       parseWithLang lang output
+storeParseResult ::
+  Member (AtomicState CommandState) r =>
+  Ident ->
+  NonEmpty ParsedOutput ->
+  Sem r ()
+storeParseResult ident parsed =
+  atomicSet #output (Just outputState)
+  where
+    outputState =
+      OutputState ident (toList syntax) events (EventIndex.Absolute 0) Nothing
+    syntax =
+      ParsedOutput.syntax <$> parsed
+    events =
+      foldMap ParsedOutput.events parsed
 
--- projectLanguage ::
---   m (Maybe CommandLanguage)
--- projectLanguage =
---   fmap CommandLanguage <$> Settings.maybe Settings.proteomeMainType
-
--- parseCommand ::
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   Command ->
---   m [ParsedOutput]
--- parseCommand (Command _ ident _ _ (Just lang) _ _ _ capture) =
---   parseCommandWithLang lang ident capture
--- parseCommand (Command _ ident _ _ Nothing _ _ _ capture) = do
---   lang <- stopNote (OutputError.NoLang ident) =<< projectLanguage
---   parseCommandWithLang lang ident capture
-
--- storeParseResult ::
---   Member (AtomicState Env) r =>
---   Ident ->
---   [ParsedOutput] ->
---   m ()
--- storeParseResult ident output =
---   setL @CommandState CommandState.output (Just outputState)
---   where
---     outputState =
---       OutputState ident syntax events (EventIndex.Absolute 0) Nothing
---     syntax =
---       view ParsedOutput.syntax <$> output
---     events =
---       foldMap (view ParsedOutput.events) output
-
--- myoParse ::
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   ParseOptions ->
---   m ()
--- myoParse (ParseOptions _ ident _) = do
---   cmd <- selectCommand ident
---   parsedOutput <- parseCommand cmd
---   storeParseResult (view Command.ident cmd) parsedOutput
---   display <- setting Settings.displayResult
---   when display compileAndRenderReport
+myoParse ::
+  Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Stop HandlerError] r =>
+  ParseOptions ->
+  Handler r ()
+myoParse (ParseOptions _ ident _) =
+  pluginHandlerErrors $ mapHandlerError @OutputError $ mapHandlerError @CommandError do
+    cmd <- selectCommand ident
+    parsedOutput <- stopNote (OutputError.NoEvents (Command.name cmd)) =<< parseCommand cmd
+    storeParseResult (cmd ^. #ident) parsedOutput
+    display <- Settings.get Settings.displayResult
+    when display compileAndRenderReport
 
 -- myoParseLatest ::
 --   Member (AtomicState Env) r =>

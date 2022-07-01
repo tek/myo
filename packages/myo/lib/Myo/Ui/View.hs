@@ -20,6 +20,8 @@ import Control.Lens (mapMOf, transformM)
 import Data.Generics.Labels ()
 import Prelude hiding (view)
 
+import qualified Myo.Data.ViewError as ViewError
+import Myo.Data.ViewError (ViewError)
 import Myo.Ui.Data.Space (Space (Space))
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.ViewCoords (ViewCoords (ViewCoords))
@@ -121,16 +123,16 @@ insertPaneEnv =
   insertViewEnv insertPaneIfNonexistent
 
 modifyTree ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ViewError] r =>
   (UiState -> Either TreeModError UiState) ->
   Sem r ()
 modifyTree f =
-  stopEither =<< atomicState' \ s -> case f s of
+  stopEitherWith ViewError.TreeMod =<< atomicState' \ s -> case f s of
     Right a -> (a, Right ())
     Left e -> (s, Left e)
 
 modifyTreeMaybe ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ViewError] r =>
   (UiState -> Maybe UiState) ->
   TreeModError ->
   Sem r ()
@@ -138,7 +140,7 @@ modifyTreeMaybe trans err =
   modifyTree (maybe (Left err) Right . trans)
 
 insertLayout ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ViewError] r =>
   ViewCoords ->
   LayoutView ->
   Sem r ()
@@ -146,7 +148,7 @@ insertLayout coords view =
   modifyTreeMaybe (insertLayoutEnv coords view) (TreeModError.LayoutExists view)
 
 insertPane ::
-  Members [AtomicState UiState, Stop TreeModError] r =>
+  Members [AtomicState UiState, Stop ViewError] r =>
   ViewCoords ->
   PaneView ->
   Sem r ()

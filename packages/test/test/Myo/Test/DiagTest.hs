@@ -3,6 +3,8 @@ module Myo.Test.DiagTest where
 import Ribosome.Api.Buffer (currentBufferContent)
 
 import Myo.Diag (myoDiag)
+import Polysemy.Test (UnitTest, assertEq)
+import Myo.Test.Run (myoTest)
 
 target :: [Text]
 target = [
@@ -13,16 +15,11 @@ target = [
   "",
   "## Ui",
   "",
-  "",
-  "## Errors"
+  ""
   ]
-
-diagTest :: Sem r ()
-diagTest = do
-  myoDiag
-  content <- currentBufferContent
-  target === content
 
 test_diag :: UnitTest
 test_diag =
-  myoTest diagTest
+  myoTest do
+    myoDiag
+    assertEq target =<< currentBufferContent

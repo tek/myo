@@ -2,7 +2,8 @@ module Myo.Test.CompleteTest where
 
 import Polysemy.Test (UnitTest, (===))
 
-import Myo.Command.Data.Command (Command (Command))
+import qualified Myo.Command.Data.Command as Command
+import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Complete (myoCompleteCommand)
@@ -13,7 +14,7 @@ commands =
   [cmd "cmd-15", cmd "cmd-20", cmd "cmd-16"]
   where
     cmd n =
-      Command (CommandInterpreter.System def) n [] def def def False False False
+      Command.cons (CommandInterpreter.System def) n []
 
 test_completeCommand :: UnitTest
 test_completeCommand =

@@ -32,7 +32,6 @@ library
       Myo.Command.Data.Command
       Myo.Command.Data.CommandError
       Myo.Command.Data.CommandInterpreter
-      Myo.Command.Data.CommandLog
       Myo.Command.Data.CommandOutput
       Myo.Command.Data.CommandSettingCodec
       Myo.Command.Data.CommandState
@@ -43,6 +42,7 @@ library
       Myo.Command.Data.LoadHistoryLock
       Myo.Command.Data.LogDir
       Myo.Command.Data.MonitorEvent
+      Myo.Command.Data.OutputState
       Myo.Command.Data.ParseOptions
       Myo.Command.Data.PendingCommand
       Myo.Command.Data.RunError
@@ -57,6 +57,7 @@ library
       Myo.Command.Data.VimTestPosition
       Myo.Command.Effect.CommandLog
       Myo.Command.Effect.Executions
+      Myo.Command.Effect.Executor
       Myo.Command.Effect.SocketReader
       Myo.Command.Effect.TmuxMonitor
       Myo.Command.Execution
@@ -64,7 +65,8 @@ library
       Myo.Command.HistoryMenu
       Myo.Command.Interpreter.CommandLog
       Myo.Command.Interpreter.Executions
-      Myo.Command.Interpreter.Executor.Null
+      Myo.Command.Interpreter.Executor.Generic
+      Myo.Command.Interpreter.Executor.Process
       Myo.Command.Interpreter.Executor.Tmux
       Myo.Command.Interpreter.SocketReader
       Myo.Command.Interpreter.TmuxMonitor
@@ -77,7 +79,6 @@ library
       Myo.Command.Runner
       Myo.Command.RunTask
       Myo.Command.RunTaskDetails
-      Myo.Command.Subproc.Run
       Myo.Command.Subproc.Runner
       Myo.Command.Test
       Myo.Command.Update
@@ -92,13 +93,10 @@ library
       Myo.Data.ViewError
       Myo.Diag
       Myo.Effect.Controller
-      Myo.Effect.Executor
       Myo.Effect.MState
       Myo.Effect.Proc
-      Myo.Env
       Myo.Init
       Myo.Interpreter.Controller
-      Myo.Interpreter.Executor.Process
       Myo.Interpreter.MState
       Myo.Interpreter.Proc
       Myo.Log
@@ -110,16 +108,14 @@ library
       Myo.Output.Data.OutputError
       Myo.Output.Data.OutputEvent
       Myo.Output.Data.OutputEvents
-      Myo.Output.Data.OutputHandler
       Myo.Output.Data.OutputLine
-      Myo.Output.Data.OutputParser
       Myo.Output.Data.ParsedOutput
       Myo.Output.Data.ParseReport
       Myo.Output.Data.ParseResult
       Myo.Output.Data.ReportLine
       Myo.Output.Data.String
-      Myo.Output.Effect.CommandOutput
-      Myo.Output.Interpreter.CommandOutput
+      Myo.Output.Effect.Parsing
+      Myo.Output.Interpreter.Parsing
       Myo.Output.Lang.Haskell.Data.HaskellEvent
       Myo.Output.Lang.Haskell.Parser
       Myo.Output.Lang.Haskell.Report
@@ -138,6 +134,7 @@ library
       Myo.Quit
       Myo.Save
       Myo.Settings
+      Myo.Temp
       Myo.Text.Parser.Combinators
       Myo.Tmux.Proc
       Myo.Tmux.Quit
@@ -155,6 +152,7 @@ library
       Myo.Ui.Focus
       Myo.Ui.Lens.Toggle
       Myo.Ui.Render
+      Myo.Ui.Space
       Myo.Ui.Toggle
       Myo.Ui.Update
       Myo.Ui.UpsertView
@@ -183,6 +181,7 @@ library
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
+      EmptyCase
       EmptyDataDecls
       ExistentialQuantification
       FlexibleContexts
@@ -197,8 +196,9 @@ library
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
-      OverloadedStrings
+      OverloadedLabels
       OverloadedLists
+      OverloadedStrings
       PackageImports
       PartialTypeSignatures
       PatternGuards
@@ -244,6 +244,7 @@ library
     , lens
     , lens-regex-pcre
     , messagepack
+    , mono-traversable
     , network
     , parsers
     , path
@@ -300,6 +301,7 @@ executable myo
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
+      EmptyCase
       EmptyDataDecls
       ExistentialQuantification
       FlexibleContexts
@@ -314,8 +316,9 @@ executable myo
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
-      OverloadedStrings
+      OverloadedLabels
       OverloadedLists
+      OverloadedStrings
       PackageImports
       PartialTypeSignatures
       PatternGuards

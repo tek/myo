@@ -9,3 +9,7 @@ data CommandOutput =
     current :: Seq ByteString,
     currentSize :: Int
   }
+
+instance Default CommandOutput where
+  def =
+    CommandOutput Nothing Nothing mempty 0

@@ -1,393 +1,411 @@
 module Myo.Output.ParseReport where
 
--- import Control.Lens (Lens', _Just, ifolded, over, set, view, views, withIndex)
--- import Data.MonoTraversable (minimumByMay)
--- import qualified Data.Text as Text
--- import Data.Vector (Vector, (!?))
--- import qualified Data.Vector as Vector (filter, findIndex, unzip)
--- import Data.Vector.Lens (toVectorOf)
--- import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, toFilePath, (</>))
--- import Path.IO (doesFileExist)
--- import Ribosome.Api.Buffer (bufferForFile, edit)
--- import Ribosome.Api.Option (optionList)
--- import Ribosome.Api.Path (nvimCwd)
--- import Ribosome.Api.Window (redraw, setCursor, setLine, windowLine)
--- import Ribosome.Data.Mapping (Mapping(Mapping), MappingIdent(MappingIdent))
--- import qualified Ribosome.Data.Scratch as Scratch (scratchWindow)
--- import Ribosome.Data.ScratchOptions (defaultScratchOptions, scratchMappings, scratchSyntax)
--- import Ribosome.Data.Syntax (Syntax)
--- import Ribosome.Msgpack.Error (DecodeError)
--- import Ribosome.Nvim.Api.Data (Buffer, Window)
--- import Ribosome.Nvim.Api.IO (
---   bufferGetOption,
---   bufferLineCount,
---   nvimBufIsLoaded,
---   nvimWinSetBuf,
---   vimCommand,
---   vimGetCurrentBuffer,
---   vimGetCurrentWindow,
---   vimGetWindows,
---   vimSetCurrentWindow,
---   windowIsValid,
---   windowSetOption,
---   )
--- import Ribosome.Scratch (lookupScratch, scratchBuffer, scratchPreviousWindow, scratchWindow, showInScratch)
+import Chiasma.Data.Ident (Ident)
+import Control.Lens (ifolded, withIndex)
+import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
+import Data.List.Extra (firstJust)
+import Data.MonoTraversable (minimumByMay)
+import qualified Data.Text as Text
+import Data.Vector (Vector, (!?))
+import qualified Data.Vector as Vector (filter, findIndex, unzip)
+import Data.Vector.Lens (toVectorOf)
+import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, (</>))
+import Path.IO (doesFileExist)
+import Ribosome (Buffer, Rpc, RpcError, Scratch, ScratchId, ScratchState, Window, scratch)
+import Ribosome.Api (
+  bufferForFile,
+  bufferGetOption,
+  bufferLineCount,
+  edit,
+  nvimBufIsLoaded,
+  nvimCwd,
+  nvimWinSetBuf,
+  optionList,
+  redraw,
+  setCursor,
+  setLine,
+  vimCommand,
+  vimGetCurrentBuffer,
+  vimGetCurrentWindow,
+  vimGetWindows,
+  vimSetCurrentWindow,
+  windowIsValid,
+  windowLine,
+  windowSetOption,
+  )
+import qualified Ribosome.Data.FileBuffer as FileBuffer
+import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
+import Ribosome.Data.Syntax (Syntax)
+import qualified Ribosome.Scratch as Scratch
+import Ribosome.Scratch (ScratchOptions (syntax))
 
--- import Myo.Command.Data.CommandState (CommandState, OutputState)
--- import qualified Myo.Command.Data.CommandState as CommandState (output)
--- import qualified Myo.Command.Data.CommandState as OutputState (command, currentEvent, events, report, syntax)
--- import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute(Absolute, unAbsolute))
--- import Myo.Output.Data.Location (Location(Location))
--- import Myo.Output.Data.OutputError (OutputError)
--- import qualified Myo.Output.Data.OutputError as OutputError (
---   OutputError(Internal, NoLocation, NotParsed, FileNonexistent),
---   )
--- import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
--- import qualified Myo.Output.Data.OutputEvent as OutputEvent (meta)
--- import qualified Myo.Output.Data.OutputEvent as OutputEventMeta (level)
--- import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
--- import Myo.Output.Data.ParseReport (ParseReport(ParseReport))
--- import qualified Myo.Output.Data.ParseReport as ParseReport (events)
--- import Myo.Output.Data.ReportLine (ReportLine(ReportLine))
+import qualified Myo.Command.Data.CommandState as CommandState
+import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.OutputState (OutputState)
+import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute (Absolute, unAbsolute))
+import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputError (OutputError)
+import qualified Myo.Output.Data.OutputError as OutputError (
+  OutputError (FileNonexistent, Internal, NoLocation, NotParsed),
+  )
+import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents (OutputEvents))
+import Myo.Output.Data.ParseReport (ParseReport (ParseReport))
+import Myo.Output.Data.ReportLine (ReportLine (ReportLine))
 
--- scratchName :: Text
--- scratchName =
---   "myo-report"
+scratchId :: ScratchId
+scratchId =
+  "myo-report"
 
--- eventByIndex ::
---   ParseReport ->
---   EventIndex.Absolute ->
---   Maybe OutputEventMeta
--- eventByIndex (ParseReport events _) (EventIndex.Absolute eventIndex) =
---   events !? fromIntegral eventIndex
+eventByIndex ::
+  ParseReport ->
+  EventIndex.Absolute ->
+  Maybe OutputEventMeta
+eventByIndex (ParseReport events _) (EventIndex.Absolute eventIndex) =
+  events !? fromIntegral eventIndex
 
--- eventByLine ::
---   ParseReport ->
---   Int ->
---   Maybe OutputEventMeta
--- eventByLine report@(ParseReport _ lines') line = do
---   (ReportLine eventIndex _) <- lines' !? line
---   eventByIndex report eventIndex
+eventByLine ::
+  ParseReport ->
+  Int ->
+  Maybe OutputEventMeta
+eventByLine report@(ParseReport _ lines') line = do
+  (ReportLine eventIndex _) <- lines' !? line
+  eventByIndex report eventIndex
 
--- lineNumberByEventIndex ::
---   ParseReport ->
---   EventIndex.Absolute ->
---   Maybe Int
--- lineNumberByEventIndex (ParseReport _ lines') eventIndex =
---   Vector.findIndex matchEventIndex lines'
---   where
---     matchEventIndex (ReportLine ei _) = ei == eventIndex
+lineNumberByEventIndex ::
+  ParseReport ->
+  EventIndex.Absolute ->
+  Maybe Int
+lineNumberByEventIndex (ParseReport _ lines') eventIndex =
+  Vector.findIndex matchEventIndex lines'
+  where
+    matchEventIndex (ReportLine ei _) = ei == eventIndex
 
--- findWindow ::
---   Window ->
---   m Window
--- findWindow outputWindow' =
---   choose =<< filter (/= outputWindow') <$> vimGetWindows
---   where
---     choose [] = do
---       vimCommand "aboveleft new"
---       win <- vimGetCurrentWindow
---       vimCommand "wincmd K"
---       pure win
---     choose (a : _) =
---       pure a
+findWindow ::
+  Member Rpc r =>
+  Window ->
+  Sem r Window
+findWindow outputWindow' =
+  choose =<< filter (/= outputWindow') <$> vimGetWindows
+  where
+    choose [] = do
+      vimCommand "aboveleft new"
+      win <- vimGetCurrentWindow
+      vimCommand "wincmd K"
+      pure win
+    choose (a : _) =
+      pure a
 
--- filterUnloaded ::
---   Buffer ->
---   m (Maybe Buffer)
--- filterUnloaded buffer =
---   filt <$> nvimBufIsLoaded buffer
---   where
---     filt True = Just buffer
---     filt False = Nothing
+filterUnloaded ::
+  Member Rpc r =>
+  Buffer ->
+  Sem r (Maybe Buffer)
+filterUnloaded buffer =
+  filt <$> nvimBufIsLoaded buffer
+  where
+    filt True = Just buffer
+    filt False = Nothing
 
--- parseAsAbsDir ::
---   Path Abs Dir ->
---   Text ->
---   Maybe (Path Abs Dir)
--- parseAsAbsDir cwd path =
---   parseAbsDir (toString path) <|> ((cwd </>) <$> parseRelDir (toString path))
+parseAsAbsDir ::
+  Path Abs Dir ->
+  Text ->
+  Maybe (Path Abs Dir)
+parseAsAbsDir cwd path =
+  parseAbsDir (toString path) <|> ((cwd </>) <$> parseRelDir (toString path))
 
--- fileInDir ::
---   MonadIO m =>
---   Path Rel File ->
---   Path Abs Dir ->
---   MaybeT m (Path Abs File)
--- fileInDir sub dir = do
---   ifM (doesFileExist p) (pure p) (MaybeT (pure Nothing))
---   where
---     p = dir </> sub
+fileInDir ::
+  MonadIO m =>
+  Path Rel File ->
+  Path Abs Dir ->
+  MaybeT m (Path Abs File)
+fileInDir sub dir = do
+  ifM (doesFileExist p) (pure p) (MaybeT (pure Nothing))
+  where
+    p =
+      dir </> sub
 
--- findFileInPath ::
---   MonadIO m =>
---   Path Abs Dir ->
---   Path Rel File ->
---   MaybeT m (Path Abs File)
--- findFileInPath cwd sub = do
---   vimPath <- lift $ catchAs @RpcError [] (optionList "path")
---   buf <- vimGetCurrentBuffer
---   bufPath <- Text.splitOn "," <$> catchAs @RpcError "" (bufferGetOption buf "path")
---   let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> (vimPath <> bufPath))
---   results <- lift $ traverse (runMaybeT . fileInDir sub) vimPathAbs
---   head <$> (MaybeT . pure . nonEmpty . catMaybes $ results)
+findFileInPath ::
+  Members [Rpc, Rpc !! RpcError, Embed IO] r =>
+  Path Abs Dir ->
+  Path Rel File ->
+  Sem r (Maybe (Path Abs File))
+findFileInPath cwd sub = do
+  vimPath <- [] <! optionList "path"
+  buf <- vimGetCurrentBuffer
+  bufPath <- Text.splitOn "," <$> "" <! (bufferGetOption buf "path")
+  let vimPathAbs = catMaybes (parseAsAbsDir cwd <$> (vimPath <> bufPath))
+  results <- traverse (runMaybeT . fileInDir sub) vimPathAbs
+  pure (firstJust id results)
 
--- findFile ::
---   ∀ e m .
---   MonadIO m =>
---   Path Abs Dir ->
---   Text ->
---   m (Path Abs File)
--- findFile cwd path = do
---   relResult <- runMaybeT (rel cwd)
---   stopNote OutputError.FileNonexistent (abs' <|> relResult)
---   where
---     abs' =
---       parseAbsFile (toString path)
---     rel cwd' = do
---       relpath <- MaybeT $ pure $ parseRelFile (toString path)
---       fileInDir relpath cwd' <|> findFileInPath cwd' relpath
+findFile ::
+  Members [Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Path Abs Dir ->
+  Text ->
+  Sem r (Path Abs File)
+findFile cwd path = do
+  relResult <- runMaybeT (rel cwd)
+  stopNote OutputError.FileNonexistent (abs' <|> relResult)
+  where
+    abs' =
+      parseAbsFile (toString path)
+    rel cwd' = do
+      relpath <- MaybeT $ pure $ parseRelFile (toString path)
+      fileInDir relpath cwd' <|> MaybeT (findFileInPath cwd' relpath)
 
--- selectEventAt ::
---   Window ->
---   Window ->
---   Location ->
---   FilePath ->
---   m ()
--- selectEventAt mainWindow outputWindow' (Location _ line col) abspath = do
---   previousExists <- windowIsValid mainWindow
---   window <- if previousExists && mainWindow /= outputWindow' then pure mainWindow else findWindow outputWindow'
---   vimSetCurrentWindow window
---   existingBuffer <- join <$> (traverse filterUnloaded =<< bufferForFile (toText abspath))
---   maybe (edit abspath) (nvimWinSetBuf window) existingBuffer
---   setCursor window line (fromMaybe 0 col)
---   vimCommand "normal! zv"
---   vimCommand "normal! zz"
---   redraw
+selectEventAt ::
+  Member Rpc r =>
+  Window ->
+  Window ->
+  Location ->
+  Path Abs File ->
+  Sem r ()
+selectEventAt mainWindow outputWindow' (Location _ line col) abspath = do
+  previousExists <- windowIsValid mainWindow
+  window <- if previousExists && mainWindow /= outputWindow' then pure mainWindow else findWindow outputWindow'
+  vimSetCurrentWindow window
+  existingBuffer <- join <$> (traverse (filterUnloaded . FileBuffer.buffer) =<< bufferForFile abspath)
+  maybe (edit abspath) (nvimWinSetBuf window) existingBuffer
+  setCursor window line (fromMaybe 0 col)
+  vimCommand "normal! zv"
+  vimCommand "normal! zz"
+  redraw
 
--- locationExists ::
---   MonadIO m =>
---   FilePath ->
---   m Bool
--- locationExists path =
---   fromMaybe False <$> traverse doesFileExist (parseAbsFile path)
+selectEvent ::
+  Members [Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Window ->
+  Window ->
+  OutputEventMeta ->
+  Sem r ()
+selectEvent mainWindow outputWindow' (OutputEventMeta (Just loc@(Location path _ _)) _) = do
+  cwd <- nvimCwd
+  abspath <- findFile cwd path
+  ifM (doesFileExist abspath) (selectEventAt mainWindow outputWindow' loc abspath) (stop OutputError.FileNonexistent)
+selectEvent _ _ _ =
+  stop OutputError.NoLocation
 
--- selectEvent ::
---   Window ->
---   Window ->
---   OutputEventMeta ->
---   m ()
--- selectEvent mainWindow outputWindow' (OutputEventMeta (Just loc@(Location path _ _)) _) = do
---   cwd <- stopNote (OutputError.Internal "bad cwd") . parseAbsDir =<< nvimCwd
---   abspath <- toFilePath <$> findFile cwd path
---   ifM (locationExists abspath) (selectEventAt mainWindow outputWindow' loc abspath) (stop OutputError.FileNonexistent)
--- selectEvent _ _ _ =
---   stop OutputError.NoLocation
+selectMaybeEvent ::
+  Members [Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Window ->
+  Window ->
+  Maybe OutputEventMeta ->
+  Sem r ()
+selectMaybeEvent mainWindow outputWindow' =
+  maybe err (selectEvent mainWindow outputWindow')
+  where
+    err = stop (OutputError.Internal "cursor line has no data")
 
--- selectMaybeEvent ::
---   Window ->
---   Window ->
---   Maybe OutputEventMeta ->
---   m ()
--- selectMaybeEvent mainWindow outputWindow' =
---   maybe err (selectEvent mainWindow outputWindow')
---   where
---     err = stop (OutputError.Internal "cursor line has no data")
+selectEventByIndexFromReport ::
+  Members [Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  ParseReport ->
+  EventIndex.Absolute ->
+  Window ->
+  Window ->
+  Sem r ()
+selectEventByIndexFromReport report eventIndex window outputWindow' =
+  selectMaybeEvent window outputWindow' (eventByIndex report eventIndex)
 
--- selectEventByIndexFromReport ::
---   ParseReport ->
---   EventIndex.Absolute ->
---   Window ->
---   Window ->
---   m ()
--- selectEventByIndexFromReport report eventIndex window outputWindow' =
---   selectMaybeEvent window outputWindow' $ eventByIndex report eventIndex
+selectCurrentLineEventFrom ::
+  Members [Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  ParseReport ->
+  Window ->
+  Window ->
+  Sem r ()
+selectCurrentLineEventFrom report outputWindow' mainWindow =
+  selectMaybeEvent mainWindow outputWindow' =<< eventByLine report <$> windowLine outputWindow'
 
--- selectCurrentLineEventFrom ::
---   ParseReport ->
---   Window ->
---   Window ->
---   m ()
--- selectCurrentLineEventFrom report outputWindow' mainWindow =
---   selectMaybeEvent mainWindow outputWindow' =<< eventByLine report <$> windowLine outputWindow'
+currentOutput ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Sem r OutputState
+currentOutput =
+  stopNote OutputError.NotParsed =<< atomicGets CommandState.output
 
--- currentOutput ::
---   Member (AtomicState Env) r =>
---   m OutputState
--- currentOutput =
---   stopNote OutputError.NotParsed =<< atomicGets CommandState.output
+currentOutputCommand ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Sem r Ident
+currentOutputCommand =
+  view #command <$> currentOutput
 
--- currentOutputCommand ::
---   Member (AtomicState Env) r =>
---   m Ident
--- currentOutputCommand =
---   view OutputState.command <$> currentOutput
+currentEvents ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Sem r OutputEvents
+currentEvents =
+  view #events <$> currentOutput
 
--- currentEvents ::
---   Member (AtomicState Env) r =>
---   m OutputEvents
--- currentEvents =
---   view OutputState.events <$> currentOutput
+currentSyntax ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Sem r [Syntax]
+currentSyntax =
+  view #syntax <$> currentOutput
 
--- currentSyntax ::
---   Member (AtomicState Env) r =>
---   m [Syntax]
--- currentSyntax =
---   view OutputState.syntax <$> currentOutput
+currentReport ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Sem r ParseReport
+currentReport =
+  stopNote OutputError.NotParsed =<< view #report <$> currentOutput
 
--- currentReport ::
---   Member (AtomicState Env) r =>
---   m ParseReport
--- currentReport =
---   stopNote OutputError.NotParsed =<< view OutputState.report <$> currentOutput
+currentEvent ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Sem r EventIndex.Absolute
+currentEvent =
+  view #currentEvent <$> currentOutput
 
--- currentEvent ::
---   Member (AtomicState Env) r =>
---   m EventIndex.Absolute
--- currentEvent =
---   view OutputState.currentEvent <$> currentOutput
+modifyOutput ::
+  Member (AtomicState CommandState) r =>
+  (OutputState -> OutputState) ->
+  Sem r ()
+modifyOutput f =
+  atomicModify' (#output . _Just %~ f)
 
--- modifyOutput ::
---   Member (AtomicState Env) r =>
---   (OutputState -> OutputState) ->
---   m ()
--- modifyOutput f =
---   modifyL @CommandState CommandState.output (over _Just f)
+setOutput ::
+  Member (AtomicState CommandState) r =>
+  Lens' OutputState a ->
+  a ->
+  Sem r ()
+setOutput l a =
+  atomicModify' (#output . _Just . l .~ a)
 
--- setOutput ::
---   Member (AtomicState Env) r =>
---   Lens' OutputState a ->
---   a ->
---   m ()
--- setOutput lens a =
---   modifyL @CommandState CommandState.output (set (_Just . lens) a)
+cycleIndex ::
+  Members [AtomicState CommandState, Stop OutputError] r =>
+  Int ->
+  Sem r Bool
+cycleIndex offset = do
+  (EventIndex.Absolute current) <- currentEvent
+  report <- currentReport
+  let
+    eventCount =
+      length (report ^. #events)
+    computed =
+      fromIntegral current + offset
+    new =
+      fromIntegral (fromMaybe 0 (computed `mod` eventCount))
+  atomicModify' (#output . _Just . #currentEvent .~ EventIndex.Absolute new)
+  pure (new /= current)
 
--- cycleIndex ::
---   Member (AtomicState Env) r =>
---   Int ->
---   m Bool
--- cycleIndex offset = do
---   (EventIndex.Absolute current) <- currentEvent
---   total <- views ParseReport.events length <$> currentReport
---   let new = fromIntegral $ (fromIntegral current + offset) `mod` total
---   modifyL @CommandState CommandState.output (set (_Just . OutputState.currentEvent) (EventIndex.Absolute new))
---   pure (new /= current)
+noScratch ::
+  Member (Stop OutputError) r =>
+  Maybe a ->
+  Sem r a
+noScratch =
+  stopNote (OutputError.Internal "no scratch")
 
--- scratchErrorMaybe ::
---   Maybe a ->
---   m a
--- scratchErrorMaybe =
---   stopNote (OutputError.Internal "no scratch")
+outputScratch ::
+  Members [Scratch, Stop OutputError] r =>
+  Sem r ScratchState
+outputScratch =
+  stopNote (OutputError.Internal "no scratch") =<< Scratch.find scratchId
 
--- outputMainWindow ::
---   m Window
--- outputMainWindow =
---   scratchErrorMaybe =<< scratchPreviousWindow scratchName
+outputMainWindow ::
+  Members [Scratch, Stop OutputError] r =>
+  Sem r Window
+outputMainWindow =
+  Scratch.previous <$> outputScratch
 
--- outputWindow ::
---   m Window
--- outputWindow =
---   scratchErrorMaybe =<< scratchWindow scratchName
+outputWindow ::
+  Members [Scratch, Stop OutputError] r =>
+  Sem r Window
+outputWindow =
+  Scratch.window <$> outputScratch
 
--- outputBuffer ::
---   m Buffer
--- outputBuffer =
---   scratchErrorMaybe =<< scratchBuffer scratchName
+outputBuffer ::
+  Members [Scratch, Stop OutputError] r =>
+  Sem r Buffer
+outputBuffer =
+  Scratch.buffer <$> outputScratch
 
--- mappings :: [Mapping]
--- mappings =
---   [
---     Mapping (MappingIdent "output-quit") "q" "n" False True,
---     Mapping (MappingIdent "output-select") "<cr>" "n" False True
---     ]
+mappings :: [Mapping]
+mappings =
+  [
+    Mapping (MappingIdent "output-quit") "q" "n" False True,
+    Mapping (MappingIdent "output-select") "<cr>" "n" False True
+  ]
 
--- renderReport ::
---   ParseReport ->
---   [Syntax] ->
---   m ()
--- renderReport (ParseReport _ lines') syntax = do
---   win <- Scratch.scratchWindow <$> showInScratch (render <$> lines') options
---   windowSetOption win "conceallevel" (toMsgpack (3 :: Int))
---   windowSetOption win "concealcursor" (toMsgpack ("n" :: Text))
---   windowSetOption win "foldmethod" (toMsgpack ("manual" :: Text))
---   where
---     render (ReportLine _ text') =
---       text'
---     options =
---       scratchMappings mappings . scratchSyntax syntax . defaultScratchOptions $ scratchName
+renderReport ::
+  Members [Scratch, Rpc] r =>
+  ParseReport ->
+  [Syntax] ->
+  Sem r ()
+renderReport (ParseReport _ reportLines) syntax = do
+  win <- view #window <$> Scratch.show (render <$> reportLines) options
+  windowSetOption win "conceallevel" (3 :: Int)
+  windowSetOption win "concealcursor" ("n" :: Text)
+  windowSetOption win "foldmethod" ("manual" :: Text)
+  where
+    render (ReportLine _ text') =
+      text'
+    options =
+      (scratch scratchId) {Scratch.mappings = mappings, syntax = syntax}
 
--- renderCurrentReport ::
---   Member (AtomicState Env) r =>
---   m ()
--- renderCurrentReport = do
---   report <- currentReport
---   syntax <- currentSyntax
---   renderReport report syntax
+renderCurrentReport ::
+  Members [AtomicState CommandState, Scratch, Rpc, Stop OutputError] r =>
+  Sem r ()
+renderCurrentReport = do
+  report <- currentReport
+  syntax <- currentSyntax
+  renderReport report syntax
 
--- ensureReportScratch ::
---   Member (AtomicState Env) r =>
---   m ()
--- ensureReportScratch =
---   whenM (isNothing <$> lookupScratch scratchName) renderCurrentReport
+ensureReportScratch ::
+  Members [AtomicState CommandState, Scratch, Rpc, Stop OutputError] r =>
+  Sem r ()
+ensureReportScratch =
+  whenM (isNothing <$> Scratch.find scratchId) renderCurrentReport
 
--- navigateToEvent ::
---   Member (AtomicState Env) r =>
---   Bool ->
---   EventIndex.Absolute ->
---   m ()
--- navigateToEvent jump eventIndex = do
---   ensureReportScratch
---   report <- currentReport
---   window <- outputWindow
---   mainWindow <- outputMainWindow
---   buffer <- outputBuffer
---   totalLines <- bufferLineCount buffer
---   line <- stopNote indexErr $ lineNumberByEventIndex report eventIndex
---   when (isLastEvent report) (setLine window (totalLines - 1))
---   setLine window line
---   when jump (selectEventByIndexFromReport report eventIndex mainWindow window)
---   where
---     indexErr =
---       OutputError.Internal $ "invalid event index " <> show eventIndex
---     isLastEvent report =
---       fromIntegral (EventIndex.unAbsolute eventIndex) == eventCount report - 1
---     eventCount =
---       views ParseReport.events length
+navigateToEvent ::
+  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Bool ->
+  EventIndex.Absolute ->
+  Sem r ()
+navigateToEvent jump eventIndex = do
+  ensureReportScratch
+  report <- currentReport
+  window <- outputWindow
+  mainWindow <- outputMainWindow
+  buffer <- outputBuffer
+  totalLines <- bufferLineCount buffer
+  line <- stopNote indexErr $ lineNumberByEventIndex report eventIndex
+  when (isLastEvent report) (setLine window (totalLines - 1))
+  setLine window line
+  when jump (selectEventByIndexFromReport report eventIndex mainWindow window)
+  where
+    indexErr =
+      OutputError.Internal $ "invalid event index " <> show eventIndex
+    isLastEvent report =
+      fromIntegral (EventIndex.unAbsolute eventIndex) == (length (report ^. #events)) - 1
 
--- navigateToCurrentEvent ::
---   Member (AtomicState Env) r =>
---   Bool ->
---   m ()
--- navigateToCurrentEvent jump =
---   navigateToEvent jump =<< currentEvent
+navigateToCurrentEvent ::
+  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Bool ->
+  Sem r ()
+navigateToCurrentEvent jump =
+  navigateToEvent jump =<< currentEvent
 
--- levelLens :: Lens' OutputEvent Int
--- levelLens =
---   OutputEvent.meta . OutputEventMeta.level
+levelLens :: Lens' OutputEvent Int
+levelLens =
+  #meta . #level
 
--- compareEventFilterLevel :: OutputEvent -> OutputEvent -> Ordering
--- compareEventFilterLevel e1 e2 =
---   compare (view levelLens e1) (view levelLens e2)
+compareEventFilterLevel :: OutputEvent -> OutputEvent -> Ordering
+compareEventFilterLevel e1 e2 =
+  compare (view levelLens e1) (view levelLens e2)
 
--- filterEventLevel :: Int -> Vector OutputEvent -> Vector OutputEvent
--- filterEventLevel maxLevel events =
---   Vector.filter levelHigher events
---   where
---     levelHigher event =
---       view levelLens event <= effectiveMaxLevel
---     effectiveMaxLevel =
---       max maxLevel (fromMaybe 0 lowestEventLevel)
---     lowestEventLevel =
---       view levelLens <$> minimumByMay compareEventFilterLevel events
+filterEventLevel :: Int -> Vector OutputEvent -> Vector OutputEvent
+filterEventLevel maxLevel events =
+  Vector.filter levelHigher events
+  where
+    levelHigher event =
+      view levelLens event <= effectiveMaxLevel
+    effectiveMaxLevel =
+      max maxLevel (fromMaybe 0 lowestEventLevel)
+    lowestEventLevel =
+      view levelLens <$> minimumByMay compareEventFilterLevel events
 
--- compileReport :: Int -> OutputEvents -> ParseReport
--- compileReport maxLevel (OutputEvents events) =
---   process events
---   where
---     process =
---       uncurry ParseReport . second join . Vector.unzip . fmap reindexEvent . zipWithIndex . filterEventLevel maxLevel
---     reindexEvent (index, OutputEvent meta lines') =
---       (meta, absoluteDir index <$> lines')
---     absoluteDir index (ReportLine _ text') =
---       ReportLine (EventIndex.Absolute (fromIntegral index)) text'
---     zipWithIndex =
---       toVectorOf (ifolded . withIndex)
+compileReport :: Int -> OutputEvents -> ParseReport
+compileReport maxLevel (OutputEvents events) =
+  process events
+  where
+    process =
+      uncurry ParseReport . second join . Vector.unzip . fmap reindexEvent . zipWithIndex . filterEventLevel maxLevel
+    reindexEvent (index, OutputEvent meta lines') =
+      (meta, absoluteDir index <$> lines')
+    absoluteDir index (ReportLine _ text') =
+      ReportLine (EventIndex.Absolute (fromIntegral index)) text'
+    zipWithIndex =
+      toVectorOf (ifolded . withIndex)

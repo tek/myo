@@ -19,10 +19,10 @@ import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Wait), TmuxTask (TmuxTask))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmuxWithLog)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
-import qualified Myo.Effect.Executor as Executor
-import Myo.Effect.Executor (Executor)
+import qualified Myo.Command.Effect.Executor as Executor
+import Myo.Command.Effect.Executor (Executor)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Run (myoEmbedTmuxTestDebug)
 import Myo.Test.Tmux.Output (cleanLines)
@@ -35,7 +35,8 @@ paneContent =
 
 test_tmuxKill :: UnitTest
 test_tmuxKill =
-  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog $ interpretExecutorTmux $ testHandler do
+  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 1000 $ interpretExecutorTmuxWithLog $
+  testHandler do
     Settings.update Settings.processTimeout 2
     thread1 <- testHandlerAsync $ resumeAs @_ @(Executor _) (Just ["failed"]) do
       Executor.run (TmuxTask Wait 0 cmd)

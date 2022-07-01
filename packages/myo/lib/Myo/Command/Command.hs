@@ -6,8 +6,8 @@ import Control.Lens (firstOf, views)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command))
+import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (CommandError (NoCommands, NoSuchCommand))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
 import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
@@ -136,3 +136,13 @@ mainCommandIdent ::
   Sem r Ident
 mainCommandIdent =
   fmap Command.ident . mainCommand
+
+shellTarget ::
+  Members [AtomicState CommandState, Stop CommandError] r =>
+  Ident ->
+  Ident ->
+  Sem r Ident
+shellTarget cmd shell = do
+  commandByIdent "shellTarget" shell >>= \case
+    Command {interpreter = System (Just target)} -> pure target
+    _ -> stop (CommandError.NotAUiShell cmd shell)

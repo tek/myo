@@ -1,22 +1,30 @@
 module Myo.Command.Interpreter.SocketReader where
 
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident, identText)
 import Conc (interpretPScopedResumable)
 import Data.ByteString (hGetSome)
+import Exon (exon)
 import qualified Network.Socket as Socket
 import Network.Socket (socketToHandle)
-import Path (Abs, File, Path, parent, toFilePath)
+import Path (Abs, File, Path, parent, parseRelFile, toFilePath, (</>))
 import Path.IO (createDirIfMissing)
 import System.IO (Handle, IOMode (ReadMode), hClose)
 
-import Myo.Command.Data.LogDir (LogDir)
+import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Data.SocketReaderError (SocketReaderError (BindFailed, InvalidIdent))
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader (Chunk, Path))
-import Myo.Command.Log (logPath)
 
 data SocketReaderResources =
   SocketReaderResources Handle (Path Abs File)
   deriving stock (Eq, Show)
+
+logPath ::
+  Member (Reader LogDir) r =>
+  Ident ->
+  Sem r (Maybe (Path Abs File))
+logPath ident =
+  ask <&> \ (LogDir base) ->
+    (base </>) <$> parseRelFile [exon|pane-#{toString (identText ident)}|]
 
 withSocket ::
   Members [Reader LogDir, Resource, Embed IO] r =>

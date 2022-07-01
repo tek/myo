@@ -11,7 +11,7 @@ data ParseReport =
     events :: Vector OutputEventMeta,
     lines :: Vector (ReportLine EventIndex.Absolute)
   }
-  deriving stock (Eq, Show)
+  deriving stock (Eq, Show, Generic)
 
 noEventsInReport :: ParseReport -> Bool
 noEventsInReport (ParseReport e _) =

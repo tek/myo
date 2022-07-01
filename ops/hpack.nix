@@ -99,6 +99,7 @@ in {
       "lens"
       "lens-regex-pcre"
       "messagepack"
+      "mono-traversable"
       "network"
       "parsers"
       "path"

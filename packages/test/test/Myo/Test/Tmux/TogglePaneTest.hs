@@ -4,20 +4,20 @@ import qualified Chiasma.Codec.Data.Pane as Chiasma
 import qualified Chiasma.Command.Pane as Chiasma
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Tmux (withPanes_)
-import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
-import Polysemy.Test (TestError (TestError), UnitTest, (===))
-import Ribosome.Test (testHandler)
-import qualified Time
-import Time (Seconds (Seconds))
+import Polysemy.Test (TestError, UnitTest, assert, (===))
+import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (target)
-import Myo.Command.Interpreter.Executor.Null (interpretExecutorNull)
+import qualified Myo.Command.Effect.Executions as Executions
+import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
 import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
+import Myo.Test.Command (withTestHandlerAsync)
 import Myo.Test.Run (myoEmbedTmuxTest)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.ViewCoords (viewCoords)
@@ -48,7 +48,8 @@ setupTree =
 
 test_togglePane :: UnitTest
 test_togglePane =
-  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController $ testHandler do
+  myoEmbedTmuxTest $ interpretExecutorFail $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  testHandler do
     _ <- createSpace "s"
     _ <- createWindow (viewCoords "s" "w" "wroot")
     setupTree
@@ -59,15 +60,16 @@ test_togglePane =
 
 test_shellPanePin :: UnitTest
 test_shellPanePin =
-  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController $ testHandler do
+  myoEmbedTmuxTest $ interpretExecutorFail $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  testHandler do
     setupDefaultTestUi
-    stopToErrorWith @_ @_ @TreeModError (TestError . show) do
-      insertPane (viewCoords "vim" "vim" "make") (consPane sid)
+    insertPane (viewCoords "vim" "vim" "make") (consPane sid)
     myoAddSystemCommand (AddSystemCommandOptions.cons sid ["tail"]) { target = Just sid }
-    myoRunIdent sid
-    Time.sleep (Seconds 3)
-    panes <- withPanes_ @Chiasma.Pane @CodecError Chiasma.panes
-    3 === length panes
+    withTestHandlerAsync (myoRunIdent sid) do
+      assertWait (Executions.running sid) assert
+      panes <- withPanes_ @Chiasma.Pane @CodecError Chiasma.panes
+      3 === length panes
+      Executions.kill sid
   where
     sid =
       "shell"

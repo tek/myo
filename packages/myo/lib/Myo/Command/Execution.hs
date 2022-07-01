@@ -1,21 +1,14 @@
 module Myo.Command.Execution where
 
-import Chiasma.Data.Ident (Ident)
-import qualified Control.Lens as Lens (at)
+-- executionLens :: Ident -> Lens' CommandState (Maybe Execution)
+-- executionLens ident =
+--   #executing . Lens.at ident
 
-import qualified Myo.Command.Data.CommandState as CommandState
-import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.Data.Execution (Execution)
-
-executionLens :: Ident -> Lens' CommandState (Maybe Execution)
-executionLens ident =
-  #executing . Lens.at ident
-
-executions ::
-  Member (AtomicState CommandState) r =>
-  Sem r (Map Ident Execution)
-executions =
-  atomicGets CommandState.executing
+-- executions ::
+--   Member (AtomicState CommandState) r =>
+--   Sem r (Map Ident Execution)
+-- executions =
+--   atomicGets CommandState.executing
 
 -- archiveExecution ::
 --   Members [AtomicState CommandState, Log] r =>

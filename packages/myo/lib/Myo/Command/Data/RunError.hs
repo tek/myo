@@ -1,18 +1,18 @@
 module Myo.Command.Data.RunError where
 
 import Chiasma.Data.CodecError (CodecError)
-import Chiasma.Data.Ident (identText)
+import Chiasma.Data.Ident (identText, identify)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Debug, Error, Warn))
-import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (..))
+import Ribosome (ErrorMessage (ErrorMessage), PersistError, ToErrorMessage (..))
 
 import Myo.Command.Data.Command (ident)
 import qualified Myo.Command.Data.Command as Cmd (Command (Command))
 import Myo.Command.Data.CommandError (CommandError (..))
-import Myo.Command.Data.RunTask (RunTask (RunTask))
+import Myo.Command.Data.RunTask (RunTask)
 import Myo.Ui.Data.ToggleError (ToggleError)
 
 data RunError =
@@ -49,14 +49,16 @@ data RunError =
   TreeMod TreeModError
   |
   Proc Text
+  |
+  Persist PersistError
   deriving stock (Show)
 
 instance ToErrorMessage RunError where
   toErrorMessage (Command e) = toErrorMessage e
-  toErrorMessage (NoRunner task@(RunTask (Cmd.Command {ident}) _ _)) =
+  toErrorMessage (NoRunner task) =
     ErrorMessage user ["no runner for task:", show task] Warn
     where
-      user = "no runner available for command `" <> identText ident <> "`"
+      user = "no runner available for command `" <> identText (identify task) <> "`"
   toErrorMessage (Toggle e) =
     toErrorMessage e
   toErrorMessage (Views e) =
@@ -98,3 +100,5 @@ instance ToErrorMessage RunError where
     ErrorMessage "tmux error" ["RunError.TreeMod:", show e] Error
   toErrorMessage (Proc err) =
     ErrorMessage "Could not determine tmux process ID" ["RunError.Proc:", show err] Error
+  toErrorMessage (Persist err) =
+    toErrorMessage err

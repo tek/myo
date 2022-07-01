@@ -4,6 +4,7 @@ import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Effect.Codec (NativeCodec, NativeCodecE)
+import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Error))
 import Ribosome (ErrorMessage (ErrorMessage), HandlerError, ToErrorMessage (toErrorMessage), mapHandlerError)
 
@@ -13,6 +14,8 @@ data ViewError =
   TmuxCodec CodecError
   |
   TmuxViews ViewsError
+  |
+  TreeMod TreeModError
   deriving stock (Eq, Show)
 
 instance ToErrorMessage ViewError where
@@ -23,6 +26,8 @@ instance ToErrorMessage ViewError where
       ErrorMessage "tmux codec error" ["ViewError.TmuxCodec:", show e] Error
     TmuxViews e ->
       ErrorMessage "tmux views error" ["ViewError.TmuxViews:", show e] Error
+    TreeMod e ->
+      ErrorMessage "tmux views error" ["ViewError.TreeMod:", show e] Error
 
 tmuxError ::
   Member (Stop ViewError) r =>

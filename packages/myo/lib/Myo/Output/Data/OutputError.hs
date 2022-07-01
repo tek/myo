@@ -6,9 +6,12 @@ import Ribosome (ErrorMessage (ErrorMessage), SettingError, ToErrorMessage (..))
 
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.RunError (RunError)
 
 data OutputError =
   Command CommandError
+  |
+  Run RunError
   |
   NoLang Ident
   |
@@ -33,6 +36,8 @@ data OutputError =
 
 instance ToErrorMessage OutputError where
   toErrorMessage (Command e) =
+    toErrorMessage e
+  toErrorMessage (Run e) =
     toErrorMessage e
   toErrorMessage (NoLang ident) =
     ErrorMessage msg [msg] Warn

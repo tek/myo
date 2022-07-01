@@ -22,7 +22,6 @@ import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Interpreter.Executor.Null (interpretExecutorNull)
 import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
 import Myo.Command.Run (myoRun)
 import Myo.Effect.Controller (Controller)
@@ -33,6 +32,7 @@ import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Myo.Ui.Toggle (myoTogglePane)
 import Chiasma.TmuxApi (TmuxApi)
+import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
 
 line1 :: Text
 line1 = "line 1"
@@ -69,13 +69,13 @@ runAndCheck = do
 
 test_tmuxRunSys :: UnitTest
 test_tmuxRunSys =
-  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController do
+  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController do
     setup
     runAndCheck
 
 test_quitCopyMode :: UnitTest
 test_quitCopyMode =
-  myoEmbedTmuxTest $ interpretExecutorNull $ interpretExecutorTmux $ interpretController do
+  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController do
     setup
     testHandler (myoTogglePane "make")
     withTmuxApis @[TmuxCommand, Panes PaneMode, Panes Pane] $

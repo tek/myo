@@ -48,6 +48,7 @@ library
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
+      EmptyCase
       EmptyDataDecls
       ExistentialQuantification
       FlexibleContexts
@@ -62,8 +63,9 @@ library
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
-      OverloadedStrings
+      OverloadedLabels
       OverloadedLists
+      OverloadedStrings
       PackageImports
       PartialTypeSignatures
       PatternGuards
@@ -106,6 +108,7 @@ test-suite myo-unit
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Myo.Test.Command
       Myo.Test.Command.CommandMenuTest
       Myo.Test.Command.HistoryMenuTest
       Myo.Test.Command.UpdateTest
@@ -163,6 +166,7 @@ test-suite myo-unit
       DisambiguateRecordFields
       DoAndIfThenElse
       DuplicateRecordFields
+      EmptyCase
       EmptyDataDecls
       ExistentialQuantification
       FlexibleContexts
@@ -177,8 +181,9 @@ test-suite myo-unit
       MultiParamTypeClasses
       MultiWayIf
       NamedFieldPuns
-      OverloadedStrings
+      OverloadedLabels
       OverloadedLists
+      OverloadedStrings
       PackageImports
       PartialTypeSignatures
       PatternGuards

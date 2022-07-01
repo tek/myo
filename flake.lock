@@ -999,11 +999,11 @@
         "thax": "thax_17"
       },
       "locked": {
-        "lastModified": 1655122384,
-        "narHash": "sha256-kFEOkmd8gqn3Yy3vwqHlIRWjEjNDtECMQ3pLhvv76sE=",
+        "lastModified": 1656371378,
+        "narHash": "sha256-lvVmyZuCw2xqdairD+rnFiYi40yfDE8WF/15EGjIp1U=",
         "owner": "tek",
         "repo": "hix",
-        "rev": "8a8066db7ed9321e636fe826902261ae9d87b0e4",
+        "rev": "b65012cbc8a2ef70a2a5102517c477d433d3f381",
         "type": "github"
       },
       "original": {
@@ -4501,11 +4501,11 @@
         "polysemy-time": "polysemy-time_6"
       },
       "locked": {
-        "lastModified": 1656168314,
-        "narHash": "sha256-qZA95m//vo4YFAU66nCOTABCvTsUqj795CGl0cS3YK4=",
+        "lastModified": 1656371748,
+        "narHash": "sha256-lLCvj3rz0kNYjqwsoIkoM0iv9eMATS4fq/yoCm41xh4=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "1e0184ba974458cdf685e9e4d9c227b33f34384f",
+        "rev": "6f60c09ea565eb1bb1aabaec92575f020eb2e308",
         "type": "github"
       },
       "original": {
@@ -4694,11 +4694,11 @@
         "polysemy-conc": "polysemy-conc_6"
       },
       "locked": {
-        "lastModified": 1656180745,
-        "narHash": "sha256-3h3xOW6+1FrcmCJAXo+pFdPBnBqtKd8QqIGAEqf1PUU=",
+        "lastModified": 1656636287,
+        "narHash": "sha256-kiqMV7vpwHoZTJ5LVfQfKIUI79Lcfls0/n3xa2Elaro=",
         "ref": "polysemy",
-        "rev": "c8c13514219b8e95fbf110f2c95f02d793d69ea1",
-        "revCount": 604,
+        "rev": "3ff994d0246a68929da5acf8b31e109ccce1544c",
+        "revCount": 612,
         "type": "git",
         "url": "https://git.tryp.io/tek/ribosome"
       },

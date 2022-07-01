@@ -32,9 +32,12 @@ import qualified Ribosome.Settings as Settings
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.LogDir (LogDir)
+import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunEvent (RunEvent)
 import Myo.Command.Effect.Executions (Executions)
+import Myo.Command.Effect.Executor (Executor)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
 -- import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env)
 import Myo.Data.ProcError (ProcError)
@@ -42,6 +45,7 @@ import Myo.Diag (myoDiag)
 import Myo.Effect.Proc (Proc)
 import Myo.Interpreter.Proc (interpretProc)
 import qualified Myo.Settings as Settings
+import Myo.Temp (interpretLogDir)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (detectDefaultUi)
 
@@ -107,7 +111,8 @@ type MyoStack =
     Reader LogDir,
     NativeCodecE (Panes PaneMode),
     NativeCodecE (Panes PanePid),
-    Proc !! ProcError
+    Proc !! ProcError,
+    Executor !! RunError
   ]
 
 handlers ::
@@ -137,10 +142,11 @@ interpretMyoStack ::
   Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoStack sem =
+  interpretExecutorFail $
   interpretProc $
   interpretCodecPanes $
   interpretCodecPanes $
-  runReader undefined $
+  interpretLogDir $
   interpretEventsChan $
   interpretAtomic def $
   interpretAtomic def $

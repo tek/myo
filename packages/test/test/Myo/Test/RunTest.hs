@@ -19,16 +19,17 @@ import Ribosome.Test (testHandler)
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (runner)
-import Myo.Command.Data.Command (Command (Command), lines)
+import Myo.Command.Data.Command (Command (Command, cmdLines))
 import Myo.Command.Data.RunLineOptions (line, runner)
 import Myo.Command.Data.RunTask (RunTask (RunTask), command)
+import Myo.Command.Interpreter.Executor.Process (interpretExecutorProcessNative)
 import Myo.Command.Run (myoLine, myoRunIdent)
-import Myo.Data.ProcessCommand (ProcessCommand)
-import qualified Myo.Effect.Executor as Executor
-import Myo.Effect.Executor (Executor)
+import qualified Myo.Command.Effect.Executor as Executor
+import Myo.Command.Effect.Executor (Executor)
 import Myo.Interpreter.Controller (interpretController)
-import Myo.Interpreter.Executor.Process (interpretExecutorProcessNative)
 import Myo.Test.Run (myoTest)
+import Myo.Command.Interpreter.Executor.Generic (captureUnsupported, interceptExecutor, interpretExecutorFail)
+import Myo.Command.Data.RunError (RunError)
 
 newtype RunTestError =
   RunTestError { unTestError :: [Text] }
@@ -65,19 +66,27 @@ checkReport target = do
     user (StoredError (ErrorMessage _ l _) _) =
       l
 
+dummyAccept :: RunTask -> Sem r (Maybe ())
+dummyAccept _ =
+  pure (Just ())
+
+dummyExecute ::
+  Member (DataLog HostError) r =>
+  () ->
+  Sem r ()
+dummyExecute () =
+  reportError (Just htag) (RunTestError [testError])
+
 interpretExecutorDummy ::
   Member (DataLog HostError) r =>
-  InterpreterFor (Executor ()) r
+  InterpreterFor (Executor !! RunError) r
 interpretExecutorDummy =
-  interpret \case
-    Executor.Accept _ ->
-      pure (Just ())
-    Executor.Run _ ->
-      Nothing <$ reportError (Just htag) (RunTestError [testError])
+  interpretExecutorFail .
+  interceptExecutor dummyAccept dummyExecute (captureUnsupported "dummy")
 
 test_runSystem :: UnitTest
 test_runSystem =
-  myoTest $ interpretExecutorDummy $ interpretController @'[()] do
+  myoTest $ interpretExecutorDummy $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
       myoRunIdent ident
@@ -86,19 +95,27 @@ test_runSystem =
 cmdline :: Text
 cmdline = "echo 'hello'"
 
+singleLineAccept :: RunTask -> Sem r (Maybe [Text])
+singleLineAccept RunTask {command = Command {cmdLines = l}} =
+  pure (Just l)
+
+singleLineExecute ::
+  Member (DataLog HostError) r =>
+  [Text] ->
+  Sem r ()
+singleLineExecute l =
+  reportError (Just htag) (RunTestError l)
+
 interpretExecutorDummySingleLine ::
   Member (DataLog HostError) r =>
-  InterpreterFor (Executor [Text]) r
+  InterpreterFor (Executor !! RunError) r
 interpretExecutorDummySingleLine =
-  interpret \case
-    Executor.Accept RunTask {command = Command {lines = l}} ->
-      pure (Just l)
-    Executor.Run l ->
-      Nothing <$ reportError (Just htag) (RunTestError l)
+  interpretExecutorFail .
+  interceptExecutor singleLineAccept singleLineExecute (captureUnsupported "dummy")
 
 test_runLineSingle :: UnitTest
 test_runLineSingle =
-  myoTest $ interpretExecutorDummy $ interpretController @'[()] do
+  myoTest $ interpretExecutorDummySingleLine $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
       myoLine def { line = Just cmdline, runner = Just runnerIdent }
@@ -106,7 +123,7 @@ test_runLineSingle =
 
 test_runSubproc :: UnitTest
 test_runSubproc =
-  myoTest $ interpretExecutorProcessNative $ interpretController @'[ProcessCommand] do
+  myoTest $ interpretExecutorProcessNative $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { runner = Just runnerIdent }
       myoRunIdent ident

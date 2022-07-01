@@ -32,7 +32,7 @@ module Myo.Save where
 --       now - last' > saveTimeout
 --     save =
 --       Log.debug @Text "pushing command log on save" *>
---       runExceptT @CommandError pushCommandLogs *>
+--       CommandLog.pushAll *>
 --       updateLastSave
 
 -- myoSave ::
