@@ -12,17 +12,18 @@ import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (NativeCommandCodec)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux, withTmuxApis)
+import Chiasma.TmuxApi (TmuxApi)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust)
-import Ribosome (HostError, SettingError, Settings, resumeHandlerError)
+import Ribosome (HostError, SettingError, Settings, interpretPersistNull, resumeHandlerError)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Run (myoRun)
 import Myo.Effect.Controller (Controller)
 import Myo.Interpreter.Controller (interpretController)
@@ -31,8 +32,6 @@ import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Myo.Ui.Toggle (myoTogglePane)
-import Chiasma.TmuxApi (TmuxApi)
-import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
 
 line1 :: Text
 line1 = "line 1"
@@ -69,13 +68,13 @@ runAndCheck = do
 
 test_tmuxRunSys :: UnitTest
 test_tmuxRunSys =
-  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController do
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController do
     setup
     runAndCheck
 
 test_quitCopyMode :: UnitTest
 test_quitCopyMode =
-  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController do
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController do
     setup
     testHandler (myoTogglePane "make")
     withTmuxApis @[TmuxCommand, Panes PaneMode, Panes Pane] $

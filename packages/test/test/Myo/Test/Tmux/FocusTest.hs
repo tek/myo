@@ -6,11 +6,10 @@ import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Chiasma.Tmux (withPanes_)
 import Polysemy.Test (UnitTest, assertEq)
-import Ribosome (mapHandlerError)
+import Ribosome (interpretPersistNull, mapHandlerError)
 import Ribosome.Test (assertWait, testHandler)
 
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
-import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
+import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Data.ViewError (codecError)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoEmbedTmuxTest)
@@ -28,7 +27,7 @@ data PaneSelected =
 
 test_focusPane :: UnitTest
 test_focusPane =
-  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
   interpretCodecPanes @PaneSelected $ testHandler do
     setupDefaultTestUi
     myoTogglePane "make"

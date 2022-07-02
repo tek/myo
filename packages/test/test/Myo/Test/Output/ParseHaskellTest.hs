@@ -3,11 +3,18 @@ module Myo.Test.Output.ParseHaskellTest where
 import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
+import Exon (exon)
+import Path (relfile)
+import qualified Polysemy.Test as Test
+import Polysemy.Test (Test, TestError, UnitTest, (===))
+import Ribosome.Test (testError)
 
-import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
-import Myo.Output.Lang.Haskell.Parser hiding (parseHaskell)
+import qualified Myo.Output.Data.ParseReport as ParseReport
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import qualified Myo.Output.Data.ReportLine as ReportLine
+import Myo.Output.Lang.Haskell.Parser (haskellOutputParser)
+import Myo.Output.ParseReport (compileReport)
+import Myo.Test.Embed (myoTest)
 
 haskellOutput :: Text
 haskellOutput =
@@ -178,13 +185,13 @@ haskellOutput =
     "Pattern match(es) are non-exhaustive",
     "  In an equation for ‘nonex’:",
     "",
-    [text|
+    [exon|
     /path/to/File.hs:36:1: error:
     • Expected kind ‘Tree -> Constraint’,
         but ‘Tree a b c’ has kind ‘Constraint’
     |],
     "",
-    [text|
+    [exon|
     /path/to/File.hs:36:1: error:
     • Could not deduce: Polysemy.Internal.Union.LocateEffect
                               (Resumable
@@ -196,13 +203,13 @@ haskellOutput =
             arising from a use of ‘someFunc’
     |],
     "",
-    [text|
+    [exon|
     /path/to/File.hs:36:1: error:
     • Could not deduce: Polysemy.Internal.Union.LocateEffect ((AtomicState SomeType) !! Error) r ~ '()
             arising from a use of ‘someFunc’
     |],
     "",
-    [text|
+    [exon|
     /path/to/File.hs:36:1: error:
     • Unhandled effect 'Resumable e (AtomicState SomeType)'
     |],
@@ -334,20 +341,24 @@ target = Vector.fromList [
   ""
   ]
 
-parseHaskell :: IO (Either OutputError ParsedOutput)
+parseHaskell ::
+  Member (Error TestError) r =>
+  Sem r ParsedOutput
 parseHaskell =
-  runExceptT $ parseWith haskellOutputParser haskellOutput
+    testError (haskellOutputParser haskellOutput)
 
 test_parseHaskellErrors :: UnitTest
-test_parseHaskellErrors = do
-  outputE <- liftIO parseHaskell
-  ParsedOutput _ events <- evalEither outputE
-  target === (ReportLine._text <$> ParseReport._lines (compileReport 1 events))
+test_parseHaskellErrors =
+  myoTest do
+    ParsedOutput _ events <- parseHaskell
+    target === (ReportLine.text <$> ParseReport.lines (compileReport 1 events))
 
-parseHaskellGarbage :: IO (Either OutputError ParsedOutput)
+parseHaskellGarbage ::
+  Members [Test, Error TestError] r =>
+  Sem r ParsedOutput
 parseHaskellGarbage = do
-  output <- fixtureContent "output/parse/haskell-garbage"
-  runExceptT $ parseWith haskellOutputParser (toText output)
+  out <- Test.fixture [relfile|output/parse/haskell-garbage|]
+  testError (haskellOutputParser (toText out))
 
 garbageTarget :: Vector Text
 garbageTarget =
@@ -364,7 +375,7 @@ garbageTarget =
     ]
 
 test_parseGarbage :: UnitTest
-test_parseGarbage = do
-  outputE <- lift parseHaskellGarbage
-  ParsedOutput _ events <- evalEither outputE
-  garbageTarget === (ReportLine._text <$> ParseReport._lines (compileReport 0 events))
+test_parseGarbage =
+  myoTest do
+    ParsedOutput _ events <- parseHaskellGarbage
+    garbageTarget === (ReportLine.text <$> ParseReport.lines (compileReport 0 events))

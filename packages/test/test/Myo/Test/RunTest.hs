@@ -3,7 +3,7 @@ module Myo.Test.RunTest where
 import Chiasma.Data.Ident (Ident (Str))
 import qualified Data.Map.Strict as Map
 import Log (Severity (Error))
-import Polysemy.Test (Hedgehog, UnitTest, assertJust, evalMaybe, (===))
+import Polysemy.Test (Hedgehog, UnitTest, assertJust, evalLeft)
 import Ribosome (
   ErrorMessage (ErrorMessage),
   Errors,
@@ -11,6 +11,7 @@ import Ribosome (
   HostError,
   StoredError (StoredError),
   ToErrorMessage (toErrorMessage),
+  interpretPersistNull,
   reportError,
   )
 import qualified Ribosome.Errors as Errors
@@ -20,16 +21,16 @@ import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (runner)
 import Myo.Command.Data.Command (Command (Command, cmdLines))
+import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (line, runner)
 import Myo.Command.Data.RunTask (RunTask (RunTask), command)
-import Myo.Command.Interpreter.Executor.Process (interpretExecutorProcessNative)
+import Myo.Command.Effect.Backend (Backend)
+import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend, interpretBackendFail)
+import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Run (myoLine, myoRunIdent)
-import qualified Myo.Command.Effect.Executor as Executor
-import Myo.Command.Effect.Executor (Executor)
+import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
-import Myo.Command.Interpreter.Executor.Generic (captureUnsupported, interceptExecutor, interpretExecutorFail)
-import Myo.Command.Data.RunError (RunError)
 
 newtype RunTestError =
   RunTestError { unTestError :: [Text] }
@@ -77,16 +78,16 @@ dummyExecute ::
 dummyExecute () =
   reportError (Just htag) (RunTestError [testError])
 
-interpretExecutorDummy ::
+interpretBackendDummy ::
   Member (DataLog HostError) r =>
-  InterpreterFor (Executor !! RunError) r
-interpretExecutorDummy =
-  interpretExecutorFail .
-  interceptExecutor dummyAccept dummyExecute (captureUnsupported "dummy")
+  InterpreterFor (Backend !! RunError) r
+interpretBackendDummy =
+  interpretBackendFail .
+  interceptBackend dummyAccept dummyExecute (captureUnsupported "dummy") unit
 
 test_runSystem :: UnitTest
 test_runSystem =
-  myoTest $ interpretExecutorDummy $ interpretController do
+  myoTest $ interpretPersistNull $ interpretBackendDummy $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
       myoRunIdent ident
@@ -106,27 +107,26 @@ singleLineExecute ::
 singleLineExecute l =
   reportError (Just htag) (RunTestError l)
 
-interpretExecutorDummySingleLine ::
+interpretBackendDummySingleLine ::
   Member (DataLog HostError) r =>
-  InterpreterFor (Executor !! RunError) r
-interpretExecutorDummySingleLine =
-  interpretExecutorFail .
-  interceptExecutor singleLineAccept singleLineExecute (captureUnsupported "dummy")
+  InterpreterFor (Backend !! RunError) r
+interpretBackendDummySingleLine =
+  interpretBackendFail .
+  interceptBackend singleLineAccept singleLineExecute (captureUnsupported "dummy") unit
 
 test_runLineSingle :: UnitTest
 test_runLineSingle =
-  myoTest $ interpretExecutorDummySingleLine $ interpretController do
+  myoTest $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
       myoLine def { line = Just cmdline, runner = Just runnerIdent }
     checkReport [cmdline]
 
-test_runSubproc :: UnitTest
-test_runSubproc =
-  myoTest $ interpretExecutorProcessNative $ interpretController do
-    testHandler do
+test_runSubprocFail :: UnitTest
+test_runSubprocFail =
+  myoTest $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
+    r <- testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { runner = Just runnerIdent }
-      myoRunIdent ident
-      myoRunIdent ident
-    loggedError <- evalMaybe . Map.lookup "command" =<< Errors.get
-    2 === length loggedError
+      resumeEither (Controller.runIdent ident)
+    _ <- evalLeft r
+    unit

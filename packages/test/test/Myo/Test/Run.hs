@@ -14,12 +14,14 @@ import Ribosome.Test.Data.TestConfig (TmuxTestConfig (core))
 import Ribosome.Test.EmbedTmux (EmbedTmuxWith, HandlerStack, runEmbedTmuxTestConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
+import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock (StoreHistoryLock))
+import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
-import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
 import Myo.Data.SaveLock (SaveLock (SaveLock))
 import Myo.Data.ViewError (ViewError)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
+import Ribosome.Test.SocketTmux (runSocketTmuxTestConf, TmuxHandlerStack, SocketTmuxWith)
 
 withLogDir ::
   Member Test r =>
@@ -32,8 +34,9 @@ interpretMyoTestStack ::
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
+  interpretSyncAs StoreHistoryLock .
   interpretSyncAs SaveLock .
-  interpretExecutorFail .
+  interpretBackendFail .
   interpretProc .
   interpretCodecPanes .
   interpretCodecPanes .
@@ -82,4 +85,19 @@ runMyoTmuxTestStack ::
   UnitTest
 runMyoTmuxTestStack conf =
   runEmbedTmuxTestConf def { core = testConfig conf } .
+  interpretMyoTestStack
+
+type MyoSocketTmuxTestStack =
+  MyoStack ++ TmuxHandlerStack
+
+type MyoSocketTmuxTest =
+  Stop ViewError : SocketTmuxWith MyoStack
+
+runMyoSocketTmuxTestStack ::
+  HasCallStack =>
+  HostConfig ->
+  Sem MyoSocketTmuxTestStack () ->
+  UnitTest
+runMyoSocketTmuxTestStack conf =
+  runSocketTmuxTestConf def { core = testConfig conf } .
   interpretMyoTestStack

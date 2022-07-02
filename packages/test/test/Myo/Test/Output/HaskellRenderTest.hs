@@ -5,22 +5,24 @@ import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import qualified Data.Vector as Vector (fromList)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
-import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
-import Ribosome.Test.Screenshot (assertScreenshot)
+import Ribosome.Syntax (Syntax(..), syntaxHighlight)
+import Ribosome.Test.Screenshot (awaitScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Init (initialize'')
 import Myo.Output.Data.Location (Location(Location))
 import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
 import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
-import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (tmuxTest)
+import Polysemy.Test (UnitTest, assertEq)
+import qualified Ribosome.Settings as Settings
+import qualified Myo.Settings as Settings
+import Myo.Test.Embed (myoSocketTmuxTest)
+import Ribosome.Api (nvimCommand, nvimCommandOutput)
+import Ribosome (Rpc)
+import Ribosome.Test (testError)
 
 loc :: Location
 loc =
@@ -242,7 +244,8 @@ syntaxTarget =
     ]
 
 setupHighlights ::
-  m ()
+  Member Rpc r =>
+  Sem r ()
 setupHighlights =
   void $ executeSyntax (Syntax [] hls [])
   where
@@ -251,26 +254,27 @@ setupHighlights =
       syntaxHighlight "Type" [("ctermfg", "3")]
       ]
 
+myoSyntax ::
+  Member (Rpc) r =>
+  Sem r [Text]
 myoSyntax = do
-  syntax <- parse <$> vimCommandOutput "syntax"
-  hi <- parse <$> vimCommandOutput "hi"
-  pure $ syntax <> hi
+  syntax <- parse <$> nvimCommandOutput "syntax"
+  hi <- parse <$> nvimCommandOutput "hi"
+  pure (syntax <> hi)
   where
     parse = fmap (Text.dropWhileEnd (' ' ==)) <$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"
 
-haskellRenderTest :: Sem r ()
-haskellRenderTest = do
-  lift initialize''
-  setupHighlights
-  storeParseResult (Ident.Str "test") [parsedOutput]
-  compileAndRenderReport
-  vimCommand "wincmd w"
-  vimCommand "wincmd o"
-  (target ===) =<< currentBufferContent
-  (syntaxTarget ===) =<< myoSyntax
-  assertScreenshot "render-haskell-parse-result" False 0
-
 test_haskellRender :: UnitTest
 test_haskellRender =
-  tmuxTest (svar outputSelectFirst True . svar outputAutoJump False) haskellRenderTest
+  myoSocketTmuxTest do
+    Settings.update Settings.outputSelectFirst True
+    Settings.update Settings.outputAutoJump False
+    setupHighlights
+    storeParseResult (Ident.Str "test") [parsedOutput]
+    testError compileAndRenderReport
+    nvimCommand "wincmd w"
+    nvimCommand "wincmd o"
+    assertEq target =<< currentBufferContent
+    assertEq syntaxTarget =<< myoSyntax
+    awaitScreenshot False "render-haskell-parse-result" 0

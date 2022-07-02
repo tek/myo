@@ -34,10 +34,11 @@ import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunEvent (RunEvent)
+import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock (StoreHistoryLock))
+import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Effect.Executions (Executions)
-import Myo.Command.Effect.Executor (Executor)
+import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
-import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
 -- import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env)
 import Myo.Data.ProcError (ProcError)
@@ -114,8 +115,9 @@ type MyoStack =
     NativeCodecE (Panes PaneMode),
     NativeCodecE (Panes PanePid),
     Proc !! ProcError,
-    Executor !! RunError,
-    Sync SaveLock
+    Backend !! RunError,
+    Sync SaveLock,
+    Sync StoreHistoryLock
   ]
 
 handlers ::
@@ -145,8 +147,9 @@ interpretMyoStack ::
   Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoStack sem =
+  interpretSyncAs StoreHistoryLock $
   interpretSyncAs SaveLock $
-  interpretExecutorFail $
+  interpretBackendFail $
   interpretProc $
   interpretCodecPanes $
   interpretCodecPanes $

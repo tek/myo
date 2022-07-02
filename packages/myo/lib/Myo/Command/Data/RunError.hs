@@ -42,7 +42,7 @@ data RunError =
   |
   NoLinesSpecified
   |
-  SubprocFailed [Text]
+  SubprocFailed Text [Text]
   |
   Render RenderError
   |
@@ -89,10 +89,10 @@ instance ToErrorMessage RunError where
     ErrorMessage "vim-test failed" ["RunError.VimTest:", e] Error
   toErrorMessage NoLinesSpecified =
     ErrorMessage "no lines specified for command" ["RunError.NoLinesSpecified"] Warn
-  toErrorMessage (SubprocFailed err) =
-    ErrorMessage ("subprocess failed" <> userErr err) ("RunError.SubprocFailed" : err) Warn
+  toErrorMessage (SubprocFailed msg out) =
+    ErrorMessage ("subprocess failed" <> userErr out) ("RunError.SubprocFailed" : out) Warn
     where
-      userErr [] = ""
+      userErr [] = msg
       userErr (e : _) = ": " <> e
   toErrorMessage (Render e) =
     ErrorMessage "tmux error" ["RunError.Render:", show e] Error

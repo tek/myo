@@ -55,19 +55,19 @@ library
       Myo.Command.Data.TmuxMonitorError
       Myo.Command.Data.TmuxTask
       Myo.Command.Data.VimTestPosition
+      Myo.Command.Effect.Backend
       Myo.Command.Effect.CommandLog
       Myo.Command.Effect.Executions
-      Myo.Command.Effect.Executor
       Myo.Command.Effect.SocketReader
       Myo.Command.Effect.TmuxMonitor
       Myo.Command.Execution
       Myo.Command.History
       Myo.Command.HistoryMenu
+      Myo.Command.Interpreter.Backend.Generic
+      Myo.Command.Interpreter.Backend.Process
+      Myo.Command.Interpreter.Backend.Tmux
       Myo.Command.Interpreter.CommandLog
       Myo.Command.Interpreter.Executions
-      Myo.Command.Interpreter.Executor.Generic
-      Myo.Command.Interpreter.Executor.Process
-      Myo.Command.Interpreter.Executor.Tmux
       Myo.Command.Interpreter.SocketReader
       Myo.Command.Interpreter.TmuxMonitor
       Myo.Command.Kill
@@ -134,6 +134,7 @@ library
       Myo.Output.ParseReport
       Myo.Plugin
       Myo.Quit
+      Myo.Regex
       Myo.Save
       Myo.Settings
       Myo.Temp
@@ -267,6 +268,7 @@ library
     , streamly
     , string-interpolate
     , stringsearch
+    , template-haskell
     , transformers
     , typed-process
     , unix

@@ -8,6 +8,7 @@ import Chiasma.Effect.Codec (NativeCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Polysemy.Test (Hedgehog, UnitTest, assert, (===))
+import Ribosome (interpretPersistNull)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testHandler)
 
@@ -17,7 +18,7 @@ import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (runner))
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (runner, target))
 import qualified Myo.Command.Effect.Executions as Executions
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
+import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
@@ -25,7 +26,6 @@ import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
-import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
 
 line1 :: Text
 line1 =
@@ -77,7 +77,7 @@ paneContent =
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
-  myoEmbedTmuxTest $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
   testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi

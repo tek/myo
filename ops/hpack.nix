@@ -117,6 +117,7 @@ in {
       "streamly"
       "string-interpolate"
       "stringsearch"
+      "template-haskell"
       "transformers"
       "typed-process"
       "unix"

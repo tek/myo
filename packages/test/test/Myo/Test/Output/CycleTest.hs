@@ -1,23 +1,27 @@
 module Myo.Test.Output.CycleTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Ribosome.Config.Setting (Settings.update)
-import Ribosome.Nvim.Api.Data (Window)
+import Ribosome (Window, pathText, Scratch, Rpc, RpcError, Settings)
 import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
-import System.FilePath ((</>))
 
 import Myo.Command.Output (compileAndRenderReport, myoNext, myoPrev)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Init (initialize'')
-import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
+import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import Myo.Output.Lang.Haskell.Report (HaskellMessage (FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Output.ParseReport (outputWindow)
 import qualified Myo.Settings as Settings (outputSelectFirst)
+import qualified Ribosome.Settings as Settings
+import Polysemy.Test (UnitTest, Test, Hedgehog, TestError)
+import Myo.Test.Embed (myoTest)
+import qualified Polysemy.Test as Test
+import Path (relfile)
+import Myo.Command.Data.CommandState (CommandState)
+import Ribosome.Test (testError)
 
 loc1 :: Text -> Maybe Location
 loc1 file =
@@ -39,40 +43,36 @@ parsedOutput :: Text -> ParsedOutput
 parsedOutput file =
   ParsedOutput def (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages))
 
-cycleTestRender :: Sem r Window
+cycleTestRender ::
+  Members [Hedgehog IO, Test, Error TestError] r =>
+  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Settings, Embed IO] r =>
+  Sem r Window
 cycleTestRender = do
-  file <- fixture $ "output" </> "select" </> "File.hs"
-  let po = [parsedOutput (toText file)]
-  lift initialize''
+  file <- Test.fixturePath [relfile|output/select/File.hs|]
+  let po = [parsedOutput (pathText file)]
   storeParseResult (Ident.Str "test") po
-  compileAndRenderReport
+  testError compileAndRenderReport
   windowCountIs 2
-  outputWindow
-
-outputPrevTest :: Sem r ()
-outputPrevTest = do
-  Settings.update Settings.outputSelectFirst False
-  ow <- cycleTestRender
-  currentCursorIs 3 4
-  cursorIs 5 0 ow
-  myoPrev
-  currentCursorIs 9 2
-  cursorIs 0 0 ow
+  testError outputWindow
 
 test_outputPrev :: UnitTest
 test_outputPrev =
-  tmuxTestDef outputPrevTest
-
-outputNextTest :: Sem r ()
-outputNextTest = do
-  Settings.update Settings.outputSelectFirst True
-  ow <- cycleTestRender
-  currentCursorIs 9 2
-  cursorIs 0 0 ow
-  myoNext
-  currentCursorIs 3 4
-  cursorIs 5 0 ow
+  myoTest do
+    Settings.update Settings.outputSelectFirst False
+    ow <- cycleTestRender
+    currentCursorIs 3 4
+    cursorIs 5 0 ow
+    myoPrev
+    currentCursorIs 9 2
+    cursorIs 0 0 ow
 
 test_outputNext :: UnitTest
 test_outputNext =
-  tmuxTestDef outputNextTest
+  myoTest do
+    Settings.update Settings.outputSelectFirst True
+    ow <- cycleTestRender
+    currentCursorIs 9 2
+    cursorIs 0 0 ow
+    myoNext
+    currentCursorIs 3 4
+    cursorIs 5 0 ow

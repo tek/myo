@@ -5,11 +5,7 @@ import qualified Data.Map.Strict as Map
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Output.Data.OutputError (OutputError (NoHandler))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput
-import Myo.Output.Data.ParsedOutput (ParsedOutput)
-import Myo.Output.Effect.Parsing (Parsing (Parse))
-
-type OutputParser r =
-  Text -> Sem (Stop OutputError : r) ParsedOutput
+import Myo.Output.Effect.Parsing (OutputParser, Parsing (Parse))
 
 interpretParsing ::
   Map CommandLanguage [OutputParser r] ->

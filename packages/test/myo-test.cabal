@@ -117,7 +117,6 @@ test-suite myo-unit
       Myo.Test.DiagTest
       Myo.Test.Embed
       Myo.Test.Handler
-      Myo.Test.Output.Cat
       Myo.Test.Output.CycleTest
       Myo.Test.Output.Echo
       Myo.Test.Output.EmptyOutputTest

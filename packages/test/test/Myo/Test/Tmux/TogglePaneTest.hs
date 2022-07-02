@@ -6,15 +6,15 @@ import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Tmux (withPanes_)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
 import Polysemy.Test (TestError, UnitTest, assert, (===))
+import Ribosome (interpretPersistNull)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (target)
 import qualified Myo.Command.Effect.Executions as Executions
-import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmux)
-import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitorNoLog)
+import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
+import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Command (withTestHandlerAsync)
@@ -48,7 +48,7 @@ setupTree =
 
 test_togglePane :: UnitTest
 test_togglePane =
-  myoEmbedTmuxTest $ interpretExecutorFail $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
   testHandler do
     _ <- createSpace "s"
     _ <- createWindow (viewCoords "s" "w" "wroot")
@@ -60,7 +60,7 @@ test_togglePane =
 
 test_shellPanePin :: UnitTest
 test_shellPanePin =
-  myoEmbedTmuxTest $ interpretExecutorFail $ interpretTmuxMonitorNoLog $ interpretExecutorTmux $ interpretController $
+  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
   testHandler do
     setupDefaultTestUi
     insertPane (viewCoords "vim" "vim" "make") (consPane sid)

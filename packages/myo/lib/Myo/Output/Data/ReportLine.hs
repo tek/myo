@@ -2,7 +2,7 @@ module Myo.Output.Data.ReportLine where
 
 data ReportLine a =
   ReportLine {
-    _event :: a,
-    _text :: Text
+    event :: a,
+    text :: Text
   }
   deriving stock (Eq, Show)

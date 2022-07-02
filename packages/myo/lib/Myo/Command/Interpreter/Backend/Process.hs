@@ -1,13 +1,14 @@
-module Myo.Command.Interpreter.Executor.Process where
+module Myo.Command.Interpreter.Backend.Process where
 
 import Chiasma.Data.Ident (Ident)
 import Conc (PScoped)
 import qualified Data.List as List
+import Exon (exon)
 import qualified Polysemy.Process as Process
 import Polysemy.Process (
   OutputPipe (Stderr, Stdout),
   Process,
-  ProcessError (Exit, Unknown),
+  ProcessError (Exit, StartFailed, Unknown),
   SysProcConf,
   interpretProcessInputText,
   interpretProcessNative,
@@ -26,8 +27,8 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunEvent as RunEvent
 import Myo.Command.Data.RunEvent (RunEvent (RunEvent))
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (System, UiSystem))
-import Myo.Command.Effect.Executor (Executor)
-import Myo.Command.Interpreter.Executor.Generic (captureUnsupported, interceptExecutor)
+import Myo.Command.Effect.Backend (Backend)
+import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
 import Myo.Data.ProcessTask (ProcessTask (ProcessTask))
 
 outputEvent ::
@@ -51,11 +52,12 @@ runProcess (ProcessTask ident cmd) =
       outputEvent ident =<< Process.recv
   where
     checkError = \case
-      Unknown _ -> failure
+      Unknown msg -> failure (show msg)
+      StartFailed msg -> failure (show msg)
       Exit ExitSuccess -> unit
-      Exit (ExitFailure _) -> failure
-    failure =
-      stop . RunError.SubprocFailed =<< get
+      Exit (ExitFailure code) -> failure [exon|exit code #{show code}|]
+    failure msg =
+      stop . RunError.SubprocFailed msg =<< get
 
 conf :: (String, [String]) -> Sem r SysProcConf
 conf (exe, args) =
@@ -81,25 +83,25 @@ acceptCommand = \case
   _ ->
     pure Nothing
 
-interpretExecutorProcess ::
+interpretBackendProcess ::
   ∀ eres pres r a .
-  Member (Executor !! RunError) r =>
+  Member (Backend !! RunError) r =>
   Members [Events eres RunEvent, PScoped (String, [String]) pres (Process Text (Either Text Text)) !! ProcessError] r =>
   Sem r a ->
   Sem r a
-interpretExecutorProcess =
-  interceptExecutor acceptCommand runProcess (captureUnsupported "process")
+interpretBackendProcess =
+  interceptBackend acceptCommand runProcess (captureUnsupported "process") unit
 
-interpretExecutorProcessNative ::
-  Members [Executor !! RunError, Events res RunEvent, Resource, Race, Async, Embed IO] r =>
+interpretBackendProcessNative ::
+  Members [Backend !! RunError, Events res RunEvent, Resource, Race, Async, Embed IO] r =>
   Sem r a ->
   Sem r a
-interpretExecutorProcessNative =
+interpretBackendProcessNative =
   interpretProcessOutputTextLines @'Stderr .
   interpretProcessOutputLeft @'Stderr .
   interpretProcessOutputTextLines @'Stdout .
   interpretProcessOutputRight @'Stdout .
   interpretProcessInputText .
   interpretProcessNative def conf .
-  interpretExecutorProcess .
+  interpretBackendProcess .
   insertAt @0

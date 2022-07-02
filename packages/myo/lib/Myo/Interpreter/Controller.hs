@@ -20,24 +20,24 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails
 import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock)
+import qualified Myo.Command.Effect.Backend as Backend
+import Myo.Command.Effect.Backend (Backend)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
-import qualified Myo.Command.Effect.Executor as Executor
-import Myo.Command.Effect.Executor (Executor)
 import Myo.Command.History (pushHistory)
 import Myo.Command.RunTask (runTask)
 import Myo.Effect.Controller (Controller (CaptureOutput, RunCommand, RunIdent))
 import Myo.Ui.Data.UiState (UiState)
-import Myo.Ui.Toggle (ToggleStack, ensurePaneOpen)
+import Myo.Ui.Lens.Toggle (openOnePane)
 
 preparePane ::
-  Members (ToggleStack encode decode) r =>
-  Members [AtomicState Views, AtomicState UiState, Stop RunError, Rpc] r =>
+  Members [Backend !! RunError, AtomicState Views, AtomicState UiState, Stop RunError, Rpc] r =>
   Ident ->
   Sem r ()
 preparePane ident =
   mapStop RunError.Render $ mapStop RunError.Toggle do
-    ensurePaneOpen ident
+    openOnePane ident
+    restop @RunError Backend.render
 
 waitForShell ::
   Members [Executions, ChronosTime] r =>
@@ -47,13 +47,13 @@ waitForShell ident =
   Time.while (MilliSeconds 100) do
     not <$> Executions.running ident
 
-type PrepareStack enc dec =
-  ToggleStack enc dec ++ [
+type PrepareStack =
+  [
     Settings !! SettingError,
     Persist [HistoryEntry] !! PersistError,
     Sync StoreHistoryLock,
     Executions,
-    Executor !! RunError,
+    Backend !! RunError,
     AtomicState UiState,
     AtomicState Views,
     AtomicState CommandState,
@@ -67,9 +67,8 @@ type PrepareStack enc dec =
   ]
 
 prepare ::
-  ∀ enc dec r .
   Member (Stop RunError) r =>
-  Members (PrepareStack enc dec) r =>
+  Members PrepareStack r =>
   RunTask ->
   Sem r ()
 prepare = \case
@@ -88,7 +87,7 @@ prepare = \case
 
 -- TODO create effect for history
 runCommand ::
-  Members (PrepareStack enc dec) r =>
+  Members PrepareStack r =>
   Members [Stop RunError, Stop CommandError] r =>
   Command ->
   Sem r ()
@@ -97,10 +96,10 @@ runCommand cmd = do
   task <- runTask cmd
   prepare task
   resumeHoist RunError.Persist (pushHistory cmd)
-  restop (Executor.execute task)
+  restop (Backend.execute task)
 
 runIdent ::
-  Members (PrepareStack enc dec) r =>
+  Members PrepareStack r =>
   Members [Settings !! SettingError, Stop RunError, Stop CommandError, Resource] r =>
   Ident ->
   Sem r ()
@@ -108,16 +107,16 @@ runIdent ident =
   runCommand =<< commandByIdent "run" ident
 
 captureOutput ::
-  Members [Executor !! RunError, Reader LogDir, AtomicState CommandState, Stop RunError, Stop CommandError] r =>
+  Members [Backend !! RunError, Reader LogDir, AtomicState CommandState, Stop RunError, Stop CommandError] r =>
   Ident ->
   Sem r ()
 captureOutput ident = do
   cmd <- commandByIdent "run" ident
   task <- runTask cmd
-  restop (Executor.captureOutput task)
+  restop (Backend.captureOutput task)
 
 interpretController ::
-  Members (PrepareStack enc dec) r =>
+  Members PrepareStack r =>
   InterpreterFor (Controller !! RunError) r
 interpretController =
   interpretResumable \case

@@ -10,6 +10,7 @@ import Ribosome.Test (resumeTestError, runTest)
 import qualified Sync
 import Time (Seconds (Seconds))
 
+import Myo.Data.ProcError (ProcError)
 import qualified Myo.Effect.Proc as Proc
 import Myo.Interpreter.Proc (interpretProc)
 
@@ -23,16 +24,16 @@ test_proc =
     cat <- note "no cat" =<< SystemProcess.which [relfile|cat|] []
     interpretSystemProcessNative_ cat do
       pid <- currentPid
-      thread1 <- async $ withSystemProcess_ $ resumeTestError @SystemProcess do
+      thread1 <- async $ resumeTestError @(_ _ _) $ withSystemProcess_ $ resumeTestError @SystemProcess do
         void $ Sync.putWait (Seconds 5) . StorePid @1 =<< SystemProcess.pid
         Sync.wait @() (Seconds 5)
-      thread2 <- async $ withSystemProcess_ $ resumeTestError @SystemProcess do
+      thread2 <- async $ resumeTestError $ withSystemProcess_ $ resumeTestError @SystemProcess do
         void $ Sync.putWait (Seconds 5) . StorePid @2 =<< SystemProcess.pid
         Sync.wait @() (Seconds 5)
       StorePid child1 <- note "pid 1 timed out" =<< Sync.wait @(StorePid 1) (Seconds 5)
       StorePid child2 <- note "pid 2 timed out" =<< Sync.wait @(StorePid 2) (Seconds 5)
-      children <- resumeHoistErrorAs "childPids" (Proc.childPids pid)
-      assertJust pid =<< resumeHoistErrorAs "ppid" (Proc.parentPid child1)
+      children <- resumeHoistErrorAs @ProcError "childPids" (Proc.childPids pid)
+      assertJust pid =<< resumeHoistErrorAs @ProcError "ppid" (Proc.parentPid child1)
       Sync.putWait (Seconds 5) ()
       void (await thread1)
       void (await thread2)

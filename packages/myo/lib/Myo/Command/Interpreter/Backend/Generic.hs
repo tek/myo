@@ -1,42 +1,47 @@
-module Myo.Command.Interpreter.Executor.Generic where
+module Myo.Command.Interpreter.Backend.Generic where
 
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
-import qualified Myo.Command.Effect.Executor as Executor
-import Myo.Command.Effect.Executor (Executor (CaptureOutput, Execute))
+import qualified Myo.Command.Effect.Backend as Backend
+import Myo.Command.Effect.Backend (Backend (CaptureOutput, Execute, Render))
 
-interceptExecutor ::
-  Member (Executor !! err) r =>
+interceptBackend ::
+  Member (Backend !! err) r =>
   (RunTask -> Sem (Stop err : r) (Maybe t)) ->
   (t -> Sem (Stop err : r) ()) ->
   (t -> Sem (Stop err : r) ()) ->
+  Sem (Stop err : r) () ->
   Sem r a ->
   Sem r a
-interceptExecutor accept exec capture =
+interceptBackend accept exec capture render =
   interceptResumable \case
     Execute task ->
       accept task >>= \case
         Just t -> exec t
-        Nothing -> restop (Executor.execute task)
+        Nothing -> restop (Backend.execute task)
     CaptureOutput task ->
       accept task >>= \case
         Just t -> capture t
-        Nothing -> restop (Executor.captureOutput task)
+        Nothing -> restop (Backend.captureOutput task)
+    Render ->
+      render *> restop Backend.render
 
-interpretExecutorFailWith ::
+interpretBackendFailWith ::
   (RunTask -> err) ->
-  InterpreterFor (Executor !! err) r
-interpretExecutorFailWith err =
+  InterpreterFor (Backend !! err) r
+interpretBackendFailWith err =
   interpretResumable \case
     Execute task ->
       stop (err task)
     CaptureOutput task ->
       stop (err task)
+    Render ->
+      unit
 
-interpretExecutorFail :: InterpreterFor (Executor !! RunError) r
-interpretExecutorFail =
-  interpretExecutorFailWith RunError.NoRunner
+interpretBackendFail :: InterpreterFor (Backend !! RunError) r
+interpretBackendFail =
+  interpretBackendFailWith RunError.NoRunner
 
 captureUnsupported ::
   Member (Stop RunError) r =>

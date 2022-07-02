@@ -1,59 +1,59 @@
-[4m[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                                                                                                                                                                                                           
-[0;1m[31m[49mtype mismatch[0m[39m[49m                                               
-[31mTypeA[39m                                                       
-[32mTypeB[39m                                                       
+[4m[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[0m[97m[101mtype mismatch[39m[49m
+[31mTypeA[39m
+[32mTypeB[39m
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mmethod not implemented: fmap[0m[39m[49m                                
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mmethod not implemented: fmap[39m[49m
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mredundant module import[0m[39m[49m                                     
-[33mData.Structure.Strict[39m                                       
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mredundant module import[39m[49m
+[38;5;121mData.Structure.Strict[39m
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mredundant name imports[0m[39m[49m                                      
-[35mNameA[39m, [35mNameB[39m([35mCtor1[39m, [35mfun[39m), [35mNameC[39m                             
-[33mData.Structure.Strict[39m                                       
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mredundant name imports[39m[49m
+[35mNameA[39m, [35mNameB[39m([35mCtor1[39m, [35mfun[39m), [35mNameC[39m
+[38;5;121mData.Structure.Strict[39m
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31m![0m[38;5;159m[49minstance[39m:[33m [39mrun                                              
-MonadIO (t m)                                               
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101m![38;5;159m[49minstance[93m:[33m [39mrun
+MonadIO (t m)
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mtype not in scope[0m[39m[49m                                           
-Unknown.Type                                                
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mtype not in scope[39m[49m
+Unknown.Type
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mvariable not in scope[0m[39m[49m                                                                                                                                                                                                                           
-var :: IO a0                                                                                                                                                                                                                                    
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mvariable not in scope[39m[49m
+var [93m::[39m IO a0
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                                                                                                                                                                                                           
-[1m[31mdo-notation result discarded[0m[39m[49m                                                                                                                                                                                                                    
-IO (Maybe Int)                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mambiguous type var for constraint[0m[39m[49m                                                                                                                                                                                                               
-[35ma0[39m                                                                                                                                                                                                                                              
-funky                                                       
-Classy a0                                                   
-                                                            
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31minvalid qualified name[0m[39m[49m                                      
-Mod.name                                                    
-                                                            
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mruntime error[0m[39m[49m                                               
-Prelude.undefined                                           
-                                                            
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mnon-exhaustive patterns[0m[39m[49m                                     
-wrong                                                       
-                                                            
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m                                       
-[1m[31mdata constructor not in scope[0m[39m[49m                               
-Dat                                                         
-                                                            
-[94m~[39m                                                           
-[94m~[39m                                                           
-[94m~[39m                                                           
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mdo-notation result discarded[39m[49m
+IO (Maybe Int)
+
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mambiguous type var for constraint[39m[49m
+[35ma0[39m
+funky
+Classy a0
+
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101minvalid qualified name[39m[49m
+Mod.name
+
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mruntime error[39m[49m
+Prelude.undefined
+
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mnon-exhaustive patterns[39m[49m
+wrong
+
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
+[97m[101mdata constructor not in scope[39m[49m
+Dat
+
+[94m~[39m
+[94m~[39m
+[94m~[39m
 [1;7mmyo-report                                                                                                                                                                                                                    1,1            All

@@ -4,8 +4,9 @@ import Log (Severity (Debug, Trace))
 import Polysemy.Test (UnitTest)
 import Ribosome (HostConfig, mapHandlerError, noHandlers, setStderr)
 import Ribosome.Test (testPluginEmbed)
+import Ribosome.Test.SocketTmux (testPluginSocket)
 
-import Myo.Test.Run (MyoTest, MyoTmuxTest, runMyoTestStack, runMyoTmuxTestStack)
+import Myo.Test.Run (MyoTest, MyoTmuxTest, runMyoTestStack, runMyoTmuxTestStack, MyoSocketTmuxTest, runMyoSocketTmuxTestStack)
 
 myoTestConf ::
   HasCallStack =>
@@ -62,3 +63,21 @@ myoEmbedTmuxTestTrace ::
   UnitTest
 myoEmbedTmuxTestTrace =
   myoEmbedTmuxTestConf (setStderr Trace def)
+
+myoSocketTmuxTestConf ::
+  HasCallStack =>
+  HostConfig ->
+  Sem MyoSocketTmuxTest () ->
+  UnitTest
+myoSocketTmuxTestConf conf =
+  runMyoSocketTmuxTestStack conf .
+  noHandlers .
+  testPluginSocket .
+  mapHandlerError
+
+myoSocketTmuxTest ::
+  HasCallStack =>
+  Sem MyoSocketTmuxTest () ->
+  UnitTest
+myoSocketTmuxTest =
+  myoSocketTmuxTestConf def

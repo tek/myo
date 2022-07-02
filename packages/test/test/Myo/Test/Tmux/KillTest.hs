@@ -20,7 +20,7 @@ import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Wait), TmuxTask (TmuxTask))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
-import Myo.Command.Interpreter.Executor.Tmux (runInTmux)
+import Myo.Command.Interpreter.Backend.Tmux (runInTmux)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Settings as Settings (processTimeout)

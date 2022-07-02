@@ -1,4 +1,4 @@
-module Myo.Command.Interpreter.Executor.Tmux where
+module Myo.Command.Interpreter.Backend.Tmux where
 
 import Chiasma.Codec.Data (Pane)
 import Chiasma.Codec.Data.PaneMode (PaneMode)
@@ -21,7 +21,7 @@ import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
 import Process (Pid)
-import Ribosome (HostError, ToErrorMessage, resumeReportError)
+import Ribosome (HostError, Rpc, ToErrorMessage, resumeReportError)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command), ident)
@@ -29,19 +29,21 @@ import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (UiShell, UiSystem))
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Shell, Wait), TmuxTask (TmuxTask), command, pane, taskType)
+import Myo.Command.Effect.Backend (Backend)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions, withExecution)
-import Myo.Command.Effect.Executor (Executor)
 import Myo.Command.Effect.SocketReader (ScopedSocketReader)
 import qualified Myo.Command.Effect.TmuxMonitor as TmuxMonitor
 import Myo.Command.Effect.TmuxMonitor (ScopedTmuxMonitor, TmuxMonitorTask (TmuxMonitorTask), withTmuxMonitor)
-import Myo.Command.Interpreter.Executor.Generic (captureUnsupported, interceptExecutor)
+import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor, interpretTmuxMonitorNoLog)
 import Myo.Data.ProcError (ProcError, unProcError)
 import Myo.Effect.Proc (Proc)
 import Myo.Tmux.Proc (panePid, shellBusy, waitForRunningProcess)
+import Myo.Ui.Data.UiState (UiState)
+import Myo.Ui.Render (renderTmux)
 
 acceptCommand ::
   Bool ->
@@ -182,27 +184,35 @@ captureOutput (TmuxTask _ pane Command {ident}) =
     text <- withTmux_ (capturePane pane)
     CommandLog.set ident (Text.unlines text)
 
+render ::
+  Members (NativeCodecsE [TmuxCommand, Panes Pane]) r =>
+  Members [AtomicState Views, AtomicState UiState, NativeTmux !! TmuxError, Rpc, Stop RunError] r =>
+  Sem r ()
+render =
+  mapStop RunError.Render (resumeHoist @_ @NativeTmux RunError.Tmux renderTmux)
+
 -- TODO if multiple executors accept ui tasks, stopping when the pane isn't part of the state might be wrong.
 -- but if all uis share the same state, it's correct but should probably done before this
 -- but given that it returns a tmux-specific PaneId, they should probably be separate
-interpretExecutorTmuxWithLog ::
+interpretBackendTmuxWithLog ::
   ToErrorMessage sre =>
   Members TmuxRunStack r =>
-  Members [Proc !! ProcError, ChronosTime, CommandLog] r =>
-  Members [Executor !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>
+  Members [AtomicState UiState, Rpc, Proc !! ProcError, ChronosTime, CommandLog] r =>
+  Members [Backend !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>
   Sem r a ->
   Sem r a
-interpretExecutorTmuxWithLog =
+interpretBackendTmuxWithLog =
   interpretTmuxMonitor .
-  interceptExecutor acceptTmux runInTmux captureOutput .
+  interceptBackend acceptTmux runInTmux captureOutput render .
   raise
 
-interpretExecutorTmuxNoLog ::
+interpretBackendTmuxNoLog ::
   Members TmuxRunStack r =>
-  Members [Proc !! ProcError, Executor !! RunError, AtomicState Views, ChronosTime, Race, Resource] r =>
+  Members [AtomicState UiState, Rpc] r =>
+  Members [Proc !! ProcError, Backend !! RunError, AtomicState Views, ChronosTime, Race, Resource] r =>
   Sem r a ->
   Sem r a
-interpretExecutorTmuxNoLog =
+interpretBackendTmuxNoLog =
   interpretTmuxMonitorNoLog .
-  interceptExecutor acceptTmux runInTmux (captureUnsupported "tmux-nolog") .
+  interceptBackend acceptTmux runInTmux (captureUnsupported "tmux-nolog") render .
   raise
