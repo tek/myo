@@ -1,23 +1,25 @@
 module Myo.Test.Output.QuitTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Ribosome.Plugin.Mapping (executeMapping)
+import Polysemy.Test (UnitTest, evalMaybe, assertEq)
+import Ribosome (interpretNvimPlugin)
+import Ribosome.Api (nvimFeedkeys, nvimSetCurrentWin, nvimListWins)
+import qualified Ribosome.Settings as Settings
+import Ribosome.Test (testError, testPluginEmbed, assertWait)
 import Ribosome.Test.Ui (windowCountIs)
 
-import Myo.Command.Output (compileAndRenderReport)
+import Myo.Command.Output (compileAndRenderReport, myoOutputQuit)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Init (initialize'')
-import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import Myo.Output.Lang.Haskell.Report (HaskellMessage(FoundReq1, NoMethod), formatReportLine)
+import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import Myo.Output.Lang.Haskell.Report (HaskellMessage (FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
-import Myo.Plugin (mappingOutputQuit)
-import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (tmuxTest)
+import qualified Myo.Settings as Settings
+import Myo.Test.Run (runMyoTestStack)
+import qualified Ribosome.Scratch as Scratch
 
 loc :: Location
 loc =
@@ -35,15 +37,14 @@ parsedOutput :: ParsedOutput
 parsedOutput =
   ParsedOutput haskellSyntax (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent events messages))
 
-outputQuitTest :: Sem r ()
-outputQuitTest = do
-  lift initialize''
-  storeParseResult (Ident.Str "test") [parsedOutput]
-  compileAndRenderReport
-  windowCountIs 2
-  executeMapping mappingOutputQuit
-  windowCountIs 1
-
 test_outputQuit :: UnitTest
 test_outputQuit =
-  tmuxTest (svar outputSelectFirst True . svar outputAutoJump False) outputQuitTest
+  runMyoTestStack def $ interpretNvimPlugin mempty [("output-quit", myoOutputQuit)] mempty $ testPluginEmbed do
+    Settings.update Settings.outputAutoJump False
+    storeParseResult "test" [parsedOutput]
+    testError compileAndRenderReport
+    windowCountIs 2
+    win <- fmap Scratch.window . evalMaybe . head =<< Scratch.get
+    nvimSetCurrentWin win
+    nvimFeedkeys "q" "m" True
+    assertWait (length <$> nvimListWins) (assertEq 1)

@@ -1,18 +1,19 @@
 module Myo.Test.Output.ParseScalaTest where
 
 import qualified Data.Text as Text (unlines)
+import qualified Data.Vector as Vector
 import Data.Vector (Vector)
-import qualified Data.Vector as Vector (fromList)
+import Polysemy.Test (TestError, UnitTest, (===))
+import Ribosome.Test.Error (testError)
 
-import Myo.Command.Parse (parseWith)
-import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.ParseReport as ParseReport (_lines)
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import qualified Myo.Output.Data.ReportLine as ReportLine (_text)
+import qualified Myo.Output.Data.ParseReport as ParseReport
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import qualified Myo.Output.Data.ReportLine as ReportLine
 import Myo.Output.Data.String (colMarker)
-import Myo.Output.Lang.Scala.Parser hiding (parseScala)
+import Myo.Output.Lang.Scala.Parser (scalaOutputParser)
 import Myo.Output.Lang.Scala.Syntax (foundMarker, reqMarker, separatorMarker)
 import Myo.Output.ParseReport (compileReport)
+import Myo.Test.Embed (myoTest)
 
 scalaOutput :: Text
 scalaOutput =
@@ -66,12 +67,14 @@ target = Vector.fromList [
   ""
   ]
 
-parseScala :: IO (Either OutputError ParsedOutput)
+parseScala ::
+  Member (Error TestError) r =>
+  Sem r ParsedOutput
 parseScala =
-  runExceptT $ parseWith scalaOutputParser scalaOutput
+  testError (scalaOutputParser scalaOutput)
 
 test_parseScala :: UnitTest
-test_parseScala = do
-  outputE <- liftIO parseScala
-  ParsedOutput _ events <- evalEither outputE
-  target === (ReportLine._text <$> ParseReport._lines (compileReport 0 events))
+test_parseScala =
+  myoTest do
+    ParsedOutput _ events <- parseScala
+    target === (ReportLine.text <$> ParseReport.lines (compileReport 0 events))

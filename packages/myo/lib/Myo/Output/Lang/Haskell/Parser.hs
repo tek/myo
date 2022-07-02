@@ -20,7 +20,7 @@ import Myo.Output.Effect.Parsing (OutputParser)
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent (HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType (..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
-import Myo.Regex (regexML)
+import Myo.Regex (regexML, removeControlCharsRE)
 import Myo.Text.Parser.Combinators (anyTillChar, colon, emptyLine, minus, skipLine, tillEol, word, ws)
 
 stringAcrossNl ::
@@ -239,10 +239,6 @@ removeProgressIndicator1RE =
 removeProgressIndicator2RE :: IndexedTraversal' Int Text Match
 removeProgressIndicator2RE =
   [regex|Progress \d+/\d+|]
-
-removeControlCharsRE :: IndexedTraversal' Int Text Match
-removeControlCharsRE =
-  [regex|(\x{9b}|\x{1b}\[)[0-?]*[ -\/]*[@-~]|]
 
 removeModulePrefixRE :: IndexedTraversal' Int Text Match
 removeModulePrefixRE =

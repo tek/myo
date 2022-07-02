@@ -1,7 +1,7 @@
 module Myo.Command.Output where
 
 import GHC.Natural (minusNaturalMaybe)
-import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError)
+import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
 import qualified Ribosome.Scratch as Scratch
 import qualified Ribosome.Settings as Settings
 
@@ -52,11 +52,11 @@ compileAndRenderReport = do
   setOutput #report (Just report)
   initialRenderReport report
 
-outputQuit ::
-  Member Scratch r =>
-  Sem r ()
-outputQuit =
-  Scratch.kill scratchId
+myoOutputQuit ::
+  Member (Scratch !! RpcError) r =>
+  Handler r ()
+myoOutputQuit =
+  resumeHandlerError (Scratch.kill scratchId)
 
 outputSelect ::
   Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>

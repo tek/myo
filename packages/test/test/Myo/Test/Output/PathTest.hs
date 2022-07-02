@@ -1,23 +1,24 @@
 module Myo.Test.Output.PathTest where
 
-import Path (parseAbsDir, parseAbsFile)
-import Ribosome.Nvim.Api.IO (vimSetOption)
+import qualified Data.Text.IO as Text
+import Path (Dir, Path, Rel, reldir, relfile, toFilePath, (</>))
+import qualified Polysemy.Test as Test
+import Polysemy.Test (UnitTest, assertEq)
+import Ribosome.Api (nvimSetOption)
+import Ribosome.Test (testError)
 
 import Myo.Output.ParseReport (findFile)
+import Myo.Test.Embed (myoTest)
 
-base :: String
+base :: Path Rel Dir
 base =
-  "output/resolve-path"
-
-outputResolvePathTest :: Sem r ()
-outputResolvePathTest = do
-  cwd <- parseAbsDir =<< tempDir base
-  targetFile <- tempFile (base <> "/sub/dir/target")
-  vimSetOption "path" "sub/"
-  writeFile targetFile ""
-  target <- parseAbsFile targetFile
-  (target ===) =<< findFile cwd "dir/target"
+  [reldir|output/resolve-path|]
 
 test_outputResolvePath :: UnitTest
 test_outputResolvePath = do
-  myoTest outputResolvePathTest
+  myoTest do
+    cwd <- Test.tempDir base
+    targetFile <- Test.tempFile [] (base </> [relfile|sub/dir/target|])
+    nvimSetOption "path" ("sub/" :: Text)
+    embed (Text.writeFile (toFilePath targetFile) "")
+    assertEq targetFile =<< testError (findFile cwd "dir/target")

@@ -13,6 +13,7 @@ import Polysemy.Process (
   interpretProcessInputText,
   interpretProcessNative,
   interpretProcessOutputLeft,
+  interpretProcessOutputLines,
   interpretProcessOutputRight,
   interpretProcessOutputTextLines,
   withProcess,
@@ -24,30 +25,30 @@ import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command, cmdLines))
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import qualified Myo.Command.Data.RunEvent as RunEvent
-import Myo.Command.Data.RunEvent (RunEvent (RunEvent))
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (System, UiSystem))
 import Myo.Command.Effect.Backend (Backend)
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
 import Myo.Data.ProcessTask (ProcessTask (ProcessTask))
 
 outputEvent ::
-  Members [Events eres RunEvent, State [Text]] r =>
+  Members [CommandLog, State [Text]] r =>
   Ident ->
-  Either Text Text ->
+  Either Text ByteString ->
   Sem r ()
 outputEvent ident = \case
-  Right out -> publish (RunEvent ident (RunEvent.Output out))
+  Right out -> CommandLog.append ident out
   Left out -> modify' (out :)
 
 runProcess ::
-  ∀ eres pres r .
+  ∀ pres r .
   Member (Stop RunError) r =>
-  Members [Events eres RunEvent, PScoped (String, [String]) pres (Process Text (Either Text Text)) !! ProcessError] r =>
+  Members [CommandLog, PScoped (String, [String]) pres (Process Text (Either Text ByteString)) !! ProcessError] r =>
   ProcessTask ->
   Sem r ()
 runProcess (ProcessTask ident cmd) =
-  evalState mempty $ resuming checkError $ withProcess cmd do
+  evalState mempty $ resuming @_ @(PScoped _ _ _) checkError $ withProcess cmd do
     forever do
       outputEvent ident =<< Process.recv
   where
@@ -84,22 +85,22 @@ acceptCommand = \case
     pure Nothing
 
 interpretBackendProcess ::
-  ∀ eres pres r a .
-  Member (Backend !! RunError) r =>
-  Members [Events eres RunEvent, PScoped (String, [String]) pres (Process Text (Either Text Text)) !! ProcessError] r =>
+  ∀ pres r a .
+  Members [Backend !! RunError, CommandLog] r =>
+  Member (PScoped (String, [String]) pres (Process Text (Either Text ByteString)) !! ProcessError) r =>
   Sem r a ->
   Sem r a
 interpretBackendProcess =
   interceptBackend acceptCommand runProcess (captureUnsupported "process") unit
 
 interpretBackendProcessNative ::
-  Members [Backend !! RunError, Events res RunEvent, Resource, Race, Async, Embed IO] r =>
+  Members [Backend !! RunError, CommandLog, Resource, Race, Async, Embed IO] r =>
   Sem r a ->
   Sem r a
 interpretBackendProcessNative =
   interpretProcessOutputTextLines @'Stderr .
   interpretProcessOutputLeft @'Stderr .
-  interpretProcessOutputTextLines @'Stdout .
+  interpretProcessOutputLines @'Stdout .
   interpretProcessOutputRight @'Stdout .
   interpretProcessInputText .
   interpretProcessNative def conf .

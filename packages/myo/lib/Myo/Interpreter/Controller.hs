@@ -10,7 +10,7 @@ import qualified Time
 import Time (MilliSeconds (MilliSeconds))
 
 import Myo.Command.Command (commandByIdent)
-import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.Command (Command (Command, ident))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
@@ -22,6 +22,8 @@ import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock)
 import qualified Myo.Command.Effect.Backend as Backend
 import Myo.Command.Effect.Backend (Backend)
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Command.History (pushHistory)
@@ -52,6 +54,7 @@ type PrepareStack =
     Settings !! SettingError,
     Persist [HistoryEntry] !! PersistError,
     Sync StoreHistoryLock,
+    CommandLog,
     Executions,
     Backend !! RunError,
     AtomicState UiState,
@@ -91,9 +94,10 @@ runCommand ::
   Members [Stop RunError, Stop CommandError] r =>
   Command ->
   Sem r ()
-runCommand cmd = do
+runCommand cmd@Command {ident} = do
   Log.debug [exon|Running command #{show cmd}|]
   task <- runTask cmd
+  CommandLog.archive ident
   prepare task
   resumeHoist RunError.Persist (pushHistory cmd)
   restop (Backend.execute task)
