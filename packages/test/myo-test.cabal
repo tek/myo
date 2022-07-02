@@ -115,6 +115,8 @@ test-suite myo-unit
       Myo.Test.Command.VimTestTest
       Myo.Test.CompleteTest
       Myo.Test.DiagTest
+      Myo.Test.Embed
+      Myo.Test.Handler
       Myo.Test.Output.Cat
       Myo.Test.Output.CycleTest
       Myo.Test.Output.Echo

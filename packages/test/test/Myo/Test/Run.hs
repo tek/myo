@@ -1,53 +1,38 @@
 module Myo.Test.Run where
 
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
-import Conc (interpretAtomic, interpretEventsChan)
-import Log (Severity (Debug, Trace))
+import Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
 import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, UnitTest)
-import Ribosome (
-  BootError,
-  HandlerError,
-  HostConfig,
-  PluginConfig (PluginConfig),
-  Rpc,
-  RpcError,
-  SettingError,
-  Settings,
-  mapHandlerError,
-  noHandlers,
-  setStderr,
-  )
+import Ribosome (BootError, HostConfig, PluginConfig (PluginConfig), Rpc, RpcError, SettingError, Settings)
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
-import Ribosome.Test (StackWith, TestConfig (TestConfig), runEmbedTest, testHandler, testPluginEmbed)
+import Ribosome.Host.Interpret (with)
+import Ribosome.Test (EmbedHandlerStack, EmbedStackWith, TestConfig (TestConfig), runEmbedTest)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig (core))
-import qualified Ribosome.Test.EmbedTmux as Tmux
-import Ribosome.Test.EmbedTmux (testPluginEmbedTmuxConf)
+import Ribosome.Test.EmbedTmux (EmbedTmuxWith, HandlerStack, runEmbedTmuxTestConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
+import Myo.Data.SaveLock (SaveLock (SaveLock))
 import Myo.Data.ViewError (ViewError)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
 
-type MyoTestStack =
-  Stop HandlerError : StackWith MyoStack
-
 withLogDir ::
   Member Test r =>
   InterpreterFor (Reader LogDir) r
-withLogDir sem = do
-  d <- Test.tempDir [reldir|log|]
-  runReader (LogDir d) sem
+withLogDir =
+  with (Test.tempDir [reldir|log|]) \ d -> runReader (LogDir d)
 
 interpretMyoTestStack ::
   Member ChronosTime r =>
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
+  interpretSyncAs SaveLock .
   interpretExecutorFail .
   interpretProc .
   interpretCodecPanes .
@@ -66,59 +51,35 @@ testConfig ::
 testConfig (HostConfig conf) =
   TestConfig False (PluginConfig "myo" (HostConfig conf { dataLogConc = False }))
 
-myoTestConf ::
+type MyoTestStack =
+  MyoStack ++ EmbedHandlerStack
+
+type MyoTestWith r =
+  EmbedStackWith (r ++ MyoStack)
+
+type MyoTest =
+  EmbedStackWith MyoStack
+
+runMyoTestStack ::
   HasCallStack =>
   HostConfig ->
   Sem MyoTestStack () ->
   UnitTest
-myoTestConf conf test =
-  runEmbedTest (testConfig conf) do
-    interpretMyoTestStack $ noHandlers $ testPluginEmbed $ testHandler do
-      test
-
-myoTest ::
-  HasCallStack =>
-  Sem MyoTestStack () ->
-  UnitTest
-myoTest =
-  myoTestConf def
-
-myoTestDebug ::
-  HasCallStack =>
-  Sem MyoTestStack () ->
-  UnitTest
-myoTestDebug =
-  myoTestConf (setStderr Debug def)
+runMyoTestStack conf =
+  runEmbedTest (testConfig conf) .
+  interpretMyoTestStack
 
 type MyoTmuxTestStack =
-  Stop ViewError : Stop HandlerError : Tmux.EmbedTmuxWith MyoStack
+  MyoStack ++ HandlerStack
 
-myoEmbedTmuxTestConf ::
+type MyoTmuxTest =
+  Stop ViewError : EmbedTmuxWith MyoStack
+
+runMyoTmuxTestStack ::
   HasCallStack =>
   HostConfig ->
   Sem MyoTmuxTestStack () ->
   UnitTest
-myoEmbedTmuxTestConf conf test =
-  testPluginEmbedTmuxConf @MyoStack def { core = testConfig conf } (interpretMyoTestStack . noHandlers) do
-    testHandler $ mapHandlerError test
-
-myoEmbedTmuxTest ::
-  HasCallStack =>
-  Sem MyoTmuxTestStack () ->
-  UnitTest
-myoEmbedTmuxTest =
-  myoEmbedTmuxTestConf def
-
-myoEmbedTmuxTestDebug ::
-  HasCallStack =>
-  Sem MyoTmuxTestStack () ->
-  UnitTest
-myoEmbedTmuxTestDebug =
-  myoEmbedTmuxTestConf (setStderr Debug def)
-
-myoEmbedTmuxTestTrace ::
-  HasCallStack =>
-  Sem MyoTmuxTestStack () ->
-  UnitTest
-myoEmbedTmuxTestTrace =
-  myoEmbedTmuxTestConf (setStderr Trace def)
+runMyoTmuxTestStack conf =
+  runEmbedTmuxTestConf def { core = testConfig conf } .
+  interpretMyoTestStack

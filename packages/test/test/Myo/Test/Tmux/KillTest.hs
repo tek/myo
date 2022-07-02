@@ -9,7 +9,8 @@ import Chiasma.Effect.Codec (NativeCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Chiasma.TmuxNative (withTmuxNative_)
-import Polysemy.Test (UnitTest, assert, assertEq, evalMaybe, (/==))
+import Polysemy.Test (UnitTest, assert, evalMaybe, (/==))
+import Ribosome (mapHandlerError)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 
@@ -19,12 +20,11 @@ import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Wait), TmuxTask (TmuxTask))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
-import Myo.Command.Interpreter.Executor.Tmux (interpretExecutorTmuxWithLog)
+import Myo.Command.Interpreter.Executor.Tmux (runInTmux)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
-import qualified Myo.Command.Effect.Executor as Executor
-import Myo.Command.Effect.Executor (Executor)
+import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Settings as Settings (processTimeout)
-import Myo.Test.Run (myoEmbedTmuxTestDebug)
+import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 
 paneContent ::
@@ -35,25 +35,24 @@ paneContent =
 
 test_tmuxKill :: UnitTest
 test_tmuxKill =
-  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 1000 $ interpretExecutorTmuxWithLog $
-  testHandler do
+  myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLog 1000 $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
-    thread1 <- testHandlerAsync $ resumeAs @_ @(Executor _) (Just ["failed"]) do
-      Executor.run (TmuxTask Wait 0 cmd)
+    thread1 <- testHandlerAsync do
+      mapHandlerError (runInTmux (TmuxTask Wait 0 cmd))
     assertWait (Executions.running ident) assert
     pid1 <- evalMaybe =<< Executions.pid ident
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [Lit "1"]
-    thread2 <- testHandlerAsync $ resumeAs @_ @(Executor _) (Just ["failed"]) do
-      Executor.run (TmuxTask Kill 0 cmd)
-    assertEq Nothing =<< thread1
+    thread2 <- testHandlerAsync do
+      mapHandlerError (runInTmux (TmuxTask Kill 0 cmd))
+    thread1
     assertWait (Executions.running ident) assert
     pid2 <- evalMaybe =<< Executions.pid ident
     pid1 /== pid2
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [Lit "2"]
     Executions.kill ident
-    assertEq Nothing =<< thread2
+    thread2
     where
       cmd :: Command
       cmd =

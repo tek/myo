@@ -25,7 +25,7 @@ import Myo.Command.Interpreter.Executor.Tmux (runInTmux)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Settings as Settings (processTimeout)
-import Myo.Test.Run (myoEmbedTmuxTestDebug)
+import Myo.Test.Embed (myoEmbedTmuxTestDebug)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
 

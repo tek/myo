@@ -26,7 +26,7 @@ import Myo.Effect.Controller (Controller)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Test.Output.Echo (addEchoCommand, echoLang, parseEcho)
-import Myo.Test.Run (myoEmbedTmuxTest)
+import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Conc (interpretSync)
 

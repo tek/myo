@@ -7,22 +7,53 @@ import Data.ByteString.Builder (Builder, byteString, toLazyByteString)
 import qualified Data.Map.Strict as Map
 import Data.Sequence (Seq ((:<|)), (|>))
 
-import Myo.Command.Data.CommandOutput (CommandOutput (..))
-import Myo.Command.Effect.CommandLog (CommandLog (Append, Archive, ArchiveAll, Chunks, Get, GetPrev, Set))
+import Myo.Command.Data.CommandOutput (CommandOutput (..), CurrentOutput (..), OutputChunks (..), currentEmpty)
+import Myo.Command.Effect.CommandLog (CommandLog (Append, Archive, ArchiveAll, Get, GetPrev, Set))
 
-trunc1 :: Int -> CommandOutput -> CommandOutput
-trunc1 maxSize =
+truncOutputChunks ::
+  Int ->
+  OutputChunks ->
+  OutputChunks
+truncOutputChunks maxSize =
   spin
   where
     spin = \case
-      CommandOutput {current = h :<| t, ..} | currentSize > maxSize ->
-        spin CommandOutput {
-          current = t,
-          currentSize = currentSize - ByteString.length h,
-          ..
-        }
+      OutputChunks {chunks = h :<| t, size} | size > maxSize ->
+        spin OutputChunks { chunks = t, size = size - ByteString.length h }
       c ->
         c
+
+trunc1 ::
+  Int ->
+  CommandOutput ->
+  CommandOutput
+trunc1 maxSize =
+  #current %~ \case
+    Unbuilt c -> Unbuilt (truncOutputChunks maxSize c)
+    PartiallyBuilt c t -> PartiallyBuilt (truncOutputChunks maxSize c) t
+    Built t -> Built t
+
+appendChunk ::
+  ByteString ->
+  OutputChunks ->
+  OutputChunks
+appendChunk chunk OutputChunks {..} =
+  OutputChunks (chunks |> chunk) (size + len)
+  where
+    len =
+      ByteString.length chunk
+
+appendCurrent ::
+  ByteString ->
+  CurrentOutput ->
+  CurrentOutput
+appendCurrent chunk = \case
+  Unbuilt c ->
+    Unbuilt (appendChunk chunk c)
+  PartiallyBuilt c t ->
+    PartiallyBuilt (appendChunk chunk c) t
+  Built t ->
+    PartiallyBuilt (appendChunk chunk def) t
 
 append ::
   Int ->
@@ -31,44 +62,63 @@ append ::
   CommandOutput
 append maxSize chunk = \case
   Just CommandOutput {..} ->
-    trunc1 maxSize (CommandOutput prev Nothing (current |> chunk) (currentSize + len))
+    trunc1 maxSize (CommandOutput prev (appendCurrent chunk current))
   Nothing ->
-    CommandOutput Nothing Nothing (pure chunk) len
+    CommandOutput Nothing (Unbuilt (OutputChunks (pure chunk) len))
   where
     len =
       ByteString.length chunk
 
-builder :: Seq ByteString -> Builder
+builder :: OutputChunks -> Builder
 builder =
-  foldMap byteString
+  foldMap byteString . chunks
 
 build :: Builder -> Text
 build =
   decodeUtf8 . toLazyByteString
 
-buildCurrent :: CommandOutput -> CommandOutput
-buildCurrent old =
-  old {
-    currentBuilt = Just (fromMaybe "" (currentBuilt old) <> build (builder (current old))),
-    current = mempty
-  }
+buildChunks :: OutputChunks -> Text
+buildChunks =
+  build . builder
+
+buildCurrent :: CommandOutput -> (CommandOutput, Text)
+buildCurrent CommandOutput {current, ..} =
+  (CommandOutput {current = Built new, ..}, new)
+  where
+    new =
+      case current of
+        Unbuilt c -> buildChunks c
+        PartiallyBuilt c t -> buildChunks c <> t
+        Built t -> t
 
 buildPrev :: CommandOutput -> Maybe Text
 buildPrev =
   fmap (either id build) . prev
 
+currentToPrev :: CurrentOutput -> Either Text Builder
+currentToPrev = \case
+  Unbuilt s -> Right (builder s)
+  Built t -> Left t
+  PartiallyBuilt s t -> Left (t <> buildChunks s)
+
 archive :: CommandOutput -> CommandOutput
-archive CommandOutput {..} =
-  CommandOutput {
-    prev = Just (maybe (Right (builder current)) Left currentBuilt),
-    currentBuilt = Nothing,
-    current = mempty,
-    currentSize = 0
-  }
+archive CommandOutput {..}
+  | currentEmpty current =
+    CommandOutput {..}
+  | otherwise =
+    CommandOutput {
+      prev = Just (currentToPrev current),
+      current = def
+    }
 
 setCurrent :: Text -> CommandOutput -> CommandOutput
 setCurrent text CommandOutput {..} =
-  CommandOutput {currentBuilt = Just text, ..}
+  CommandOutput {current = Built text, ..}
+
+buildAndGet :: Maybe (CommandOutput, Text) -> (Maybe Text, Maybe CommandOutput)
+buildAndGet = \case
+  Nothing -> (Nothing, Nothing)
+  Just (co, t) -> (Just t, Just co)
 
 interpretCommandLog ::
   Member (Embed IO) r =>
@@ -85,11 +135,7 @@ interpretCommandLog maxSize =
       atomicModify' (Map.adjust archive ident)
     ArchiveAll ->
       atomicModify' (fmap archive)
-    Chunks ident ->
-      atomicGets (fmap current . Map.lookup ident)
     Get ident ->
-      atomicState' \ s ->
-        let new = Map.adjust buildCurrent ident s
-        in (new, Map.lookup ident new >>= currentBuilt)
+      atomicState' \ s -> swap (Map.alterF (buildAndGet . fmap buildCurrent) ident s)
     GetPrev ident ->
       atomicGets (buildPrev <=< Map.lookup ident)

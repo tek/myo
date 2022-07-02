@@ -1,55 +1,60 @@
 module Myo.Save where
 
--- import Prelude hiding (state)
--- import Ribosome.Config.Setting (setting)
--- import Ribosome.Data.SettingError (SettingError)
--- import Ribosome.Nvim.Api.IO (vimCommand)
--- import Ribosome.System.Time (secondsP)
--- import Time.System (timeCurrentP)
+import qualified Log
+import Polysemy.Chronos (ChronosTime)
+import Ribosome (Handler, Rpc, Settings, lockOrSkip_, noautocmd, resumeHandlerError, silentBang)
+import Ribosome.Api (nvimCommand)
+import Ribosome.Data.SettingError (SettingError)
+import qualified Ribosome.Settings as Settings
+import qualified Time
 
--- import Myo.Command.Data.CommandError (CommandError)
--- import Myo.Command.Log (pushCommandLogs)
--- import Myo.Data.Env (Env(Env, _lastSave))
--- import qualified Myo.Data.Env as Env (lastSave)
--- import qualified Myo.Settings as Settings (resetOnSave, saveBeforeRun, saveInterval)
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
+import Myo.Data.LastSave (LastSave (LastSave))
+import Myo.Data.SaveLock (SaveLock)
+import qualified Myo.Settings as Settings (resetOnSave, saveBeforeRun, saveInterval)
 
--- updateLastSave ::
---   MonadIO m =>
---   Member (AtomicState Env) r =>
---   m ()
--- updateLastSave =
---   setL @Env Env.lastSave =<< liftIO timeCurrentP
+checkInterval ::
+  Members [AtomicState LastSave, Settings, ChronosTime] r =>
+  Sem r Bool
+checkInterval = do
+  now <- Time.now
+  interval <- Settings.get Settings.saveInterval
+  atomicState' \ (LastSave prev) ->
+    if Time.diff now prev >= interval
+    then (LastSave now, True)
+    else (LastSave prev, False)
 
--- sensibleSave ::
---   Env ->
---   m Env
--- sensibleSave state@Env{ _lastSave = last' } = do
---   saveTimeout <- secondsP <$> setting Settings.saveInterval
---   now <- liftIO timeCurrentP
---   execStateT (when (shouldSave now saveTimeout) save) state
---   where
---     shouldSave now saveTimeout =
---       now - last' > saveTimeout
---     save =
---       Log.debug @Text "pushing command log on save" *>
---       CommandLog.pushAll *>
---       updateLastSave
+sensibleSave ::
+  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, ChronosTime, Log, Resource] r =>
+  Sem r ()
+sensibleSave =
+  lockOrSkip_ @SaveLock $ whenM checkInterval do
+    Log.debug "Archiving command logs on save"
+    CommandLog.archiveAll
 
--- myoSave ::
---   Member (AtomicState Env) r =>
---   m ()
--- myoSave =
---   (`when` modifyM sensibleSave) =<< setting Settings.resetOnSave
+save ::
+  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, ChronosTime, Log, Resource] r =>
+  Sem r ()
+save =
+  whenM (Settings.get Settings.resetOnSave) sensibleSave
 
--- saveAll ::
---   Member (AtomicState Env) r =>
---   m ()
--- saveAll = do
---   myoSave
---   vimCommand "noautocmd silent! wall"
+myoSave ::
+  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings !! SettingError, ChronosTime, Log, Resource] r =>
+  Handler r ()
+myoSave =
+  resumeHandlerError save
 
--- preCommandSave ::
---   Member (AtomicState Env) r =>
---   m ()
--- preCommandSave =
---   (`when` saveAll) =<< setting Settings.saveBeforeRun
+saveAll ::
+  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>
+  Sem r ()
+saveAll = do
+  save
+  noautocmd $ silentBang do
+    nvimCommand "wall"
+
+preCommandSave ::
+  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>
+  Sem r ()
+preCommandSave =
+  whenM (Settings.get Settings.saveBeforeRun) saveAll

@@ -8,6 +8,7 @@ import Ribosome.Data.Setting (Setting (Setting))
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec)
+import Time (Seconds)
 
 vimTmuxPane :: Setting Int
 vimTmuxPane =
@@ -97,9 +98,9 @@ proteomeMainNameDir :: Setting (Path Rel Dir)
 proteomeMainNameDir =
   Setting "proteome_main_name" False Nothing
 
-saveInterval :: Setting Double
+saveInterval :: Setting Seconds
 saveInterval =
-  Setting "save_interval" True (Just 1.0)
+  Setting "save_interval" True (Just 1)
 
 haskellCompileProject :: Setting Text
 haskellCompileProject =

@@ -9,7 +9,7 @@ import Ribosome (Rpc)
 import Ribosome.Api (doautocmd, nvimCallFunction, nvimSetVar)
 import Ribosome.Test (assertWait, testHandler)
 
-import Myo.Test.Run (myoEmbedTmuxTest)
+import Myo.Test.Embed (myoEmbedTmuxTest)
 import qualified Myo.Ui.Data.AddLayoutOptions as AddLayoutOptions (AddLayoutOptions (ident, layout))
 import qualified Myo.Ui.Data.AddPaneOptions as AddPaneOptions (AddPaneOptions (ident, layout))
 import Myo.Ui.Data.Space (Space (Space))

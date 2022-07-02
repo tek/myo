@@ -27,7 +27,7 @@ import Myo.Command.Run (myoLine, myoRunIdent)
 import qualified Myo.Command.Effect.Executor as Executor
 import Myo.Command.Effect.Executor (Executor)
 import Myo.Interpreter.Controller (interpretController)
-import Myo.Test.Run (myoTest)
+import Myo.Test.Embed (myoTest)
 import Myo.Command.Interpreter.Executor.Generic (captureUnsupported, interceptExecutor, interpretExecutorFail)
 import Myo.Command.Data.RunError (RunError)
 

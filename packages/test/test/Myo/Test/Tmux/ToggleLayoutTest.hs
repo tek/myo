@@ -6,7 +6,7 @@ import Chiasma.Ui.Data.View (Layout, Pane (Pane), View (View), consLayout, consP
 import Polysemy.Test (TestError (TestError), UnitTest, assertEq)
 import Ribosome.Test (testHandler)
 
-import Myo.Test.Run (myoEmbedTmuxTest)
+import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.ViewCoords (viewCoords)
 import Myo.Ui.Toggle (myoToggleLayout)

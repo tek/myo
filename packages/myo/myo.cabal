@@ -86,9 +86,11 @@ library
       Myo.Control.Concurrent.Wait
       Myo.Data.Env
       Myo.Data.ExactlyOne
+      Myo.Data.LastSave
       Myo.Data.Maybe
       Myo.Data.ProcError
       Myo.Data.ProcessTask
+      Myo.Data.SaveLock
       Myo.Data.String.Pretty
       Myo.Data.ViewError
       Myo.Diag

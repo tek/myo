@@ -4,7 +4,7 @@ import Ribosome.Api.Buffer (currentBufferContent)
 
 import Myo.Diag (myoDiag)
 import Polysemy.Test (UnitTest, assertEq)
-import Myo.Test.Run (myoTest)
+import Myo.Test.Embed (myoTest)
 
 target :: [Text]
 target = [

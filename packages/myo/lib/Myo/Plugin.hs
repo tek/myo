@@ -9,7 +9,7 @@ import Chiasma.Data.TmuxRequest (TmuxRequest)
 import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (Codec, NativeCodec, NativeCodecE)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
-import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, withAsync_)
+import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, interpretSyncAs, withAsync_)
 import Polysemy.Chronos (ChronosTime)
 import Ribosome (
   BootError,
@@ -41,6 +41,7 @@ import Myo.Command.Interpreter.Executor.Generic (interpretExecutorFail)
 -- import Myo.Command.Run (myoRun)
 import Myo.Data.Env (Env)
 import Myo.Data.ProcError (ProcError)
+import Myo.Data.SaveLock (SaveLock (SaveLock))
 import Myo.Diag (myoDiag)
 import Myo.Effect.Proc (Proc)
 import Myo.Interpreter.Proc (interpretProc)
@@ -74,6 +75,7 @@ import Myo.Ui.Default (detectDefaultUi)
 --     $(rpcHandler sync 'myoTestBuildPosition),
 --     $(rpcHandler sync 'myoTestBuildArgs),
 --     $(rpcHandler (autocmd "VimLeavePre" . sync) 'myoQuit),
+    -- rpcAutocmd "MyoQuit" Sync "VimLeavePre" myoQuit
 --     $(rpcHandler (autocmd "BufWritePre") 'myoSave),
 --     $(rpcHandler (
 --     autocmd "User" . autocmdOptions (AutocmdOptions "MyoProject" False Nothing)) 'myoMyoLoaded)
@@ -112,7 +114,8 @@ type MyoStack =
     NativeCodecE (Panes PaneMode),
     NativeCodecE (Panes PanePid),
     Proc !! ProcError,
-    Executor !! RunError
+    Executor !! RunError,
+    Sync SaveLock
   ]
 
 handlers ::
@@ -142,6 +145,7 @@ interpretMyoStack ::
   Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoStack sem =
+  interpretSyncAs SaveLock $
   interpretExecutorFail $
   interpretProc $
   interpretCodecPanes $

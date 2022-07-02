@@ -7,7 +7,7 @@ import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Complete (myoCompleteCommand)
-import Myo.Test.Run (myoTest)
+import Myo.Test.Embed (myoTest)
 
 commands :: [Command]
 commands =

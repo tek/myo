@@ -1,27 +1,21 @@
 module Myo.Test.SaveTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Neovim (Plugin(..))
-import Path (Abs, Dir, Path)
-import Ribosome.Api.Autocmd (doautocmd)
-import Ribosome.Config.Setting (Settings.update)
-import Ribosome.Control.Ribosome (Ribosome, newRibosome)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
-import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
-import Ribosome.Test.Await (awaitEqual_)
-import Ribosome.Test.Embed (integrationTestDef)
-import Ribosome.Test.Orphans ()
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
+import Chiasma.Data.Ident (Ident)
+import Conc (interpretAtomic)
+import Polysemy.Test (UnitTest, assertEq)
+import qualified Ribosome.Settings as Settings
+import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandLog (CommandLog(CommandLog))
-import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.Log (appendLog, commandLog)
-import Myo.Data.Env (Env(_tempDir))
-import Myo.Env (bracketMyoTempDir)
-import Myo.Plugin (handleError, rpcHandlers, variables)
+import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
+import Myo.Data.LastSave (LastSave)
+import Myo.Save (myoSave)
 import qualified Myo.Settings as Settings (saveInterval)
+import Myo.Test.Embed (myoTest)
 
 ident :: Ident
 ident =
@@ -32,57 +26,36 @@ line =
   "log line"
 
 getOutput ::
-  Member (AtomicState Env) r =>
-  m ([ByteString], ByteString)
+  Member CommandLog r =>
+  Sem r (Maybe Text, Maybe Text)
 getOutput = do
-  extract <$> catchAs @CommandError Nothing (commandLog ident)
-  where
-    extract (Just (CommandLog prev cur)) =
-      (prev, cur)
-    extract _ =
-      ([], "")
+  (,) <$> CommandLog.get ident <*> CommandLog.getPrev ident
 
 pushOutput ::
-  Member (AtomicState Env) r =>
-  m ()
+  Member CommandLog r =>
+  Sem r ()
 pushOutput =
-  appendLog ident "log line"
+  CommandLog.append ident "log line"
 
-$(pure [])
-
-plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
-plugin tmp = do
-  ribo <- newRibosome "myo" def { _tempDir = tmp }
-  pure $ riboPlugin "myo" ribo (rpcHandlers ++ handlers) [] handleError variables
-  where
-    handlers = [$(rpcHandler sync 'getOutput), $(rpcHandler sync 'pushOutput)]
-
-outputLog ::
-  m ([Text], Text)
-outputLog =
-  vimCallFunction "GetOutput" []
-
-saveTest :: Sem r ()
-saveTest = do
-  Settings.update Settings.saveInterval 0.0
-  myoAddSystemCommand $ AddSystemCommandOptions ident [] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-  doautocmd False "BufWritePre"
-  awaitEqual_ ([], "") outputLog
-  () <- vimCallFunction "PushOutput" []
-  awaitEqual_ ([], line) outputLog
-  doautocmd False "BufWritePre"
-  awaitEqual_ ([line], "") outputLog
-  doautocmd False "BufWritePre"
-  awaitEqual_ ([line], "") outputLog
-  () <- vimCallFunction "PushOutput" []
-  awaitEqual_ ([line], line) outputLog
-  doautocmd False "BufWritePre"
-  awaitEqual_ ([line, line], "") outputLog
+type SaveTestStack =
+  [Sync (), CommandLog, AtomicState LastSave]
 
 test_save :: UnitTest
 test_save =
-  bracketMyoTempDir run
-  where
-    run tmp = do
-      plug <- liftIO (plugin tmp)
-      integrationTestDef plug saveTest
+  myoTest $ interpretAtomic (def :: LastSave) $ interpretCommandLog 10000 $ testHandler do
+    Settings.update Settings.saveInterval 0
+    myoAddSystemCommand (AddSystemCommandOptions.cons ident [])
+    myoSave
+    assertWait getOutput (assertEq (Nothing, Nothing))
+    pushOutput
+    assertWait getOutput (assertEq (Just line, Nothing))
+    myoSave
+    assertWait getOutput (assertEq (Just "", Just line))
+    myoSave
+    assertWait getOutput (assertEq (Just "", Just line))
+    pushOutput
+    void (CommandLog.get ident)
+    pushOutput
+    assertWait getOutput (assertEq (Just (line <> line), Just line))
+    myoSave
+    assertWait getOutput (assertEq (Just "", Just (line <> line)))
