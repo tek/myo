@@ -5,7 +5,7 @@ import Chiasma.Data.Views (Views)
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Ribosome (HostError, Persist, PersistError, Rpc, SettingError, Settings, reportStop)
+import Ribosome (HostError, Persist, PersistError, Rpc, RpcError, SettingError, Settings, reportStop)
 import qualified Time
 import Time (MilliSeconds (MilliSeconds))
 
@@ -62,7 +62,6 @@ type PrepareStack =
     AtomicState CommandState,
     Reader LogDir,
     DataLog HostError,
-    Rpc,
     ChronosTime,
     Async,
     Log,
@@ -70,7 +69,7 @@ type PrepareStack =
   ]
 
 prepare ::
-  Member (Stop RunError) r =>
+  Members [Rpc, Stop RunError] r =>
   Members PrepareStack r =>
   RunTask ->
   Sem r ()
@@ -85,13 +84,13 @@ prepare = \case
       waitForShell shellIdent
   RunTask _ RunTaskDetails.System ->
     unit
-  RunTask _ RunTaskDetails.Vim ->
+  RunTask _ (RunTaskDetails.Vim _ _) ->
     unit
 
 -- TODO create effect for history
 runCommand ::
   Members PrepareStack r =>
-  Members [Stop RunError, Stop CommandError] r =>
+  Members [Rpc, Stop RunError, Stop CommandError] r =>
   Command ->
   Sem r ()
 runCommand cmd@Command {ident} = do
@@ -104,7 +103,7 @@ runCommand cmd@Command {ident} = do
 
 runIdent ::
   Members PrepareStack r =>
-  Members [Settings !! SettingError, Stop RunError, Stop CommandError, Resource] r =>
+  Members [Settings !! SettingError, Rpc, Stop RunError, Stop CommandError, Resource] r =>
   Ident ->
   Sem r ()
 runIdent ident =
@@ -121,14 +120,15 @@ captureOutput ident = do
 
 interpretController ::
   Members PrepareStack r =>
+  Member (Rpc !! RpcError) r =>
   InterpreterFor (Controller !! RunError) r
 interpretController =
   interpretResumable \case
     RunIdent ident ->
-      mapStop RunError.Toggle $ mapStop RunError.Render $ mapStop RunError.TreeMod $ mapStop RunError.Command do
+      mapStop RunError.Toggle $ mapStop RunError.Render $ mapStop RunError.TreeMod $ mapStop RunError.Command $ resumeHoist RunError.Rpc do
         runIdent ident
     RunCommand cmd ->
-      mapStop RunError.Toggle $ mapStop RunError.Render $ mapStop RunError.TreeMod $ mapStop RunError.Command do
+      mapStop RunError.Toggle $ mapStop RunError.Render $ mapStop RunError.TreeMod $ mapStop RunError.Command $ resumeHoist RunError.Rpc do
         runCommand cmd
     CaptureOutput ident ->
       mapStop RunError.Command do

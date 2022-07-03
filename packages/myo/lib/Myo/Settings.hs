@@ -4,11 +4,11 @@ import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry (ViewGeometry))
 import Path (Dir, Path, Rel)
 import Ribosome.Data.Setting (Setting (Setting))
+import Time (Seconds)
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec)
-import Time (Seconds)
 
 vimTmuxPane :: Setting Int
 vimTmuxPane =
@@ -41,6 +41,10 @@ outputAutoJump =
 commands :: Setting CommandSettingCodec
 commands =
   Setting "commands" True Nothing
+
+maxLogSize :: Setting Int
+maxLogSize =
+  Setting "max_log_size" True (Just 10000)
 
 ui :: Setting UiSettingCodec
 ui =
@@ -101,19 +105,3 @@ proteomeMainNameDir =
 saveInterval :: Setting Seconds
 saveInterval =
   Setting "save_interval" True (Just 1)
-
-haskellCompileProject :: Setting Text
-haskellCompileProject =
-  Setting "haskell_compile_project" True Nothing
-
-haskellTestProject :: Setting Text
-haskellTestProject =
-  Setting "haskell_test_project" True Nothing
-
-haskellStack :: Setting Bool
-haskellStack =
-  Setting "haskell_stack" True (Just True)
-
-defaultCommands :: Setting Bool
-defaultCommands =
-  Setting "default_commands" True (Just True)

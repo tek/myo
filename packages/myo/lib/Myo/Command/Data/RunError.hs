@@ -7,7 +7,7 @@ import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Debug, Error, Warn))
-import Ribosome (ErrorMessage (ErrorMessage), PersistError, ToErrorMessage (..))
+import Ribosome (ErrorMessage (ErrorMessage), PersistError, ToErrorMessage (..), RpcError)
 
 import Myo.Command.Data.Command (ident)
 import qualified Myo.Command.Data.Command as Cmd (Command (Command))
@@ -51,6 +51,8 @@ data RunError =
   Proc Text
   |
   Persist PersistError
+  |
+  Rpc RpcError
   deriving stock (Show)
 
 instance ToErrorMessage RunError where
@@ -101,4 +103,6 @@ instance ToErrorMessage RunError where
   toErrorMessage (Proc err) =
     ErrorMessage "Could not determine tmux process ID" ["RunError.Proc:", show err] Error
   toErrorMessage (Persist err) =
+    toErrorMessage err
+  toErrorMessage (Rpc err) =
     toErrorMessage err

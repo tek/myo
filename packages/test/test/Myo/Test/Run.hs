@@ -1,7 +1,7 @@
 module Myo.Test.Run where
 
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
-import Conc (interpretAtomic, interpretEventsChan, interpretSyncAs)
+import Conc (interpretAtomic, interpretSyncAs)
 import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
@@ -12,6 +12,7 @@ import Ribosome.Host.Interpret (with)
 import Ribosome.Test (EmbedHandlerStack, EmbedStackWith, TestConfig (TestConfig), runEmbedTest)
 import Ribosome.Test.Data.TestConfig (TmuxTestConfig (core))
 import Ribosome.Test.EmbedTmux (EmbedTmuxWith, HandlerStack, runEmbedTmuxTestConf)
+import Ribosome.Test.SocketTmux (SocketTmuxWith, TmuxHandlerStack, runSocketTmuxTestConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock (StoreHistoryLock))
@@ -21,7 +22,6 @@ import Myo.Data.SaveLock (SaveLock (SaveLock))
 import Myo.Data.ViewError (ViewError)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
-import Ribosome.Test.SocketTmux (runSocketTmuxTestConf, TmuxHandlerStack, SocketTmuxWith)
 
 withLogDir ::
   Member Test r =>
@@ -41,7 +41,6 @@ interpretMyoTestStack =
   interpretCodecPanes .
   interpretCodecPanes .
   withLogDir .
-  interpretEventsChan .
   interpretAtomic def .
   interpretAtomic def .
   interpretAtomic def .

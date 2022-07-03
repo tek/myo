@@ -16,6 +16,7 @@ import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Ui.Default (setupDefaultTestUi)
 import Myo.Ui.Focus (myoFocus)
 import Myo.Ui.Toggle (myoTogglePane)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 
 data PaneSelected =
   PaneSelected {
@@ -27,7 +28,7 @@ data PaneSelected =
 
 test_focusPane :: UnitTest
 test_focusPane =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
   interpretCodecPanes @PaneSelected $ testHandler do
     setupDefaultTestUi
     myoTogglePane "make"

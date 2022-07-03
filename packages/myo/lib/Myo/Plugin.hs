@@ -1,59 +1,69 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Myo.Plugin where
 
 import Chiasma.Codec.Data.PaneMode (PaneMode)
 import Chiasma.Codec.Data.PanePid (PanePid)
-import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.Panes (Panes)
-import Chiasma.Data.TmuxRequest (TmuxRequest)
 import Chiasma.Data.Views (Views)
-import Chiasma.Effect.Codec (Codec, NativeCodec, NativeCodecE)
+import Chiasma.Effect.Codec (NativeCodecE)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
-import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, interpretSyncAs, withAsync_)
+import Conc (interpretAtomic, interpretSyncAs, withAsync_)
 import Data.MessagePack (Object)
-import Polysemy.Chronos (ChronosTime)
 import Ribosome (
-  BootError,
-  CompleteStyle (CompleteFiltered),
   Errors,
   Execution (Async),
   Handler,
   HostError,
   MappingIdent,
+  Persist,
+  PersistError,
+  RemoteStack,
   Rpc,
   RpcError,
   RpcHandler,
   Scratch,
   SettingError,
   Settings,
+  WatchedVariable,
   interpretNvimPlugin,
+  interpretPersist,
+  interpretPersistPath,
   reportError,
   rpc,
-  runNvimHandlersIO,
   runNvimPluginIO,
   )
-import Ribosome.Data.WatchedVariable (WatchedVariable)
+import Ribosome.Data.PersistPathError (PersistPathError)
+import Ribosome.Persist (PersistPath)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
+import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunEvent (RunEvent)
 import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock (StoreHistoryLock))
 import Myo.Command.Effect.Backend (Backend)
+import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Output (myoOutputQuit, myoOutputSelect)
--- import Myo.Command.Run (myoRun)
 import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env)
 import Myo.Data.ProcError (ProcError)
 import Myo.Data.SaveLock (SaveLock (SaveLock))
 import Myo.Diag (myoDiag)
+import Myo.Effect.Controller (Controller)
 import Myo.Effect.Proc (Proc)
+import Myo.Interpreter.Controller (interpretController)
 import Myo.Interpreter.Proc (interpretProc)
+import Myo.Output.Data.OutputError (OutputError)
+import Myo.Output.Effect.Parsing (OutputParser, Parsing)
+import Myo.Output.Interpreter.Parsing (interpretParsing)
+import Myo.Output.Lang.Haskell.Parser (haskellOutputParser)
+import Myo.Output.Lang.Nix.Parser (nixOutputParser)
+import Myo.Output.Lang.Scala.Parser (scalaOutputParser)
 import qualified Myo.Settings as Settings
 import Myo.Temp (interpretLogDir)
 import Myo.Ui.Data.UiState (UiState)
@@ -98,8 +108,6 @@ type MyoStack =
     AtomicState UiState,
     AtomicState Views,
     AtomicState CommandState,
-    ChanEvents RunEvent,
-    ChanConsumer RunEvent,
     Reader LogDir,
     NativeCodecE (Panes PaneMode),
     NativeCodecE (Panes PanePid),
@@ -147,27 +155,54 @@ prepare = do
   resuming @_ @Settings (reportError (Just "ui")) do
     detect <- Settings.get Settings.detectUi
     when detect detectDefaultUi
+    -- loadHistory
+
+type MyoProdStack =
+  [
+    Parsing !! OutputError,
+    Controller !! RunError,
+    CommandLog,
+    Persist [HistoryEntry] !! PersistError,
+    PersistPath !! PersistPathError
+  ] ++ MyoStack
 
 interpretMyoStack ::
-  Members [DataLog HostError, ChronosTime] r =>
-  Members [Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
-  InterpretersFor MyoStack r
-interpretMyoStack sem =
-  interpretSyncAs StoreHistoryLock $
-  interpretSyncAs SaveLock $
-  interpretBackendFail $
-  interpretProc $
-  interpretCodecPanes $
-  interpretCodecPanes $
-  interpretLogDir $
-  interpretEventsChan $
-  interpretAtomic def $
-  interpretAtomic def $
-  interpretAtomic def $
-  interpretAtomic def $
-  interpretExecutions do
-    withAsync_ prepare sem
+  InterpretersFor MyoStack RemoteStack
+interpretMyoStack =
+  interpretSyncAs StoreHistoryLock .
+  interpretSyncAs SaveLock .
+  interpretBackendFail .
+  interpretProc .
+  interpretCodecPanes .
+  interpretCodecPanes .
+  interpretLogDir .
+  interpretAtomic def .
+  interpretAtomic def .
+  interpretAtomic def .
+  interpretAtomic def .
+  interpretExecutions
+
+parsers ::
+  Member (Embed IO) r =>
+  Map CommandLanguage [OutputParser r]
+parsers =
+  [
+    ("haskell", [haskellOutputParser]),
+    ("nix", [nixOutputParser]),
+    ("scala", [scalaOutputParser])
+  ]
+
+interpretMyoProd ::
+  InterpretersFor MyoProdStack RemoteStack
+interpretMyoProd =
+  interpretMyoStack .
+  interpretPersistPath True .
+  interpretPersist "history" .
+  interpretCommandLogSetting .
+  interpretController .
+  interpretParsing parsers .
+  withAsync_ prepare
 
 myo :: IO ()
 myo =
-  runNvimPluginIO @MyoStack "myo" (interpretMyoStack . interpretNvimPlugin handlers mappings variables)
+  runNvimPluginIO @MyoProdStack "myo" (interpretMyoProd . interpretNvimPlugin handlers mappings variables)

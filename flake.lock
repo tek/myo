@@ -4694,11 +4694,11 @@
         "polysemy-conc": "polysemy-conc_6"
       },
       "locked": {
-        "lastModified": 1656868222,
-        "narHash": "sha256-R3KcfZfTOGHMj1prOG3tivHFsCNdYjjJrL/G96tG1TY=",
+        "lastModified": 1656885682,
+        "narHash": "sha256-bxeFbPv1mADGKejOArnP1jfAG39OONUpUMfVFAj5sZU=",
         "ref": "polysemy",
-        "rev": "2a43a455303fef114d6d812ff0e45d0f0b10b854",
-        "revCount": 618,
+        "rev": "b529efba6896fb8516c31d0ff5a32047658e7552",
+        "revCount": 622,
         "type": "git",
         "url": "https://git.tryp.io/tek/ribosome"
       },

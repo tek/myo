@@ -20,8 +20,8 @@ import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
 import Myo.Command.Data.TmuxTask (TaskType (Wait), TmuxTask (TmuxTask))
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import qualified Myo.Command.Effect.Executions as Executions
-import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.Backend.Tmux (runInTmux)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Settings as Settings (processTimeout)
@@ -37,7 +37,7 @@ paneContent =
 
 test_tmuxTruncCommandLog :: UnitTest
 test_tmuxTruncCommandLog =
-  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog 100 $ interpretTmuxMonitor $ testHandler do
+  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog (pure 100) $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     thread1 <- testHandlerAsync do

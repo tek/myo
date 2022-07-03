@@ -15,6 +15,7 @@ import Myo.Command.Data.AddSystemCommandOptions (target)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Command (withTestHandlerAsync)
@@ -48,7 +49,7 @@ setupTree =
 
 test_togglePane :: UnitTest
 test_togglePane =
-  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
+  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
   testHandler do
     _ <- createSpace "s"
     _ <- createWindow (viewCoords "s" "w" "wroot")
@@ -60,7 +61,7 @@ test_togglePane =
 
 test_shellPanePin :: UnitTest
 test_shellPanePin =
-  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
+  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
   testHandler do
     setupDefaultTestUi
     insertPane (viewCoords "vim" "vim" "make") (consPane sid)

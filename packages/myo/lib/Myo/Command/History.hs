@@ -23,6 +23,7 @@ import Myo.Command.Data.LoadHistoryLock (LoadHistoryLock)
 import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock)
 import qualified Myo.Settings as Settings
 
+-- TODO use variable watcher for this or simple index by the last two directory segments
 proteomePath ::
   Member (Settings !! SettingError) r =>
   Sem r (Maybe (Path Rel Dir))

@@ -36,10 +36,6 @@ uiShellTaskDetails shellIdent =
       shell <- commandByIdent "uiShellTaskDetails-target" shellIdent
       stop (RunError.InvalidShell shell)
 
-vimTaskDetails :: RunTaskDetails
-vimTaskDetails =
-  RunTaskDetails.Vim
-
 runDetails ::
   Members [AtomicState CommandState, Stop RunError, Stop CommandError] r =>
   Command ->
@@ -50,4 +46,4 @@ runDetails =
     analyze (CommandInterpreter.System Nothing) = pure systemTaskDetails
     analyze (CommandInterpreter.System (Just paneIdent)) = pure $ uiSystemTaskDetails paneIdent
     analyze (CommandInterpreter.Shell shellIdent) = uiShellTaskDetails shellIdent
-    analyze (CommandInterpreter.Vim _ _) = pure vimTaskDetails
+    analyze (CommandInterpreter.Vim silent target) = pure (RunTaskDetails.Vim silent target)

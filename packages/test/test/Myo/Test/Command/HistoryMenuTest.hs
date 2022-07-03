@@ -11,7 +11,7 @@ import Ribosome.Menu.Prompt (interpretPromptInputCharList)
 import Ribosome.Test (testError)
 
 import qualified Myo.Command.Data.Command as Command
-import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter (CommandInterpreter (System))
+import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import Myo.Command.HistoryMenu (historyMenu)

@@ -24,6 +24,7 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSys
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoRun)
 import Myo.Effect.Controller (Controller)
 import Myo.Interpreter.Controller (interpretController)
@@ -68,13 +69,13 @@ runAndCheck = do
 
 test_tmuxRunSys :: UnitTest
 test_tmuxRunSys =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController do
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController do
     setup
     runAndCheck
 
 test_quitCopyMode :: UnitTest
 test_quitCopyMode =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController do
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController do
     setup
     testHandler (myoTogglePane "make")
     withTmuxApis @[TmuxCommand, Panes PaneMode, Panes Pane] $

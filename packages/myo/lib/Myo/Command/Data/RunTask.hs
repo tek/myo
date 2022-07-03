@@ -5,7 +5,10 @@ import Chiasma.Data.Ident (Ident, Identifiable (identify))
 import Myo.Command.Data.Command (Command)
 
 data RunTaskDetails =
-  Vim
+  Vim {
+    silent :: Bool,
+    target :: Maybe Ident
+  }
   |
   System
   |

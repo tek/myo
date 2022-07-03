@@ -75,7 +75,7 @@ historyMenu ::
   Sem r (MenuResult a)
 historyMenu execute = do
   items <- historyItems
-  withMappings [("cr", execute)] (runNvimMenu (staticNvimMenu items))
+  withMappings [("cr", execute)] (runNvimMenu (staticNvimMenu items & #scratch . #name .~ "myo-history"))
 
 myoHistory ::
   Members [Controller !! RunError, Scratch !! RpcError, Settings !! SettingError, AtomicState CommandState] r =>

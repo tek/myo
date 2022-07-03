@@ -19,8 +19,8 @@ import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Wait), TmuxTask (TmuxTask))
 import qualified Myo.Command.Effect.Executions as Executions
-import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.Backend.Tmux (runInTmux)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Settings as Settings (processTimeout)
@@ -35,7 +35,7 @@ paneContent =
 
 test_tmuxKill :: UnitTest
 test_tmuxKill =
-  myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLog 1000 $ interpretTmuxMonitor $ testHandler do
+  myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLogSetting $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     thread1 <- testHandlerAsync do
       mapHandlerError (runInTmux (TmuxTask Wait 0 cmd))

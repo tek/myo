@@ -1,78 +1,98 @@
 module Myo.Command.CommandMenu where
 
--- import qualified Chiasma.Data.Ident as Ident (Ident (..))
--- import Chiasma.Ui.Data.TreeModError (TreeModError)
--- import qualified Data.Map as Map
--- import qualified Data.Text as Text
--- import qualified Data.UUID as UUID
--- import Ribosome.Data.PersistError (PersistError)
--- import Ribosome.Data.ScratchOptions (defaultScratchOptions)
--- import Ribosome.Data.SettingError (SettingError)
--- import qualified Ribosome.Menu.Consumer as Consumer
--- import Ribosome.Menu.Data.MenuConsumer (MenuWidget)
--- import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
--- import Ribosome.Menu.Data.MenuResult (MenuResult)
--- import Ribosome.Menu.Items.Read (withFocusM)
--- import Ribosome.Menu.Prompt (defaultPrompt)
--- import Ribosome.Menu.Run (staticNvimMenu)
--- import Ribosome.Msgpack.Error (DecodeError)
+import Chiasma.Data.Ident (Ident (Str, Uuid))
+import Conc (Restoration)
+import qualified Data.Text as Text
+import qualified Data.UUID as UUID
+import Exon (exon)
+import Polysemy.Chronos (ChronosTime)
+import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
+import Ribosome.Data.SettingError (SettingError)
+import Ribosome.Errors (pluginHandlerErrors)
+import Ribosome.Menu (
+  MenuItem,
+  MenuResult,
+  MenuStack,
+  MenuWidget,
+  MenuWrite,
+  PromptInput,
+  PromptListening,
+  PromptQuit,
+  interpretMenu,
+  runNvimMenu,
+  simpleMenuItem,
+  staticNvimMenu,
+  withFocus,
+  withMappings,
+  )
+import Ribosome.Menu.Prompt (interpretPromptInputNvim)
 
--- import Myo.Command.Data.Command (Command (Command))
--- import qualified Myo.Command.Data.CommandError as CommandError
--- import Myo.Command.Data.CommandError (CommandError)
--- import qualified Myo.Command.Data.CommandState as CommandState
--- import Myo.Command.Data.CommandState (CommandState)
--- import Myo.Command.Data.RunError (RunError)
--- import Myo.Command.Run (myoRunIdent)
--- import Myo.Data.Env (Env)
--- import Myo.Ui.Data.ToggleError (ToggleError)
--- import Myo.Ui.Render (MyoRender)
+import Myo.Command.Data.Command (Command (Command, cmdLines, displayName), ident)
+import qualified Myo.Command.Data.CommandError as CommandError
+import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Effect.Controller as Controller
+import Myo.Effect.Controller (Controller)
 
--- runCommand ::
---   MyoRender s e m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   MenuWidget m Ident ()
--- runCommand =
---   withFocusM myoRunIdent
+runCommand ::
+  Member Controller r =>
+  MenuWrite Ident r =>
+  MenuWidget r ()
+runCommand =
+  withFocus Controller.runIdent
 
--- menuItemName :: Ident -> Maybe Text -> Text
--- menuItemName ident displayName =
---   "[" <> fromMaybe (text' ident) displayName <> "]"
---   where
---     text' (Ident.Str a) =
---       toText a
---     text' (Ident.Uuid a) =
---       Text.take 6 $ UUID.toText a
+menuItemName :: Ident -> Maybe Text -> Text
+menuItemName ident displayName =
+  [exon|[#{fromMaybe (idText ident) displayName}]|]
+  where
+    idText = \case
+      Str a ->
+        a
+      Uuid a ->
+        Text.take 6 (UUID.toText a)
 
--- commandMenu ::
---   MonadCatch m =>
---   Member (AtomicState Env) r =>
---   MenuWidget m Ident () ->
---   m (MenuResult ())
--- commandMenu execute =
---   run . fmap menuItem =<< atomicGets CommandState.commands
---   where
---     run [] =
---       stop CommandError.NoCommands
---     run entries =
---       staticNvimMenu scratchOptions entries handler promptConfig
---     menuItem (Command _ ident lines' _ _ displayName _ _ _) =
---       simpleMenuItem ident (menuItemText ident lines' displayName)
---     menuItemText ident lines' displayName =
---       Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']
---     handler =
---       Consumer.withMappings (Map.fromList [("cr", execute)])
---     promptConfig =
---       defaultPrompt []
---     scratchOptions =
---       defaultScratchOptions "myo-commands"
+commandItems ::
+  Members [AtomicState CommandState, Stop CommandError] r =>
+  Sem r [MenuItem Ident]
+commandItems = do
+  cmds <- stopNote CommandError.NoCommands . nonEmpty =<< atomicView #commands
+  pure (toList (menuItem <$> cmds))
+  where
+    menuItem Command {..} =
+      simpleMenuItem ident (menuItemText ident cmdLines displayName)
+    menuItemText ident ls displayName =
+      Text.unwords [menuItemName ident displayName, Text.take 100 (fromMaybe "<no command line>" (head ls))]
 
--- myoCommands ::
---   MonadCatch m =>
---   MyoRender s e m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   m ()
--- myoCommands =
---   void $ commandMenu runCommand
+commandMenu ::
+  Show a =>
+  Members (MenuStack Ident) r =>
+  Members [AtomicState CommandState, Stop CommandError] r =>
+  Members [
+    PromptInput,
+    Settings !! SettingError,
+    Scratch,
+    Rpc,
+    Rpc !! RpcError,
+    Sync PromptQuit,
+    Sync PromptListening,
+    Log,
+    ChronosTime,
+    Mask res,
+    Race,
+    Embed IO,
+    Final IO
+  ] r =>
+  MenuWidget r a ->
+  Sem r (MenuResult a)
+commandMenu execute = do
+  items <- commandItems
+  withMappings [("cr", execute)] (runNvimMenu (staticNvimMenu items & #scratch . #name .~ "myo-commands"))
+
+myoCommands ::
+  Members [Controller !! RunError, Scratch !! RpcError, Settings !! SettingError, AtomicState CommandState] r =>
+  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
+  Handler r ()
+myoCommands =
+  pluginHandlerErrors $ resumeHandlerError @Controller $ mapHandlerError do
+    void $ interpretMenu $ interpretPromptInputNvim $ commandMenu runCommand

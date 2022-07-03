@@ -1,9 +1,5 @@
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 module Myo.Ui.Default where
 
-import qualified Chiasma.Codec.Data.PaneCoords as Codec (PaneCoords (PaneCoords))
-import qualified Chiasma.Codec.Data.PanePid as Codec (PanePid (PanePid))
--- import Chiasma.Command.Pane (pane, panePids)
 import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Chiasma.Data.TmuxId (PaneId (..), SessionId (..), WindowId (..))
 import qualified Chiasma.Data.View as Tmux (View (View))
@@ -19,20 +15,14 @@ import Chiasma.Ui.Data.View (
   consPane,
   )
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
-import Control.Lens (findMOf, (%~))
-import qualified Control.Lens as Lens (each)
 import Ribosome (Settings)
-import Ribosome.Api.Process (vimPid)
-import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Settings as Settings
 
-import Process (Pid (Pid))
 import Myo.Orphans ()
 import qualified Myo.Settings as Settings
 -- import Myo.System.Proc (ppids)
 import Myo.Ui.Data.Space (Space (Space))
 import Myo.Ui.Data.UiState (UiState)
-import qualified Myo.Ui.Data.UiState as UiState (vimPaneId)
 import Myo.Ui.Data.Window (Window (Window))
 import Myo.Ui.View (insertSpace)
 
@@ -107,6 +97,7 @@ setupDefaultTestUi = do
 --   result <- runExceptT @RpcError vimPid
 --   either (fail . show) detectVimPidPane (Pid <$> result)
 
+-- TODO
 detectDefaultUi ::
   Members [Settings, AtomicState UiState] r =>
   Sem r ()

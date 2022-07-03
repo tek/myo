@@ -19,6 +19,7 @@ import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOpt
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (runner, target))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Kill (killCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
@@ -77,7 +78,7 @@ paneContent =
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretBackendTmuxNoLog $ interpretController $
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
   testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi

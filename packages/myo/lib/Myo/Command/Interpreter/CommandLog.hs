@@ -6,9 +6,12 @@ import qualified Data.ByteString as ByteString
 import Data.ByteString.Builder (Builder, byteString, toLazyByteString)
 import qualified Data.Map.Strict as Map
 import Data.Sequence (Seq ((:<|)), (|>))
+import Ribosome (HostError, SettingError, Settings, reportError)
+import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Data.CommandOutput (CommandOutput (..), CurrentOutput (..), OutputChunks (..), currentEmpty)
 import Myo.Command.Effect.CommandLog (CommandLog (Append, Archive, ArchiveAll, Get, GetPrev, Set))
+import qualified Myo.Settings as Settings
 
 truncOutputChunks ::
   Int ->
@@ -122,15 +125,16 @@ buildAndGet = \case
 
 interpretCommandLog ::
   Member (Embed IO) r =>
-  Int ->
+  Sem r Int ->
   InterpreterFor CommandLog r
 interpretCommandLog maxSize =
   interpretAtomic (mempty :: Map Ident CommandOutput) .
   reinterpret \case
     Set ident text ->
       atomicModify' (Map.alter (Just . setCurrent text . fromMaybe def) ident . Map.adjust archive ident)
-    Append ident chunk ->
-      atomicModify' (Map.alter (Just . append maxSize chunk) ident)
+    Append ident chunk -> do
+      size <- raise maxSize
+      atomicModify' (Map.alter (Just . append size chunk) ident)
     Archive ident ->
       atomicModify' (Map.adjust archive ident)
     ArchiveAll ->
@@ -139,3 +143,15 @@ interpretCommandLog maxSize =
       atomicState' \ s -> swap (Map.alterF (buildAndGet . fmap buildCurrent) ident s)
     GetPrev ident ->
       atomicGets (buildPrev <=< Map.lookup ident)
+
+maxSizeSetting ::
+  Members [Settings !! SettingError, DataLog HostError] r =>
+  Sem r Int
+maxSizeSetting =
+  Settings.get Settings.maxLogSize !! \ e -> 10000 <$ reportError (Just "command-log") e
+
+interpretCommandLogSetting ::
+  Members [Settings !! SettingError, DataLog HostError, Embed IO] r =>
+  InterpreterFor CommandLog r
+interpretCommandLogSetting =
+  interpretCommandLog maxSizeSetting

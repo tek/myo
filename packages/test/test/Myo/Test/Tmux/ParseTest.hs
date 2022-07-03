@@ -18,7 +18,7 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxWithLog)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Parse (myoParse)
 import Myo.Command.Run (myoRunIdent)
@@ -48,7 +48,7 @@ waitForLog i =
 
 test_parseTmux :: UnitTest
 test_parseTmux =
-  myoEmbedTmuxTest $ interpretCommandLog 1000 $ interpretSocketReader $ interpretBackendTmuxWithLog $
+  myoEmbedTmuxTest $ interpretCommandLogSetting $ interpretSocketReader $ interpretBackendTmuxWithLog $
   interpretSync $ interpretPersistNull $ interpretController do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
@@ -62,7 +62,7 @@ test_parseTmux =
 
 test_parseCaptureTmux :: UnitTest
 test_parseCaptureTmux =
-  myoEmbedTmuxTest $ interpretCommandLog 1000 $ interpretSocketReader $ interpretBackendTmuxWithLog $
+  myoEmbedTmuxTest $ interpretCommandLogSetting $ interpretSocketReader $ interpretBackendTmuxWithLog $
   interpretSync $ interpretPersistNull $ interpretController do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]

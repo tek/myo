@@ -54,6 +54,7 @@ library
       Myo.Command.Data.StoreHistoryLock
       Myo.Command.Data.TmuxMonitorError
       Myo.Command.Data.TmuxTask
+      Myo.Command.Data.VimTask
       Myo.Command.Data.VimTestPosition
       Myo.Command.Effect.Backend
       Myo.Command.Effect.CommandLog
@@ -66,6 +67,7 @@ library
       Myo.Command.Interpreter.Backend.Generic
       Myo.Command.Interpreter.Backend.Process
       Myo.Command.Interpreter.Backend.Tmux
+      Myo.Command.Interpreter.Backend.Vim
       Myo.Command.Interpreter.CommandLog
       Myo.Command.Interpreter.Executions
       Myo.Command.Interpreter.SocketReader
@@ -97,7 +99,6 @@ library
       Myo.Effect.Controller
       Myo.Effect.MState
       Myo.Effect.Proc
-      Myo.Init
       Myo.Interpreter.Controller
       Myo.Interpreter.MState
       Myo.Interpreter.Proc
@@ -160,7 +161,6 @@ library
       Myo.Ui.Update
       Myo.Ui.UpsertView
       Myo.Ui.View
-      Myo.Vim.Runner
   hs-source-dirs:
       lib
   default-extensions:

@@ -22,6 +22,7 @@ import Myo.Test.RunTest (test_runLineCmd, test_runLineSingle, test_runSubproc, t
 import Myo.Test.SaveTest (test_save)
 import Myo.Test.Tmux.CommandLogTest (test_tmuxTruncCommandLog)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
+import Myo.Test.Tmux.KillTest (test_tmuxKill)
 import Myo.Test.Tmux.ParseTest (test_parseCaptureTmux, test_parseTmux)
 import Myo.Test.Tmux.RunShellTest (test_tmuxRunShell)
 import Myo.Test.Tmux.RunTest (test_quitCopyMode, test_tmuxRunSys)
@@ -33,44 +34,48 @@ import Test.Tasty (TestTree, defaultMain, testGroup)
 tests :: TestTree
 tests =
   testGroup "all" [
-    unitTest "truncate the command log for a tmux command" test_tmuxTruncCommandLog,
-    unitTest "run a command from the menu" test_commandMenu,
-    unitTest "select a command in the history menu" test_historyMenu,
-    unitTest "update commands via variable watcher" test_updateCommands,
-    unitTest "run a vim-test command" test_vimTest,
+    testGroup "command" [
+      unitTest "run a command from the menu" test_commandMenu,
+      unitTest "select a command in the history menu" test_historyMenu,
+      unitTest "update commands via variable watcher" test_updateCommands,
+      unitTest "run a vim-test command" test_vimTest
+    ],
+    testGroup "output" [
+      unitTest "cycle to the previous output event" test_outputPrev,
+      unitTest "cycle to the next output event" test_outputNext,
+      unitTest "don't show the output window if events are empty" test_emptyOutput,
+      unitTest "render haskell messages" test_haskellRender,
+      unitTest "parse haskell errors" test_parseHaskellErrors,
+      unitTest "parse haskell garbage" test_parseGarbage,
+      unitTest "parse scala messages" test_parseScala,
+      unitTest "parse previous output if current is unparsable" test_parsePrevious,
+      unitTest "find a file from an output message" test_outputResolvePath,
+      unitTest "quit the output window" test_outputQuit,
+      unitTest "sanitize output messages" test_sanitize,
+      unitTest "render scala messages" test_scalaRender,
+      unitTest "select an event in the output window" test_outputSelect
+    ],
+    testGroup "tmux" [
+      unitTest "truncate the command log for a tmux command" test_tmuxTruncCommandLog,
+      unitTest "focus a pane" test_focusPane,
+      unitTest "tmux: kill running command" test_tmuxKill,
+      unitTest "parse output from tmux" test_parseTmux,
+      unitTest "parse output from tmux by capturing the current pane content" test_parseCaptureTmux,
+      unitTest "run a shell command in tmux" test_tmuxRunShell,
+      unitTest "run a system command in tmux" test_tmuxRunSys,
+      unitTest "quit the tmux copy mode" test_quitCopyMode,
+      unitTest "toggle a tmux layout" test_toggleLayout,
+      unitTest "toggle a tmux pane" test_togglePane,
+      unitTest "pin a shell pane in tmux" test_shellPanePin,
+      unitTest "update the UI config via variable watcher" test_updateUi
+    ],
     unitTest "command completion" test_completeCommand,
-    unitTest "react to proteome being loaded" test_proteomeConfig,
     unitTest "diagnostics window" test_diag,
-    unitTest "cycle to the previous output event" test_outputPrev,
-    unitTest "cycle to the next output event" test_outputNext,
-    unitTest "don't show the output window if events are empty" test_emptyOutput,
-    unitTest "render haskell messages" test_haskellRender,
-    unitTest "parse haskell errors" test_parseHaskellErrors,
-    unitTest "parse haskell garbage" test_parseGarbage,
-    unitTest "parse scala messages" test_parseScala,
-    unitTest "parse previous output if current is unparsable" test_parsePrevious,
-    unitTest "find a file from an output message" test_outputResolvePath,
-    unitTest "quit the output window" test_outputQuit,
-    unitTest "sanitize output messages" test_sanitize,
-    unitTest "render scala messages" test_scalaRender,
-    unitTest "select an event in the output window" test_outputSelect,
     unitTest "determine parent and child pids" test_proc,
     unitTest "run a command with the system runner" test_runSystem,
     unitTest "run a single ad-hoc cmdline" test_runLineSingle,
-    unitTest "run a single ad-hoc cmdline via command" test_runLineCmd,
     unitTest "run a command with the subproc runner" test_runSubproc,
-    unitTest "push output entries on save" test_save,
-    unitTest "socket communication" test_socket,
-    unitTest "focus a pane" test_focusPane,
-    unitTest "parse output from tmux" test_parseTmux,
-    unitTest "parse output from tmux by capturing the current pane content" test_parseCaptureTmux,
-    unitTest "run a shell command in tmux" test_tmuxRunShell,
-    unitTest "run a system command in tmux" test_tmuxRunSys,
-    unitTest "quit the tmux copy mode" test_quitCopyMode,
-    unitTest "toggle a tmux layout" test_toggleLayout,
-    unitTest "toggle a tmux pane" test_togglePane,
-    unitTest "pin a shell pane in tmux" test_shellPanePin,
-    unitTest "update the UI config via variable watcher" test_updateUi
+    unitTest "push output entries on save" test_save
   ]
 
 

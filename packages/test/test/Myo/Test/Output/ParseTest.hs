@@ -4,8 +4,12 @@ import qualified Data.Vector as Vector
 import Path (relfile)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, evalMaybe, (/==))
-import Ribosome.Test (testHandler, assertWait, testError)
+import Ribosome (interpretPersistNull)
+import Ribosome.Test (assertWait, testError, testHandler)
 
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Parse (parseCommand, selectCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
@@ -15,10 +19,6 @@ import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Output.ParseReport (compileReport)
 import Myo.Test.Embed (myoTest)
 import Myo.Test.Output.Echo (addEchoCommand, echoLang, parseEcho)
-import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
-import qualified Myo.Command.Effect.CommandLog as CommandLog
-import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
-import Ribosome (interpretPersistNull)
 
 lines' :: [Text]
 lines' =
@@ -26,7 +26,7 @@ lines' =
 
 test_parsePrevious :: UnitTest
 test_parsePrevious =
-  myoTest $ interpretPersistNull $ interpretCommandLog 10000 $ interpretBackendProcessNative $ interpretController do
+  myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendProcessNative $ interpretController do
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
         ident <- addEchoCommand "proc" lines' False
