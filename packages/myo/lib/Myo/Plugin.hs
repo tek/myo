@@ -10,23 +10,29 @@ import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (Codec, NativeCodec, NativeCodecE)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Conc (ChanConsumer, ChanEvents, interpretAtomic, interpretEventsChan, interpretSyncAs, withAsync_)
+import Data.MessagePack (Object)
 import Polysemy.Chronos (ChronosTime)
 import Ribosome (
   BootError,
   CompleteStyle (CompleteFiltered),
   Errors,
   Execution (Async),
+  Handler,
   HostError,
+  MappingIdent,
   Rpc,
   RpcError,
   RpcHandler,
   Scratch,
   SettingError,
   Settings,
+  interpretNvimPlugin,
   reportError,
   rpc,
   runNvimHandlersIO,
+  runNvimPluginIO,
   )
+import Ribosome.Data.WatchedVariable (WatchedVariable)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
@@ -39,7 +45,9 @@ import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Command.Output (myoOutputQuit, myoOutputSelect)
 -- import Myo.Command.Run (myoRun)
+import Myo.Command.Update (updateCommands)
 import Myo.Data.Env (Env)
 import Myo.Data.ProcError (ProcError)
 import Myo.Data.SaveLock (SaveLock (SaveLock))
@@ -50,6 +58,7 @@ import qualified Myo.Settings as Settings
 import Myo.Temp (interpretLogDir)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (detectDefaultUi)
+import Myo.Ui.Update (updateUi)
 
 -- rpcHandlers :: [[RpcDef (Ribo Env Error)]]
 -- rpcHandlers =
@@ -82,26 +91,6 @@ import Myo.Ui.Default (detectDefaultUi)
 --     autocmd "User" . autocmdOptions (AutocmdOptions "MyoProject" False Nothing)) 'myoMyoLoaded)
 --     ]
 
--- mappingOutputQuit ::
---   MappingHandler m
--- mappingOutputQuit =
---   mappingHandler "output-quit" outputQuit
-
--- mappingOutputSelect ::
---   MappingHandler m
--- mappingOutputSelect =
---   mappingHandler "output-select" outputSelect
-
--- mappings ::
---   [MappingHandler m]
--- mappings =
---   [mappingOutputQuit, mappingOutputSelect]
-
--- variables ::
---   Map Text (Object -> m ())
--- variables =
---   Map.fromList [("myo_commands", updateCommands), ("myo_ui", updateUi)]
-
 type MyoStack =
   [
     Executions,
@@ -133,6 +122,23 @@ handlers =
   -- <>
   -- completeWith CompleteFiltered myoCompleteCommand (rpc "MyoRun" Async myoRun)
 
+mappings ::
+  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Map MappingIdent (Handler r ())
+mappings =
+  [
+    ("output-quit", myoOutputQuit),
+    ("output-select", myoOutputSelect)
+  ]
+
+variables ::
+  Members [AtomicState CommandState, AtomicState UiState, Settings !! SettingError, Embed IO] r =>
+  Map WatchedVariable (Object -> Handler r ())
+variables =
+  [
+    ("myo_commands", updateCommands),
+    ("myo_ui", updateUi)
+  ]
 
 prepare ::
   Members [Settings !! SettingError, AtomicState UiState, DataLog HostError] r =>
@@ -164,4 +170,4 @@ interpretMyoStack sem =
 
 myo :: IO ()
 myo =
-  runNvimHandlersIO @MyoStack "myo" interpretMyoStack handlers
+  runNvimPluginIO @MyoStack "myo" (interpretMyoStack . interpretNvimPlugin handlers mappings variables)

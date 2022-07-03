@@ -1,28 +1,29 @@
 module Myo.Test.Output.ScalaRenderTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Data.Functor.Syntax ((<$$>))
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
+import Polysemy.Test (UnitTest, (===))
+import Ribosome (Rpc)
+import Ribosome.Api (nvimCommand, nvimCommandOutput)
 import Ribosome.Api.Syntax (executeSyntax)
-import Ribosome.Data.Syntax (Syntax(..), syntaxHighlight)
-import Ribosome.Msgpack.Error (DecodeError)
-import Ribosome.Nvim.Api.IO (vimCommand, vimCommandOutput)
-import Ribosome.Test.Screenshot (assertScreenshot)
+import qualified Ribosome.Settings as Settings
+import Ribosome.Syntax (Syntax (..), syntaxHighlight)
+import Ribosome.Test (testError)
+import Ribosome.Test.Screenshot (awaitScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Init (initialize'')
-import qualified Myo.Output.Data.EventIndex as EventIndex (Relative(Relative))
-import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (OutputEvent(OutputEvent), OutputEventMeta(OutputEventMeta))
-import Myo.Output.Data.OutputEvents (OutputEvents(OutputEvents))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import Myo.Output.Data.ReportLine (ReportLine(..))
+import qualified Myo.Output.Data.EventIndex as EventIndex (Relative (Relative))
+import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.OutputEvents (OutputEvents (OutputEvents))
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import Myo.Output.Data.ReportLine (ReportLine (..))
 import Myo.Output.Lang.Scala.Syntax (scalaSyntax)
-import Myo.Test.Config (outputAutoJump, outputSelectFirst, svar)
-import Myo.Test.Unit (tmuxTest)
+import qualified Myo.Settings as Settings
+import Myo.Test.Embed (myoSocketTmuxTest)
 
 loc :: Location
 loc =
@@ -121,29 +122,31 @@ syntaxTarget = [
   ]
 
 setupHighlights ::
-  m ()
+  Member Rpc r =>
+  Sem r ()
 setupHighlights =
   void $ executeSyntax (Syntax [] [syntaxHighlight "Error" [("ctermfg", "1"), ("cterm", "bold")]] [])
 
+myoSyntax ::
+  Member Rpc r =>
+  Sem r [Text]
 myoSyntax = do
-  syntax <- parse <$> vimCommandOutput "syntax"
-  hi <- parse <$> vimCommandOutput "hi"
+  syntax <- parse <$> nvimCommandOutput "syntax"
+  hi <- parse <$> nvimCommandOutput "hi"
   pure $ syntax <> hi
   where
-    parse = Text.dropWhileEnd (' ' ==) <$$> filter isMyo . Text.lines
+    parse = fmap (Text.dropWhileEnd (' ' ==)) <$> filter isMyo . Text.lines
     isMyo item = Text.take 3 item == "Myo"
-
-scalaRenderTest :: Sem r ()
-scalaRenderTest = do
-  lift initialize''
-  setupHighlights
-  storeParseResult (Ident.Str "test") [parsedOutput]
-  compileAndRenderReport
-  vimCommand "wincmd w"
-  syntax <- myoSyntax
-  syntaxTarget === syntax
-  assertScreenshot "render-scala-parse-result" False 0
 
 test_scalaRender :: UnitTest
 test_scalaRender =
-  tmuxTest (svar outputSelectFirst True . svar outputAutoJump False) scalaRenderTest
+  myoSocketTmuxTest do
+    Settings.update Settings.outputSelectFirst True
+    Settings.update Settings.outputAutoJump False
+    setupHighlights
+    storeParseResult (Ident.Str "test") [parsedOutput]
+    testError compileAndRenderReport
+    nvimCommand "wincmd w"
+    syntax <- myoSyntax
+    syntaxTarget === syntax
+    awaitScreenshot False "render-scala-parse-result" 0

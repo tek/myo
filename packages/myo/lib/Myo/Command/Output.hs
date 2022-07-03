@@ -58,14 +58,15 @@ myoOutputQuit ::
 myoOutputQuit =
   resumeHandlerError (Scratch.kill scratchId)
 
-outputSelect ::
-  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
-  Sem r ()
-outputSelect = do
-  mainWindow <- outputMainWindow
-  window <- outputWindow
-  report <- currentReport
-  selectCurrentLineEventFrom report window mainWindow
+myoOutputSelect ::
+  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Handler r ()
+myoOutputSelect =
+  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
+    mainWindow <- outputMainWindow
+    window <- outputWindow
+    report <- currentReport
+    selectCurrentLineEventFrom report window mainWindow
 
 cycleAndNavigate ::
   Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>

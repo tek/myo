@@ -53,7 +53,7 @@ pollPid ident shellPid = do
 
 sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
-  [regex|\r\n|] . match .~ "\n"
+  ([regex|\r\n|] . match .~ "\n") . ([regex|(\x{9b}|\x{1b}\[)[0-?]*[ -\/]*[@-~]|] . match .~ "")
 
 readOutput ::
   Members [SocketReader, CommandLog] r =>

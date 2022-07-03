@@ -3,15 +3,17 @@ module Myo.Command.Run where
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident, generateIdent)
 import qualified Data.Text as Text
-import Ribosome (Handler, HostError, mapHandlerError, reportError, resumeHandlerError)
+import Ribosome (Handler, HostError, mapHandlerError, resumeHandlerError)
 
 import Myo.Command.Command (commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions))
+import Myo.Command.History (lookupHistory)
 import Myo.Data.Maybe (orFalse)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
@@ -68,27 +70,6 @@ import Myo.Orphans ()
 --   where
 --     ident = Lens.view Command.ident . RunTask.command $ task
 
--- |Main entry point for running commands that ensures consistency.
--- Saves all buffers, updating the 'lastSave' timestamp.
--- Selects the proper runner for the task, e.g. tmux.
--- Sets up the output watcher threads that connect to a socket; the implementation of the runner is expected to ensure
--- that output is redirected to this socket.
--- Pushes the command into the history.
-runCommand ::
-  Members [Controller !! RunError, AtomicState CommandState, DataLog HostError] r =>
-  Command ->
-  Sem r ()
-runCommand cmd = do
-  -- preCommandSave
-  -- pushCommandLog (Lens.view Command.ident cmd)
-  _ <- Controller.runCommand cmd !! \ e -> reportError (Just "command") e
-  unit
-  -- task <- runTask cmd
-  -- runner <- findRunner task
-  -- preRun task runner
-  -- executeRunner runner task
-  -- void $ postRun task
-
 myoRunIdent ::
   Members [Controller !! RunError, AtomicState CommandState, DataLog HostError] r =>
   Ident ->
@@ -102,16 +83,23 @@ myoRun ::
   Text ->
   Handler r ()
 myoRun ident =
-  mapHandlerError do
-    runCommand =<< commandByIdentOrName "run" (Text.strip ident)
+  resumeHandlerError @Controller $ mapHandlerError do
+    Controller.runCommand =<< commandByIdentOrName "run" (Text.strip ident)
 
--- myoReRun ::
---   MyoRender s e m =>
---   Member (AtomicState Env) r =>
---   Either Ident Int ->
---   m ()
--- myoReRun =
---   runCommand <=< lookupHistory
+reRun ::
+  Members [Controller, AtomicState CommandState, Stop CommandError] r =>
+  Either Ident Int ->
+  Sem r ()
+reRun =
+  Controller.runCommand <=< lookupHistory
+
+myoReRun ::
+  Members [Controller !! RunError, AtomicState CommandState] r =>
+  Either Ident Int ->
+  Handler r ()
+myoReRun spec =
+  resumeHandlerError @Controller $ mapHandlerError do
+    reRun spec
 
 defaultTarget :: Ident
 defaultTarget =
@@ -122,11 +110,11 @@ myoLine ::
   RunLineOptions ->
   Handler r ()
 myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) =
-  mapHandlerError do
+  resumeHandlerError @Controller $ mapHandlerError do
     ident <- generateIdent
     lines' <- stopNote RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
     target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
-    runCommand (cmd ident target lines')
+    Controller.runCommand (cmd ident target lines')
   where
     cmd ident target cmdLines =
       (cons target ident cmdLines) { runner, lang, skipHistory = orFalse skipHistory, kill = orFalse kill, capture = orFalse capture }

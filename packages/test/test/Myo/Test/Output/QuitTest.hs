@@ -2,11 +2,12 @@ module Myo.Test.Output.QuitTest where
 
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Polysemy.Test (UnitTest, evalMaybe, assertEq)
+import Polysemy.Test (UnitTest, assertEq, evalMaybe)
 import Ribosome (interpretNvimPlugin)
-import Ribosome.Api (nvimFeedkeys, nvimSetCurrentWin, nvimListWins)
+import Ribosome.Api (nvimInput, nvimListWins, nvimSetCurrentWin)
+import qualified Ribosome.Scratch as Scratch
 import qualified Ribosome.Settings as Settings
-import Ribosome.Test (testError, testPluginEmbed, assertWait)
+import Ribosome.Test (assertWait, testError, testPluginEmbed)
 import Ribosome.Test.Ui (windowCountIs)
 
 import Myo.Command.Output (compileAndRenderReport, myoOutputQuit)
@@ -19,7 +20,6 @@ import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
 import qualified Myo.Settings as Settings
 import Myo.Test.Run (runMyoTestStack)
-import qualified Ribosome.Scratch as Scratch
 
 loc :: Location
 loc =
@@ -46,5 +46,5 @@ test_outputQuit =
     windowCountIs 2
     win <- fmap Scratch.window . evalMaybe . head =<< Scratch.get
     nvimSetCurrentWin win
-    nvimFeedkeys "q" "m" True
+    nvimInput "q"
     assertWait (length <$> nvimListWins) (assertEq 1)

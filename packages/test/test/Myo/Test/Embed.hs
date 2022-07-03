@@ -32,6 +32,13 @@ myoTestDebug ::
 myoTestDebug =
   myoTestConf (setStderr Debug def)
 
+myoTestTrace ::
+  HasCallStack =>
+  Sem MyoTest () ->
+  UnitTest
+myoTestTrace =
+  myoTestConf (setStderr Trace def)
+
 myoEmbedTmuxTestConf ::
   HasCallStack =>
   HostConfig ->
