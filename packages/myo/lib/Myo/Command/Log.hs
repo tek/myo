@@ -1,11 +1,11 @@
 module Myo.Command.Log where
 
 import Chiasma.Command.Pane (pipePane)
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.TmuxApi (Tmux)
 import Data.Char (isAlphaNum)
-import qualified Data.Text as Text (concatMap, singleton)
+import qualified Data.Text as Text (concatMap, singleton, lines)
 import Path (Abs, File, Path, toFilePath)
 
 import Myo.Command.Command (mainCommand, mainCommandIdent)
@@ -17,6 +17,9 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
+import Ribosome (Handler, Scratch, RpcError, scratch, resumeHandlerError)
+import qualified Ribosome.Scratch as Scratch
+import qualified Data.Map.Strict as Map
 
 pipePaneToSocket ::
   Member Tmux r =>
@@ -95,22 +98,17 @@ commandLogByName ::
 commandLogByName name =
   commandLogBy name #displayName (Just name)
 
--- myoLogs ::
---   Members [AtomicState CommandState, Scratch !! RpcError, Log] r =>
---   Handler r ()
--- myoLogs =
---   resumeHandlerError @Scratch do
---     logs <- commandLogs
---     void $ Scratch.show ("# Command Logs" : "" : intercalate [""] (logLines logs)) options
---   where
---     options =
---       def {
---         name = "myo-command-logs",
---         focus = True
---       }
---     logLines logs =
---       uncurry formatLog <$> Map.toList logs
---     formatLog ident (CommandLog previous current) =
---       ("## " <> identText ident) : "" : split current ++ intercalate [""] (split <$> previous)
---     split =
---       Text.lines . decodeUtf8
+myoLogs ::
+  Members [CommandLog, AtomicState CommandState, Scratch !! RpcError, Log] r =>
+  Handler r ()
+myoLogs =
+  void $ resumeHandlerError @Scratch do
+    logs <- CommandLog.all
+    Scratch.show ("# Command Logs" : "" : intercalate [""] (logLines logs)) options
+  where
+    options =
+      (scratch "myo-command-logs") { Scratch.focus = True, Scratch.filetype = Just "markdown" }
+    logLines logs =
+      uncurry formatLog <$> Map.toList logs
+    formatLog ident log =
+      ("## " <> identText ident) : "" : "```" : Text.lines log ++ ["```"]

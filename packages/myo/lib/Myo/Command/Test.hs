@@ -11,7 +11,7 @@ import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Effect.Settings as Settings
 
 import qualified Myo.Command.Data.Command as Command
-import Myo.Command.Data.Command (capture, displayName, lang, runner, Command)
+import Myo.Command.Data.Command (Command, capture, displayName, lang, runner)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError (VimTest))
@@ -43,34 +43,38 @@ vimTestCall name =
   nvimCallFunction ("test#" <> name)
 
 myoTestDetermineRunner ::
-  Member Rpc r =>
+  Member (Rpc !! RpcError) r =>
   Text ->
-  Sem r Text
+  Handler r Text
 myoTestDetermineRunner file =
-  vimTestCall "determine_runner" [toMsgpack file]
+  resumeHandlerError do
+    vimTestCall "determine_runner" [toMsgpack file]
 
 myoTestExecutable ::
-  Member Rpc r =>
+  Member (Rpc !! RpcError) r =>
   Text ->
-  Sem r Text
+  Handler r Text
 myoTestExecutable runner =
-  vimTestCall (runner <> "#executable") []
+  resumeHandlerError do
+    vimTestCall (runner <> "#executable") []
 
 myoTestBuildPosition ::
-  Member Rpc r =>
+  Member (Rpc !! RpcError) r =>
   Text ->
   VimTestPosition ->
-  Sem r [Text]
+  Handler r [Text]
 myoTestBuildPosition runner pos =
-  vimTestCall (runner <> "#build_position") [toMsgpack ("nearest" :: Text), toMsgpack pos]
+  resumeHandlerError do
+    vimTestCall (runner <> "#build_position") [toMsgpack ("nearest" :: Text), toMsgpack pos]
 
 myoTestBuildArgs ::
-  Member Rpc r =>
+  Member (Rpc !! RpcError) r =>
   Text ->
   [Text] ->
-  Sem r [Text]
+  Handler r [Text]
 myoTestBuildArgs runner args =
-  vimTestCall (runner <> "#build_args") [toMsgpack args]
+  resumeHandlerError do
+    vimTestCall (runner <> "#build_args") [toMsgpack args]
 
 vimTestCallWrap ::
   ∀ a r .

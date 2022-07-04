@@ -76,15 +76,15 @@ cycleAndNavigate offset =
   whenM (cycleIndex offset) (navigateToCurrentEvent True)
 
 myoPrev ::
-  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Embed IO] r =>
+  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoPrev =
-  mapHandlerError do
+  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
     cycleAndNavigate (-1)
 
 myoNext ::
-  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Embed IO] r =>
+  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoNext =
-  mapHandlerError do
+  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
     cycleAndNavigate 1

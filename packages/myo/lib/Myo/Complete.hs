@@ -1,6 +1,6 @@
 module Myo.Complete where
 
-import qualified Chiasma.Data.Ident as Ident
+import Chiasma.Data.Ident (Ident (Str))
 import qualified Data.Text as Text
 
 import Myo.Command.Data.Command (Command (Command), displayName, ident)
@@ -10,16 +10,18 @@ import Myo.Command.Data.CommandState (CommandState)
 myoCompleteCommand ::
   Member (AtomicState CommandState) r =>
   Text ->
+  Text ->
+  Int ->
   Sem r [Text]
-myoCompleteCommand prefix = do
+myoCompleteCommand lead _ _ = do
   cmds <- atomicGets CommandState.commands
-  pure (catMaybes (match <$> cmds))
+  pure (mapMaybe match cmds)
   where
-    match Command { ident = Ident.Str ident } | isPrefix ident =
+    match Command { ident = Str ident } | isPrefix ident =
       Just ident
     match Command { displayName = Just name } | isPrefix name =
       Just name
     match _ =
       Nothing
     isPrefix =
-      Text.isPrefixOf prefix
+      Text.isPrefixOf lead

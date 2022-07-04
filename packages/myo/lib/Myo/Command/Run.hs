@@ -12,7 +12,7 @@ import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions))
+import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions), line)
 import Myo.Command.History (lookupHistory)
 import Myo.Data.Maybe (orFalse)
 import qualified Myo.Effect.Controller as Controller
@@ -123,10 +123,9 @@ myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill 
     findTarget target =
       maybe (Right target) (Left . Command.ident) <$> mayCommandByIdent target
 
--- myoLineCmd ::
---   MyoRender s e m =>
---   Member (AtomicState Env) r =>
---   Text ->
---   m ()
--- myoLineCmd line' =
---   myoLine (RunLineOptions (Just line') Nothing Nothing Nothing Nothing Nothing Nothing Nothing)
+myoLineCmd ::
+  Members [Controller !! RunError, AtomicState CommandState, Embed IO, DataLog HostError] r =>
+  Text ->
+  Handler r ()
+myoLineCmd cmdLine =
+  myoLine def { line = Just cmdLine }

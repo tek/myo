@@ -1,15 +1,17 @@
 module Myo.Quit where
 
--- import Chiasma.Data.Views (Views)
--- import Ribosome.Tmux.Run (RunTmux)
+import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Data.Views (Views)
+import Chiasma.Effect.Codec (NativeCommandCodecE)
+import Chiasma.Effect.TmuxClient (NativeTmux)
+import Ribosome (Handler, mapHandlerError)
 
--- import Myo.Tmux.Quit (tmuxQuit)
--- import Myo.Ui.Data.UiState (UiState)
+import Myo.Tmux.Quit (closePanes)
+import Myo.Ui.Data.UiState (UiState)
 
--- myoQuit ::
---   RunTmux m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   m ()
--- myoQuit =
---   tmuxQuit
+myoQuit ::
+  Members [NativeTmux !! TmuxError, NativeCommandCodecE, AtomicState UiState, AtomicState Views] r =>
+  Handler r ()
+myoQuit =
+  mapHandlerError do
+    closePanes

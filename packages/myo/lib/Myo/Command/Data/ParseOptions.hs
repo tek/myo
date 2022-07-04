@@ -13,4 +13,4 @@ data ParseOptions =
     lang :: Maybe CommandLanguage
   }
   deriving stock (Eq, Show, Generic)
-  deriving anyclass (MsgpackDecode)
+  deriving anyclass (MsgpackDecode, Default)

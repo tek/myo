@@ -11,6 +11,7 @@ data CommandLog :: Effect where
   ArchiveAll :: CommandLog m ()
   Get :: Ident -> CommandLog m (Maybe Text)
   GetPrev :: Ident -> CommandLog m (Maybe Text)
+  All :: CommandLog m (Map Ident Text)
 
 makeSem ''CommandLog
 

@@ -1,6 +1,7 @@
 module Myo.Data.ViewError where
 
 import Chiasma.Data.CodecError (CodecError)
+import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Effect.Codec (NativeCodec, NativeCodecE)
@@ -16,6 +17,8 @@ data ViewError =
   TmuxViews ViewsError
   |
   TreeMod TreeModError
+  |
+  Render RenderError
   deriving stock (Eq, Show)
 
 instance ToErrorMessage ViewError where
@@ -28,6 +31,8 @@ instance ToErrorMessage ViewError where
       ErrorMessage "tmux views error" ["ViewError.TmuxViews:", show e] Error
     TreeMod e ->
       ErrorMessage "tmux views error" ["ViewError.TreeMod:", show e] Error
+    Render e ->
+      ErrorMessage "tmux views error" ["ViewError.Render:", show e] Error
 
 tmuxError ::
   Member (Stop ViewError) r =>

@@ -74,7 +74,6 @@ library
       Myo.Command.Interpreter.TmuxMonitor
       Myo.Command.Kill
       Myo.Command.Log
-      Myo.Command.Monitor
       Myo.Command.Output
       Myo.Command.Parse
       Myo.Command.Run

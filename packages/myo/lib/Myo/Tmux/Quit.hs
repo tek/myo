@@ -1,32 +1,27 @@
 module Myo.Tmux.Quit where
 
--- import Chiasma.Command.Pane (closePane)
--- import Chiasma.Data.View (viewId)
--- import Chiasma.Data.Views (Views)
--- import qualified Chiasma.Data.Views as Views (panes)
--- import Ribosome.Tmux.Run (RunTmux, runRiboTmux)
+import Chiasma.Command.Pane (closePane)
+import Chiasma.Data.TmuxError (TmuxError)
+import Chiasma.Data.View (viewId)
+import Chiasma.Data.Views (Views)
+import Chiasma.Effect.Codec (NativeCommandCodecE)
+import Chiasma.Effect.TmuxClient (NativeTmux)
+import Chiasma.TmuxNative (withTmuxNative_)
 
--- import Myo.Ui.Data.UiState (UiState)
--- import qualified Myo.Ui.Data.UiState as UiState (vimPaneId)
+import qualified Myo.Data.ViewError as ViewError
+import Myo.Data.ViewError (ViewError)
+import Myo.Ui.Data.UiState (UiState)
 
--- -- |Close all panes except for the one containing vim.
--- -- If no vim pane id was stored, no action will be performed.
--- closePanes ::
---   RunTmux m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   m ()
--- closePanes =
---   traverse_ close =<< getL @UiState UiState.vimPaneId
---   where
---     close vimPaneId = do
---       panes <- getL @Views Views.panes
---       runRiboTmux $ traverse_ closePane (filter (vimPaneId /=) . catMaybes $ viewId <$> panes)
-
--- tmuxQuit ::
---   RunTmux m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   m ()
--- tmuxQuit =
---   closePanes
+-- |Close all panes except for the one containing vim.
+-- If no vim pane id was stored, no action will be performed.
+closePanes ::
+  Members [NativeTmux !! TmuxError, NativeCommandCodecE, AtomicState UiState, AtomicState Views, Stop ViewError] r =>
+  Sem r ()
+closePanes =
+  mapStop ViewError.TmuxApi $ mapStop ViewError.TmuxCodec do
+    traverse_ close =<< atomicView @UiState #vimPaneId
+  where
+    close vimPaneId = do
+      panes <- atomicView @Views #_panes
+      restop @TmuxError @NativeTmux $ withTmuxNative_ do
+        traverse_ closePane (filter (vimPaneId /=) (mapMaybe viewId panes))

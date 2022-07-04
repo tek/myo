@@ -2,7 +2,7 @@ module Myo.Command.Parse where
 
 import Chiasma.Data.Ident (Ident)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
-import Ribosome (Handler, HandlerError, Rpc, RpcError, Scratch, SettingError, Settings, mapHandlerError)
+import Ribosome (Handler, Rpc, RpcError, Scratch, SettingError, Settings, mapHandlerError)
 import Ribosome.Errors (pluginHandlerErrors)
 import qualified Ribosome.Settings as Settings
 
@@ -133,7 +133,7 @@ storeParseResult ident parsed =
 
 myoParse ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Stop HandlerError] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState] r =>
   ParseOptions ->
   Handler r ()
 myoParse (ParseOptions _ ident _) =
@@ -144,16 +144,9 @@ myoParse (ParseOptions _ ident _) =
     display <- Settings.get Settings.displayResult
     when display compileAndRenderReport
 
--- myoParseLatest ::
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   m ()
--- myoParseLatest =
---   myoParse (ParseOptions Nothing Nothing Nothing)
-
--- addHandler :: Member (AtomicState Env) r => CommandLanguage -> OutputHandler -> m ()
--- addHandler lang parser =
---   modify @CommandState $ over (CommandState.outputHandlers . at lang) update
---   where
---     update (Just current) = Just (parser : current)
---     update Nothing = Just [parser]
+myoParseLatest ::
+  Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState] r =>
+  Handler r ()
+myoParseLatest =
+  myoParse def

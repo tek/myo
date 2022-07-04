@@ -25,7 +25,7 @@ import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor)
 import qualified Myo.Settings as Settings (processTimeout)
-import Myo.Test.Embed (myoEmbedTmuxTestDebug)
+import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
 
@@ -37,7 +37,7 @@ paneContent =
 
 test_tmuxTruncCommandLog :: UnitTest
 test_tmuxTruncCommandLog =
-  myoEmbedTmuxTestDebug $ interpretSocketReader $ interpretCommandLog (pure 100) $ interpretTmuxMonitor $ testHandler do
+  myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLog (pure 100) $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     thread1 <- testHandlerAsync do
