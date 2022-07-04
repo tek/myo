@@ -1,123 +1,136 @@
 module Myo.Command.Test where
 
--- import qualified Chiasma.Data.Ident as Ident (Ident(Str))
--- import Chiasma.Ui.Data.TreeModError (TreeModError)
--- import Data.Hashable (hash)
--- import Data.MessagePack (Object)
--- import Ribosome.Api.Window (currentCursor)
--- import Ribosome.Config.Setting (setting, Settings.maybe, settingOr)
--- import Ribosome.Data.PersistError (PersistError)
--- import Ribosome.Data.SettingError (SettingError)
--- import Ribosome.Nvim.Api.IO (vimCallFunction)
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
+import Chiasma.Data.Ident (Ident)
+import Data.Hashable (hash)
+import Data.MessagePack (Object)
+import Ribosome (Handler, MsgpackDecode, Rpc, RpcError, Settings, mapHandlerError, resumeHandlerError, toMsgpack)
+import Ribosome.Api (nvimCallFunction)
+import Ribosome.Api.Window (currentCursor)
+import Ribosome.Data.SettingError (SettingError)
+import qualified Ribosome.Effect.Settings as Settings
 
--- import Myo.Command.Data.Command (Command(Command))
--- import Myo.Command.Data.CommandError (CommandError)
--- import Myo.Command.Data.CommandInterpreter (CommandInterpreter(Shell, System))
--- import Myo.Command.Data.CommandState (CommandState)
--- import Myo.Command.Data.RunError (RunError)
--- import qualified Myo.Command.Data.RunError as RunError (RunError(VimTest))
--- import Myo.Command.Data.VimTestPosition (VimTestPosition(VimTestPosition))
--- import Myo.Command.Run (runCommand)
--- import Myo.Data.Env (Env)
--- import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
--- import Myo.Ui.Data.ToggleError (ToggleError)
--- import Myo.Ui.Render (MyoRender)
+import qualified Myo.Command.Data.Command as Command
+import Myo.Command.Data.Command (capture, displayName, lang, runner, Command)
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
+import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Command.Data.RunError as RunError (RunError (VimTest))
+import Myo.Command.Data.VimTestPosition (VimTestPosition (VimTestPosition))
+import qualified Myo.Effect.Controller as Controller
+import Myo.Effect.Controller (Controller)
+import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
 
--- testName :: Text
--- testName =
---   "<test>"
+testName :: Text
+testName =
+  "<test>"
 
--- vimTestPosition ::
---   m VimTestPosition
--- vimTestPosition = do
---   fnMod <- setting vimTestFileNameModifier
---   file <- vimCallFunction "expand" [toMsgpack ("%" <> fnMod)]
---   (line, col) <- currentCursor
---   pure (VimTestPosition file line col)
+vimTestPosition ::
+  Members [Settings, Rpc] r =>
+  Sem r VimTestPosition
+vimTestPosition = do
+  fnMod <- Settings.get vimTestFileNameModifier
+  file <- nvimCallFunction "expand" [toMsgpack ("%" <> fnMod)]
+  (line, col) <- currentCursor
+  pure (VimTestPosition file line col)
 
--- vimTestCall ::
---   MsgpackDecode a =>
---   Text ->
---   [Object] ->
---   m a
--- vimTestCall name =
---   vimCallFunction ("test#" <> name)
+vimTestCall ::
+  Member Rpc r =>
+  MsgpackDecode a =>
+  Text ->
+  [Object] ->
+  Sem r a
+vimTestCall name =
+  nvimCallFunction ("test#" <> name)
 
--- myoTestDetermineRunner ::
---   Text ->
---   m Text
--- myoTestDetermineRunner file =
---   vimTestCall "determine_runner" [toMsgpack file]
+myoTestDetermineRunner ::
+  Member Rpc r =>
+  Text ->
+  Sem r Text
+myoTestDetermineRunner file =
+  vimTestCall "determine_runner" [toMsgpack file]
 
--- myoTestExecutable ::
---   Text ->
---   m Text
--- myoTestExecutable runner =
---   vimTestCall (runner <> "#executable") []
+myoTestExecutable ::
+  Member Rpc r =>
+  Text ->
+  Sem r Text
+myoTestExecutable runner =
+  vimTestCall (runner <> "#executable") []
 
--- myoTestBuildPosition ::
---   Text ->
---   VimTestPosition ->
---   m [Text]
--- myoTestBuildPosition runner pos =
---   vimTestCall (runner <> "#build_position") [toMsgpack ("nearest" :: Text), toMsgpack pos]
+myoTestBuildPosition ::
+  Member Rpc r =>
+  Text ->
+  VimTestPosition ->
+  Sem r [Text]
+myoTestBuildPosition runner pos =
+  vimTestCall (runner <> "#build_position") [toMsgpack ("nearest" :: Text), toMsgpack pos]
 
--- myoTestBuildArgs ::
---   Text ->
---   [Text] ->
---   m [Text]
--- myoTestBuildArgs runner args =
---   vimTestCall (runner <> "#build_args") [toMsgpack args]
+myoTestBuildArgs ::
+  Member Rpc r =>
+  Text ->
+  [Text] ->
+  Sem r [Text]
+myoTestBuildArgs runner args =
+  vimTestCall (runner <> "#build_args") [toMsgpack args]
 
--- vimTestCallWrap ::
---   MsgpackDecode a =>
---   Text ->
---   [Object] ->
---   m a
--- vimTestCallWrap fun =
---   vimCallFunction ("Sem r" <> fun)
+vimTestCallWrap ::
+  ∀ a r .
+  Member Rpc r =>
+  MsgpackDecode a =>
+  Text ->
+  [Object] ->
+  Sem r a
+vimTestCallWrap fun =
+  nvimCallFunction ("MyoTest" <> fun)
 
--- assembleVimTestLine ::
---   VimTestPosition ->
---   m Text
--- assembleVimTestLine position@(VimTestPosition file _ _) = do
---   runner <- vimTestCallWrap @Text "DetermineRunner" [toMsgpack file]
---   exe <- vimTestCallWrap @Text "Executable" [toMsgpack runner]
---   preArgs <- vimTestCallWrap @[Text] "BuildPosition" [toMsgpack runner, toMsgpack position]
---   args <- vimTestCallWrap "BuildArgs" [toMsgpack runner, toMsgpack preArgs]
---   pure $ unwords (exe : args)
+assembleVimTestLine ::
+  Member Rpc r =>
+  VimTestPosition ->
+  Sem r Text
+assembleVimTestLine position@(VimTestPosition file _ _) = do
+  runner <- vimTestCallWrap @Text "DetermineRunner" [toMsgpack file]
+  exe <- vimTestCallWrap @Text "Executable" [toMsgpack runner]
+  preArgs <- vimTestCallWrap @[Text] "BuildPosition" [toMsgpack runner, toMsgpack position]
+  args <- vimTestCallWrap "BuildArgs" [toMsgpack runner, toMsgpack preArgs]
+  pure $ unwords (exe : args)
 
--- vimTestLine ::
---   m Text
--- vimTestLine =
---   catchAt @RpcError (stop . RunError.VimTest . show) . assembleVimTestLine =<< vimTestPosition
+vimTestLine ::
+  Members [Settings, Rpc !! RpcError, Stop RunError] r =>
+  Sem r Text
+vimTestLine =
+  resumeHoist (RunError.VimTest . show) do
+    assembleVimTestLine =<< vimTestPosition
 
--- testInterpreter :: Ident -> Maybe Ident -> CommandInterpreter
--- testInterpreter _ (Just shell) =
---   Shell shell
--- testInterpreter target _ =
---   System (Just target)
+testInterpreter :: Ident -> Maybe Ident -> CommandInterpreter
+testInterpreter _ (Just shell) =
+  Shell shell
+testInterpreter target _ =
+  System (Just target)
 
--- testIdent :: Text -> Ident
--- testIdent =
---   Ident.Str . (testName <>) . show . hash
+testIdent :: Text -> Ident
+testIdent =
+  Ident.Str . (testName <>) . show . hash
 
--- updateTestCommand ::
---   Text ->
---   m Command
--- updateTestCommand testLine = do
---   runner <- setting testRunner
---   shell <- Settings.maybe testShell
---   target <- setting testPane
---   lang <- Settings.maybe testLang
---   capture <- settingOr False testCapture
---   let interpreter = testInterpreter target shell
---   pure $ Command interpreter (testIdent testLine) [testLine] (Just runner) lang (Just testName) False False capture
+updateTestCommand ::
+  Members [Settings, Settings !! SettingError] r =>
+  Text ->
+  Sem r Command
+updateTestCommand testLine = do
+  runner <- Settings.get testRunner
+  shell <- Settings.maybe testShell
+  target <- Settings.get testPane
+  lang <- Settings.maybe testLang
+  capture <- Settings.or False testCapture
+  let interpreter = testInterpreter target shell
+  pure (Command.cons interpreter (testIdent testLine) [testLine]) {
+    runner = Just runner,
+    displayName = Just testName,
+    capture,
+    lang
+    }
 
--- myoVimTest ::
---   MyoRender s e m =>
---   Member (AtomicState Env) r =>
---   Member (AtomicState Env) r =>
---   m ()
--- myoVimTest =
---   runCommand =<< updateTestCommand =<< vimTestLine
+myoVimTest ::
+  Members [Controller !! RunError, Settings !! SettingError, Rpc !! RpcError] r =>
+  Handler r ()
+myoVimTest =
+  resumeHandlerError @Settings $ resumeHandlerError @Controller do
+    Controller.runCommand =<< updateTestCommand =<< mapHandlerError vimTestLine

@@ -68,7 +68,7 @@ thirdCondition ::
   [Text] ->
   Sem r ()
 thirdCondition out = do
-  "cat" : output1 ++ output1 ++ ["Killed", "cat"] ++ output1 === out
+  "cat" : output1 ++ output1 ++ ["Terminated", "cat"] ++ output1 === out
 
 paneContent ::
   Members [NativeTmux, NativeCodecE TmuxCommand, Stop CodecError] r =>

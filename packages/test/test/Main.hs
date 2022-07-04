@@ -18,7 +18,7 @@ import Myo.Test.Output.SanitizeTest (test_sanitize)
 import Myo.Test.Output.ScalaRenderTest (test_scalaRender)
 import Myo.Test.Output.SelectTest (test_outputSelect)
 import Myo.Test.ProcTest (test_proc)
-import Myo.Test.RunTest (test_runLineCmd, test_runLineSingle, test_runSubproc, test_runSystem)
+import Myo.Test.RunTest (test_runLineSingle, test_runSystem, test_runSubprocFail)
 import Myo.Test.SaveTest (test_save)
 import Myo.Test.Tmux.CommandLogTest (test_tmuxTruncCommandLog)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
@@ -30,6 +30,7 @@ import Myo.Test.Tmux.ToggleLayoutTest (test_toggleLayout)
 import Myo.Test.Tmux.TogglePaneTest (test_shellPanePin, test_togglePane)
 import Myo.Test.Tmux.UpdateTest (test_updateUi)
 import Test.Tasty (TestTree, defaultMain, testGroup)
+import Polysemy.Test (unitTest)
 
 tests :: TestTree
 tests =
@@ -74,7 +75,7 @@ tests =
     unitTest "determine parent and child pids" test_proc,
     unitTest "run a command with the system runner" test_runSystem,
     unitTest "run a single ad-hoc cmdline" test_runLineSingle,
-    unitTest "run a command with the subproc runner" test_runSubproc,
+    unitTest "run a failing command with the subproc runner" test_runSubprocFail,
     unitTest "push output entries on save" test_save
   ]
 

@@ -14,7 +14,9 @@ import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell))
 import Myo.Command.Data.CommandState (CommandState)
-import Myo.Command.History (commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
+import qualified Myo.Command.Effect.CommandLog as CommandLog
+import Myo.Command.Effect.CommandLog (CommandLog)
+import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
 
 pipePaneToSocket ::
   Member Tmux r =>
@@ -67,17 +69,17 @@ mayMainCommandOrHistory ident =
     recurse _ =
       pure ident
 
--- commandLogBy ::
---   Eq a =>
---   Members [AtomicState CommandState, Stop CommandError] r =>
---   Text ->
---   Lens' Command a ->
---   a ->
---   Sem r (Maybe CommandLog)
--- commandLogBy ident lens a = do
---   cmd <- commandOrHistoryBy ident lens a
---   logIdent <- mainCommandOrHistoryIdent (Command.ident cmd)
---   atomicView (logLens logIdent)
+commandLogBy ::
+  Eq a =>
+  Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
+  Text ->
+  Lens' Command a ->
+  a ->
+  Sem r (Maybe Text)
+commandLogBy ident lens a = do
+  cmd <- commandOrHistoryBy ident lens a
+  logIdent <- mainCommandOrHistoryIdent (Command.ident cmd)
+  CommandLog.get logIdent
 
 -- commandLog ::
 --   Members [AtomicState CommandState, Stop CommandError] r =>
@@ -86,12 +88,12 @@ mayMainCommandOrHistory ident =
 -- commandLog ident =
 --   commandLogBy (show ident) #ident ident
 
--- commandLogByName ::
---   Members [AtomicState CommandState, Stop CommandError] r =>
---   Text ->
---   Sem r (Maybe CommandLog)
--- commandLogByName name =
---   commandLogBy name #displayName (Just name)
+commandLogByName ::
+  Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
+  Text ->
+  Sem r (Maybe Text)
+commandLogByName name =
+  commandLogBy name #displayName (Just name)
 
 -- myoLogs ::
 --   Members [AtomicState CommandState, Scratch !! RpcError, Log] r =>

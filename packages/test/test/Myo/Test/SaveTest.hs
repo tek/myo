@@ -11,7 +11,7 @@ import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Data.LastSave (LastSave)
 import Myo.Save (myoSave)
 import qualified Myo.Settings as Settings (saveInterval)
@@ -42,7 +42,7 @@ type SaveTestStack =
 
 test_save :: UnitTest
 test_save =
-  myoTest $ interpretAtomic (def :: LastSave) $ interpretCommandLog 10000 $ testHandler do
+  myoTest $ interpretAtomic (def :: LastSave) $ interpretCommandLogSetting $ testHandler do
     Settings.update Settings.saveInterval 0
     myoAddSystemCommand (AddSystemCommandOptions.cons ident [])
     myoSave

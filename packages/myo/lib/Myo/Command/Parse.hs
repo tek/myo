@@ -17,6 +17,7 @@ import Myo.Command.Data.ParseOptions (ParseOptions (ParseOptions))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
+import Myo.Command.Log (commandLogByName)
 import Myo.Command.Output (compileAndRenderReport)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
@@ -74,12 +75,12 @@ selectCommand =
 --     selectPrevious i =
 --       firstOf (CommandLog.previous . element i)
 
--- commandOutputByName ::
---   Member (AtomicState Env) r =>
---   Text ->
---   m Text
--- commandOutputByName name =
---   commandOutputResult name =<< fmap (view CommandLog.current) <$> commandLogByName name
+commandOutputByName ::
+  Members [CommandLog, AtomicState CommandState, Stop OutputError] r =>
+  Text ->
+  Sem r Text
+commandOutputByName name =
+  stopNote (OutputError.NoOutput name) =<< mapStop OutputError.Command (commandLogByName name)
 
 projectLanguage ::
   Member (Settings !! SettingError) r =>

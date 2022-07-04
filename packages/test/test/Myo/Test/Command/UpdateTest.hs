@@ -1,25 +1,19 @@
 module Myo.Test.Command.UpdateTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
-import Neovim (Plugin(..))
-import Path (Abs, Dir, Path)
+import qualified Chiasma.Data.Ident as Ident (Ident (Str))
+import Chiasma.Data.Ident (identText)
+import Polysemy.Test (UnitTest, assertEq)
+import Ribosome (Execution (Sync), Handler, Rpc, interpretNvimPlugin, rpcFunction)
+import Ribosome.Api (nvimCallFunction, nvimSetVar)
 import Ribosome.Api.Autocmd (doautocmd)
-import Ribosome.Api.Variable (setVar)
-import Ribosome.Control.Ribosome (Ribosome, newRibosome)
-import Ribosome.Nvim.Api.IO (vimCallFunction)
-import Ribosome.Plugin (riboPlugin, rpcHandler, sync)
-import Ribosome.Test.Await (awaitEqual_)
-import Ribosome.Test.Embed (integrationTestDef)
-import Ribosome.Test.Orphans ()
+import Ribosome.Test (assertWait, testPluginEmbed)
 
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions(AddSystemCommandOptions))
-import Myo.Command.Data.Command (Command(Command))
-import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec(CommandSettingCodec))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
+import Myo.Command.Data.Command (Command (Command), cmdLines, ident)
+import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
 import Myo.Command.Data.CommandState (CommandState)
-import qualified Myo.Command.Data.CommandState as CommandState (commands)
-import Myo.Data.Env (Env(_tempDir))
-import Myo.Env (bracketMyoTempDir)
-import Myo.Plugin (handleError, variables)
+import Myo.Plugin (variables)
+import Myo.Test.Run (runMyoTestStack)
 
 commands1 :: [AddSystemCommandOptions]
 commands1 =
@@ -36,37 +30,26 @@ codec :: [AddSystemCommandOptions] -> CommandSettingCodec
 codec cmds =
   CommandSettingCodec (Just cmds) Nothing
 
-cmdData :: Member (AtomicState Env) r => m [(Text, [Text])]
+cmdData ::
+  Member (AtomicState CommandState) r =>
+  Handler r [(Text, [Text])]
 cmdData =
-  fmap extract <$> atomicGets CommandState.commands
+  fmap extract <$> atomicView #commands
   where
-    extract (Command _ ident lines' _ _ _ _ _ _) = (identText ident, lines')
-
-$(pure [])
-
-plugin :: Path Abs Dir -> IO (Plugin (Ribosome Env))
-plugin tmp = do
-  ribo <- newRibosome "myo" def { _tempDir = tmp }
-  pure $ riboPlugin "myo" ribo [$(rpcHandler sync 'cmdData)] [] handleError variables
+    extract (Command {ident, cmdLines}) = (identText ident, cmdLines)
 
 getCmdData ::
-  m [(Text, [Text])]
+  Member Rpc r =>
+  Sem r [(Text, [Text])]
 getCmdData =
-  vimCallFunction "CmdData" []
-
-updateCommandsTest :: Sem r ()
-updateCommandsTest = do
-  setVar "myo_commands" (codec commands1)
-  doautocmd False "CmdlineLeave"
-  awaitEqual_ [("c1", ["tail"])] getCmdData
-  setVar "myo_commands" (codec commands2)
-  doautocmd False "BufWinEnter"
-  awaitEqual_ [("c1", ["tails"]), ("c2", ["echo"])] getCmdData
+  nvimCallFunction "CmdData" []
 
 test_updateCommands :: UnitTest
 test_updateCommands =
-  bracketMyoTempDir run
-  where
-    run tmp = do
-      plug <- liftIO (plugin tmp)
-      integrationTestDef plug updateCommandsTest
+  runMyoTestStack def $ interpretNvimPlugin [rpcFunction "CmdData" Sync cmdData] mempty variables $ testPluginEmbed do
+    nvimSetVar "myo_commands" (codec commands1)
+    doautocmd "CmdlineLeave"
+    assertWait getCmdData (assertEq [("c1", ["tail"])])
+    nvimSetVar "myo_commands" (codec commands2)
+    doautocmd "BufWinEnter"
+    assertWait getCmdData (assertEq [("c1", ["tails"]), ("c2", ["echo"])])

@@ -27,6 +27,7 @@ import Myo.Command.Data.RunTask (RunTask (RunTask), command)
 import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend, interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoLine, myoRunIdent)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
@@ -87,7 +88,7 @@ interpretBackendDummy =
 
 test_runSystem :: UnitTest
 test_runSystem =
-  myoTest $ interpretPersistNull $ interpretBackendDummy $ interpretController do
+  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummy $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
       myoRunIdent ident
@@ -116,7 +117,7 @@ interpretBackendDummySingleLine =
 
 test_runLineSingle :: UnitTest
 test_runLineSingle =
-  myoTest $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
+  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
       myoLine def { line = Just cmdline, runner = Just runnerIdent }
@@ -124,7 +125,7 @@ test_runLineSingle =
 
 test_runSubprocFail :: UnitTest
 test_runSubprocFail =
-  myoTest $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
+  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
     r <- testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { runner = Just runnerIdent }
       resumeEither (Controller.runIdent ident)

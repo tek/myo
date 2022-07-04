@@ -28,7 +28,7 @@ data Command =
     skipHistory :: Bool,
     kill :: Bool,
     capture :: Bool,
-    maxLogBytes :: Int
+    maxLogBytes :: Maybe Int
   }
   deriving stock (Eq, Show, Generic)
 
@@ -70,7 +70,7 @@ cons interpreter ident cmdLines =
     skipHistory = False,
     kill = False,
     capture = False,
-    maxLogBytes = 100000,
+    maxLogBytes = Nothing,
     ..
   }
 
