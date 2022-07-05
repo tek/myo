@@ -213,19 +213,14 @@ test-suite myo-unit
       ImpredicativeTypes
   ghc-options: -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Widentities -Wunused-packages -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      aeson
-    , base >=4.12 && <5
+      base >=4.12 && <5
     , chiasma
-    , chiasma-test
     , exon
-    , extra
     , hedgehog
     , lens
     , lens-regex-pcre
     , myo
     , path
-    , path-io
-    , pcre-heavy
     , polysemy
     , polysemy-chronos
     , polysemy-plugin
@@ -236,9 +231,7 @@ test-suite myo-unit
     , ribosome-host
     , ribosome-menu
     , ribosome-test
-    , streamly
     , tasty
-    , unix
     , vector
   mixins:
       base hiding (Prelude)
