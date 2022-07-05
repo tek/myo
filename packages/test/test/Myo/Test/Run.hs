@@ -1,6 +1,6 @@
 module Myo.Test.Run where
 
-import Chiasma.Interpreter.Codec (interpretCodecPanes)
+import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand)
 import Conc (interpretAtomic, interpretSyncAs)
 import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
@@ -40,6 +40,8 @@ interpretMyoTestStack =
   interpretProc .
   interpretCodecPanes .
   interpretCodecPanes .
+  interpretCodecPanes .
+  interpretCodecTmuxCommand .
   withLogDir .
   interpretAtomic def .
   interpretAtomic def .

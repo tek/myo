@@ -10,7 +10,7 @@ import Ribosome (HostError, SettingError, Settings, reportError)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Data.CommandOutput (CommandOutput (..), CurrentOutput (..), OutputChunks (..), currentEmpty)
-import Myo.Command.Effect.CommandLog (CommandLog (Append, Archive, ArchiveAll, Get, GetPrev, Set))
+import Myo.Command.Effect.CommandLog (CommandLog (All, Append, Archive, ArchiveAll, Get, GetPrev, Set))
 import qualified Myo.Settings as Settings
 
 truncOutputChunks ::
@@ -118,10 +118,18 @@ setCurrent :: Text -> CommandOutput -> CommandOutput
 setCurrent text CommandOutput {..} =
   CommandOutput {current = Built text, ..}
 
-buildAndGet :: Maybe (CommandOutput, Text) -> (Maybe Text, Maybe CommandOutput)
-buildAndGet = \case
+buildAndGet :: Maybe CommandOutput -> (Maybe Text, Maybe CommandOutput)
+buildAndGet =
+  fmap buildCurrent >>> \case
   Nothing -> (Nothing, Nothing)
   Just (co, t) -> (Just t, Just co)
+
+buildAndGetAccum :: Map Ident Text -> Ident -> CommandOutput -> (Map Ident Text, CommandOutput)
+buildAndGetAccum acc ident co =
+  (Map.insert ident built acc, newCo)
+  where
+    (newCo, built) =
+      buildCurrent co
 
 interpretCommandLog ::
   Member (Embed IO) r =>
@@ -140,9 +148,11 @@ interpretCommandLog maxSize =
     ArchiveAll ->
       atomicModify' (fmap archive)
     Get ident ->
-      atomicState' \ s -> swap (Map.alterF (buildAndGet . fmap buildCurrent) ident s)
+      atomicState' \ s -> swap (Map.alterF buildAndGet ident s)
     GetPrev ident ->
       atomicGets (buildPrev <=< Map.lookup ident)
+    All ->
+      atomicState' (swap . Map.mapAccumWithKey buildAndGetAccum mempty)
 
 maxSizeSetting ::
   Members [Settings !! SettingError, DataLog HostError] r =>

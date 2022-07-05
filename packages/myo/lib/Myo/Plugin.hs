@@ -44,9 +44,10 @@ import Ribosome (
   interpretPersistPath,
   reportError,
   rpc,
+  rpcAutocmd,
   rpcCommand,
   rpcFunction,
-  runNvimPluginIO, rpcAutocmd,
+  runNvimPluginIO,
   )
 import qualified Ribosome.Settings as Settings
 
@@ -69,7 +70,7 @@ import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoOutputQuit, myoOutputSelect, myoPrev)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
-import Myo.Command.Test (myoVimTest, myoTestDetermineRunner, myoTestExecutable, myoTestBuildPosition, myoTestBuildArgs)
+import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (updateCommands)
 import Myo.Complete (myoCompleteCommand)
 import Myo.Data.Env (Env)
@@ -87,6 +88,7 @@ import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Output.Lang.Haskell.Parser (haskellOutputParser)
 import Myo.Output.Lang.Nix.Parser (nixOutputParser)
 import Myo.Output.Lang.Scala.Parser (scalaOutputParser)
+import Myo.Quit (myoQuit)
 import Myo.Save (myoSave)
 import qualified Myo.Settings as Settings
 import Myo.Temp (interpretLogDir)
@@ -95,7 +97,6 @@ import Myo.Ui.Default (detectDefaultUi)
 import Myo.Ui.Focus (myoFocus)
 import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 import Myo.Ui.Update (updateUi)
-import Myo.Quit (myoQuit)
 
 type MyoStack =
   [

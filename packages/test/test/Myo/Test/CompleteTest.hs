@@ -20,5 +20,5 @@ test_completeCommand :: UnitTest
 test_completeCommand =
   myoTest do
     atomicSet @CommandState #commands commands
-    result <- myoCompleteCommand "cmd-1"
+    result <- myoCompleteCommand "cmd-1" "" 0
     ["cmd-15", "cmd-16"] === result

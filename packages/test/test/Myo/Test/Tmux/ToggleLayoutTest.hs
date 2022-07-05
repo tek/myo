@@ -1,7 +1,7 @@
 module Myo.Test.Tmux.ToggleLayoutTest where
 
 import Chiasma.Command.Pane (panes)
-import Chiasma.TmuxNative (withTmuxNative_)
+import Chiasma.TmuxNative (withPanesNative_)
 import Chiasma.Ui.Data.View (Layout, Pane (Pane), View (View), consLayout, consPane)
 import Polysemy.Test (TestError (TestError), UnitTest, assertEq)
 import Ribosome.Test (testHandler)
@@ -37,4 +37,4 @@ test_toggleLayout =
     _ <- createWindow (viewCoords "s" "w" "wroot")
     setupTree
     myoToggleLayout ("l")
-    assertEq 2 . length =<< withTmuxNative_ panes
+    assertEq 2 . length =<< withPanesNative_ panes
