@@ -114,7 +114,7 @@ waitFor i =
   getExecution i >>= traverse_ \ e -> embed (readMVar (e ^. #sync . #wait))
 
 interpretExecutions ::
-  Members [Proc !! ProcError, ChronosTime, Log, Resource, Race, Embed IO] r =>
+  Members [Proc !! ProcError, ChronosTime, Log, Resource, Race, Mask mres, Embed IO] r =>
   InterpreterFor Executions r
 interpretExecutions =
   interpretMState (mempty :: Map Ident Execution) .

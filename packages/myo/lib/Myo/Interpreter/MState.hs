@@ -1,21 +1,21 @@
 module Myo.Interpreter.MState where
 
-import Conc (interpretAtomic, interpretSyncAs, lock)
+import Conc (interpretAtomic, interpretLockReentrant, lock)
 import Polysemy.Internal.Tactics (liftT)
 
 import qualified Myo.Effect.MState as MState
 import Myo.Effect.MState (MState)
 
 interpretMState ::
-  Members [Resource, Race, Embed IO] r =>
+  Members [Resource, Race, Mask mres, Embed IO] r =>
   s ->
   InterpreterFor (MState s) r
 interpretMState initial =
-  interpretSyncAs () .
+  interpretLockReentrant .
   interpretAtomic initial .
   reinterpret2H \case
     MState.Use f ->
-      lock () do
+      lock do
         s0 <- atomicGet
         res <- runTSimple (f s0)
         Inspector ins <- getInspectorT
