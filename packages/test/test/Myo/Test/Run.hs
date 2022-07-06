@@ -41,6 +41,7 @@ interpretMyoTestStack =
   interpretCodecPanes .
   interpretCodecPanes .
   interpretCodecPanes .
+  interpretCodecPanes .
   interpretCodecTmuxCommand .
   withLogDir .
   interpretAtomic def .

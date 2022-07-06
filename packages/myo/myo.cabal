@@ -145,6 +145,7 @@ library
       Myo.Tmux.Runner
       Myo.Ui.Data.AddLayoutOptions
       Myo.Ui.Data.AddPaneOptions
+      Myo.Ui.Data.DetectUiError
       Myo.Ui.Data.Space
       Myo.Ui.Data.ToggleError
       Myo.Ui.Data.UiSettingCodec

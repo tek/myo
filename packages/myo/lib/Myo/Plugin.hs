@@ -1,6 +1,7 @@
 module Myo.Plugin where
 
 import Chiasma.Codec.Data (Pane)
+import Chiasma.Codec.Data.PaneCoords (PaneCoords)
 import Chiasma.Codec.Data.PaneMode (PaneMode)
 import Chiasma.Codec.Data.PanePid (PanePid)
 import Chiasma.Data.Panes (Panes)
@@ -8,7 +9,7 @@ import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.TmuxNative (TmuxNative (TmuxNative))
 import Chiasma.Data.Views (Views)
-import Chiasma.Effect.Codec (NativeCodecE)
+import Chiasma.Effect.Codec (NativeCodecE, NativeCodecsE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand)
 import Chiasma.Interpreter.TmuxClient (interpretTmuxNative)
@@ -43,6 +44,7 @@ import Ribosome (
   interpretPersist,
   interpretPersistPath,
   reportError,
+  reportStop,
   rpc,
   rpcAutocmd,
   rpcCommand,
@@ -107,6 +109,7 @@ type MyoStack =
     AtomicState CommandState,
     Reader LogDir,
     NativeCodecE TmuxCommand,
+    NativeCodecE (Panes PaneCoords),
     NativeCodecE (Panes PaneMode),
     NativeCodecE (Panes PanePid),
     NativeCodecE (Panes Pane),
@@ -201,12 +204,14 @@ variables =
 
 -- TODO load history
 prepare ::
-  Members [Settings !! SettingError, AtomicState UiState, DataLog HostError] r =>
+  Members [NativeTmux !! TmuxError, AtomicState Views] r =>
+  Members (NativeCodecsE [Panes PanePid, Panes PaneCoords]) r =>
+  Members [Settings !! SettingError, Proc !! ProcError, Rpc !! RpcError, AtomicState UiState, DataLog HostError] r =>
   Sem r ()
 prepare = do
   resuming @_ @Settings (reportError (Just "ui")) do
     detect <- Settings.get Settings.detectUi
-    when detect detectDefaultUi
+    when detect (reportStop (Just "ui") detectDefaultUi)
     -- loadHistory
 
 interpretMyoStack ::
@@ -216,6 +221,7 @@ interpretMyoStack =
   interpretSyncAs SaveLock .
   interpretBackendFail .
   interpretProc .
+  interpretCodecPanes .
   interpretCodecPanes .
   interpretCodecPanes .
   interpretCodecPanes .
