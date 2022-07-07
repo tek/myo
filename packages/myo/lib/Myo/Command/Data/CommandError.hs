@@ -2,7 +2,7 @@ module Myo.Command.Data.CommandError where
 
 import Chiasma.Data.Ident (Ident, identText)
 import Exon (exon)
-import Log (Severity (Error, Warn))
+import Log (Severity (Error, Warn, Info))
 import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
 
 import Myo.Command.Data.Command (shortIdent)
@@ -45,7 +45,7 @@ instance ToErrorMessage CommandError where
     where
       err = "no history entry with ident `" <> ident <> "`"
   toErrorMessage NoHistory =
-    ErrorMessage err ["CommandError.NoHistory"] Warn
+    ErrorMessage err ["CommandError.NoHistory"] Info
     where
       err = "no history yet"
   toErrorMessage (NotAUiShell cmd shell) =

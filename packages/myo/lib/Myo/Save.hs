@@ -1,8 +1,9 @@
 module Myo.Save where
 
+import Conc (Lock, lockOrSkip_)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Ribosome (Handler, Rpc, Settings, lockOrSkip_, noautocmd, resumeHandlerError, silentBang)
+import Ribosome (Handler, Rpc, Settings, noautocmd, resumeHandlerError, silentBang)
 import Ribosome.Api (nvimCommand)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Settings as Settings
@@ -26,27 +27,27 @@ checkInterval = do
     else (LastSave prev, False)
 
 sensibleSave ::
-  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, ChronosTime, Log, Resource] r =>
+  Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings, ChronosTime, Log, Resource] r =>
   Sem r ()
 sensibleSave =
-  lockOrSkip_ @SaveLock $ whenM checkInterval do
+  tag $ lockOrSkip_ $ whenM checkInterval do
     Log.debug "Archiving command logs on save"
     CommandLog.archiveAll
 
 save ::
-  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, ChronosTime, Log, Resource] r =>
+  Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings, ChronosTime, Log, Resource] r =>
   Sem r ()
 save =
   whenM (Settings.get Settings.resetOnSave) sensibleSave
 
 myoSave ::
-  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings !! SettingError, ChronosTime, Log, Resource] r =>
+  Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings !! SettingError, ChronosTime, Log, Resource] r =>
   Handler r ()
 myoSave =
   resumeHandlerError save
 
 saveAll ::
-  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>
+  Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>
   Sem r ()
 saveAll = do
   save
@@ -54,7 +55,7 @@ saveAll = do
     nvimCommand "wall"
 
 preCommandSave ::
-  Members [AtomicState LastSave, Sync SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>
+  Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>
   Sem r ()
 preCommandSave =
   whenM (Settings.get Settings.saveBeforeRun) saveAll

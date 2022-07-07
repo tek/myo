@@ -1,14 +1,13 @@
 module Myo.Output.ParseReport where
 
 import Chiasma.Data.Ident (Ident)
-import Control.Lens (ifolded, withIndex)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (firstJust)
 import Data.MonoTraversable (minimumByMay)
 import qualified Data.Text as Text
+import qualified Data.Vector as Vector
 import Data.Vector (Vector, (!?))
-import qualified Data.Vector as Vector (filter, findIndex, unzip)
-import Data.Vector.Lens (toVectorOf)
+import Lens.Micro.Mtl (view)
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, (</>))
 import Path.IO (doesFileExist)
 import Ribosome (Buffer, Rpc, RpcError, Scratch, ScratchId, ScratchState, Window, scratch)
@@ -402,10 +401,8 @@ compileReport maxLevel (OutputEvents events) =
   process events
   where
     process =
-      uncurry ParseReport . second join . Vector.unzip . fmap reindexEvent . zipWithIndex . filterEventLevel maxLevel
-    reindexEvent (index, OutputEvent meta lines') =
+      uncurry ParseReport . second join . Vector.unzip . Vector.imap reindexEvent . filterEventLevel maxLevel
+    reindexEvent index (OutputEvent meta lines') =
       (meta, absoluteDir index <$> lines')
     absoluteDir index (ReportLine _ text') =
       ReportLine (EventIndex.Absolute (fromIntegral index)) text'
-    zipWithIndex =
-      toVectorOf (ifolded . withIndex)

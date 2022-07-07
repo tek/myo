@@ -39,7 +39,7 @@ library
       Myo.Command.Data.ExecutionLock
       Myo.Command.Data.ExecutionState
       Myo.Command.Data.HistoryEntry
-      Myo.Command.Data.LoadHistoryLock
+      Myo.Command.Data.LoadHistory
       Myo.Command.Data.LogDir
       Myo.Command.Data.MonitorEvent
       Myo.Command.Data.OutputState
@@ -51,7 +51,7 @@ library
       Myo.Command.Data.RunningCommand
       Myo.Command.Data.RunTask
       Myo.Command.Data.SocketReaderError
-      Myo.Command.Data.StoreHistoryLock
+      Myo.Command.Data.StoreHistory
       Myo.Command.Data.TmuxMonitorError
       Myo.Command.Data.TmuxTask
       Myo.Command.Data.VimTask
@@ -241,6 +241,7 @@ library
     , lens
     , lens-regex-pcre
     , messagepack
+    , microlens-mtl
     , mono-traversable
     , network
     , parsers

@@ -1,11 +1,14 @@
 module Myo.Command.History where
 
 import Chiasma.Data.Ident (Ident, identText, sameIdent)
+import Conc (Lock, lockOrSkip_)
 import Control.Lens (element, firstOf, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (nubOrdOn)
+import Exon (exon)
+import qualified Log
 import Path (Dir, File, Path, Rel, dirname, parent, relfile, (</>))
-import Ribosome (Persist, Rpc, SettingError, Settings, lockOrSkip_)
+import Ribosome (Persist, Rpc, SettingError, Settings, pathText)
 import Ribosome.Api (nvimCwd)
 import qualified Ribosome.Persist as Persist
 import qualified Ribosome.Settings as Settings
@@ -19,8 +22,8 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
 import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (command)
-import Myo.Command.Data.LoadHistoryLock (LoadHistoryLock)
-import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock)
+import Myo.Command.Data.LoadHistory (LoadHistory)
+import Myo.Command.Data.StoreHistory (StoreHistory)
 import qualified Myo.Settings as Settings
 
 -- TODO use variable watcher for this or simple index by the last two directory segments
@@ -44,7 +47,7 @@ subPath ::
   Members [Rpc, Settings !! SettingError] r =>
   Sem r (Path Rel File)
 subPath =
-  (</> [relfile|history|]) <$> (maybe fsPath pure =<< proteomePath)
+  (</> [relfile|history.json|]) <$> (maybe fsPath pure =<< proteomePath)
 
 history ::
   Member (AtomicState CommandState) r =>
@@ -61,25 +64,26 @@ storeHistoryAt path =
 
 storeHistory ::
   Members [Rpc, Settings !! SettingError] r =>
-  Members [Persist [HistoryEntry], AtomicState CommandState, Sync StoreHistoryLock, Resource] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ StoreHistory, Resource] r =>
   Sem r ()
 storeHistory =
-  lockOrSkip_ @StoreHistoryLock do
+  tag $ lockOrSkip_ do
     storeHistoryAt =<< subPath
 
 loadHistoryFrom ::
-  Members [Persist [HistoryEntry], AtomicState CommandState] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Log] r =>
   Path Rel File ->
   Sem r ()
-loadHistoryFrom path =
+loadHistoryFrom path = do
+  Log.debug [exon|Loading history from `#{pathText path}`|]
   traverse_ (atomicSet #history) =<< Persist.load (Just path)
 
 loadHistory ::
   Members [Rpc, Settings !! SettingError] r =>
-  Members [Persist [HistoryEntry], AtomicState CommandState, Sync LoadHistoryLock, Resource] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ LoadHistory, Resource, Log] r =>
   Sem r ()
 loadHistory =
-  lockOrSkip_ @LoadHistoryLock do
+  tag $ lockOrSkip_ do
     loadHistoryFrom =<< subPath
 
 duplicateHistoryEntry :: Command -> HistoryEntry -> Bool
@@ -88,7 +92,7 @@ duplicateHistoryEntry cmd (HistoryEntry historyCmd) =
 
 pushHistory ::
   Members [Rpc, Settings !! SettingError] r =>
-  Members [Persist [HistoryEntry], AtomicState CommandState, Sync StoreHistoryLock, Resource] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ StoreHistory, Resource] r =>
   Command ->
   Sem r ()
 pushHistory cmd =

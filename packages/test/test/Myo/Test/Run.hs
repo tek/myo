@@ -1,7 +1,7 @@
 module Myo.Test.Run where
 
 import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand)
-import Conc (interpretAtomic, interpretSyncAs)
+import Conc (interpretAtomic, interpretLockReentrant)
 import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
@@ -15,10 +15,8 @@ import Ribosome.Test.EmbedTmux (EmbedTmuxWith, HandlerStack, runEmbedTmuxTestCon
 import Ribosome.Test.SocketTmux (SocketTmuxWith, TmuxHandlerStack, runSocketTmuxTestConf)
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
-import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock (StoreHistoryLock))
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
-import Myo.Data.SaveLock (SaveLock (SaveLock))
 import Myo.Data.ViewError (ViewError)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
@@ -34,8 +32,9 @@ interpretMyoTestStack ::
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
-  interpretSyncAs StoreHistoryLock .
-  interpretSyncAs SaveLock .
+  interpretLockReentrant . untag .
+  interpretLockReentrant . untag .
+  interpretLockReentrant . untag .
   interpretBackendFail .
   interpretProc .
   interpretCodecPanes .

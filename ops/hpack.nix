@@ -93,6 +93,7 @@ in {
       "lens"
       "lens-regex-pcre"
       "messagepack"
+      "microlens-mtl"
       "mono-traversable"
       "network"
       "parsers"

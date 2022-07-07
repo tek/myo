@@ -3,10 +3,9 @@
 
   inputs = {
     ribosome.url = git+https://git.tryp.io/tek/ribosome?ref=polysemy;
-    prelate.url = git+https://git.tryp.io/tek/prelate;
   };
 
-  outputs = { ribosome, prelate, ... }:
+  outputs = { ribosome, ... }:
   let
     inherit (ribosome.inputs) hix;
 
@@ -16,7 +15,6 @@
     in {
       myo = buildInputs [pkgs.socat] fast;
       myo-test = fast inputs;
-      prelate = source.package prelate "prelate";
     };
 
   in hix.lib.flake ({ config, lib, ...}: {

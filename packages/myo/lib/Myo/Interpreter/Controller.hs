@@ -2,6 +2,7 @@ module Myo.Interpreter.Controller where
 
 import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.Views (Views)
+import Conc (Lock)
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
@@ -19,7 +20,7 @@ import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails
 import Myo.Command.Data.RunTask (RunTask (RunTask))
-import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock)
+import Myo.Command.Data.StoreHistory (StoreHistory)
 import qualified Myo.Command.Effect.Backend as Backend
 import Myo.Command.Effect.Backend (Backend)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
@@ -53,7 +54,7 @@ type PrepareStack =
   [
     Settings !! SettingError,
     Persist [HistoryEntry] !! PersistError,
-    Sync StoreHistoryLock,
+    Lock @@ StoreHistory,
     CommandLog,
     Executions,
     Backend !! RunError,

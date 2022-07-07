@@ -13,7 +13,7 @@ import Chiasma.Effect.Codec (NativeCodecE, NativeCodecsE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand)
 import Chiasma.Interpreter.TmuxClient (interpretTmuxNative)
-import Conc (Restoration, interpretAtomic, interpretSyncAs, withAsync_)
+import Conc (Lock, Restoration, interpretAtomic, interpretLockReentrant, withAsync_)
 import Data.MessagePack (Object)
 import Path (relfile)
 import Polysemy.Chronos (ChronosTime)
@@ -45,6 +45,7 @@ import Ribosome (
   interpretPersistPath,
   reportError,
   reportStop,
+  resumeReportError,
   rpc,
   rpcAutocmd,
   rpcCommand,
@@ -58,12 +59,14 @@ import Myo.Command.CommandMenu (myoCommands)
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
+import Myo.Command.Data.LoadHistory (LoadHistory)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.StoreHistoryLock (StoreHistoryLock (StoreHistoryLock))
+import Myo.Command.Data.StoreHistory (StoreHistory)
 import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Effect.Executions (Executions)
+import Myo.Command.History (loadHistory)
 import Myo.Command.HistoryMenu (myoHistory)
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
@@ -78,7 +81,7 @@ import Myo.Complete (myoCompleteCommand)
 import Myo.Data.Env (Env)
 import Myo.Data.LastSave (LastSave)
 import Myo.Data.ProcError (ProcError)
-import Myo.Data.SaveLock (SaveLock (SaveLock))
+import Myo.Data.SaveLock (SaveLock)
 import Myo.Diag (myoDiag)
 import Myo.Effect.Controller (Controller)
 import Myo.Effect.Proc (Proc)
@@ -115,8 +118,9 @@ type MyoStack =
     NativeCodecE (Panes Pane),
     Proc !! ProcError,
     Backend !! RunError,
-    Sync SaveLock,
-    Sync StoreHistoryLock
+    Lock @@ SaveLock,
+    Lock @@ StoreHistory,
+    Lock @@ LoadHistory
   ]
 
 type MyoProdStack =
@@ -202,23 +206,24 @@ variables =
     ("myo_ui", updateUi)
   ]
 
--- TODO load history
 prepare ::
-  Members [NativeTmux !! TmuxError, AtomicState Views] r =>
   Members (NativeCodecsE [Panes PanePid, Panes PaneCoords]) r =>
+  Members [NativeTmux !! TmuxError, AtomicState Views, AtomicState CommandState] r =>
+  Members [Lock @@ LoadHistory, Resource, Log, Persist [HistoryEntry] !! PersistError] r =>
   Members [Settings !! SettingError, Proc !! ProcError, Rpc !! RpcError, AtomicState UiState, DataLog HostError] r =>
   Sem r ()
 prepare = do
   resuming @_ @Settings (reportError (Just "ui")) do
     detect <- Settings.get Settings.detectUi
     when detect (reportStop (Just "ui") detectDefaultUi)
-    -- loadHistory
+    resumeReportError @Rpc (Just "history") (resumeReportError @(Persist _) (Just "history") loadHistory)
 
 interpretMyoStack ::
   InterpretersFor MyoStack RemoteStack
 interpretMyoStack =
-  interpretSyncAs StoreHistoryLock .
-  interpretSyncAs SaveLock .
+  interpretLockReentrant . untag .
+  interpretLockReentrant . untag .
+  interpretLockReentrant . untag .
   interpretBackendFail .
   interpretProc .
   interpretCodecPanes .

@@ -18,7 +18,6 @@ import Chiasma.Ui.Data.ViewState (ViewState (ViewState))
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (mapMOf, transformM)
 import Data.Generics.Labels ()
-import Prelude hiding (view)
 
 import qualified Myo.Data.ViewError as ViewError
 import Myo.Data.ViewError (ViewError)
