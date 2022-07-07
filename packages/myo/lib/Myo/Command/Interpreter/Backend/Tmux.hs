@@ -21,7 +21,7 @@ import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
 import Process (Pid)
-import Ribosome (HostError, Rpc, ToErrorMessage, resumeReportError)
+import Ribosome (HostError, Rpc, ToErrorMessage, resumeReportError, RpcError)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command), ident)
@@ -186,10 +186,11 @@ captureOutput (TmuxTask _ pane Command {ident}) =
 
 render ::
   Members (NativeCodecsE [TmuxCommand, Panes Pane]) r =>
-  Members [AtomicState Views, AtomicState UiState, NativeTmux !! TmuxError, Rpc, Stop RunError] r =>
+  Members [AtomicState Views, AtomicState UiState, NativeTmux !! TmuxError, Rpc !! RpcError, Stop RunError] r =>
   Sem r ()
 render =
-  mapStop RunError.Render (resumeHoist @_ @NativeTmux RunError.Tmux renderTmux)
+  resumeHoist RunError.Rpc $ mapStop RunError.Render $ resumeHoist @_ @NativeTmux RunError.Tmux do
+    renderTmux
 
 -- TODO if multiple executors accept ui tasks, stopping when the pane isn't part of the state might be wrong.
 -- but if all uis share the same state, it's correct but should probably done before this
@@ -197,7 +198,7 @@ render =
 interpretBackendTmuxWithLog ::
   ToErrorMessage sre =>
   Members TmuxRunStack r =>
-  Members [AtomicState UiState, Rpc, Proc !! ProcError, ChronosTime, CommandLog] r =>
+  Members [AtomicState UiState, Proc !! ProcError, ChronosTime, CommandLog, Rpc !! RpcError] r =>
   Members [Backend !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>
   Sem r a ->
   Sem r a
@@ -208,7 +209,7 @@ interpretBackendTmuxWithLog =
 
 interpretBackendTmuxNoLog ::
   Members TmuxRunStack r =>
-  Members [AtomicState UiState, Rpc] r =>
+  Members [AtomicState UiState, Rpc !! RpcError] r =>
   Members [Proc !! ProcError, Backend !! RunError, AtomicState Views, ChronosTime, Race, Resource] r =>
   Sem r a ->
   Sem r a

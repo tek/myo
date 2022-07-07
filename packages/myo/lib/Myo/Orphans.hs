@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# options_ghc -fno-warn-orphans #-}
 
 module Myo.Orphans where
 

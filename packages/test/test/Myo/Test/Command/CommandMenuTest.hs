@@ -10,13 +10,14 @@ import Ribosome.Menu (interpretMenu)
 import Ribosome.Menu.Prompt (interpretPromptInputCharList)
 import Ribosome.Test (resumeTestError, testError)
 
-import Myo.Command.CommandMenu (commandMenu, runCommand)
+import Myo.Command.CommandMenu (commandMenu)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
+import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
 
@@ -35,8 +36,8 @@ test_commandMenu :: UnitTest
 test_commandMenu =
   myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendVim $ interpretController do
     atomicSet @CommandState #commands commands
-    result <- resumeTestError $ interpretMenu $ interpretPromptInputCharList inputChars do
-      testError (commandMenu runCommand)
-    Menu.Success () === result
+    Menu.Success ident <- resumeTestError $ interpretMenu $ interpretPromptInputCharList inputChars do
+      testError commandMenu
+    testError (restop (Controller.runIdent ident))
     value <- nvimGetVar "command"
     ("c2" :: Text) === value

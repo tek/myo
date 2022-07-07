@@ -10,7 +10,7 @@ newtype HistoryEntry =
   }
   deriving stock (Eq, Show, Generic)
 
-json ''HistoryEntry
+unaryJson ''HistoryEntry
 
 instance Identifiable HistoryEntry where
   identify =

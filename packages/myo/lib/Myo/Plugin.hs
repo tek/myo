@@ -62,15 +62,21 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.LoadHistory (LoadHistory)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Data.SocketReaderError (SocketReaderError)
 import Myo.Command.Data.StoreHistory (StoreHistory)
 import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Effect.Executions (Executions)
+import Myo.Command.Effect.SocketReader (ScopedSocketReader)
 import Myo.Command.History (loadHistory)
 import Myo.Command.HistoryMenu (myoHistory)
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
+import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
+import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxWithLog)
+import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Command.Interpreter.SocketReader (SocketReaderResources, interpretSocketReader)
 import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoOutputQuit, myoOutputSelect, myoPrev)
 import Myo.Command.Parse (myoParse, myoParseLatest)
@@ -131,6 +137,7 @@ type MyoProdStack =
     Persist [HistoryEntry] !! PersistError,
     PersistPath !! PersistPathError,
     NativeTmux !! TmuxError,
+    ScopedSocketReader SocketReaderResources !! SocketReaderError,
     Reader TmuxNative,
     AtomicState LastSave
   ] ++ MyoStack
@@ -138,7 +145,7 @@ type MyoProdStack =
 handlers ::
   Members MyoProdStack r =>
   Members [Settings !! SettingError, Scratch !! RpcError, Rpc !! RpcError, DataLog HostError, Errors] r =>
-  Members [ChronosTime, Mask Restoration, Log, Resource, Race, Embed IO, Final IO] r =>
+  Members [ChronosTime, Mask Restoration, Log, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r]
 handlers =
   rpc "MyoDiag" Async myoDiag
@@ -263,10 +270,14 @@ interpretMyoProd =
   interpretMyoStack .
   interpretAtomic def .
   withTmuxSocket .
+  interpretSocketReader .
   interpretTmuxNative .
   interpretPersistPath True .
   interpretPersist "history" .
   interpretCommandLogSetting .
+  interpretBackendVim .
+  interpretBackendProcessNative .
+  interpretBackendTmuxWithLog .
   interpretController .
   interpretParsing parsers .
   withAsync_ prepare

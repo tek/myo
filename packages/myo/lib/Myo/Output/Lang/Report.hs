@@ -1,8 +1,7 @@
 module Myo.Output.Lang.Report where
 
-import Control.Lens (ifolded, withIndex)
+import qualified Data.Vector as Vector
 import Data.Vector (Vector)
-import Data.Vector.Lens (toVectorOf)
 
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative (Relative))
 import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEvent (OutputEvent))
@@ -15,12 +14,10 @@ parsedOutputCons ::
   Vector (LangOutputEvent a) ->
   OutputEvents
 parsedOutputCons format events =
-  OutputEvents (uncurry outputEvent <$> zipWithIndex events)
+  OutputEvents (Vector.imap outputEvent events)
   where
     outputEvent :: Int -> LangOutputEvent a -> OutputEvent
     outputEvent index e@(LangOutputEvent meta _) =
       OutputEvent meta (lines' index e)
     lines' index event =
       ReportLine (EventIndex.Relative (fromIntegral index)) <$> format event
-    zipWithIndex =
-      toVectorOf (ifolded . withIndex)

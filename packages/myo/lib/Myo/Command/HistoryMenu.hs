@@ -1,6 +1,6 @@
 module Myo.Command.HistoryMenu where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (..))
+import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident)
 import Conc (Restoration)
 import qualified Data.Text as Text (take, unwords)
@@ -9,27 +9,32 @@ import Polysemy.Chronos (ChronosTime)
 import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Errors (pluginHandlerErrors)
-import Ribosome.Menu (MenuItem, MenuStack, MenuWidget, MenuWrite, PromptInput, PromptListening, PromptQuit, interpretMenu, runNvimMenu, staticNvimMenu, withFocus, withMappings)
+import Ribosome.Menu (
+  MenuItem,
+  MenuResult (Error, Success),
+  MenuStack,
+  MenuWidget,
+  PromptInput,
+  PromptListening,
+  PromptQuit,
+  interpretMenu,
+  runNvimMenu,
+  staticNvimMenu,
+  withFocus,
+  withMappings,
+  )
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Data.MenuResult (MenuResult)
 import Ribosome.Menu.Prompt (interpretPromptInputNvim)
 
 import Myo.Command.Data.Command (Command (Command), cmdLines, displayName, ident)
+import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
-import qualified Myo.Command.Data.CommandError as CommandError (CommandError (NoHistory))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.History (history)
 import Myo.Command.Run (reRun)
 import Myo.Effect.Controller (Controller)
-
-runHistoryEntry ::
-  MenuWrite Ident r =>
-  Members [Controller, AtomicState CommandState, Stop CommandError] r =>
-  MenuWidget r ()
-runHistoryEntry =
-  withFocus (reRun . Left)
 
 menuItemName :: Ident -> Maybe Text -> Text
 menuItemName ident displayName =
@@ -79,8 +84,14 @@ historyMenu execute = do
 
 myoHistory ::
   Members [Controller !! RunError, Scratch !! RpcError, Settings !! SettingError, AtomicState CommandState] r =>
-  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
   Handler r ()
 myoHistory =
   pluginHandlerErrors $ resumeHandlerError @Controller $ mapHandlerError do
-    void $ interpretMenu $ interpretPromptInputNvim $ historyMenu runHistoryEntry
+    interpretMenu $ interpretPromptInputNvim $ historyMenu (withFocus pure) >>= \case
+      Success ident ->
+        void (async (reRun (Left ident)))
+      Error err ->
+        stop (CommandError.Misc err)
+      _ ->
+        unit

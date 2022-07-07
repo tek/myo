@@ -7,6 +7,7 @@ import Data.MonoTraversable (minimumByMay)
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
 import Data.Vector (Vector, (!?))
+import Exon (exon)
 import Lens.Micro.Mtl (view)
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, (</>))
 import Path.IO (doesFileExist)
@@ -360,15 +361,15 @@ navigateToEvent jump eventIndex = do
   mainWindow <- outputMainWindow
   buffer <- outputBuffer
   totalLines <- bufferLineCount buffer
-  line <- stopNote indexErr $ lineNumberByEventIndex report eventIndex
+  line <- stopNote indexErr (lineNumberByEventIndex report eventIndex)
   when (isLastEvent report) (setLine window (totalLines - 1))
   setLine window line
   when jump (selectEventByIndexFromReport report eventIndex mainWindow window)
   where
     indexErr =
-      OutputError.Internal $ "invalid event index " <> show eventIndex
+      OutputError.Internal [exon|invalid event index #{show eventIndex}|]
     isLastEvent report =
-      fromIntegral (EventIndex.unAbsolute eventIndex) == (length (report ^. #events)) - 1
+      fromIntegral (EventIndex.unAbsolute eventIndex) == (length (report ^. #events) - 1)
 
 navigateToCurrentEvent ::
   Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>

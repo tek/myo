@@ -11,10 +11,8 @@ import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Errors (pluginHandlerErrors)
 import Ribosome.Menu (
   MenuItem,
-  MenuResult,
+  MenuResult (Error, Success),
   MenuStack,
-  MenuWidget,
-  MenuWrite,
   PromptInput,
   PromptListening,
   PromptQuit,
@@ -34,13 +32,6 @@ import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
-
-runCommand ::
-  Member Controller r =>
-  MenuWrite Ident r =>
-  MenuWidget r ()
-runCommand =
-  withFocus Controller.runIdent
 
 menuItemName :: Ident -> Maybe Text -> Text
 menuItemName ident displayName =
@@ -65,7 +56,6 @@ commandItems = do
       Text.unwords [menuItemName ident displayName, Text.take 100 (fromMaybe "<no command line>" (head ls))]
 
 commandMenu ::
-  Show a =>
   Members (MenuStack Ident) r =>
   Members [AtomicState CommandState, Stop CommandError] r =>
   Members [
@@ -83,16 +73,21 @@ commandMenu ::
     Embed IO,
     Final IO
   ] r =>
-  MenuWidget r a ->
-  Sem r (MenuResult a)
-commandMenu execute = do
+  Sem r (MenuResult Ident)
+commandMenu = do
   items <- commandItems
-  withMappings [("cr", execute)] (runNvimMenu (staticNvimMenu items & #scratch . #name .~ "myo-commands"))
+  withMappings [("cr", withFocus pure)] (runNvimMenu (staticNvimMenu items & #scratch . #name .~ "myo-commands"))
 
 myoCommands ::
   Members [Controller !! RunError, Scratch !! RpcError, Settings !! SettingError, AtomicState CommandState] r =>
-  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Embed IO, Final IO] r =>
+  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
   Handler r ()
 myoCommands =
   pluginHandlerErrors $ resumeHandlerError @Controller $ mapHandlerError do
-    void $ interpretMenu $ interpretPromptInputNvim $ commandMenu runCommand
+    interpretMenu $ interpretPromptInputNvim $ commandMenu >>= \case
+      Success ident ->
+        void (async (Controller.runIdent ident))
+      Error err ->
+        stop (CommandError.Misc err)
+      _ ->
+        unit
