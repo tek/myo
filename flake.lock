@@ -4462,11 +4462,11 @@
         "polysemy-time": "polysemy-time_4"
       },
       "locked": {
-        "lastModified": 1657147835,
-        "narHash": "sha256-a2GLvRukNG4awYn02evtoIkW9UaAUA2uo7YO9F0d1SQ=",
+        "lastModified": 1657409800,
+        "narHash": "sha256-urbNgYNGjos5uombGhJT5OwWu0j/RYd8eBn/mXrXF6I=",
         "owner": "tek",
         "repo": "polysemy-conc",
-        "rev": "ff60fd659602cbe97d0b52e24acc61baaa4fc35e",
+        "rev": "0509aeae73faa08d139fd9369797e04d971d0f6c",
         "type": "github"
       },
       "original": {
@@ -4695,11 +4695,11 @@
         "prelate": "prelate"
       },
       "locked": {
-        "lastModified": 1657151819,
-        "narHash": "sha256-EOFkCIp1mdY/y2+GP+yyMSdbg/ufKvmS/xsDGdHlO1c=",
+        "lastModified": 1657582825,
+        "narHash": "sha256-SbB8WkWPT03c1Q4yqYZh0EftPIiUz+pOkXpza9fpay4=",
         "ref": "polysemy",
-        "rev": "c4e5ac62667bc9a592126a425acfb4913fa378b5",
-        "revCount": 631,
+        "rev": "9665b1d3694c5cb624d832246de6176e4569d3e7",
+        "revCount": 668,
         "type": "git",
         "url": "https://git.tryp.io/tek/ribosome"
       },

@@ -6,13 +6,13 @@ import Polysemy.Test (UnitTest, (===))
 import Ribosome (interpretPersistNull)
 import Ribosome.Api (nvimGetVar)
 import qualified Ribosome.Menu as Menu
-import Ribosome.Menu (interpretMenu)
-import Ribosome.Menu.Prompt (interpretPromptInputCharList)
-import Ribosome.Test (resumeTestError, testError)
+import Ribosome.Menu (interpretNvimMenuFinal, promptInput)
+import Ribosome.Test (testError)
 
 import Myo.Command.CommandMenu (commandMenu)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
@@ -36,8 +36,8 @@ test_commandMenu :: UnitTest
 test_commandMenu =
   myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendVim $ interpretController do
     atomicSet @CommandState #commands commands
-    Menu.Success ident <- resumeTestError $ interpretMenu $ interpretPromptInputCharList inputChars do
-      testError commandMenu
+    Menu.Success ident <- interpretNvimMenuFinal $ promptInput inputChars do
+      testError @CommandError commandMenu
     testError (restop (Controller.runIdent ident))
     value <- nvimGetVar "command"
     ("c2" :: Text) === value

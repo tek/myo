@@ -1,29 +1,30 @@
 module Myo.Command.CommandMenu where
 
 import Chiasma.Data.Ident (Ident (Str, Uuid))
-import Conc (Restoration)
 import qualified Data.Text as Text
 import qualified Data.UUID as UUID
 import Exon (exon)
-import Polysemy.Chronos (ChronosTime)
-import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
+import Ribosome (
+  Handler,
+  Rpc,
+  RpcError,
+  ScratchId (ScratchId),
+  Settings,
+  mapHandlerErrors,
+  resumeHandlerErrors,
+  scratch,
+  )
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Errors (pluginHandlerErrors)
 import Ribosome.Menu (
   MenuItem,
   MenuResult (Error, Success),
-  MenuStack,
-  PromptInput,
-  PromptListening,
-  PromptQuit,
-  interpretMenu,
-  runNvimMenu,
+  NvimMenu,
+  menu,
+  runStaticNvimMenu,
   simpleMenuItem,
-  staticNvimMenu,
   withFocus,
   withMappings,
   )
-import Ribosome.Menu.Prompt (interpretPromptInputNvim)
 
 import Myo.Command.Data.Command (Command (Command, cmdLines, displayName), ident)
 import qualified Myo.Command.Data.CommandError as CommandError
@@ -55,36 +56,32 @@ commandItems = do
     menuItemText ident ls displayName =
       Text.unwords [menuItemName ident displayName, Text.take 100 (fromMaybe "<no command line>" (head ls))]
 
-commandMenu ::
-  Members (MenuStack Ident) r =>
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Members [
-    PromptInput,
+type CommandMenuStack =
+  NvimMenu Ident ++ [
     Settings !! SettingError,
-    Scratch,
-    Rpc,
-    Rpc !! RpcError,
-    Sync PromptQuit,
-    Sync PromptListening,
-    Log,
-    ChronosTime,
-    Mask res,
-    Race,
-    Embed IO,
-    Final IO
-  ] r =>
+    Rpc !! RpcError
+  ]
+
+commandMenu ::
+  Members CommandMenuStack r =>
+  Members [AtomicState CommandState, Stop CommandError, Stop RpcError] r =>
   Sem r (MenuResult Ident)
 commandMenu = do
   items <- commandItems
-  withMappings [("cr", withFocus pure)] (runNvimMenu (staticNvimMenu items & #scratch . #name .~ "myo-commands"))
+  runStaticNvimMenu items [] opts $ withMappings [("cr", withFocus pure)] menu
+  where
+    opts =
+      scratch (ScratchId name) & #filetype ?~ name
+    name =
+      "myo-commands"
 
 myoCommands ::
-  Members [Controller !! RunError, Scratch !! RpcError, Settings !! SettingError, AtomicState CommandState] r =>
-  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
+  Members CommandMenuStack r =>
+  Members [Controller !! RunError, AtomicState CommandState, Async] r =>
   Handler r ()
 myoCommands =
-  pluginHandlerErrors $ resumeHandlerError @Controller $ mapHandlerError do
-    interpretMenu $ interpretPromptInputNvim $ commandMenu >>= \case
+  resumeHandlerErrors @[Controller, Rpc] @[_, _] $ mapHandlerErrors @[RpcError, CommandError] do
+    commandMenu >>= \case
       Success ident ->
         void (async (Controller.runIdent ident))
       Error err ->

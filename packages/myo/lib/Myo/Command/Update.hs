@@ -2,7 +2,8 @@ module Myo.Command.Update where
 
 import Data.MessagePack (Object)
 import Prelude hiding (lines)
-import Ribosome (Handler, fromMsgpack, mapHandlerError)
+import Ribosome (Handler, SettingError, Settings, fromMsgpack, mapHandlerError)
+import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Command (shellCommand, systemCommand)
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (..))
@@ -12,15 +13,14 @@ import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Data.Maybe (orFalse)
+import qualified Myo.Settings as Settings
 
 updateCommands ::
   Member (AtomicState CommandState) r =>
-  Object ->
-  Handler r ()
-updateCommands o =
-  mapHandlerError do
-    CommandSettingCodec system shell <- stopEitherWith CommandError.Misc (fromMsgpack o)
-    atomicModify' (#commands .~ ((createShell <$> fold shell) ++ (createSystem <$> fold system)))
+  CommandSettingCodec ->
+  Sem r ()
+updateCommands (CommandSettingCodec system shell) =
+  atomicModify' (#commands .~ ((createShell <$> fold shell) ++ (createSystem <$> fold system)))
   where
     createSystem :: AddSystemCommandOptions -> Command
     createSystem AddSystemCommandOptions {..} =
@@ -42,3 +42,17 @@ updateCommands o =
         kill = orFalse kill,
         capture = orFalse capture
       }
+
+fetchCommands ::
+  Members [AtomicState CommandState, Settings !! SettingError] r =>
+  Sem r ()
+fetchCommands =
+  traverse_ updateCommands =<< Settings.maybe Settings.commands
+
+myoUpdateCommands ::
+  Member (AtomicState CommandState) r =>
+  Object ->
+  Handler r ()
+myoUpdateCommands o =
+  mapHandlerError do
+    updateCommands =<< stopEitherWith CommandError.Misc (fromMsgpack o)

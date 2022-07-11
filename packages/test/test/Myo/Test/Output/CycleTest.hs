@@ -3,9 +3,15 @@ module Myo.Test.Output.CycleTest where
 import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
-import Ribosome (Window, pathText, Scratch, Rpc, RpcError, Settings)
+import Path (relfile)
+import qualified Polysemy.Test as Test
+import Polysemy.Test (Hedgehog, Test, TestError, UnitTest)
+import Ribosome (Rpc, RpcError, Scratch, Settings, Window, pathText)
+import qualified Ribosome.Settings as Settings
+import Ribosome.Test (testError)
 import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
 
+import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Output (compileAndRenderReport, myoNext, myoPrev)
 import Myo.Command.Parse (storeParseResult)
 import Myo.Output.Data.Location (Location (Location))
@@ -15,13 +21,7 @@ import Myo.Output.Lang.Haskell.Report (HaskellMessage (FoundReq1, NoMethod), for
 import Myo.Output.Lang.Report (parsedOutputCons)
 import Myo.Output.ParseReport (outputWindow)
 import qualified Myo.Settings as Settings (outputSelectFirst)
-import qualified Ribosome.Settings as Settings
-import Polysemy.Test (UnitTest, Test, Hedgehog, TestError)
 import Myo.Test.Embed (myoTest)
-import qualified Polysemy.Test as Test
-import Path (relfile)
-import Myo.Command.Data.CommandState (CommandState)
-import Ribosome.Test (testError)
 
 loc1 :: Text -> Maybe Location
 loc1 file =

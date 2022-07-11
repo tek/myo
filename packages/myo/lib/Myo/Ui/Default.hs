@@ -24,7 +24,7 @@ import Chiasma.Ui.Data.View (
   consLayoutVertical,
   consPane,
   )
-import Chiasma.Ui.Data.ViewGeometry (ViewGeometry)
+import Chiasma.Ui.Data.ViewGeometry (ViewGeometry (ViewGeometry))
 import Control.Monad.Extra (findM)
 import Process (Pid (Pid))
 import Ribosome (Rpc, RpcError, Settings, mapUserMessage, resumeHoistUserMessage)
@@ -45,6 +45,10 @@ import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Data.Window (Window (Window))
 import Myo.Ui.View (insertSpace)
 
+scratchGeometry :: ViewGeometry
+scratchGeometry =
+  ViewGeometry Nothing (Just 20) Nothing Nothing (Just 0.3) Nothing
+
 insertInitialViews :: SessionId -> WindowId -> PaneId -> Views -> Views
 insertInitialViews sid wid pid (Views sessions windows ps viewsLog) =
   Views
@@ -63,7 +67,8 @@ vimTree vimGeometry =
 makeTree :: ViewTree
 makeTree =
   Tree (consLayoutVertical (Ident.Str "make")) [
-    TreeLeaf ((consPane (Ident.Str "make")) { _extra = Pane False True Nothing })
+    TreeLeaf ((consPane (Ident.Str "make")) { _extra = Pane False True Nothing }),
+    TreeLeaf ((consPane (Ident.Str "scratch")) { _extra = Pane False False Nothing, _geometry = scratchGeometry })
     ]
 
 mainTree :: ViewGeometry -> ViewTree

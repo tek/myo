@@ -2,29 +2,30 @@ module Myo.Command.HistoryMenu where
 
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident)
-import Conc (Restoration)
 import qualified Data.Text as Text (take, unwords)
 import qualified Data.UUID as UUID (toText)
-import Polysemy.Chronos (ChronosTime)
-import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
+import Exon (exon)
+import Ribosome (
+  Handler,
+  Rpc,
+  RpcError,
+  ScratchId (ScratchId),
+  Settings,
+  mapHandlerErrors,
+  resumeHandlerErrors,
+  scratch,
+  )
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Errors (pluginHandlerErrors)
 import Ribosome.Menu (
   MenuItem,
   MenuResult (Error, Success),
-  MenuStack,
-  MenuWidget,
-  PromptInput,
-  PromptListening,
-  PromptQuit,
-  interpretMenu,
-  runNvimMenu,
-  staticNvimMenu,
+  NvimMenu,
+  menu,
+  runStaticNvimMenu,
   withFocus,
   withMappings,
   )
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
-import Ribosome.Menu.Prompt (interpretPromptInputNvim)
 
 import Myo.Command.Data.Command (Command (Command), cmdLines, displayName, ident)
 import qualified Myo.Command.Data.CommandError as CommandError
@@ -38,12 +39,13 @@ import Myo.Effect.Controller (Controller)
 
 menuItemName :: Ident -> Maybe Text -> Text
 menuItemName ident displayName =
-  "[" <> fromMaybe (text' ident) displayName <> "]"
+  [exon|[#{fromMaybe (identTextShort ident) displayName}]|]
   where
-    text' (Ident.Str a) =
-      toText a
-    text' (Ident.Uuid a) =
-      Text.take 6 $ UUID.toText a
+    identTextShort = \case
+      Ident.Str a ->
+        a
+      Ident.Uuid a ->
+        Text.take 6 (UUID.toText a)
 
 historyItems ::
   Members [AtomicState CommandState, Stop CommandError] r =>
@@ -57,38 +59,33 @@ historyItems = do
     menuItemText ident lines' displayName =
       Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']
 
-historyMenu ::
-  Show a =>
-  Members (MenuStack Ident) r =>
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Members [
-    PromptInput,
+type HistoryMenuStack =
+  NvimMenu Ident ++ [
+    AtomicState CommandState,
     Settings !! SettingError,
-    Scratch,
-    Rpc,
-    Rpc !! RpcError,
-    Sync PromptQuit,
-    Sync PromptListening,
-    Log,
-    ChronosTime,
-    Mask res,
-    Race,
-    Embed IO,
-    Final IO
-  ] r =>
-  MenuWidget r a ->
-  Sem r (MenuResult a)
-historyMenu execute = do
+    Rpc !! RpcError
+  ]
+
+historyMenu ::
+  Members HistoryMenuStack r =>
+  Members [Stop CommandError, Stop RpcError] r =>
+  Sem r (MenuResult Ident)
+historyMenu = do
   items <- historyItems
-  withMappings [("cr", execute)] (runNvimMenu (staticNvimMenu items & #scratch . #name .~ "myo-history"))
+  runStaticNvimMenu items [] opts $ withMappings [("cr", withFocus pure)] menu
+  where
+    opts =
+      scratch (ScratchId name) & #filetype ?~ name
+    name =
+      "myo-history"
 
 myoHistory ::
-  Members [Controller !! RunError, Scratch !! RpcError, Settings !! SettingError, AtomicState CommandState] r =>
-  Members [Rpc !! RpcError, ChronosTime, Log, Resource, Race, Mask Restoration, Async, Embed IO, Final IO] r =>
+  Members HistoryMenuStack r =>
+  Members [Controller !! RunError, AtomicState CommandState, Async] r =>
   Handler r ()
 myoHistory =
-  pluginHandlerErrors $ resumeHandlerError @Controller $ mapHandlerError do
-    interpretMenu $ interpretPromptInputNvim $ historyMenu (withFocus pure) >>= \case
+  resumeHandlerErrors @[Controller, Rpc] @[_, _] $ mapHandlerErrors @[RpcError, CommandError] do
+    historyMenu >>= \case
       Success ident ->
         void (async (reRun (Left ident)))
       Error err ->

@@ -4,6 +4,7 @@ import Chiasma.Codec.Data (Pane)
 import Chiasma.Codec.Data.PaneCoords (PaneCoords)
 import Chiasma.Codec.Data.PaneMode (PaneMode)
 import Chiasma.Codec.Data.PanePid (PanePid)
+import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxError (TmuxError)
@@ -52,6 +53,15 @@ import Ribosome (
   rpcFunction,
   runNvimPluginIO,
   )
+import Ribosome.Menu (
+  MenuState,
+  MenusIOEffects,
+  NvimMenusIOEffects,
+  NvimRenderer,
+  interpretMenuRendererNvim,
+  interpretMenuStates,
+  interpretNvimMenusFinal,
+  )
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
@@ -82,7 +92,7 @@ import Myo.Command.Output (myoNext, myoOutputQuit, myoOutputSelect, myoPrev)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
-import Myo.Command.Update (updateCommands)
+import Myo.Command.Update (fetchCommands, myoUpdateCommands)
 import Myo.Complete (myoCompleteCommand)
 import Myo.Data.Env (Env)
 import Myo.Data.LastSave (LastSave)
@@ -139,8 +149,10 @@ type MyoProdStack =
     NativeTmux !! TmuxError,
     ScopedSocketReader SocketReaderResources !! SocketReaderError,
     Reader TmuxNative,
-    AtomicState LastSave
-  ] ++ MyoStack
+    AtomicState LastSave,
+    NvimRenderer Ident !! RpcError,
+    Scoped () (MenuState Ident)
+  ] ++ MenusIOEffects ++ NvimMenusIOEffects ++ MyoStack
 
 handlers ::
   Members MyoProdStack r =>
@@ -209,7 +221,7 @@ variables ::
   Map WatchedVariable (Object -> Handler r ())
 variables =
   [
-    ("myo_commands", updateCommands),
+    ("myo_commands", myoUpdateCommands),
     ("myo_ui", updateUi)
   ]
 
@@ -223,6 +235,7 @@ prepare = do
   resuming @_ @Settings (reportError (Just "ui")) do
     detect <- Settings.get Settings.detectUi
     when detect (reportStop (Just "ui") detectDefaultUi)
+    fetchCommands
     resumeReportError @Rpc (Just "history") (resumeReportError @(Persist _) (Just "history") loadHistory)
 
 interpretMyoStack ::
@@ -268,6 +281,9 @@ interpretMyoProd ::
   InterpretersFor MyoProdStack RemoteStack
 interpretMyoProd =
   interpretMyoStack .
+  interpretNvimMenusFinal .
+  interpretMenuStates .
+  interpretMenuRendererNvim .
   interpretAtomic def .
   withTmuxSocket .
   interpretSocketReader .

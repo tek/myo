@@ -1,13 +1,10 @@
 {
   description = "Neovim Layout and Command Manager";
 
-  inputs = {
-    ribosome.url = git+https://git.tryp.io/tek/ribosome?ref=polysemy;
-  };
+  inputs.ribosome.url = git+https://git.tryp.io/tek/ribosome?ref=polysemy;
 
   outputs = { ribosome, ... }:
   let
-    inherit (ribosome.inputs) hix;
 
     overrides = { buildInputs, fast, pkgs, source, ... }:
     let
@@ -17,7 +14,7 @@
       myo-test = fast inputs;
     };
 
-  in hix.lib.flake ({ config, lib, ...}: {
+  in ribosome.inputs.hix.lib.flake ({ config, lib, ...}: {
     base = ./.;
     inherit overrides;
     depsFull = [ribosome];

@@ -52,7 +52,7 @@ test_updateUi =
   runMyoTestStack def $ interpretNvimPlugin [rpcFunction "PaneData" Sync paneData] mempty variables $ testPluginEmbed do
     nvimSetVar "myo_ui" ui1
     doautocmd "CmdlineLeave"
-    assertWait getUiData (assertEq ["main", "vim", "test", "vim", "make", "make"])
+    assertWait getUiData (assertEq ["main", "vim", "test", "vim", "make", "make", "scratch"])
     nvimSetVar "myo_ui" ui2
     doautocmd "BufWinEnter"
-    assertWait getUiData (assertEq ["main", "vim", "vim", "make", "test", "pane", "make"])
+    assertWait getUiData (assertEq ["main", "vim", "vim", "make", "test", "pane", "make", "scratch"])
