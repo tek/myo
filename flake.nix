@@ -23,7 +23,7 @@
       myo = ./packages/myo;
       myo-test = ./packages/test;
     };
-    main = "myo-test";
+    main = "myo";
     hpack = {
       packages = import ./ops/hpack.nix { inherit config lib; };
       defaultApp = "myo";
