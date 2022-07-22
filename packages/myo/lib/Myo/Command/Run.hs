@@ -3,7 +3,7 @@ module Myo.Command.Run where
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident, generateIdent)
 import qualified Data.Text as Text
-import Ribosome (Handler, mapHandlerError, resumeHandlerError)
+import Ribosome (Handler, mapHandlerError, resumeHandlerError, Args (Args))
 
 import Myo.Command.Command (commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import qualified Myo.Command.Data.Command as Command
@@ -73,7 +73,7 @@ myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill 
 
 myoLineCmd ::
   Members [Controller !! RunError, AtomicState CommandState, Embed IO] r =>
-  Text ->
+  Args ->
   Handler r ()
-myoLineCmd cmdLine =
+myoLineCmd (Args cmdLine) =
   myoLine def { line = Just cmdLine }
