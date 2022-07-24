@@ -8,19 +8,15 @@ import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxError (TmuxError)
-import Chiasma.Data.TmuxNative (TmuxNative (TmuxNative))
 import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (NativeCodecE, NativeCodecsE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand)
-import Chiasma.Interpreter.TmuxClient (interpretTmuxNative)
+import Chiasma.Interpreter.TmuxClient (interpretTmuxNativeEnvGraceful)
 import Conc (Lock, Restoration, interpretAtomic, interpretLockReentrant, withAsync_)
 import Data.MessagePack (Object)
-import Path (relfile)
 import Polysemy.Chronos (ChronosTime)
-import Process (resolveExecutable)
 import Ribosome (
-  BootError (BootError),
   CompleteStyle (CompleteFiltered),
   Errors,
   Execution (Async, Sync),
@@ -148,7 +144,6 @@ type MyoProdStack =
     PersistPath !! PersistPathError,
     NativeTmux !! TmuxError,
     ScopedSocketReader SocketReaderResources !! SocketReaderError,
-    Reader TmuxNative,
     AtomicState LastSave,
     NvimRenderer Ident !! RpcError,
     Scoped () (MenuState Ident)
@@ -268,15 +263,6 @@ parsers =
     ("scala", [scalaOutputParser])
   ]
 
--- TODO Add tmux interpreter that always stops if the executable can't be found, so that the plugin may start without
--- support for tmux
-withTmuxSocket ::
-  Members [Error BootError, Embed IO] r =>
-  InterpreterFor (Reader TmuxNative) r
-withTmuxSocket sem = do
-  exe <- fromEither . first BootError =<< resolveExecutable [relfile|tmux|] Nothing
-  runReader (TmuxNative exe Nothing) sem
-
 interpretMyoProd ::
   InterpretersFor MyoProdStack RemoteStack
 interpretMyoProd =
@@ -285,9 +271,8 @@ interpretMyoProd =
   interpretMenuStates .
   interpretMenuRendererNvim .
   interpretAtomic def .
-  withTmuxSocket .
   interpretSocketReader .
-  interpretTmuxNative .
+  interpretTmuxNativeEnvGraceful Nothing .
   interpretPersistPath True .
   interpretPersist "history" .
   interpretCommandLogSetting .
