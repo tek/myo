@@ -11,7 +11,22 @@ import Exon (exon)
 import Lens.Micro.Mtl (view)
 import Path (Abs, Dir, File, Path, Rel, parseAbsDir, parseAbsFile, parseRelDir, parseRelFile, (</>))
 import Path.IO (doesFileExist)
-import Ribosome (Buffer, Rpc, RpcError, Scratch, ScratchId, ScratchState, Window, scratch)
+import Ribosome (
+  Buffer,
+  Handler,
+  MapMode (MapNormal),
+  Mapping (Mapping),
+  Rpc,
+  RpcError,
+  RpcName,
+  Scratch,
+  ScratchId,
+  ScratchState,
+  Window,
+  mapHandlerError,
+  resumeHandlerError,
+  scratch,
+  )
 import Ribosome.Api (
   bufferForFile,
   bufferGetOption,
@@ -34,10 +49,9 @@ import Ribosome.Api (
   windowSetOption,
   )
 import qualified Ribosome.Data.FileBuffer as FileBuffer
-import Ribosome.Data.Mapping (Mapping (Mapping), MappingIdent (MappingIdent))
-import Ribosome.Data.Syntax (Syntax)
 import qualified Ribosome.Scratch as Scratch
 import Ribosome.Scratch (ScratchOptions (syntax))
+import Ribosome.Syntax (Syntax)
 
 import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
@@ -312,11 +326,19 @@ outputBuffer ::
 outputBuffer =
   Scratch.buffer <$> outputScratch
 
+outputQuitName :: RpcName
+outputQuitName =
+  "MyoOutputQuit"
+
+outputSelectName :: RpcName
+outputSelectName =
+  "MyoOutputSelect"
+
 mappings :: [Mapping]
 mappings =
   [
-    Mapping (MappingIdent "output-quit") "q" "n" False True,
-    Mapping (MappingIdent "output-select") "<cr>" "n" False True
+    Mapping outputQuitName "q" [MapNormal] Nothing,
+    Mapping outputSelectName "<cr>" [MapNormal] Nothing
   ]
 
 renderReport ::
@@ -407,3 +429,19 @@ compileReport maxLevel (OutputEvents events) =
       (meta, absoluteDir index <$> lines')
     absoluteDir index (ReportLine _ text') =
       ReportLine (EventIndex.Absolute (fromIntegral index)) text'
+
+myoOutputQuit ::
+  Member (Scratch !! RpcError) r =>
+  Handler r ()
+myoOutputQuit =
+  resumeHandlerError (Scratch.kill scratchId)
+
+myoOutputSelect ::
+  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Handler r ()
+myoOutputSelect =
+  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
+    mainWindow <- outputMainWindow
+    window <- outputWindow
+    report <- currentReport
+    selectCurrentLineEventFrom report window mainWindow

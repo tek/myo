@@ -5,8 +5,9 @@ import Chiasma.Data.Ident (identText)
 import Chiasma.Ui.Data.View (View (View))
 import Data.Bifoldable (bifoldMap)
 import Polysemy.Test (UnitTest, assertEq)
-import Ribosome (Execution (Sync), Rpc, interpretNvimPlugin, rpcFunction, Handler)
+import Ribosome (Execution (Sync), Handler, Rpc, rpcFunction, watchVariables)
 import Ribosome.Api (doautocmd, nvimCallFunction, nvimSetVar)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Test (assertWait, testPluginEmbed)
 
 import Myo.Plugin (variables)
@@ -49,7 +50,7 @@ getUiData =
 
 test_updateUi :: UnitTest
 test_updateUi =
-  runMyoTestStack def $ interpretNvimPlugin [rpcFunction "PaneData" Sync paneData] mempty variables $ testPluginEmbed do
+  runMyoTestStack def $ withHandlers [rpcFunction "PaneData" Sync paneData] $ watchVariables variables $ testPluginEmbed do
     nvimSetVar "myo_ui" ui1
     doautocmd "CmdlineLeave"
     assertWait getUiData (assertEq ["main", "vim", "test", "vim", "make", "make", "scratch"])

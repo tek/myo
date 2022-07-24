@@ -2,39 +2,13 @@ module Myo.Test.Handler where
 
 import Log (Severity (Debug, Trace))
 import Polysemy.Test (UnitTest)
-import Ribosome (HostConfig, RpcHandler, mapHandlerError, rpcHandlers, setStderr)
-import Ribosome.Host.Interpret (HigherOrder)
-import Ribosome.Test (EmbedEffects, testPluginEmbed)
+import Ribosome (HostConfig, RpcHandler, mapHandlerError, setStderr)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
+import Ribosome.Test (testPluginConf, testPluginEmbed)
 import Ribosome.Test.EmbedTmux (HandlerStack)
 
 import Myo.Plugin (MyoStack)
-import Myo.Test.Run (MyoTest, MyoTestStack, MyoTmuxTest, runMyoTestStack, runMyoTmuxTestStack)
-
-myoTestHandlersConfWith ::
-  ∀ r .
-  HasCallStack =>
-  HigherOrder r MyoTestStack =>
-  HostConfig ->
-  [RpcHandler (r ++ MyoTestStack)] ->
-  InterpretersFor r MyoTestStack ->
-  Sem (EmbedEffects ++ r ++ MyoTestStack) () ->
-  UnitTest
-myoTestHandlersConfWith conf handlers extra =
-  runMyoTestStack conf .
-  extra .
-  rpcHandlers handlers .
-  testPluginEmbed
-
-myoTestHandlersWith ::
-  ∀ r .
-  HasCallStack =>
-  HigherOrder r MyoTestStack =>
-  [RpcHandler (r ++ MyoTestStack)] ->
-  InterpretersFor r MyoTestStack ->
-  Sem (EmbedEffects ++ r ++ MyoTestStack) () ->
-  UnitTest
-myoTestHandlersWith =
-  myoTestHandlersConfWith @r def
+import Myo.Test.Run (MyoTest, MyoTestStack, MyoTmuxTest, interpretMyoTestStack, runMyoTmuxTestStack, testConfig)
 
 myoTestHandlersConf ::
   HasCallStack =>
@@ -43,9 +17,7 @@ myoTestHandlersConf ::
   Sem MyoTest () ->
   UnitTest
 myoTestHandlersConf conf handlers =
-  runMyoTestStack conf .
-  rpcHandlers handlers .
-  testPluginEmbed
+  testPluginConf @MyoStack (testConfig conf) interpretMyoTestStack handlers
 
 myoTestHandlers ::
   HasCallStack =>
@@ -74,7 +46,7 @@ myoEmbedTmuxTestHandlersConf ::
   UnitTest
 myoEmbedTmuxTestHandlersConf conf handlers =
   runMyoTmuxTestStack conf .
-  rpcHandlers handlers .
+  withHandlers handlers .
   testPluginEmbed .
   mapHandlerError
 

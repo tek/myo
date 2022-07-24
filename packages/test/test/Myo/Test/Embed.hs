@@ -2,17 +2,16 @@ module Myo.Test.Embed where
 
 import Log (Severity (Debug, Trace))
 import Polysemy.Test (UnitTest)
-import Ribosome (HostConfig, mapHandlerError, noHandlers, setStderr)
+import Ribosome (HostConfig, mapHandlerError, setStderr)
 import Ribosome.Test (testPluginEmbed)
-import Ribosome.Test.SocketTmux (testPluginSocket)
 
 import Myo.Test.Run (
+  MyoSocketTmuxTest,
   MyoTest,
   MyoTmuxTest,
+  runMyoSocketTmuxTestStack,
   runMyoTestStack,
   runMyoTmuxTestStack,
-  MyoSocketTmuxTest,
-  runMyoSocketTmuxTestStack,
   )
 
 myoTestConf ::
@@ -22,7 +21,6 @@ myoTestConf ::
   UnitTest
 myoTestConf conf =
   runMyoTestStack conf .
-  noHandlers .
   testPluginEmbed
 
 myoTest ::
@@ -53,7 +51,6 @@ myoEmbedTmuxTestConf ::
   UnitTest
 myoEmbedTmuxTestConf conf =
   runMyoTmuxTestStack conf .
-  noHandlers .
   testPluginEmbed .
   mapHandlerError
 
@@ -85,8 +82,7 @@ myoSocketTmuxTestConf ::
   UnitTest
 myoSocketTmuxTestConf conf =
   runMyoSocketTmuxTestStack conf .
-  noHandlers .
-  testPluginSocket .
+  testPluginEmbed .
   mapHandlerError
 
 myoSocketTmuxTest ::

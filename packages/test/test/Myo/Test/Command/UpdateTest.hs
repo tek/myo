@@ -3,7 +3,7 @@ module Myo.Test.Command.UpdateTest where
 import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Chiasma.Data.Ident (identText)
 import Polysemy.Test (UnitTest, assertEq)
-import Ribosome (Execution (Sync), Handler, Rpc, interpretNvimPlugin, rpcFunction)
+import Ribosome (Execution (Sync), Handler, Rpc, rpcFunction, watchVariables, withHandlers)
 import Ribosome.Api (nvimCallFunction, nvimSetVar)
 import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Test (assertWait, testPluginEmbed)
@@ -46,7 +46,7 @@ getCmdData =
 
 test_updateCommands :: UnitTest
 test_updateCommands =
-  runMyoTestStack def $ interpretNvimPlugin [rpcFunction "CmdData" Sync cmdData] mempty variables $ testPluginEmbed do
+  runMyoTestStack def $ withHandlers [rpcFunction "CmdData" Sync cmdData] $ watchVariables variables $ testPluginEmbed do
     nvimSetVar "myo_commands" (codec commands1)
     doautocmd "CmdlineLeave"
     assertWait getCmdData (assertEq [("c1", ["tail"])])

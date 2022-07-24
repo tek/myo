@@ -5,9 +5,10 @@ import qualified Data.Vector as Vector (fromList, zipWith)
 import Path (relfile)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, assertEq, evalMaybe)
-import Ribosome (interpretNvimPlugin, pathText)
+import Ribosome (pathText)
 import Ribosome.Api (nvimInput, nvimSetCurrentWin)
 import Ribosome.Api.Window (currentCursor)
+import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import qualified Ribosome.Scratch as Scratch
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testError, testPluginEmbed)
@@ -22,7 +23,7 @@ import Myo.Output.Data.OutputEvents (OutputEvents)
 import Myo.Output.Lang.Haskell.Report (HaskellMessage (FoundReq1, NoMethod), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
-import Myo.Plugin (mappings)
+import Myo.Plugin (outputMappingHandlers)
 import qualified Myo.Settings as Settings
 import Myo.Test.Run (runMyoTestStack)
 
@@ -40,7 +41,7 @@ parsedOutput file =
 
 test_outputSelect :: UnitTest
 test_outputSelect =
-  runMyoTestStack def $ interpretNvimPlugin mempty mappings mempty $ testPluginEmbed do
+  runMyoTestStack def $ withHandlers outputMappingHandlers $ testPluginEmbed do
     Settings.update Settings.outputAutoJump False
     Settings.update Settings.outputSelectFirst True
     file <- Test.fixturePath [relfile|output/select/File.hs|]

@@ -2,7 +2,6 @@ module Myo.Command.Output where
 
 import GHC.Natural (minusNaturalMaybe)
 import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
-import qualified Ribosome.Scratch as Scratch
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Data.CommandState (CommandState)
@@ -14,16 +13,11 @@ import Myo.Output.ParseReport (
   compileReport,
   currentEvents,
   currentOutputCommand,
-  currentReport,
   currentSyntax,
   cycleIndex,
   modifyOutput,
   navigateToCurrentEvent,
-  outputMainWindow,
-  outputWindow,
   renderReport,
-  scratchId,
-  selectCurrentLineEventFrom,
   setOutput,
   )
 import qualified Myo.Settings as Settings (outputAutoJump, outputSelectFirst)
@@ -51,22 +45,6 @@ compileAndRenderReport = do
   when (noEventsInReport report) (stop . NoEvents =<< displayNameByIdent ident)
   setOutput #report (Just report)
   initialRenderReport report
-
-myoOutputQuit ::
-  Member (Scratch !! RpcError) r =>
-  Handler r ()
-myoOutputQuit =
-  resumeHandlerError (Scratch.kill scratchId)
-
-myoOutputSelect ::
-  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
-  Handler r ()
-myoOutputSelect =
-  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
-    mainWindow <- outputMainWindow
-    window <- outputWindow
-    report <- currentReport
-    selectCurrentLineEventFrom report window mainWindow
 
 cycleAndNavigate ::
   Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>

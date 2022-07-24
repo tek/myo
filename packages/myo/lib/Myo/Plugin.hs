@@ -22,7 +22,6 @@ import Ribosome (
   Execution (Async, Sync),
   Handler,
   HostError,
-  MappingIdent,
   Persist,
   PersistError,
   PersistPath,
@@ -37,7 +36,6 @@ import Ribosome (
   WatchedVariable,
   completeBuiltin,
   completeWith,
-  interpretNvimPlugin,
   interpretPersist,
   interpretPersistPath,
   reportError,
@@ -48,6 +46,7 @@ import Ribosome (
   rpcCommand,
   rpcFunction,
   runNvimPluginIO,
+  watchVariables,
   )
 import Ribosome.Menu (
   MenuState,
@@ -84,7 +83,7 @@ import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Interpreter.SocketReader (SocketReaderResources, interpretSocketReader)
 import Myo.Command.Log (myoLogs)
-import Myo.Command.Output (myoNext, myoOutputQuit, myoOutputSelect, myoPrev)
+import Myo.Command.Output (myoNext, myoPrev)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
@@ -105,6 +104,7 @@ import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Output.Lang.Haskell.Parser (haskellOutputParser)
 import Myo.Output.Lang.Nix.Parser (nixOutputParser)
 import Myo.Output.Lang.Scala.Parser (scalaOutputParser)
+import Myo.Output.ParseReport (myoOutputQuit, myoOutputSelect, outputQuitName, outputSelectName)
 import Myo.Quit (myoQuit)
 import Myo.Save (myoSave)
 import qualified Myo.Settings as Settings
@@ -148,6 +148,15 @@ type MyoProdStack =
     NvimRenderer Ident !! RpcError,
     Scoped () (MenuState Ident)
   ] ++ MenusIOEffects ++ NvimMenusIOEffects ++ MyoStack
+
+outputMappingHandlers ::
+  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  [RpcHandler r]
+outputMappingHandlers =
+  [
+    rpcCommand outputQuitName Sync myoOutputQuit,
+    rpcCommand outputSelectName Sync myoOutputSelect
+  ]
 
 handlers ::
   Members MyoProdStack r =>
@@ -200,16 +209,8 @@ handlers =
     rpcFunction "MyoTestBuildArgs" Sync myoTestBuildArgs,
     rpcAutocmd "MyoQuit" Sync "VimLeavePre" def myoQuit,
     rpcAutocmd "MyoSave" Async "BufWritePre" def myoSave
-  ]
-
-mappings ::
-  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
-  Map MappingIdent (Handler r ())
-mappings =
-  [
-    ("output-quit", myoOutputQuit),
-    ("output-select", myoOutputSelect)
-  ]
+  ] <>
+  outputMappingHandlers
 
 variables ::
   Members [AtomicState CommandState, AtomicState UiState, Settings !! SettingError, Embed IO] r =>
@@ -285,4 +286,4 @@ interpretMyoProd =
 
 myo :: IO ()
 myo =
-  runNvimPluginIO @MyoProdStack "myo" (interpretMyoProd . interpretNvimPlugin handlers mappings variables)
+  runNvimPluginIO @MyoProdStack "myo" (interpretMyoProd . watchVariables variables) handlers
