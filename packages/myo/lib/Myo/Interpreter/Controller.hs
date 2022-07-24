@@ -27,7 +27,7 @@ import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
-import Myo.Command.History (pushHistory)
+import Myo.Command.History (pushHistory, commandOrHistoryByIdent)
 import Myo.Command.RunTask (runTask)
 import Myo.Effect.Controller (Controller (CaptureOutput, RunCommand, RunIdent))
 import Myo.Ui.Data.UiState (UiState)
@@ -77,9 +77,9 @@ prepare ::
 prepare = \case
   RunTask _ (RunTaskDetails.UiSystem ident) -> do
     preparePane ident
-  RunTask _ (RunTaskDetails.UiShell shellIdent _) ->
+  RunTask Command {ident} (RunTaskDetails.UiShell shellIdent _) ->
     unlessM (Executions.active shellIdent) do
-      Log.debug [exon|Starting inactive shell command `#{identText shellIdent}`|]
+      Log.debug [exon|Starting inactive shell command `#{identText shellIdent}` async for `#{identText ident}`|]
       void $ async $ reportStop @RunError (Just "command") do
         mapStop RunError.Command (runIdent shellIdent)
       waitForShell shellIdent
@@ -115,7 +115,7 @@ captureOutput ::
   Ident ->
   Sem r ()
 captureOutput ident = do
-  cmd <- commandByIdent "run" ident
+  cmd <- commandOrHistoryByIdent "capture" ident
   task <- runTask cmd
   restop (Backend.captureOutput task)
 

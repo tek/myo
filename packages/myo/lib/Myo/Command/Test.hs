@@ -1,7 +1,6 @@
 module Myo.Command.Test where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (Str))
-import Chiasma.Data.Ident (Ident)
+import Chiasma.Data.Ident (Ident (Str))
 import Data.Hashable (hash)
 import Data.MessagePack (Object)
 import Ribosome (Handler, MsgpackDecode, Rpc, RpcError, Settings, mapHandlerError, resumeHandlerError, toMsgpack)
@@ -19,6 +18,7 @@ import Myo.Command.Data.VimTestPosition (VimTestPosition (VimTestPosition))
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
+import Exon (exon)
 
 testName :: Text
 testName =
@@ -111,8 +111,8 @@ testInterpreter target _ =
   System (Just target)
 
 testIdent :: Text -> Ident
-testIdent =
-  Ident.Str . (testName <>) . show . hash
+testIdent name =
+  Str [exon|#{testName}-#{show (abs (hash name))}|]
 
 updateTestCommand ::
   Members [Settings, Settings !! SettingError] r =>

@@ -148,7 +148,9 @@ interpretExecutions =
     Executions.Kill i ->
       withExecution_ i \ e -> embed (tryPutMVar (e ^. #sync . #kill) ())
     Executions.WaitKill i -> do
-      withExecution_ i \ e ->
+      withExecution_ i \ e -> do
+        Log.debug [exon|Waiting for kill signal for execution `#{identText i}`|]
         embed (readMVar (e ^. #sync . #kill))
-      withExecution_ i \ e ->
+      withExecution_ i \ e -> do
+        Log.debug [exon|Killing process for execution `#{identText i}`|]
         for_ (Execution.pid e) (resume_ . Proc.kill)

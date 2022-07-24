@@ -14,7 +14,7 @@ import qualified Ribosome.Persist as Persist
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Command (mayCommandBy)
-import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.Command (Command (Command, ident))
 import qualified Myo.Command.Data.Command as Command (displayName, skipHistory)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
@@ -92,11 +92,12 @@ duplicateHistoryEntry cmd (HistoryEntry historyCmd) =
 
 pushHistory ::
   Members [Rpc, Settings !! SettingError] r =>
-  Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ StoreHistory, Resource] r =>
+  Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ StoreHistory, Log, Resource] r =>
   Command ->
   Sem r ()
-pushHistory cmd =
+pushHistory cmd@Command {ident} =
   unless (Command.skipHistory cmd) do
+    Log.debug [exon|Pushing command #{identText ident} to history|]
     atomicModify' (#history %~ prep)
     storeHistory
   where
@@ -173,14 +174,15 @@ commandOrHistoryBy ::
   Eq a =>
   Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
+  Text ->
   Lens' Command a ->
   a ->
   Sem r Command
-commandOrHistoryBy ident lens a =
+commandOrHistoryBy context ident lens a =
   err =<< mayCommandOrHistoryBy lens a
   where
     err =
-      stopNote (CommandError.NoSuchCommand "commandOrHistoryBy" ident)
+      stopNote (CommandError.NoSuchCommand [exon|#{context}.commandOrHistoryBy|] ident)
 
 mayCommandOrHistoryByIdent ::
   Member (AtomicState CommandState) r =>
@@ -191,10 +193,11 @@ mayCommandOrHistoryByIdent =
 
 commandOrHistoryByIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
+  Text ->
   Ident ->
   Sem r Command
-commandOrHistoryByIdent ident =
-  commandOrHistoryBy (show ident) #ident ident
+commandOrHistoryByIdent context ident =
+  commandOrHistoryBy context (show ident) #ident ident
 
 displayNameByIdent ::
   Member (AtomicState CommandState) r =>

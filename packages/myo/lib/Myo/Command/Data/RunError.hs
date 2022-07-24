@@ -6,8 +6,9 @@ import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
+import Exon (exon)
 import Log (Severity (Debug, Error, Warn))
-import Ribosome (ErrorMessage (ErrorMessage), PersistError, ToErrorMessage (..), RpcError)
+import Ribosome (ErrorMessage (ErrorMessage), PersistError, RpcError, ToErrorMessage (..))
 
 import Myo.Command.Data.Command (ident)
 import qualified Myo.Command.Data.Command as Cmd (Command (Command))
@@ -92,7 +93,7 @@ instance ToErrorMessage RunError where
   toErrorMessage NoLinesSpecified =
     ErrorMessage "no lines specified for command" ["RunError.NoLinesSpecified"] Warn
   toErrorMessage (SubprocFailed msg out) =
-    ErrorMessage ("subprocess failed" <> userErr out) ("RunError.SubprocFailed" : out) Warn
+    ErrorMessage [exon|subprocess failed: #{userErr out}|] ("RunError.SubprocFailed" : out) Warn
     where
       userErr [] = msg
       userErr (e : _) = ": " <> e

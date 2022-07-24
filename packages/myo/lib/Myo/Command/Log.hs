@@ -5,8 +5,11 @@ import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.TmuxApi (Tmux)
 import Data.Char (isAlphaNum)
-import qualified Data.Text as Text (concatMap, singleton, lines)
+import qualified Data.Map.Strict as Map
+import qualified Data.Text as Text (concatMap, lines, singleton)
 import Path (Abs, File, Path, toFilePath)
+import Ribosome (Handler, RpcError, Scratch, resumeHandlerError, scratch)
+import qualified Ribosome.Scratch as Scratch
 
 import Myo.Command.Command (mainCommand, mainCommandIdent)
 import qualified Myo.Command.Data.Command as Command
@@ -17,9 +20,6 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
-import Ribosome (Handler, Scratch, RpcError, scratch, resumeHandlerError)
-import qualified Ribosome.Scratch as Scratch
-import qualified Data.Map.Strict as Map
 
 pipePaneToSocket ::
   Member Tmux r =>
@@ -36,10 +36,11 @@ pipePaneToSocket paneId path =
 
 mainCommandOrHistory ::
   Members [AtomicState CommandState, Stop CommandError] r =>
+  Text ->
   Ident ->
   Sem r Command
-mainCommandOrHistory ident = do
-  cmd <- commandOrHistoryByIdent ident
+mainCommandOrHistory context ident = do
+  cmd <- commandOrHistoryByIdent context ident
   recurse cmd (cmd ^. #interpreter)
   where
     recurse cmd = \case
@@ -50,10 +51,11 @@ mainCommandOrHistory ident = do
 
 mainCommandOrHistoryIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
+  Text ->
   Ident ->
   Sem r Ident
-mainCommandOrHistoryIdent ident =
-  recurse . Command.interpreter =<< commandOrHistoryByIdent ident
+mainCommandOrHistoryIdent context ident =
+  recurse . Command.interpreter =<< commandOrHistoryByIdent context ident
   where
     recurse (Shell target) =
       mainCommandIdent target
@@ -76,12 +78,13 @@ commandLogBy ::
   Eq a =>
   Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
   Text ->
+  Text ->
   Lens' Command a ->
   a ->
   Sem r (Maybe Text)
-commandLogBy ident lens a = do
-  cmd <- commandOrHistoryBy ident lens a
-  logIdent <- mainCommandOrHistoryIdent (Command.ident cmd)
+commandLogBy context ident lens a = do
+  cmd <- commandOrHistoryBy context ident lens a
+  logIdent <- mainCommandOrHistoryIdent context (Command.ident cmd)
   CommandLog.get logIdent
 
 -- commandLog ::
@@ -94,9 +97,10 @@ commandLogBy ident lens a = do
 commandLogByName ::
   Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
   Text ->
+  Text ->
   Sem r (Maybe Text)
-commandLogByName name =
-  commandLogBy name #displayName (Just name)
+commandLogByName context name =
+  commandLogBy context name #displayName (Just name)
 
 myoLogs ::
   Members [CommandLog, AtomicState CommandState, Scratch !! RpcError, Log] r =>

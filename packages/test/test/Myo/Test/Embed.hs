@@ -6,7 +6,14 @@ import Ribosome (HostConfig, mapHandlerError, noHandlers, setStderr)
 import Ribosome.Test (testPluginEmbed)
 import Ribosome.Test.SocketTmux (testPluginSocket)
 
-import Myo.Test.Run (MyoTest, MyoTmuxTest, runMyoTestStack, runMyoTmuxTestStack, MyoSocketTmuxTest, runMyoSocketTmuxTestStack)
+import Myo.Test.Run (
+  MyoTest,
+  MyoTmuxTest,
+  runMyoTestStack,
+  runMyoTmuxTestStack,
+  MyoSocketTmuxTest,
+  runMyoSocketTmuxTestStack,
+  )
 
 myoTestConf ::
   HasCallStack =>

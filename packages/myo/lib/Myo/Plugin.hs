@@ -202,7 +202,7 @@ handlers =
     rpcFunction "MyoTestDetermineRunner" Sync myoTestDetermineRunner,
     rpcFunction "MyoTestExecutable" Sync myoTestExecutable,
     rpcFunction "MyoTestBuildPosition" Sync myoTestBuildPosition,
-    rpcFunction "MyoTestArgs" Sync myoTestBuildArgs,
+    rpcFunction "MyoTestBuildArgs" Sync myoTestBuildArgs,
     rpcAutocmd "MyoQuit" Sync "VimLeavePre" def myoQuit,
     rpcAutocmd "MyoSave" Async "BufWritePre" def myoSave
   ]

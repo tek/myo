@@ -118,6 +118,7 @@ waitForCommand ::
   Sem r ()
 waitForCommand (TmuxTask {taskType, command = Command {ident}}) = do
   whenM (Executions.active ident) do
+    Log.debug [exon|Waiting for running command `#{identText ident}`|]
     when (taskType == Kill) do
       Log.debug [exon|Killing running command `#{identText ident}`|]
       Executions.kill ident

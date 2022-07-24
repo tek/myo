@@ -29,6 +29,8 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import qualified Myo.Output.Effect.Parsing as Parsing
 import Myo.Output.Effect.Parsing (Parsing)
 import qualified Myo.Settings as Settings
+import qualified Log
+import Exon (exon)
 
 selectCommand ::
   Members [AtomicState CommandState, Stop CommandError] r =>
@@ -78,9 +80,10 @@ selectCommand =
 commandOutputByName ::
   Members [CommandLog, AtomicState CommandState, Stop OutputError] r =>
   Text ->
+  Text ->
   Sem r Text
-commandOutputByName name =
-  stopNote (OutputError.NoOutput name) =<< mapStop OutputError.Command (commandLogByName name)
+commandOutputByName context name =
+  stopNote (OutputError.NoOutput name) =<< mapStop OutputError.Command (commandLogByName context name)
 
 projectLanguage ::
   Member (Settings !! SettingError) r =>
@@ -100,11 +103,12 @@ commandParseLang = \case
 
 parseCommand ::
   Members [Settings !! SettingError, Parsing !! OutputError] r =>
-  Members [Controller !! RunError, CommandLog, Reader LogDir, AtomicState CommandState, Stop OutputError] r =>
+  Members [Controller !! RunError, CommandLog, Reader LogDir, AtomicState CommandState, Stop OutputError, Log] r =>
   Command ->
   Sem r (Maybe (NonEmpty ParsedOutput))
 parseCommand cmd =
   mapStop OutputError.Command do
+    Log.debug [exon|Parsing command #{show cmd}|]
     lang <- commandParseLang cmd
     -- cmd <- mainCommandOrHistory ident
     when (cmd ^. #capture) $ mapStop OutputError.Run do
@@ -133,7 +137,7 @@ storeParseResult ident parsed =
 
 myoParse ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
   ParseOptions ->
   Handler r ()
 myoParse (ParseOptions _ ident _) =
@@ -146,7 +150,7 @@ myoParse (ParseOptions _ ident _) =
 
 myoParseLatest ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
   Handler r ()
 myoParseLatest =
   myoParse def
