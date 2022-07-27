@@ -30,7 +30,8 @@ updateCommands (CommandSettingCodec system shell) =
         displayName,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,
-        capture = orFalse capture
+        capture = orFalse capture,
+        commandShell = orFalse commandShell
       }
     createShell :: AddShellCommandOptions -> Command
     createShell AddShellCommandOptions {..} =
