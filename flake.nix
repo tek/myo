@@ -14,7 +14,7 @@
       myo-test = fast inputs;
     };
 
-  in ribosome.inputs.hix.lib.flake ({ config, lib, ...}: {
+  in ribosome.lib.flake ({ config, lib, ...}: {
     base = ./.;
     inherit overrides;
     depsFull = [ribosome];
@@ -24,10 +24,16 @@
       myo-test = ./packages/test;
     };
     main = "myo";
+    exe = "myo";
+    branch = "main";
+    githubOrg = "tek";
+    cachixName = "tek";
+    cachixKey = "tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk=";
     hpack = {
       packages = import ./ops/hpack.nix { inherit config lib; };
       defaultApp = "myo";
     };
+    hackage.versionFile = "ops/version.nix";
     ghcid.shellConfig.buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux pkgs.socat];
     ghci = {
       preludePackage = "prelate";
