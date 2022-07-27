@@ -18,19 +18,19 @@ import Myo.Test.Output.SanitizeTest (test_sanitize)
 import Myo.Test.Output.ScalaRenderTest (test_scalaRender)
 import Myo.Test.Output.SelectTest (test_outputSelect)
 import Myo.Test.ProcTest (test_proc)
-import Myo.Test.RunTest (test_runLineSingle, test_runSystem, test_runSubprocFail)
+import Myo.Test.RunTest (test_runLineSingle, test_runSubprocFail, test_runSystem)
 import Myo.Test.SaveTest (test_save)
 import Myo.Test.Tmux.CommandLogTest (test_tmuxTruncCommandLog)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
 import Myo.Test.Tmux.KillTest (test_tmuxKill)
 import Myo.Test.Tmux.ParseTest (test_parseCaptureTmux, test_parseTmux)
-import Myo.Test.Tmux.RunShellTest (test_tmuxRunShell)
+import Myo.Test.Tmux.RunShellTest (test_tmuxRunShell, test_tmuxUnixShell)
 import Myo.Test.Tmux.RunTest (test_quitCopyMode, test_tmuxRunSys)
 import Myo.Test.Tmux.ToggleLayoutTest (test_toggleLayout)
 import Myo.Test.Tmux.TogglePaneTest (test_shellPanePin, test_togglePane)
 import Myo.Test.Tmux.UpdateTest (test_updateUi)
-import Test.Tasty (TestTree, defaultMain, testGroup)
 import Polysemy.Test (unitTest)
+import Test.Tasty (TestTree, defaultMain, testGroup)
 
 tests :: TestTree
 tests =
@@ -63,6 +63,7 @@ tests =
       unitTest "parse output from tmux" test_parseTmux,
       unitTest "parse output from tmux by capturing the current pane content" test_parseCaptureTmux,
       unitTest "run a shell command in tmux" test_tmuxRunShell,
+      unitTest "run a unix shell in tmux" test_tmuxUnixShell,
       unitTest "run a system command in tmux" test_tmuxRunSys,
       unitTest "quit the tmux copy mode" test_quitCopyMode,
       unitTest "toggle a tmux layout" test_toggleLayout,

@@ -14,7 +14,7 @@ import Text.Parser.Combinators (skipMany)
 import Text.Parser.Token (TokenParsing, decimal, parens)
 
 import Myo.Data.ProcError (ProcError (ProcError))
-import Myo.Effect.Proc (Proc (ChildPids, Exists, Kill, ParentPids))
+import Myo.Effect.Proc (Proc (ChildPids, Exists, ParentPids, Term, Kill))
 
 procStatPpid ::
   Monad m =>
@@ -95,5 +95,7 @@ interpretProc =
     Exists pid -> do
       path <- stopNote (ProcError "path failure") (procStatPath pid)
       stopTryIOError (ProcError . show) (doesPathExist path)
-    Kill pid ->
+    Term pid ->
       tryIOError_ (Signal.signalProcess (Signal.softwareTermination) (fromIntegral pid))
+    Kill pid ->
+      tryIOError_ (Signal.signalProcess (Signal.killProcess) (fromIntegral pid))

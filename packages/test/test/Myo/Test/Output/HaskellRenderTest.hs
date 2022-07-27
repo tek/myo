@@ -1,28 +1,27 @@
 module Myo.Test.Output.HaskellRenderTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident(Str))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import qualified Data.Vector as Vector (fromList)
+import Polysemy.Test (UnitTest, assertEq)
+import Ribosome (Rpc)
+import Ribosome.Api (nvimCommand, nvimCommandOutput)
 import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
-import Ribosome.Syntax (Syntax(..), syntaxHighlight)
+import qualified Ribosome.Settings as Settings
+import Ribosome.Syntax (Syntax (..), syntaxHighlight)
+import Ribosome.Test (testError)
 import Ribosome.Test.Screenshot (awaitScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Output.Data.Location (Location(Location))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
-import Myo.Output.Lang.Haskell.Report (HaskellMessage(..), formatReportLine)
+import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
+import Myo.Output.Lang.Haskell.Report (HaskellMessage (..), formatReportLine)
 import Myo.Output.Lang.Haskell.Syntax (haskellSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
-import Polysemy.Test (UnitTest, assertEq)
-import qualified Ribosome.Settings as Settings
 import qualified Myo.Settings as Settings
 import Myo.Test.Embed (myoSocketTmuxTest)
-import Ribosome.Api (nvimCommand, nvimCommandOutput)
-import Ribosome (Rpc)
-import Ribosome.Test (testError)
 
 loc :: Location
 loc =
@@ -271,7 +270,7 @@ test_haskellRender =
     Settings.update Settings.outputSelectFirst True
     Settings.update Settings.outputAutoJump False
     setupHighlights
-    storeParseResult (Ident.Str "test") [parsedOutput]
+    storeParseResult "test" [parsedOutput]
     testError compileAndRenderReport
     nvimCommand "wincmd w"
     nvimCommand "wincmd o"

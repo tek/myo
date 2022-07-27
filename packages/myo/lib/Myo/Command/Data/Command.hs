@@ -9,6 +9,7 @@ import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
 import Myo.Orphans ()
+import Myo.Data.CommandId (CommandId (unCommandId, CommandId))
 
 newtype CommandLanguage =
   CommandLanguage Text
@@ -20,7 +21,7 @@ json ''CommandLanguage
 data Command =
   Command {
     interpreter :: CommandInterpreter,
-    ident :: Ident,
+    ident :: CommandId,
     cmdLines :: [Text],
     runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
@@ -28,13 +29,14 @@ data Command =
     skipHistory :: Bool,
     kill :: Bool,
     capture :: Bool,
-    maxLogBytes :: Maybe Int
+    maxLogBytes :: Maybe Int,
+    commandShell :: Bool
   }
   deriving stock (Eq, Show, Generic)
 
 instance Identifiable Command where
   identify =
-    ident
+    unCommandId . ident
 
 instance Pretty Command where
   pretty (Command {..}) =
@@ -61,7 +63,7 @@ instance Pretty Command where
 
 json ''Command
 
-cons :: CommandInterpreter -> Ident -> [Text] -> Command
+cons :: CommandInterpreter -> CommandId -> [Text] -> Command
 cons interpreter ident cmdLines =
   Command {
     runner = Nothing,
@@ -71,13 +73,14 @@ cons interpreter ident cmdLines =
     kill = False,
     capture = False,
     maxLogBytes = Nothing,
+    commandShell = False,
     ..
   }
 
-shortIdent :: Ident -> Text
+shortIdent :: CommandId -> Text
 shortIdent = \case
-  Ident.Str n -> n
-  Ident.Uuid i -> Text.take 6 (show i)
+  CommandId (Ident.Str n) -> n
+  CommandId (Ident.Uuid i) -> Text.take 6 (show i)
 
 name :: Command -> Text
 name Command {..} =

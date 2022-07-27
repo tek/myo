@@ -8,6 +8,8 @@ import Time (Seconds)
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId)
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec)
 
 vimTmuxPane :: Setting Int
@@ -62,11 +64,11 @@ testRunner :: Setting Ident
 testRunner =
   Setting "test_runner" True (Just "tmux")
 
-testShell :: Setting Ident
+testShell :: Setting CommandId
 testShell =
   Setting "test_shell" True Nothing
 
-testPane :: Setting Ident
+testPane :: Setting UiTarget
 testPane =
   Setting "test_pane" True (Just "make")
 

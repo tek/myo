@@ -1,7 +1,5 @@
 module Myo.Test.SaveTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (Str))
-import Chiasma.Data.Ident (Ident)
 import Conc (interpretAtomic)
 import Polysemy.Test (UnitTest, assertEq)
 import qualified Ribosome.Settings as Settings
@@ -12,14 +10,15 @@ import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOpt
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
+import Myo.Data.CommandId (CommandId)
 import Myo.Data.LastSave (LastSave)
 import Myo.Save (myoSave)
 import qualified Myo.Settings as Settings (saveInterval)
 import Myo.Test.Embed (myoTest)
 
-ident :: Ident
+ident :: CommandId
 ident =
-  Ident.Str "cmd"
+  "cmd"
 
 line :: Text
 line =

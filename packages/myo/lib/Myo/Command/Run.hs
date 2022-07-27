@@ -1,9 +1,8 @@
 module Myo.Command.Run where
 
-import qualified Chiasma.Data.Ident as Ident
-import Chiasma.Data.Ident (Ident, generateIdent)
+import Chiasma.Data.Ident (generateIdent)
 import qualified Data.Text as Text
-import Ribosome (Handler, mapHandlerError, resumeHandlerError, Args (Args))
+import Ribosome (Args (Args), Handler, mapHandlerError, resumeHandlerError)
 
 import Myo.Command.Command (commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import qualified Myo.Command.Data.Command as Command
@@ -13,14 +12,16 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions), line)
+import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
 import Myo.Command.History (lookupHistory)
+import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Data.Maybe (orFalse)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 
 myoRunIdent ::
   Member (Controller !! RunError) r =>
-  Ident ->
+  CommandId ->
   Handler r ()
 myoRunIdent i =
   resumeHandlerError do
@@ -36,22 +37,22 @@ myoRun ident =
 
 reRun ::
   Members [Controller, AtomicState CommandState, Stop CommandError] r =>
-  Either Ident Int ->
+  Either CommandId Int ->
   Sem r ()
 reRun =
   Controller.runCommand <=< lookupHistory
 
 myoReRun ::
   Members [Controller !! RunError, AtomicState CommandState] r =>
-  Either Ident Int ->
+  Either CommandId Int ->
   Handler r ()
 myoReRun spec =
   resumeHandlerError @Controller $ mapHandlerError do
     reRun spec
 
-defaultTarget :: Ident
+defaultTarget :: UiTarget
 defaultTarget =
-  Ident.Str "make"
+  fromString "make"
 
 myoLine ::
   Members [Controller !! RunError, AtomicState CommandState, Embed IO] r =>
@@ -59,7 +60,7 @@ myoLine ::
   Handler r ()
 myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) =
   resumeHandlerError @Controller $ mapHandlerError do
-    ident <- generateIdent
+    ident <- CommandId <$> generateIdent
     lines' <- stopNote RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
     target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
     Controller.runCommand (cmd ident target lines')
@@ -69,7 +70,7 @@ myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill 
     cons =
       either shellCommand (systemCommand . Just)
     findTarget target =
-      maybe (Right target) (Left . Command.ident) <$> mayCommandByIdent target
+      maybe (Right (UiTarget target)) (Left . Command.ident) <$> mayCommandByIdent (CommandId target)
 
 myoLineCmd ::
   Members [Controller !! RunError, AtomicState CommandState, Embed IO] r =>

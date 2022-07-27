@@ -38,20 +38,20 @@ test_tmuxKill =
   myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLogSetting $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     thread1 <- testHandlerAsync do
-      mapHandlerError (runInTmux (TmuxTask Wait 0 cmd))
+      mapHandlerError (runInTmux (TmuxTask Wait "make" 0 cmd))
     assertWait (Executions.running ident) assert
     pid1 <- evalMaybe =<< Executions.pid ident
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [Lit "1"]
     thread2 <- testHandlerAsync do
-      mapHandlerError (runInTmux (TmuxTask Kill 0 cmd))
+      mapHandlerError (runInTmux (TmuxTask Kill "make" 0 cmd))
     thread1
     assertWait (Executions.running ident) assert
     pid2 <- evalMaybe =<< Executions.pid ident
     pid1 /== pid2
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [Lit "2"]
-    Executions.kill ident
+    Executions.terminate ident
     thread2
     where
       cmd :: Command

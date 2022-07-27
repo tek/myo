@@ -1,6 +1,5 @@
 module Myo.Interpreter.Controller where
 
-import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.Views (Views)
 import Conc (Lock)
 import Exon (exon)
@@ -21,30 +20,32 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails
 import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Command.Data.StoreHistory (StoreHistory)
+import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
 import qualified Myo.Command.Effect.Backend as Backend
 import Myo.Command.Effect.Backend (Backend)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
-import Myo.Command.History (pushHistory, commandOrHistoryByIdent)
+import Myo.Command.History (commandOrHistoryByIdent, pushHistory)
 import Myo.Command.RunTask (runTask)
+import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Effect.Controller (Controller (CaptureOutput, RunCommand, RunIdent))
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Lens.Toggle (openOnePane)
 
 preparePane ::
   Members [Backend !! RunError, AtomicState Views, AtomicState UiState, Stop RunError, Rpc] r =>
-  Ident ->
+  UiTarget ->
   Sem r ()
-preparePane ident =
+preparePane (UiTarget ident) =
   mapStop RunError.Render $ mapStop RunError.Toggle do
     openOnePane ident
     restop @RunError Backend.render
 
 waitForShell ::
   Members [Executions, ChronosTime] r =>
-  Ident ->
+  CommandId ->
   Sem r ()
 waitForShell ident =
   Time.while (MilliSeconds 100) do
@@ -79,7 +80,7 @@ prepare = \case
     preparePane ident
   RunTask Command {ident} (RunTaskDetails.UiShell shellIdent _) ->
     unlessM (Executions.active shellIdent) do
-      Log.debug [exon|Starting inactive shell command `#{identText shellIdent}` async for `#{identText ident}`|]
+      Log.debug [exon|Starting inactive shell command `#{commandIdText shellIdent}` async for `#{commandIdText ident}`|]
       void $ async $ reportStop @RunError (Just "command") do
         mapStop RunError.Command (runIdent shellIdent)
       waitForShell shellIdent
@@ -105,14 +106,14 @@ runCommand cmd@Command {ident} = do
 runIdent ::
   Members PrepareStack r =>
   Members [Settings !! SettingError, Rpc, Stop RunError, Stop CommandError, Resource] r =>
-  Ident ->
+  CommandId ->
   Sem r ()
 runIdent ident =
   runCommand =<< commandByIdent "run" ident
 
 captureOutput ::
   Members [Backend !! RunError, Reader LogDir, AtomicState CommandState, Stop RunError, Stop CommandError] r =>
-  Ident ->
+  CommandId ->
   Sem r ()
 captureOutput ident = do
   cmd <- commandOrHistoryByIdent "capture" ident

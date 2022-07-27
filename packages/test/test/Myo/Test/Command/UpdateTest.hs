@@ -1,7 +1,5 @@
 module Myo.Test.Command.UpdateTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (Str))
-import Chiasma.Data.Ident (identText)
 import Polysemy.Test (UnitTest, assertEq)
 import Ribosome (Execution (Sync), Handler, Rpc, rpcFunction, watchVariables, withHandlers)
 import Ribosome.Api (nvimCallFunction, nvimSetVar)
@@ -12,18 +10,19 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSys
 import Myo.Command.Data.Command (Command (Command), cmdLines, ident)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Data.CommandId (commandIdText)
 import Myo.Plugin (variables)
 import Myo.Test.Run (runMyoTestStack)
 
 commands1 :: [AddSystemCommandOptions]
 commands1 =
-  [AddSystemCommandOptions (Ident.Str "c1") ["tail"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing]
+  [AddSystemCommandOptions "c1" ["tail"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing]
 
 commands2 :: [AddSystemCommandOptions]
 commands2 =
   [
-    AddSystemCommandOptions (Ident.Str "c1") ["tails"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing,
-    AddSystemCommandOptions (Ident.Str "c2") ["echo"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+    AddSystemCommandOptions "c1" ["tails"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing,
+    AddSystemCommandOptions "c2" ["echo"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
     ]
 
 codec :: [AddSystemCommandOptions] -> CommandSettingCodec
@@ -36,7 +35,7 @@ cmdData ::
 cmdData =
   fmap extract <$> atomicView #commands
   where
-    extract (Command {ident, cmdLines}) = (identText ident, cmdLines)
+    extract (Command {ident, cmdLines}) = (commandIdText ident, cmdLines)
 
 getCmdData ::
   Member Rpc r =>

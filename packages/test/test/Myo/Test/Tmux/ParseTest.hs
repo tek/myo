@@ -1,6 +1,5 @@
 module Myo.Test.Tmux.ParseTest where
 
-import Chiasma.Data.Ident (Ident)
 import Conc (interpretSync)
 import qualified Control.Lens as Lens
 import Exon (exon)
@@ -22,8 +21,10 @@ import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Parse (myoParse)
 import Myo.Command.Run (myoRunIdent)
+import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
+import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Test.Embed (myoEmbedTmuxTest)
@@ -39,7 +40,7 @@ line2 = "line 2"
 waitForLog ::
   Member (Controller !! RunError) r =>
   Members [CommandLog, Hedgehog IO, Error Failure, Error TestError, ChronosTime, Race, Embed IO] r =>
-  Ident ->
+  CommandId ->
   Sem r ()
 waitForLog i =
   assertWait (resumeTestError (Controller.captureOutput i) *> CommandLog.getLines i) \ mayLog -> do
@@ -49,7 +50,7 @@ waitForLog i =
 test_parseTmux :: UnitTest
 test_parseTmux =
   myoEmbedTmuxTest $ interpretCommandLogSetting $ interpretSocketReader $ interpretBackendTmuxWithLog $
-  interpretSync $ interpretPersistNull $ interpretController do
+  interpretSync $ interpretPersistNull $ interpretCommands $ interpretController do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
@@ -63,7 +64,7 @@ test_parseTmux =
 test_parseCaptureTmux :: UnitTest
 test_parseCaptureTmux =
   myoEmbedTmuxTest $ interpretCommandLogSetting $ interpretSocketReader $ interpretBackendTmuxWithLog $
-  interpretSync $ interpretPersistNull $ interpretController do
+  interpretSync $ interpretPersistNull $ interpretCommands $ interpretController do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do

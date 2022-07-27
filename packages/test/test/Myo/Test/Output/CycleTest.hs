@@ -1,6 +1,5 @@
 module Myo.Test.Output.CycleTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
 import Path (relfile)
@@ -50,7 +49,7 @@ cycleTestRender ::
 cycleTestRender = do
   file <- Test.fixturePath [relfile|output/select/File.hs|]
   let po = [parsedOutput (pathText file)]
-  storeParseResult (Ident.Str "test") po
+  storeParseResult "test" po
   testError compileAndRenderReport
   windowCountIs 2
   testError outputWindow

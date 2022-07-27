@@ -1,12 +1,13 @@
 module Myo.Command.Parse where
 
-import Chiasma.Data.Ident (Ident)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
+import Exon (exon)
+import qualified Log
 import Ribosome (Handler, Rpc, RpcError, Scratch, SettingError, Settings, mapHandlerError)
 import Ribosome.Errors (pluginHandlerErrors)
 import qualified Ribosome.Settings as Settings
 
-import Myo.Command.Command (commandByIdent, latestCommand)
+import Myo.Command.Command (commandByIdent)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command, ident, lang), CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
@@ -19,6 +20,9 @@ import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Log (commandLogByName)
 import Myo.Command.Output (compileAndRenderReport)
+import Myo.Data.CommandId (CommandId)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 import qualified Myo.Output.Data.EventIndex as EventIndex
@@ -29,53 +33,15 @@ import Myo.Output.Data.ParsedOutput (ParsedOutput)
 import qualified Myo.Output.Effect.Parsing as Parsing
 import Myo.Output.Effect.Parsing (Parsing)
 import qualified Myo.Settings as Settings
-import qualified Log
-import Exon (exon)
 
 selectCommand ::
   Members [AtomicState CommandState, Stop CommandError] r =>
-  Maybe Ident ->
+  Member (Commands !! CommandError) r =>
+  Maybe CommandId ->
   Sem r Command
-selectCommand =
-  maybe latestCommand (commandByIdent "selectCommand")
-
--- removeTerminalCodesRE :: SearchReplace RE Text
--- removeTerminalCodesRE =
---   [ed|\e\[[0-9;?]*[a-zA-z]///|]
-
--- removeLineFeedRE :: SearchReplace RE Text
--- removeLineFeedRE =
---   [ed|\r///|]
-
--- sanitizeOutput :: Text -> Text
--- sanitizeOutput =
---   (*=~/ removeTerminalCodesRE) . (*=~/ removeLineFeedRE)
-
--- commandOutputResult ::
---   Text ->
---   Maybe ByteString ->
---   m Text
--- commandOutputResult ident =
---   maybe err convert
---   where
---     convert =
---       pure . sanitizeOutput . decodeUtf8
---     err =
---       stop $ OutputError.NoOutput ident
-
--- commandOutput ::
---   Ident ->
---   Maybe Word ->
---   Bool ->
---   Sem r Text
--- commandOutput ident index capture = do
---   name <- displayNameByIdent ident
---   commandOutputResult name . (>>= select) =<< CommandLog.get (cmd ^. #ident)
---   where
---     select =
---       maybe (Just . view CommandLog.current) selectPrevious (fromIntegral <$> index)
---     selectPrevious i =
---       firstOf (CommandLog.previous . element i)
+selectCommand ident =
+  restop do
+    maybe Commands.latest (commandByIdent "selectCommand") ident
 
 commandOutputByName ::
   Members [CommandLog, AtomicState CommandState, Stop OutputError] r =>
@@ -122,7 +88,7 @@ parseCommand cmd =
 
 storeParseResult ::
   Member (AtomicState CommandState) r =>
-  Ident ->
+  CommandId ->
   NonEmpty ParsedOutput ->
   Sem r ()
 storeParseResult ident parsed =
@@ -137,7 +103,7 @@ storeParseResult ident parsed =
 
 myoParse ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
+  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
   ParseOptions ->
   Handler r ()
 myoParse (ParseOptions _ ident _) =
@@ -150,7 +116,7 @@ myoParse (ParseOptions _ ident _) =
 
 myoParseLatest ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
+  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
   Handler r ()
 myoParseLatest =
   myoParse def

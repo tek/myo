@@ -1,6 +1,5 @@
 module Myo.Command.Interpreter.CommandLog where
 
-import Chiasma.Data.Ident (Ident)
 import Conc (interpretAtomic)
 import qualified Data.ByteString as ByteString
 import Data.ByteString.Builder (Builder, byteString, toLazyByteString)
@@ -11,6 +10,7 @@ import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Data.CommandOutput (CommandOutput (..), CurrentOutput (..), OutputChunks (..), currentEmpty)
 import Myo.Command.Effect.CommandLog (CommandLog (All, Append, Archive, ArchiveAll, Get, GetPrev, Set))
+import Myo.Data.CommandId (CommandId)
 import qualified Myo.Settings as Settings
 
 truncOutputChunks ::
@@ -124,7 +124,7 @@ buildAndGet =
   Nothing -> (Nothing, Nothing)
   Just (co, t) -> (Just t, Just co)
 
-buildAndGetAccum :: Map Ident Text -> Ident -> CommandOutput -> (Map Ident Text, CommandOutput)
+buildAndGetAccum :: Map CommandId Text -> CommandId -> CommandOutput -> (Map CommandId Text, CommandOutput)
 buildAndGetAccum acc ident co =
   (Map.insert ident built acc, newCo)
   where
@@ -136,7 +136,7 @@ interpretCommandLog ::
   Sem r Int ->
   InterpreterFor CommandLog r
 interpretCommandLog maxSize =
-  interpretAtomic (mempty :: Map Ident CommandOutput) .
+  interpretAtomic (mempty :: Map CommandId CommandOutput) .
   reinterpret \case
     Set ident text ->
       atomicModify' (Map.alter (Just . setCurrent text . fromMaybe def) ident . Map.adjust archive ident)

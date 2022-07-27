@@ -1,6 +1,6 @@
 module Myo.Command.CommandMenu where
 
-import Chiasma.Data.Ident (Ident (Str, Uuid))
+import qualified Chiasma.Data.Ident as Ident
 import qualified Data.Text as Text
 import qualified Data.UUID as UUID
 import Exon (exon)
@@ -31,22 +31,23 @@ import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Data.CommandId (CommandId (CommandId))
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 
-menuItemName :: Ident -> Maybe Text -> Text
-menuItemName ident displayName =
-  [exon|[#{fromMaybe (idText ident) displayName}]|]
+menuItemName :: CommandId -> Maybe Text -> Text
+menuItemName (CommandId ident) displayName =
+  [exon|[#{fromMaybe (identTextShort ident) displayName}]|]
   where
-    idText = \case
-      Str a ->
+    identTextShort = \case
+      Ident.Str a ->
         a
-      Uuid a ->
+      Ident.Uuid a ->
         Text.take 6 (UUID.toText a)
 
 commandItems ::
   Members [AtomicState CommandState, Stop CommandError] r =>
-  Sem r [MenuItem Ident]
+  Sem r [MenuItem CommandId]
 commandItems = do
   cmds <- stopNote CommandError.NoCommands . nonEmpty =<< atomicView #commands
   pure (toList (menuItem <$> cmds))
@@ -57,7 +58,7 @@ commandItems = do
       Text.unwords [menuItemName ident displayName, Text.take 100 (fromMaybe "<no command line>" (head ls))]
 
 type CommandMenuStack =
-  NvimMenu Ident ++ [
+  NvimMenu CommandId ++ [
     Settings !! SettingError,
     Rpc !! RpcError
   ]
@@ -65,7 +66,7 @@ type CommandMenuStack =
 commandMenu ::
   Members CommandMenuStack r =>
   Members [AtomicState CommandState, Stop CommandError, Stop RpcError] r =>
-  Sem r (MenuResult Ident)
+  Sem r (MenuResult CommandId)
 commandMenu = do
   items <- commandItems
   runStaticNvimMenu items [] opts $ withMappings [("cr", withFocus pure)] menu

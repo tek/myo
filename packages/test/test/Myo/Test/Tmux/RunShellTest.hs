@@ -7,20 +7,20 @@ import Chiasma.Data.TmuxId (PaneId (PaneId))
 import Chiasma.Effect.Codec (NativeCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
-import Polysemy.Test (Hedgehog, UnitTest, assert, (===))
+import Polysemy.Test (Hedgehog, UnitTest, assert, assertEq, (===))
 import Ribosome (interpretPersistNull)
 import qualified Ribosome.Settings as Settings
-import Ribosome.Test (assertWait, testHandler)
+import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import qualified Myo.Command.Data.AddShellCommandOptions as AddShellCommandOptions
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (runner))
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (runner, target))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (commandShell, runner, target))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
-import Myo.Command.Kill (killCommand)
+import Myo.Command.Kill (killCommand, terminateCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
 import qualified Myo.Settings as Settings (processTimeout)
@@ -89,7 +89,7 @@ test_tmuxRunShell =
     assertWait paneContent firstCondition
     myoRunIdent cmdIdent
     assertWait paneContent secondCondition
-    killCommand shellIdent
+    terminateCommand shellIdent
     assertWait (Executions.running shellIdent) (assert . not)
     myoRunIdent cmdIdent
     assertWait (Executions.running shellIdent) assert
@@ -99,5 +99,34 @@ test_tmuxRunShell =
         "cat"
       cmdIdent =
         "text"
+      runner =
+        Just "tmux"
+
+test_tmuxUnixShell :: UnitTest
+test_tmuxUnixShell =
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $
+  interpretController $ testHandler do
+    setupDefaultTestUi
+    myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["bash --norc"]) {
+      runner,
+      target = Just "make",
+      commandShell = Just True
+      }
+    myoAddSystemCommand (AddSystemCommandOptions.cons cmdIdent ["echo text"]) { runner, target = Just "make" }
+    runEchoInShell 1
+    runEchoInShell 2
+    where
+      runEchoInShell n = do
+        thread1 <- testHandlerAsync do
+          myoRunIdent shellIdent
+        assertWait (Executions.running shellIdent) assert
+        myoRunIdent cmdIdent
+        assertWait paneContent (assertEq n . length . filter ("text" ==))
+        killCommand shellIdent
+        thread1
+      shellIdent =
+        "bash"
+      cmdIdent =
+        "echo"
       runner =
         Just "tmux"

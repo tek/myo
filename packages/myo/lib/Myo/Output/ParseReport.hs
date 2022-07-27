@@ -1,6 +1,5 @@
 module Myo.Output.ParseReport where
 
-import Chiasma.Data.Ident (Ident)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (firstJust)
 import Data.MonoTraversable (minimumByMay)
@@ -56,6 +55,7 @@ import Ribosome.Syntax (Syntax)
 import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.OutputState (OutputState)
+import Myo.Data.CommandId (CommandId)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute (Absolute, unAbsolute))
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -235,7 +235,7 @@ currentOutput =
 
 currentOutputCommand ::
   Members [AtomicState CommandState, Stop OutputError] r =>
-  Sem r Ident
+  Sem r CommandId
 currentOutputCommand =
   view #command <$> currentOutput
 

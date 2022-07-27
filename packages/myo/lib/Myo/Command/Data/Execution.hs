@@ -1,11 +1,13 @@
 module Myo.Command.Data.Execution where
 
-import Chiasma.Data.Ident (Ident, Identifiable (..))
+import Chiasma.Data.Ident (Identifiable (..))
 import qualified Chronos
 import Process (Pid)
 import Text.Show (show)
 
 import Myo.Command.Data.ExecutionState (ExecutionState (Tracked))
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId)
 
 data ExecutionSync =
   ExecutionSync {
@@ -20,9 +22,8 @@ instance Show ExecutionSync where
 
 data Execution =
   Execution {
-    ident :: Ident,
-    -- log :: ByteString,
-    -- logs :: [ByteString],
+    ident :: CommandId,
+    target :: Maybe UiTarget,
     state :: ExecutionState,
     startTime :: Chronos.Time,
     sync :: ExecutionSync
@@ -31,7 +32,7 @@ data Execution =
 
 instance Identifiable Execution where
   identify =
-    ident
+    identify . ident
 
 pid ::
   Execution ->

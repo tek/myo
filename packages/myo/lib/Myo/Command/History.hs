@@ -1,6 +1,6 @@
 module Myo.Command.History where
 
-import Chiasma.Data.Ident (Ident, identText, sameIdent)
+import Chiasma.Data.Ident (sameIdent)
 import Conc (Lock, lockOrSkip_)
 import Control.Lens (element, firstOf, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
@@ -24,6 +24,7 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (command)
 import Myo.Command.Data.LoadHistory (LoadHistory)
 import Myo.Command.Data.StoreHistory (StoreHistory)
+import Myo.Data.CommandId (CommandId, commandIdText)
 import qualified Myo.Settings as Settings
 
 -- TODO use variable watcher for this or simple index by the last two directory segments
@@ -97,7 +98,7 @@ pushHistory ::
   Sem r ()
 pushHistory cmd@Command {ident} =
   unless (Command.skipHistory cmd) do
-    Log.debug [exon|Pushing command #{identText ident} to history|]
+    Log.debug [exon|Pushing command #{commandIdText ident} to history|]
     atomicModify' (#history %~ prep)
     storeHistory
   where
@@ -116,7 +117,7 @@ lookupHistoryIndex index =
 
 lookupHistoryIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
-  Ident ->
+  CommandId ->
   Sem r Command
 lookupHistoryIdent ident =
   HistoryEntry.command <$> (err =<< atomicGets lens)
@@ -128,7 +129,7 @@ lookupHistoryIdent ident =
 
 lookupHistory ::
   Members [AtomicState CommandState, Stop CommandError] r =>
-  Either Ident Int ->
+  Either CommandId Int ->
   Sem r Command
 lookupHistory =
   either lookupHistoryIdent lookupHistoryIndex
@@ -165,10 +166,7 @@ mayCommandOrHistoryBy ::
   a ->
   Sem r (Maybe Command)
 mayCommandOrHistoryBy lens a =
-  hist =<< mayCommandBy lens a
-  where
-    hist =
-      maybe (mayHistoryBy lens a) (pure . Just)
+  runMaybeT (MaybeT (mayCommandBy lens a) <|> MaybeT (mayHistoryBy lens a))
 
 commandOrHistoryBy ::
   Eq a =>
@@ -186,7 +184,7 @@ commandOrHistoryBy context ident lens a =
 
 mayCommandOrHistoryByIdent ::
   Member (AtomicState CommandState) r =>
-  Ident ->
+  CommandId ->
   Sem r (Maybe Command)
 mayCommandOrHistoryByIdent =
   mayCommandOrHistoryBy #ident
@@ -194,17 +192,17 @@ mayCommandOrHistoryByIdent =
 commandOrHistoryByIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
-  Ident ->
+  CommandId ->
   Sem r Command
 commandOrHistoryByIdent context ident =
   commandOrHistoryBy context (show ident) #ident ident
 
 displayNameByIdent ::
   Member (AtomicState CommandState) r =>
-  Ident ->
+  CommandId ->
   Sem r Text
 displayNameByIdent ident =
   select <$> mayCommandOrHistoryBy #ident ident
   where
     select =
-      fromMaybe (identText ident) . (>>= Command.displayName)
+      fromMaybe (commandIdText ident) . (>>= Command.displayName)

@@ -1,19 +1,19 @@
 module Myo.Output.Data.OutputError where
 
-import Chiasma.Data.Ident (Ident, identText)
 import Log (Severity (Error, Warn))
 import Ribosome (ErrorMessage (ErrorMessage), SettingError, ToErrorMessage (..))
 
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Data.CommandId (CommandId, commandIdText)
 
 data OutputError =
   Command CommandError
   |
   Run RunError
   |
-  NoLang Ident
+  NoLang CommandId
   |
   Setting SettingError
   |
@@ -42,7 +42,7 @@ instance ToErrorMessage OutputError where
   toErrorMessage (NoLang ident) =
     ErrorMessage msg [msg] Warn
     where
-      msg = "command `" <> identText ident <> "` has no language"
+      msg = "command `" <> commandIdText ident <> "` has no language"
   toErrorMessage (Setting e) =
     toErrorMessage e
   toErrorMessage (NoHandler (CommandLanguage lang)) =

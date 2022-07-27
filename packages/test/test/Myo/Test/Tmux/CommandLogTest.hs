@@ -41,14 +41,14 @@ test_tmuxTruncCommandLog =
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     thread1 <- testHandlerAsync do
-      runStop (runInTmux (TmuxTask Wait 0 cmd))
+      runStop (runInTmux (TmuxTask Wait "make" 0 cmd))
     assertWait (Executions.running cmdIdent) assert
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [k]
       sendKeys 0 [k]
       sendKeys 0 [k]
     assertWait (fmap Text.lines <$> CommandLog.get cmdIdent) (assertJust target)
-    Executions.kill cmdIdent
+    Executions.terminate cmdIdent
     assertWait (Executions.running cmdIdent) (assert . not)
     evalEither =<< thread1
     where

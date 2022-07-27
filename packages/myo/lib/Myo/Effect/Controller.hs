@@ -1,12 +1,11 @@
 module Myo.Effect.Controller where
 
-import Chiasma.Data.Ident (Ident)
-
 import Myo.Command.Data.Command (Command)
+import Myo.Data.CommandId (CommandId)
 
 data Controller :: Effect where
-  RunIdent :: Ident -> Controller m ()
+  RunIdent :: CommandId -> Controller m ()
   RunCommand :: Command -> Controller m ()
-  CaptureOutput :: Ident -> Controller m ()
+  CaptureOutput :: CommandId -> Controller m ()
 
 makeSem ''Controller

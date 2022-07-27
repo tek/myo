@@ -1,6 +1,5 @@
 module Myo.Test.Command.CommandMenuTest where
 
-import Chiasma.Data.Ident (identText)
 import Exon (exon)
 import Polysemy.Test (UnitTest, (===))
 import Ribosome (interpretPersistNull)
@@ -17,6 +16,7 @@ import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
+import Myo.Data.CommandId (commandIdText)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
@@ -30,7 +30,7 @@ commands =
   [entry "c1", entry "c2", entry "c3", entry "c4", entry "c4", entry "c4", entry "c4", entry "c4"]
   where
     entry i =
-      Command.cons (CommandInterpreter.Vim False Nothing) i [[exon|let g:command = '#{identText i}'|]]
+      Command.cons (CommandInterpreter.Vim False Nothing) i [[exon|let g:command = '#{commandIdText i}'|]]
 
 test_commandMenu :: UnitTest
 test_commandMenu =

@@ -1,8 +1,5 @@
 module Myo.Command.Command where
 
-import qualified Chiasma.Data.Ident as Ident
-import Chiasma.Data.Ident (Ident, identText)
-import Control.Lens (firstOf, views)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command))
@@ -10,8 +7,10 @@ import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
 import qualified Myo.Command.Data.CommandState as CommandState
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandState (CommandState (commands))
 import qualified Myo.Command.Data.HistoryEntry as HistoryEntry
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId, commandIdText)
 
 mayCommandBy ::
   Eq a =>
@@ -19,11 +18,8 @@ mayCommandBy ::
   Lens' Command a ->
   a ->
   Sem r (Maybe Command)
-mayCommandBy lens a =
-  atomicGets f
-  where
-    f :: CommandState -> Maybe Command
-    f = firstOf (#commands . folded . filtered (views lens (a ==)))
+mayCommandBy attr a =
+  atomicGets commands <&> find \ c -> c ^. attr == a
 
 noSuchCommand ::
   Member (Stop CommandError) r =>
@@ -47,7 +43,7 @@ commandBy context ident lens a =
 
 mayCommandByIdent ::
   Member (AtomicState CommandState) r =>
-  Ident ->
+  CommandId ->
   Sem r (Maybe Command)
 mayCommandByIdent =
   mayCommandBy #ident
@@ -55,10 +51,10 @@ mayCommandByIdent =
 commandByIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
-  Ident ->
+  CommandId ->
   Sem r Command
 commandByIdent context ident =
-  commandBy context (show ident) #ident ident
+  commandBy context (commandIdText ident) #ident ident
 
 commandByName ::
   Members [AtomicState CommandState, Stop CommandError] r =>
@@ -74,21 +70,21 @@ commandByIdentOrName ::
   Text ->
   Sem r Command
 commandByIdentOrName context query = do
-  byIdent <- mayCommandByIdent (Ident.Str query)
+  byIdent <- mayCommandByIdent (fromText query)
   byName <- mayCommandBy #displayName (Just query)
   noSuchCommand context query (byIdent <|> byName)
 
 systemCommand ::
-  Maybe Ident ->
-  Ident ->
+  Maybe UiTarget ->
+  CommandId ->
   [Text] ->
   Command
 systemCommand target =
   Command.cons (System target)
 
 shellCommand ::
-  Ident ->
-  Ident ->
+  CommandId ->
+  CommandId ->
   [Text] ->
   Command
 shellCommand target =
@@ -100,49 +96,22 @@ latestCommand ::
 latestCommand =
   fmap HistoryEntry.command . stopNote CommandError.NoCommands . head =<< atomicGets CommandState.history
 
-mayMainCommand ::
-  Member (AtomicState CommandState) r =>
-  Ident ->
-  Sem r (Maybe Command)
-mayMainCommand ident =
-  check =<< mayCommandByIdent ident
+mainCommand ::
+  Members [AtomicState CommandState, Stop CommandError] r =>
+  CommandId ->
+  Sem r Command
+mainCommand ident =
+  check =<< commandByIdent "mainCommand" ident
   where
     check = \case
-      Just (Command { interpreter = Shell target }) ->
-        mayMainCommand target
+      Command { interpreter = Shell target } ->
+        mainCommand target
       cmd ->
         pure cmd
 
-mainCommand ::
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Ident ->
-  Sem r Command
-mainCommand ident =
-  err =<< mayMainCommand ident
-  where
-    err =
-      stopNote (CommandError.NoSuchCommand "mainCommand" (identText ident))
-
-mayMainCommandIdent ::
-  Member (AtomicState CommandState) r =>
-  Ident ->
-  Sem r (Maybe Ident)
-mayMainCommandIdent =
-  fmap (fmap Command.ident) . mayMainCommand
-
 mainCommandIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
-  Ident ->
-  Sem r Ident
+  CommandId ->
+  Sem r CommandId
 mainCommandIdent =
   fmap Command.ident . mainCommand
-
-shellTarget ::
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Ident ->
-  Ident ->
-  Sem r Ident
-shellTarget cmd shell = do
-  commandByIdent "shellTarget" shell >>= \case
-    Command {interpreter = System (Just target)} -> pure target
-    _ -> stop (CommandError.NotAUiShell cmd shell)

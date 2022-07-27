@@ -1,70 +1,49 @@
 module Myo.Command.Effect.Executions where
 
-import Chiasma.Data.Ident (Ident)
-import Data.Generics.Labels ()
 import Prelude hiding (get, modify, stop)
 import Process (Pid)
 
 import qualified Myo.Command.Data.Execution as Execution
 import Myo.Command.Data.Execution (Execution)
 import Myo.Command.Data.ExecutionState (ExecutionState)
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId)
 
 data Executions :: Effect where
-  Get :: Ident -> Executions m (Maybe Execution)
-  Modify :: Ident -> (Execution -> (a, Maybe Execution)) -> Executions m (Maybe a)
-  Start :: Ident -> Executions m ()
-  Stop :: Ident -> Executions m ()
-  Running :: Ident -> Executions m Bool
-  Active :: Ident -> Executions m Bool
-  Wait :: Ident -> Executions m ()
-  Kill :: Ident -> Executions m ()
-  WaitKill :: Ident -> Executions m ()
+  Get :: CommandId -> Executions m (Maybe Execution)
+  Modify :: CommandId -> (ExecutionState -> ExecutionState) -> Executions m ()
+  Start :: CommandId -> Bool -> Maybe UiTarget -> Executions m (Maybe CommandId)
+  Stop :: CommandId -> Executions m ()
+  Running :: CommandId -> Executions m Bool
+  Active :: CommandId -> Executions m Bool
+  ActiveTarget :: UiTarget -> Executions m (Maybe CommandId)
+  Wait :: CommandId -> Executions m ()
+  Terminate :: CommandId -> Executions m ()
+  WaitTerminate :: CommandId -> Executions m ()
 
 makeSem ''Executions
 
-modify_ ::
-  Member Executions r =>
-  Ident ->
-  (Execution -> Maybe Execution) ->
-  Sem r ()
-modify_ i f =
-  void (modify i (((),) . f))
-
-modifyState ::
-  Member Executions r =>
-  Ident ->
-  (ExecutionState -> ExecutionState) ->
-  Sem r ()
-modifyState i f =
-  modify_ i (Just . over #state f)
-
 setState ::
   Member Executions r =>
-  Ident ->
+  CommandId ->
   ExecutionState ->
   Sem r ()
 setState i s =
-  modifyState i (const s)
-
-update ::
-  Member Executions r =>
-  Ident ->
-  (Execution -> (a, Execution)) ->
-  Sem r (Maybe a)
-update i f =
-  modify i (second Just . f)
+  modify i (const s)
 
 pid ::
   Member Executions r =>
-  Ident ->
+  CommandId ->
   Sem r (Maybe Pid)
 pid i =
   (>>= Execution.pid) <$> get i
 
 withExecution ::
   Members [Executions, Resource] r =>
-  Ident ->
-  Sem r a ->
+  CommandId ->
+  Bool ->
+  Maybe UiTarget ->
+  (Maybe CommandId -> Sem r a) ->
   Sem r a
-withExecution ident =
-  bracket_ (start ident) (stop ident)
+withExecution cmd cmdShell target =
+  bracket (start cmd cmdShell target) (const (stop cmd))

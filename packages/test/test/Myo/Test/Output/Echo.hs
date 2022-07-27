@@ -1,6 +1,5 @@
 module Myo.Test.Output.Echo where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import Chiasma.Data.Ident (Ident (Str))
 import Control.Lens (IndexedTraversal')
 import Control.Lens.Regex.Text (Match, group, regex)
@@ -16,6 +15,7 @@ import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOpt
 import Myo.Command.Data.AddSystemCommandOptions (capture, lang, runner, target)
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandState (CommandState)
+import Myo.Data.CommandId (CommandId)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative (Relative))
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
@@ -58,21 +58,19 @@ addEchoCommand ::
   Text ->
   [Text] ->
   Bool ->
-  Handler r Ident
+  Handler r CommandId
 addEchoCommand runner lines' capture =
   ident <$ myoAddSystemCommand opts
   where
     opts =
       (AddSystemCommandOptions.cons ident cmds) {
         runner = Just (Str runner),
-        target = makeIdent,
+        target = Just "make",
         lang = Just echoLang,
         capture = Just capture
       }
     ident =
-      Ident.Str "cmd"
-    makeIdent =
-      Just (Ident.Str "make")
+      "cmd"
     cmds =
       cmd <$> lines'
     cmd line' =

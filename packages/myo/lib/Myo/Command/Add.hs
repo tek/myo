@@ -24,7 +24,8 @@ myoAddSystemCommand (AddSystemCommandOptions {..}) =
         lang,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,
-        capture = orFalse capture
+        capture = orFalse capture,
+        commandShell = orFalse commandShell
       }
 
 myoAddShellCommand ::

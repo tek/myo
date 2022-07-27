@@ -3,16 +3,18 @@ module Myo.Command.Data.CommandInterpreter where
 import Chiasma.Data.Ident (Ident)
 import Prettyprinter (Pretty (..), emptyDoc, (<+>))
 
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId)
 import Myo.Data.String.Pretty (backtick)
 import Myo.Orphans ()
 
 data CommandInterpreter =
   System {
-    systemTarget :: Maybe Ident
+    systemTarget :: Maybe UiTarget
   }
   |
   Shell {
-    shellTarget :: Ident
+    shellTarget :: CommandId
   }
   |
   Vim {

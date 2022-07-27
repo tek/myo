@@ -27,6 +27,7 @@ library
       Myo.Command.Add
       Myo.Command.Command
       Myo.Command.CommandMenu
+      Myo.Command.Data.ActiveTarget
       Myo.Command.Data.AddShellCommandOptions
       Myo.Command.Data.AddSystemCommandOptions
       Myo.Command.Data.Command
@@ -44,7 +45,6 @@ library
       Myo.Command.Data.MonitorEvent
       Myo.Command.Data.OutputState
       Myo.Command.Data.ParseOptions
-      Myo.Command.Data.PendingCommand
       Myo.Command.Data.RunError
       Myo.Command.Data.RunEvent
       Myo.Command.Data.RunLineOptions
@@ -54,6 +54,7 @@ library
       Myo.Command.Data.StoreHistory
       Myo.Command.Data.TmuxMonitorError
       Myo.Command.Data.TmuxTask
+      Myo.Command.Data.UiTarget
       Myo.Command.Data.VimTask
       Myo.Command.Data.VimTestPosition
       Myo.Command.Effect.Backend
@@ -61,7 +62,6 @@ library
       Myo.Command.Effect.Executions
       Myo.Command.Effect.SocketReader
       Myo.Command.Effect.TmuxMonitor
-      Myo.Command.Execution
       Myo.Command.History
       Myo.Command.HistoryMenu
       Myo.Command.Interpreter.Backend.Generic
@@ -77,14 +77,12 @@ library
       Myo.Command.Output
       Myo.Command.Parse
       Myo.Command.Run
-      Myo.Command.Runner
       Myo.Command.RunTask
       Myo.Command.RunTaskDetails
-      Myo.Command.Subproc.Runner
       Myo.Command.Test
       Myo.Command.Update
       Myo.Complete
-      Myo.Control.Concurrent.Wait
+      Myo.Data.CommandId
       Myo.Data.Env
       Myo.Data.ExactlyOne
       Myo.Data.LastSave
@@ -95,13 +93,14 @@ library
       Myo.Data.String.Pretty
       Myo.Data.ViewError
       Myo.Diag
+      Myo.Effect.Commands
       Myo.Effect.Controller
       Myo.Effect.MState
       Myo.Effect.Proc
+      Myo.Interpreter.Commands
       Myo.Interpreter.Controller
       Myo.Interpreter.MState
       Myo.Interpreter.Proc
-      Myo.Log
       Myo.Loop
       Myo.Network.Socket
       Myo.Orphans
@@ -141,8 +140,6 @@ library
       Myo.Text.Parser.Combinators
       Myo.Tmux.Proc
       Myo.Tmux.Quit
-      Myo.Tmux.Run
-      Myo.Tmux.Runner
       Myo.Ui.Data.AddLayoutOptions
       Myo.Ui.Data.AddPaneOptions
       Myo.Ui.Data.DetectUiError

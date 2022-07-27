@@ -13,6 +13,7 @@ import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Parse (commandOutputByName, myoParseLatest)
 import Myo.Command.Test (myoVimTest, testName)
+import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Settings (testLang, testRunner)
@@ -31,7 +32,8 @@ mockVimTestFunctions fname = do
 
 test_vimTest :: UnitTest
 test_vimTest =
-  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
+  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendProcessNative $ interpretCommands $
+  interpretController do
     fname <- Test.fixturePath [relfile|vim-test/file|]
     Settings.update testRunner "proc"
     Settings.update testLang echoLang

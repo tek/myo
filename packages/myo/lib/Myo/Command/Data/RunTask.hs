@@ -3,6 +3,8 @@ module Myo.Command.Data.RunTask where
 import Chiasma.Data.Ident (Ident, Identifiable (identify))
 
 import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId)
 
 data RunTaskDetails =
   Vim {
@@ -13,12 +15,12 @@ data RunTaskDetails =
   System
   |
   UiSystem {
-    pane :: Ident
+    pane :: UiTarget
   }
   |
   UiShell {
-    shell :: Ident,
-    pane :: Ident
+    shell :: CommandId,
+    pane :: UiTarget
   }
   deriving stock (Eq, Show)
 

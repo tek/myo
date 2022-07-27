@@ -1,11 +1,11 @@
 module Myo.Command.Data.CommandError where
 
-import Chiasma.Data.Ident (Ident, identText)
 import Exon (exon)
-import Log (Severity (Error, Warn, Info))
+import Log (Severity (Error, Info, Warn))
 import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
 
 import Myo.Command.Data.Command (shortIdent)
+import Myo.Data.CommandId (CommandId, commandIdText)
 
 data CommandError =
   Misc Text
@@ -20,7 +20,7 @@ data CommandError =
   |
   NoHistory
   |
-  NotAUiShell Ident Ident
+  NotAUiShell CommandId CommandId
   deriving stock (Eq, Show)
 
 instance ToErrorMessage CommandError where
@@ -54,4 +54,4 @@ instance ToErrorMessage CommandError where
       msg =
         [exon|`#{shortIdent shell}` cannot be used as a shell for `#{shortIdent cmd}`|]
       log =
-        ["CommandError.NotAUiShell:", [exon|cmd: #{identText cmd}|], [exon|shell: #{identText shell}|]]
+        ["CommandError.NotAUiShell:", [exon|cmd: #{commandIdText cmd}|], [exon|shell: #{commandIdText shell}|]]

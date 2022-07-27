@@ -1,7 +1,6 @@
 module Myo.Command.Log where
 
 import Chiasma.Command.Pane (pipePane)
-import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.TmuxApi (Tmux)
 import Data.Char (isAlphaNum)
@@ -20,6 +19,7 @@ import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
+import Myo.Data.CommandId (CommandId, commandIdText)
 
 pipePaneToSocket ::
   Member Tmux r =>
@@ -37,7 +37,7 @@ pipePaneToSocket paneId path =
 mainCommandOrHistory ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
-  Ident ->
+  CommandId ->
   Sem r Command
 mainCommandOrHistory context ident = do
   cmd <- commandOrHistoryByIdent context ident
@@ -52,8 +52,8 @@ mainCommandOrHistory context ident = do
 mainCommandOrHistoryIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Text ->
-  Ident ->
-  Sem r Ident
+  CommandId ->
+  Sem r CommandId
 mainCommandOrHistoryIdent context ident =
   recurse . Command.interpreter =<< commandOrHistoryByIdent context ident
   where
@@ -64,8 +64,8 @@ mainCommandOrHistoryIdent context ident =
 
 mayMainCommandOrHistory ::
   Member (AtomicState CommandState) r =>
-  Ident ->
-  Sem r Ident
+  CommandId ->
+  Sem r CommandId
 mayMainCommandOrHistory ident =
   recurse . fmap Command.interpreter =<< mayCommandOrHistoryByIdent ident
   where
@@ -86,13 +86,6 @@ commandLogBy context ident lens a = do
   cmd <- commandOrHistoryBy context ident lens a
   logIdent <- mainCommandOrHistoryIdent context (Command.ident cmd)
   CommandLog.get logIdent
-
--- commandLog ::
---   Members [AtomicState CommandState, Stop CommandError] r =>
---   Ident ->
---   Sem r (Maybe CommandLog)
--- commandLog ident =
---   commandLogBy (show ident) #ident ident
 
 commandLogByName ::
   Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
@@ -115,4 +108,4 @@ myoLogs =
     logLines logs =
       uncurry formatLog <$> Map.toList logs
     formatLog ident log =
-      ("## " <> identText ident) : "" : "```" : Text.lines log ++ ["```"]
+      ("## " <> commandIdText ident) : "" : "```" : Text.lines log ++ ["```"]

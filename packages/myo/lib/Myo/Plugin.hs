@@ -4,7 +4,6 @@ import Chiasma.Codec.Data (Pane)
 import Chiasma.Codec.Data.PaneCoords (PaneCoords)
 import Chiasma.Codec.Data.PaneMode (PaneMode)
 import Chiasma.Codec.Data.PanePid (PanePid)
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxError (TmuxError)
@@ -62,6 +61,7 @@ import qualified Ribosome.Settings as Settings
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.CommandMenu (myoCommands)
 import Myo.Command.Data.Command (CommandLanguage)
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.LoadHistory (LoadHistory)
@@ -89,13 +89,16 @@ import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (fetchCommands, myoUpdateCommands)
 import Myo.Complete (myoCompleteCommand)
+import Myo.Data.CommandId (CommandId)
 import Myo.Data.Env (Env)
 import Myo.Data.LastSave (LastSave)
 import Myo.Data.ProcError (ProcError)
 import Myo.Data.SaveLock (SaveLock)
 import Myo.Diag (myoDiag)
+import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller)
 import Myo.Effect.Proc (Proc)
+import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Output.Data.OutputError (OutputError)
@@ -139,14 +142,15 @@ type MyoProdStack =
   [
     Parsing !! OutputError,
     Controller !! RunError,
+    Commands !! CommandError,
     CommandLog,
     Persist [HistoryEntry] !! PersistError,
     PersistPath !! PersistPathError,
     NativeTmux !! TmuxError,
     ScopedSocketReader SocketReaderResources !! SocketReaderError,
     AtomicState LastSave,
-    NvimRenderer Ident !! RpcError,
-    Scoped () (MenuState Ident)
+    NvimRenderer CommandId !! RpcError,
+    Scoped () (MenuState CommandId)
   ] ++ MenusIOEffects ++ NvimMenusIOEffects ++ MyoStack
 
 outputMappingHandlers ::
@@ -280,6 +284,7 @@ interpretMyoProd =
   interpretBackendVim .
   interpretBackendProcessNative .
   interpretBackendTmuxWithLog .
+  interpretCommands .
   interpretController .
   interpretParsing parsers .
   withAsync_ prepare

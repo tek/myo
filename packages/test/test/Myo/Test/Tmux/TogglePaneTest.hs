@@ -12,6 +12,7 @@ import Ribosome.Test (assertWait, testHandler)
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (target)
+import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
@@ -49,8 +50,8 @@ setupTree =
 
 test_togglePane :: UnitTest
 test_togglePane =
-  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
-  testHandler do
+  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $
+  interpretBackendTmuxNoLog $ interpretController $ testHandler do
     _ <- createSpace "s"
     _ <- createWindow (viewCoords "s" "w" "wroot")
     setupTree
@@ -61,16 +62,18 @@ test_togglePane =
 
 test_shellPanePin :: UnitTest
 test_shellPanePin =
-  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
-  testHandler do
+  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $
+  interpretBackendTmuxNoLog $ interpretController $ testHandler do
     setupDefaultTestUi
-    insertPane (viewCoords "vim" "vim" "make") (consPane sid)
-    myoAddSystemCommand (AddSystemCommandOptions.cons sid ["tail"]) { target = Just sid }
+    insertPane (viewCoords "vim" "vim" "make") (consPane tid)
+    myoAddSystemCommand (AddSystemCommandOptions.cons sid ["tail"]) { target = Just (UiTarget tid) }
     withTestHandlerAsync (myoRunIdent sid) do
       assertWait (Executions.running sid) assert
       panes <- withPanes_ @Chiasma.Pane @CodecError Chiasma.panes
       3 === length panes
-      Executions.kill sid
+      Executions.terminate sid
   where
+    tid =
+      "shell"
     sid =
       "shell"

@@ -1,7 +1,5 @@
 module Myo.Command.RunTaskDetails where
 
-import Chiasma.Data.Ident (Ident)
-
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command (..))
 import qualified Myo.Command.Data.Command as Command (interpreter)
@@ -12,18 +10,20 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError (..))
 import Myo.Command.Data.RunTask (RunTaskDetails)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails (RunTaskDetails (..))
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId)
 
 systemTaskDetails :: RunTaskDetails
 systemTaskDetails =
   RunTaskDetails.System
 
-uiSystemTaskDetails :: Ident -> RunTaskDetails
+uiSystemTaskDetails :: UiTarget -> RunTaskDetails
 uiSystemTaskDetails =
   RunTaskDetails.UiSystem
 
 uiShellTaskDetails ::
   Members [AtomicState CommandState, Stop RunError, Stop CommandError] r =>
-  Ident ->
+  CommandId ->
   Sem r RunTaskDetails
 uiShellTaskDetails shellIdent =
   RunTaskDetails.UiShell shellIdent <$> (extractTarget =<< interpreter)

@@ -3,6 +3,7 @@ module Myo.Command.Test where
 import Chiasma.Data.Ident (Ident (Str))
 import Data.Hashable (hash)
 import Data.MessagePack (Object)
+import Exon (exon)
 import Ribosome (Handler, MsgpackDecode, Rpc, RpcError, Settings, mapHandlerError, resumeHandlerError, toMsgpack)
 import Ribosome.Api (nvimCallFunction)
 import Ribosome.Api.Window (currentCursor)
@@ -14,11 +15,12 @@ import Myo.Command.Data.Command (Command, capture, displayName, lang, runner)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError (VimTest))
+import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Command.Data.VimTestPosition (VimTestPosition (VimTestPosition))
+import Myo.Data.CommandId (CommandId (CommandId))
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
-import Exon (exon)
 
 testName :: Text
 testName =
@@ -104,15 +106,15 @@ vimTestLine =
   resumeHoist (RunError.VimTest . show) do
     assembleVimTestLine =<< vimTestPosition
 
-testInterpreter :: Ident -> Maybe Ident -> CommandInterpreter
+testInterpreter :: UiTarget -> Maybe CommandId -> CommandInterpreter
 testInterpreter _ (Just shell) =
   Shell shell
 testInterpreter target _ =
   System (Just target)
 
-testIdent :: Text -> Ident
+testIdent :: Text -> CommandId
 testIdent name =
-  Str [exon|#{testName}-#{show (abs (hash name))}|]
+  CommandId (Str [exon|#{testName}-#{show (abs (hash name))}|])
 
 updateTestCommand ::
   Members [Settings, Settings !! SettingError] r =>

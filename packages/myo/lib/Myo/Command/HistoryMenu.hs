@@ -1,10 +1,6 @@
 module Myo.Command.HistoryMenu where
 
-import qualified Chiasma.Data.Ident as Ident
-import Chiasma.Data.Ident (Ident)
 import qualified Data.Text as Text (take, unwords)
-import qualified Data.UUID as UUID (toText)
-import Exon (exon)
 import Ribosome (
   Handler,
   Rpc,
@@ -27,6 +23,7 @@ import Ribosome.Menu (
   )
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 
+import Myo.Command.CommandMenu (menuItemName)
 import Myo.Command.Data.Command (Command (Command), cmdLines, displayName, ident)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
@@ -35,21 +32,12 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.History (history)
 import Myo.Command.Run (reRun)
+import Myo.Data.CommandId (CommandId)
 import Myo.Effect.Controller (Controller)
-
-menuItemName :: Ident -> Maybe Text -> Text
-menuItemName ident displayName =
-  [exon|[#{fromMaybe (identTextShort ident) displayName}]|]
-  where
-    identTextShort = \case
-      Ident.Str a ->
-        a
-      Ident.Uuid a ->
-        Text.take 6 (UUID.toText a)
 
 historyItems ::
   Members [AtomicState CommandState, Stop CommandError] r =>
-  Sem r [MenuItem Ident]
+  Sem r [MenuItem CommandId]
 historyItems = do
   entries <- stopNote CommandError.NoHistory . nonEmpty =<< history
   pure (toList (menuItem <$> entries))
@@ -60,7 +48,7 @@ historyItems = do
       Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']
 
 type HistoryMenuStack =
-  NvimMenu Ident ++ [
+  NvimMenu CommandId ++ [
     AtomicState CommandState,
     Settings !! SettingError,
     Rpc !! RpcError
@@ -69,7 +57,7 @@ type HistoryMenuStack =
 historyMenu ::
   Members HistoryMenuStack r =>
   Members [Stop CommandError, Stop RpcError] r =>
-  Sem r (MenuResult Ident)
+  Sem r (MenuResult CommandId)
 historyMenu = do
   items <- historyItems
   runStaticNvimMenu items [] opts $ withMappings [("cr", withFocus pure)] menu

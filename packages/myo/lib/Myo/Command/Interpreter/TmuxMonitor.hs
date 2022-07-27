@@ -1,6 +1,5 @@
 module Myo.Command.Interpreter.TmuxMonitor where
 
-import Chiasma.Data.Ident (Ident, identText)
 import Chiasma.Data.PipePaneParams (target)
 import qualified Chiasma.Data.Target as Target
 import Chiasma.Data.TmuxCommand (TmuxCommand (PipePane))
@@ -28,6 +27,7 @@ import qualified Myo.Command.Effect.SocketReader as SocketReader
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
 import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (TmuxMonitorTask), ident, pane, shellPid)
 import Myo.Command.Log (pipePaneToSocket)
+import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcError (ProcError)
 import Myo.Data.ViewError (ViewError (TmuxApi, TmuxCodec))
 import qualified Myo.Effect.Proc as Proc
@@ -42,7 +42,7 @@ type ScopeEffects =
 
 pollPid ::
   Members [Executions, Proc !! ProcError, ChronosTime] r =>
-  Ident ->
+  CommandId ->
   Pid ->
   Sem r ()
 pollPid ident shellPid = do
@@ -57,18 +57,18 @@ sanitizeOutput =
 
 readOutput ::
   Members [SocketReader, CommandLog] r =>
-  Ident ->
+  CommandId ->
   Sem r ()
 readOutput ident =
   useWhileJust SocketReader.chunk (CommandLog.append ident . sanitizeOutput)
 
 waitBasic ::
   Members [Executions, Proc !! ProcError, ChronosTime, Race] r =>
-  Ident ->
+  CommandId ->
   Pid ->
   Sem r ()
 waitBasic ident shellPid =
-  race_ (pollPid ident shellPid) (Executions.waitKill ident)
+  race_ (pollPid ident shellPid) (Executions.waitTerminate ident)
 
 pipingToSocket ::
   Members [NativeTmux !! TmuxError, SocketReader, NativeCommandCodecE, Stop ViewError, Resource] r =>
@@ -88,11 +88,11 @@ pipingToSocket pane =
 
 startLog ::
   Member Log r =>
-  Ident ->
+  CommandId ->
   PaneId ->
   Sem r ()
 startLog ident pane =
-  Log.debug [exon|Monitoring tmux command `#{identText ident}` in #{formatId pane}|]
+  Log.debug [exon|Monitoring tmux command `#{commandIdText ident}` in #{formatId pane}|]
 
 withLog ::
   ∀ socket sre r a .

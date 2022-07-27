@@ -2,8 +2,7 @@ module Myo.Data.ViewError where
 
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Data.RenderError (RenderError)
-import Chiasma.Data.TmuxError (TmuxError)
--- import Chiasma.Data.TmuxError (TmuxError (NoExe))
+import Chiasma.Data.TmuxError (TmuxError (NoExe))
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Effect.Codec (NativeCodec, NativeCodecE)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
@@ -24,8 +23,8 @@ data ViewError =
 
 instance ToErrorMessage ViewError where
   toErrorMessage = \case
-    -- TmuxApi NoExe ->
-    --   ErrorMessage "Tmux isn't available" ["ViewError.TmuxApi:", show NoExe] Error
+    TmuxApi NoExe ->
+      ErrorMessage "Tmux isn't available" ["ViewError.TmuxApi:", show NoExe] Error
     TmuxApi e ->
       ErrorMessage "tmux api error" ["ViewError.TmuxApi:", show e] Error
     TmuxCodec e ->

@@ -1,10 +1,10 @@
 module Myo.Data.ProcessTask where
 
-import Chiasma.Data.Ident (Ident)
+import Myo.Data.CommandId (CommandId)
 
 data ProcessTask =
   ProcessTask {
-    ident :: Ident,
+    ident :: CommandId,
     cmd :: (String, [String])
   }
   deriving stock (Eq, Show)

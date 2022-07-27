@@ -1,13 +1,14 @@
 module Myo.Command.Effect.TmuxMonitor where
 
-import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.TmuxId (PaneId)
 import Conc (PScoped, pscoped)
 import Process (Pid)
 
+import Myo.Data.CommandId (CommandId)
+
 data TmuxMonitorTask =
   TmuxMonitorTask {
-    ident :: Ident,
+    ident :: CommandId,
     pane :: PaneId,
     shellPid :: Pid
   }

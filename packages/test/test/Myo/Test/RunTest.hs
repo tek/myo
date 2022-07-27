@@ -29,6 +29,7 @@ import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBac
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoLine, myoRunIdent)
+import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
@@ -53,9 +54,9 @@ runnerIdent :: Ident
 runnerIdent =
   Str "dummy"
 
-ident :: Ident
+ident :: CommandId
 ident =
-  Str "cmd"
+  "cmd"
 
 checkReport ::
   Members [Hedgehog IO, Errors] r =>

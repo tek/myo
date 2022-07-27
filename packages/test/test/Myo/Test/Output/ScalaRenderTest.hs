@@ -1,6 +1,5 @@
 module Myo.Test.Output.ScalaRenderTest where
 
-import qualified Chiasma.Data.Ident as Ident (Ident (Str))
 import qualified Data.Text as Text (dropWhileEnd, lines, take)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList, zipWith)
@@ -144,7 +143,7 @@ test_scalaRender =
     Settings.update Settings.outputSelectFirst True
     Settings.update Settings.outputAutoJump False
     setupHighlights
-    storeParseResult (Ident.Str "test") [parsedOutput]
+    storeParseResult "test" [parsedOutput]
     testError compileAndRenderReport
     nvimCommand "wincmd w"
     syntax <- myoSyntax

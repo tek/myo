@@ -4,7 +4,6 @@ import Chiasma.Codec.Data (Pane)
 import Chiasma.Codec.Data.PaneMode (PaneMode (PaneMode))
 import Chiasma.Command.Pane (capturePane, copyMode, paneMode)
 import Chiasma.Data.CodecError (CodecError)
-import Chiasma.Data.Ident (Ident (Str), identText)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxId (PaneId (PaneId))
@@ -26,6 +25,7 @@ import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoRun)
+import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Effect.Controller (Controller)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoEmbedTmuxTest)
@@ -40,8 +40,8 @@ line1 = "line 1"
 line2 :: Text
 line2 = "line 2"
 
-ident :: Ident
-ident = Str "cmd"
+ident :: CommandId
+ident = "cmd"
 
 setup ::
   Members [Settings !! SettingError, AtomicState UiState, AtomicState CommandState, Error TestError] r =>
@@ -53,7 +53,7 @@ setup =
     myoAddSystemCommand cmd
   where
     cmd =
-      AddSystemCommandOptions ident cmds (Just (Str "tmux")) (Just (Str "make")) Nothing Nothing Nothing Nothing Nothing
+      AddSystemCommandOptions ident cmds (Just "tmux") (Just "make") Nothing Nothing Nothing Nothing Nothing Nothing
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 runAndCheck ::
@@ -62,7 +62,7 @@ runAndCheck ::
   Members [Controller !! RunError, AtomicState CommandState, Error TestError, Error Failure, ChronosTime] r =>
   Sem r ()
 runAndCheck = do
-  testHandler (myoRun (identText ident))
+  testHandler (myoRun (commandIdText ident))
   withTmux $ restop $ assertWait (cleanLines <$> capturePane (PaneId 1)) \ out -> do
     assert (elem line1 out)
     assert (elem line2 out)

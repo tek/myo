@@ -1,6 +1,5 @@
 module Myo.Command.Interpreter.Backend.Process where
 
-import Chiasma.Data.Ident (Ident)
 import Conc (PScoped)
 import qualified Data.List as List
 import Exon (exon)
@@ -30,11 +29,12 @@ import Myo.Command.Effect.Backend (Backend)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
+import Myo.Data.CommandId (CommandId)
 import Myo.Data.ProcessTask (ProcessTask (ProcessTask))
 
 outputEvent ::
   Members [CommandLog, State [Text]] r =>
-  Ident ->
+  CommandId ->
   Either Text ByteString ->
   Sem r ()
 outputEvent ident = \case
