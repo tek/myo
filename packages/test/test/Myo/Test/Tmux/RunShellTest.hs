@@ -24,7 +24,7 @@ import Myo.Command.Proc (killCommand, terminateCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
 import qualified Myo.Settings as Settings (processTimeout)
-import Myo.Test.Embed (myoEmbedTmuxTest, myoEmbedTmuxTestDebug)
+import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
 
@@ -104,7 +104,7 @@ test_tmuxRunShell =
 
 test_tmuxUnixShell :: UnitTest
 test_tmuxUnixShell =
-  myoEmbedTmuxTestDebug $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $
+  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $
   interpretController $ testHandler do
     setupDefaultTestUi
     myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["bash --norc"]) {
