@@ -2,7 +2,7 @@ module Myo.Command.History where
 
 import Chiasma.Data.Ident (sameIdent)
 import Conc (Lock, lockOrSkip_)
-import Control.Lens (element, firstOf, views)
+import Control.Lens (element, firstOf, view, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (nubOrdOn)
 import Exon (exon)
@@ -87,10 +87,6 @@ loadHistory =
   tag $ lockOrSkip_ do
     loadHistoryFrom =<< subPath
 
-duplicateHistoryEntry :: Command -> HistoryEntry -> Bool
-duplicateHistoryEntry cmd (HistoryEntry historyCmd) =
-  sameIdent cmd historyCmd
-
 pushHistory ::
   Members [Rpc, Settings !! SettingError] r =>
   Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ StoreHistory, Log, Resource] r =>
@@ -103,7 +99,7 @@ pushHistory cmd@Command {ident} =
     storeHistory
   where
     prep es =
-      nubOrdOn (duplicateHistoryEntry cmd) (HistoryEntry cmd : es)
+      nubOrdOn (view (#command . #cmdLines)) (HistoryEntry cmd : es)
 
 lookupHistoryIndex ::
   Members [AtomicState CommandState, Stop CommandError] r =>

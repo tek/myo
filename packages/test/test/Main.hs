@@ -31,6 +31,7 @@ import Myo.Test.Tmux.TogglePaneTest (test_shellPanePin, test_togglePane)
 import Myo.Test.Tmux.UpdateTest (test_updateUi)
 import Polysemy.Test (unitTest)
 import Test.Tasty (TestTree, defaultMain, testGroup)
+import Myo.Test.Command.HistoryTest (test_history)
 
 tests :: TestTree
 tests =
@@ -38,6 +39,7 @@ tests =
     testGroup "command" [
       unitTest "run a command from the menu" test_commandMenu,
       unitTest "select a command in the history menu" test_historyMenu,
+      unitTest "add history entries when running commands, unique by command lines" test_history,
       unitTest "update commands via variable watcher" test_updateCommands,
       unitTest "run a vim-test command" test_vimTest
     ],

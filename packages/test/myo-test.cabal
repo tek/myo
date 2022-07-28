@@ -111,6 +111,7 @@ test-suite myo-unit
       Myo.Test.Command
       Myo.Test.Command.CommandMenuTest
       Myo.Test.Command.HistoryMenuTest
+      Myo.Test.Command.HistoryTest
       Myo.Test.Command.UpdateTest
       Myo.Test.Command.VimTestTest
       Myo.Test.CompleteTest
