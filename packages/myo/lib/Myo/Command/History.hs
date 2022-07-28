@@ -1,6 +1,5 @@
 module Myo.Command.History where
 
-import Chiasma.Data.Ident (sameIdent)
 import Conc (Lock, lockOrSkip_)
 import Control.Lens (element, firstOf, view, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
@@ -115,13 +114,14 @@ lookupHistoryIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   CommandId ->
   Sem r Command
-lookupHistoryIdent ident =
-  HistoryEntry.command <$> (err =<< atomicGets lens)
+lookupHistoryIdent i = do
+  hist <- atomicView #history
+  HistoryEntry.command <$> stopNote err (find match hist)
   where
-    lens =
-      firstOf (#history . folded . filtered (sameIdent ident))
+    match HistoryEntry {command = Command {ident}} =
+      i == ident
     err =
-      stopNote (CommandError.NoSuchHistoryIdent (show ident))
+      CommandError.NoSuchHistoryIdent (show i)
 
 lookupHistory ::
   Members [AtomicState CommandState, Stop CommandError] r =>

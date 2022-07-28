@@ -1,7 +1,6 @@
 module Myo.Command.Data.RunError where
 
 import Chiasma.Data.CodecError (CodecError)
-import Chiasma.Data.Ident (identText, identify)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
@@ -65,7 +64,7 @@ instance ToErrorMessage RunError where
   toErrorMessage (NoRunner task) =
     ErrorMessage user ["no runner for task:", show task] Warn
     where
-      user = "no runner available for command `" <> identText (identify task) <> "`"
+      user = "no runner available for command `" <> commandIdText (task ^. #command . #ident) <> "`"
   toErrorMessage (Toggle e) =
     toErrorMessage e
   toErrorMessage (Views e) =

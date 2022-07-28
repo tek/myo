@@ -1,15 +1,14 @@
 module Myo.Command.Data.Command where
 
 import qualified Chiasma.Data.Ident as Ident
-import Chiasma.Data.Ident (Ident, Identifiable (..))
+import Chiasma.Data.Ident (Ident)
 import qualified Data.Text as Text
 import Prelude hiding (lines)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
-import Myo.Orphans ()
-import Myo.Data.CommandId (CommandId (unCommandId, CommandId))
+import Myo.Data.CommandId (CommandId (CommandId))
 
 newtype CommandLanguage =
   CommandLanguage Text
@@ -33,10 +32,6 @@ data Command =
     commandShell :: Bool
   }
   deriving stock (Eq, Show, Generic)
-
-instance Identifiable Command where
-  identify =
-    unCommandId . ident
 
 instance Pretty Command where
   pretty (Command {..}) =

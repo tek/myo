@@ -1,6 +1,5 @@
 module Myo.Command.Data.Execution where
 
-import Chiasma.Data.Ident (Identifiable (..))
 import qualified Chronos
 import Process (Pid)
 import Text.Show (show)
@@ -29,10 +28,6 @@ data Execution =
     sync :: ExecutionSync
   }
   deriving stock (Show, Generic)
-
-instance Identifiable Execution where
-  identify =
-    identify . ident
 
 pid ::
   Execution ->

@@ -1,7 +1,5 @@
 module Myo.Command.Data.HistoryEntry where
 
-import Chiasma.Data.Ident (Identifiable (..))
-
 import Myo.Command.Data.Command (Command)
 
 newtype HistoryEntry =
@@ -11,7 +9,3 @@ newtype HistoryEntry =
   deriving stock (Eq, Show, Generic)
 
 unaryJson ''HistoryEntry
-
-instance Identifiable HistoryEntry where
-  identify =
-    identify . command

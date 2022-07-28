@@ -1,6 +1,6 @@
 module Myo.Command.Data.RunTask where
 
-import Chiasma.Data.Ident (Ident, Identifiable (identify))
+import Chiasma.Data.Ident (Ident)
 
 import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.UiTarget (UiTarget)
@@ -29,8 +29,4 @@ data RunTask =
     command :: Command,
     details :: RunTaskDetails
   }
-  deriving stock (Eq, Show)
-
-instance Identifiable RunTask where
-  identify =
-    identify . command
+  deriving stock (Eq, Show, Generic)

@@ -1,6 +1,6 @@
 module Myo.Data.CommandId where
 
-import Chiasma.Data.Ident (Ident (Str, Uuid), Identifiable (identify), identText, parseIdent)
+import Chiasma.Data.Ident (Ident (Str, Uuid), identText, parseIdent)
 import qualified Data.UUID as UUID
 import Prettyprinter (Pretty (pretty))
 import Ribosome.Host.Class.Msgpack.Decode (MsgpackDecode (fromMsgpack))
@@ -14,10 +14,6 @@ newtype CommandId =
 instance Pretty CommandId where
   pretty =
     pretty . unCommandId
-
-instance Identifiable CommandId where
-  identify =
-    unCommandId
 
 instance MsgpackDecode CommandId where
   fromMsgpack =
