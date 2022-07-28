@@ -39,10 +39,11 @@ import qualified Myo.Command.Effect.TmuxMonitor as TmuxMonitor
 import Myo.Command.Effect.TmuxMonitor (ScopedTmuxMonitor, TmuxMonitorTask (TmuxMonitorTask), withTmuxMonitor)
 import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
 import Myo.Command.Interpreter.TmuxMonitor (interpretTmuxMonitor, interpretTmuxMonitorNoLog)
+import Myo.Command.Proc (waitForShell)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcError (ProcError, unProcError)
 import Myo.Effect.Proc (Proc)
-import Myo.Tmux.Proc (panePid, shellBusy, waitForRunningProcess)
+import Myo.Tmux.Proc (panePid, shellBusy, waitForRunningProcess, leafPid)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Render (renderTmux)
 
@@ -143,16 +144,21 @@ waitForProcess shellPid TmuxTask {taskType, command = Command {ident}} = do
       resumeHoist @_ @Proc (RunError.Proc . unProcError) (waitForRunningProcess shellPid)
 
 activeShellPid ::
-  Members [Executions, Stop RunError] r =>
+  Members [Proc !! ProcError, Executions, ChronosTime, Stop RunError, Race] r =>
   CommandId ->
   Sem r Pid
-activeShellPid i =
-  stopNote (RunError.Proc "Command shell vanished") =<< Executions.pid i
+activeShellPid i = do
+  waitForShell i
+  mainPid <- stopNote (RunError.Proc "Command shell vanished") =<< Executions.pid i
+  resumeHoist @_ @Proc (RunError.Proc . unProcError) (leafPid mainPid)
 
 type TmuxRunStack =
   [
+    Proc !! ProcError,
     Executions,
-    NativeTmux !! TmuxError
+    NativeTmux !! TmuxError,
+    ChronosTime,
+    Race
   ] ++
   StartMonitoredStack ++
   NativeCodecsE [Panes Pane, Panes PanePid]
@@ -208,7 +214,7 @@ render =
 interpretBackendTmuxWithLog ::
   ToErrorMessage sre =>
   Members TmuxRunStack r =>
-  Members [AtomicState UiState, Proc !! ProcError, ChronosTime, CommandLog, Rpc !! RpcError] r =>
+  Members [AtomicState UiState, ChronosTime, CommandLog, Rpc !! RpcError] r =>
   Members [Backend !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>
   Sem r a ->
   Sem r a
@@ -220,7 +226,7 @@ interpretBackendTmuxWithLog =
 interpretBackendTmuxNoLog ::
   Members TmuxRunStack r =>
   Members [AtomicState UiState, Rpc !! RpcError] r =>
-  Members [Proc !! ProcError, Backend !! RunError, AtomicState Views, ChronosTime, Race, Resource] r =>
+  Members [Backend !! RunError, AtomicState Views, ChronosTime, Race, Resource] r =>
   Sem r a ->
   Sem r a
 interpretBackendTmuxNoLog =

@@ -20,11 +20,11 @@ import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (comman
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
-import Myo.Command.Kill (killCommand, terminateCommand)
+import Myo.Command.Proc (killCommand, terminateCommand)
 import Myo.Command.Run (myoRunIdent)
 import Myo.Interpreter.Controller (interpretController)
 import qualified Myo.Settings as Settings (processTimeout)
-import Myo.Test.Embed (myoEmbedTmuxTest)
+import Myo.Test.Embed (myoEmbedTmuxTest, myoEmbedTmuxTestDebug)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Default (setupDefaultTestUi)
 
@@ -104,7 +104,7 @@ test_tmuxRunShell =
 
 test_tmuxUnixShell :: UnitTest
 test_tmuxUnixShell =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $
+  myoEmbedTmuxTestDebug $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $
   interpretController $ testHandler do
     setupDefaultTestUi
     myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["bash --norc"]) {
@@ -113,13 +113,14 @@ test_tmuxUnixShell =
       commandShell = Just True
       }
     myoAddSystemCommand (AddSystemCommandOptions.cons cmdIdent ["echo text"]) { runner, target = Just "make" }
-    runEchoInShell 1
     runEchoInShell 2
+    runEchoInShell 4
     where
       runEchoInShell n = do
         thread1 <- testHandlerAsync do
           myoRunIdent shellIdent
         assertWait (Executions.running shellIdent) assert
+        myoRunIdent cmdIdent
         myoRunIdent cmdIdent
         assertWait paneContent (assertEq n . length . filter ("text" ==))
         killCommand shellIdent

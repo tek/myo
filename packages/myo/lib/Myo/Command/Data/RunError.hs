@@ -9,11 +9,13 @@ import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Exon (exon)
 import Log (Severity (Debug, Error, Warn))
 import Ribosome (ErrorMessage (ErrorMessage), PersistError, RpcError, ToErrorMessage (..))
+import Time (MilliSeconds (MilliSeconds))
 
 import Myo.Command.Data.Command (ident)
 import qualified Myo.Command.Data.Command as Cmd (Command (Command))
 import Myo.Command.Data.CommandError (CommandError (..))
 import Myo.Command.Data.RunTask (RunTask)
+import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Ui.Data.ToggleError (ToggleError)
 
 data RunError =
@@ -54,6 +56,8 @@ data RunError =
   Persist PersistError
   |
   Rpc RpcError
+  |
+  ShellDidntStart CommandId MilliSeconds
   deriving stock (Show)
 
 instance ToErrorMessage RunError where
@@ -107,3 +111,8 @@ instance ToErrorMessage RunError where
     toErrorMessage err
   toErrorMessage (Rpc err) =
     toErrorMessage err
+  toErrorMessage (ShellDidntStart i (MilliSeconds timeout)) =
+    ErrorMessage [exon|The shell `#{commandIdText i}` didn't start within #{show timeout}ms|] log Error
+    where
+      log =
+        ["RunError.ShellDidntStart:", show i, show timeout]

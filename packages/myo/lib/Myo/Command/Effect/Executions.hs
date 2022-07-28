@@ -15,7 +15,6 @@ data Executions :: Effect where
   Start :: CommandId -> Bool -> Maybe UiTarget -> Executions m (Maybe CommandId)
   Stop :: CommandId -> Executions m ()
   Running :: CommandId -> Executions m Bool
-  Active :: CommandId -> Executions m Bool
   ActiveTarget :: UiTarget -> Executions m (Maybe CommandId)
   Wait :: CommandId -> Executions m ()
   Terminate :: CommandId -> Executions m ()

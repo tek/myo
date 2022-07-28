@@ -42,6 +42,19 @@ commandPid parent =
     check n _ new =
       spin (n + 1) new
 
+leafPid ::
+  Member Proc r =>
+  Pid ->
+  Sem r Pid
+leafPid parent =
+  fromMaybe parent . head <$> spin parent
+  where
+    spin p =
+      Proc.childPids p >>= \case
+        [] -> pure [p]
+        cs ->
+          join <$> traverse spin cs
+
 shellBusy ::
   Member Proc r =>
   Pid ->

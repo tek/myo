@@ -6,8 +6,6 @@ import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
 import Ribosome (HostError, Persist, PersistError, Rpc, RpcError, SettingError, Settings, reportStop)
-import qualified Time
-import Time (MilliSeconds (MilliSeconds))
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command (Command, ident))
@@ -28,6 +26,7 @@ import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Command.History (commandOrHistoryByIdent, pushHistory)
+import Myo.Command.Proc (waitForShell)
 import Myo.Command.RunTask (runTask)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Effect.Controller (Controller (CaptureOutput, RunCommand, RunIdent))
@@ -42,14 +41,6 @@ preparePane (UiTarget ident) =
   mapStop RunError.Render $ mapStop RunError.Toggle do
     openOnePane ident
     restop @RunError Backend.render
-
-waitForShell ::
-  Members [Executions, ChronosTime] r =>
-  CommandId ->
-  Sem r ()
-waitForShell ident =
-  Time.while (MilliSeconds 100) do
-    not <$> Executions.running ident
 
 type PrepareStack =
   [
@@ -67,7 +58,8 @@ type PrepareStack =
     ChronosTime,
     Async,
     Log,
-    Resource
+    Resource,
+    Race
   ]
 
 prepare ::
@@ -79,7 +71,7 @@ prepare = \case
   RunTask _ (RunTaskDetails.UiSystem ident) -> do
     preparePane ident
   RunTask Command {ident} (RunTaskDetails.UiShell shellIdent _) ->
-    unlessM (Executions.active shellIdent) do
+    unlessM (Executions.running shellIdent) do
       Log.debug [exon|Starting inactive shell command `#{commandIdText shellIdent}` async for `#{commandIdText ident}`|]
       void $ async $ reportStop @RunError (Just "command") do
         mapStop RunError.Command (runIdent shellIdent)

@@ -177,30 +177,10 @@ running ::
 running = \case
   Tracked pid ->
     False <! Proc.exists pid
-  Starting _ ->
-    pure False
   Running ->
     pure True
   Pending ->
     pure False
-  Unknown ->
-    pure False
-  Stopped ->
-    pure False
-
-active ::
-  Member (Proc !! ProcError) r =>
-  ExecutionState ->
-  Sem r Bool
-active = \case
-  Tracked pid ->
-    False <! Proc.exists pid
-  Starting pid ->
-    False <! Proc.exists pid
-  Running ->
-    pure True
-  Pending ->
-    pure True
   Unknown ->
     pure False
   Stopped ->
@@ -243,12 +223,10 @@ interpretExecutions =
         embed (tryPutMVar var ())
     Executions.Running i ->
       checkState running i
-    Executions.Active i ->
-      checkState active i
     Executions.ActiveTarget target ->
       runMaybeT do
         i <- MaybeT (readTargetCommand target)
-        guard =<< lift (checkState active i)
+        guard =<< lift (checkState running i)
         pure i
     Executions.Wait i ->
       withExecution_ i \ e -> embed (readMVar (e ^. #sync . #wait))

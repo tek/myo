@@ -14,7 +14,7 @@ import Control.Lens.Regex.ByteString (match, regex)
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Process (Pid)
+import Process (Pid, unPid)
 import Time (MilliSeconds (MilliSeconds), while)
 
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
@@ -25,7 +25,7 @@ import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import qualified Myo.Command.Effect.SocketReader as SocketReader
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
-import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (TmuxMonitorTask), ident, pane, shellPid)
+import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (TmuxMonitorTask, ident, pane, shellPid))
 import Myo.Command.Log (pipePaneToSocket)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcError (ProcError)
@@ -41,34 +41,42 @@ type ScopeEffects =
   ]
 
 pollPid ::
-  Members [Executions, Proc !! ProcError, ChronosTime] r =>
+  Members [Executions, Proc !! ProcError, ChronosTime, Log] r =>
   CommandId ->
   Pid ->
   Sem r ()
 pollPid ident shellPid = do
-  resumeAs @_ @Proc Nothing (commandPid shellPid) >>= traverse_ \ pid -> do
+  resumeAs @_ @Proc Nothing (commandPid shellPid) >>= maybe noPid \ pid -> do
+    Log.debug [exon|Setting command pid for `#{commandIdText ident}`: #{show (unPid pid)}|]
     Executions.setState ident (ExecutionState.Tracked pid)
     while (MilliSeconds 500) do
       False <! Proc.exists pid
+    Log.debug [exon|Process for `#{commandIdText ident}` has terminated|]
+  where
+    noPid =
+      Log.debug [exon|Process for `#{commandIdText ident}` terminated before initial pid was found|]
 
 sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
   ([regex|\r\n|] . match .~ "\n") . ([regex|(\x{9b}|\x{1b}\[)[0-?]*[ -\/]*[@-~]|] . match .~ "")
 
 readOutput ::
-  Members [SocketReader, CommandLog] r =>
+  Members [SocketReader, CommandLog, Log] r =>
   CommandId ->
   Sem r ()
-readOutput ident =
+readOutput ident = do
   useWhileJust SocketReader.chunk (CommandLog.append ident . sanitizeOutput)
+  Log.debug [exon|Socket for `#{commandIdText ident}` has been closed|]
 
 waitBasic ::
-  Members [Executions, Proc !! ProcError, ChronosTime, Race] r =>
+  Members [Executions, Proc !! ProcError, ChronosTime, Race, Log] r =>
   CommandId ->
   Pid ->
   Sem r ()
 waitBasic ident shellPid =
-  race_ (pollPid ident shellPid) (Executions.waitTerminate ident)
+  race_ (pollPid ident shellPid) do
+    Executions.waitTerminate ident
+    Log.debug [exon|Execution terminated for `#{commandIdText ident}`|]
 
 pipingToSocket ::
   Members [NativeTmux !! TmuxError, SocketReader, NativeCommandCodecE, Stop ViewError, Resource] r =>
@@ -92,7 +100,7 @@ startLog ::
   PaneId ->
   Sem r ()
 startLog ident pane =
-  Log.debug [exon|Monitoring tmux command `#{commandIdText ident}` in #{formatId pane}|]
+  Log.debug [exon|Monitoring tmux command `#{commandIdText ident}` in `#{formatId pane}`|]
 
 withLog ::
   ∀ socket sre r a .
@@ -124,3 +132,4 @@ interpretTmuxMonitorNoLog =
     Wait -> do
       startLog ident pane
       waitBasic ident shellPid
+      Log.debug [exon|tmux monitor for `#{commandIdText ident}` has terminated|]
