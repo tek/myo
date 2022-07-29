@@ -1,7 +1,7 @@
 module Myo.Output.Data.OutputError where
 
 import Log (Severity (Error, Warn))
-import Ribosome (ErrorMessage (ErrorMessage), SettingError, ToErrorMessage (..))
+import Ribosome (Report (Report), SettingError, Reportable (..))
 
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
@@ -34,38 +34,38 @@ data OutputError =
   NotParsed
   deriving stock (Show)
 
-instance ToErrorMessage OutputError where
-  toErrorMessage (Command e) =
-    toErrorMessage e
-  toErrorMessage (Run e) =
-    toErrorMessage e
-  toErrorMessage (NoLang ident) =
-    ErrorMessage msg [msg] Warn
+instance Reportable OutputError where
+  toReport (Command e) =
+    toReport e
+  toReport (Run e) =
+    toReport e
+  toReport (NoLang ident) =
+    Report msg [msg] Warn
     where
       msg = "command `" <> commandIdText ident <> "` has no language"
-  toErrorMessage (Setting e) =
-    toErrorMessage e
-  toErrorMessage (NoHandler (CommandLanguage lang)) =
-    ErrorMessage msg [msg] Warn
+  toReport (Setting e) =
+    toReport e
+  toReport (NoHandler (CommandLanguage lang)) =
+    Report msg [msg] Warn
     where
       msg = "no output handler for language `" <> lang <> "`"
-  toErrorMessage (Parse err) =
-    ErrorMessage msg ["OutputError.Parse:", err] Warn
+  toReport (Parse err) =
+    Report msg ["OutputError.Parse:", err] Warn
     where
       msg = "failed to parse command output"
-  toErrorMessage (NoEvents ident) =
-    ErrorMessage msg [msg] Warn
+  toReport (NoEvents ident) =
+    Report msg [msg] Warn
     where
       msg = "no events in output of command `" <> ident <> "`"
-  toErrorMessage (NoOutput ident) =
-    ErrorMessage msg [msg] Warn
+  toReport (NoOutput ident) =
+    Report msg [msg] Warn
     where
       msg = "command `" <> ident <> "` has not generated any output"
-  toErrorMessage NoLocation =
-    ErrorMessage "this event is not associated with a location" ["OutputError.NoLocation"] Warn
-  toErrorMessage FileNonexistent =
-    ErrorMessage "this event's file is nonexistent" ["OutputError.FileNonexistent"] Warn
-  toErrorMessage (Internal msg) =
-    ErrorMessage "internal error" ["OutputError.Internal:", msg] Error
-  toErrorMessage NotParsed =
-    ErrorMessage "no command output has been parsed" ["OutputError.NotParsed"] Warn
+  toReport NoLocation =
+    Report "this event is not associated with a location" ["OutputError.NoLocation"] Warn
+  toReport FileNonexistent =
+    Report "this event's file is nonexistent" ["OutputError.FileNonexistent"] Warn
+  toReport (Internal msg) =
+    Report "internal error" ["OutputError.Internal:", msg] Error
+  toReport NotParsed =
+    Report "no command output has been parsed" ["OutputError.NotParsed"] Warn

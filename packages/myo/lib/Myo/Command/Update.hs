@@ -2,7 +2,7 @@ module Myo.Command.Update where
 
 import Data.MessagePack (Object)
 import Prelude hiding (lines)
-import Ribosome (Handler, SettingError, Settings, fromMsgpack, mapHandlerError)
+import Ribosome (Handler, SettingError, Settings, fromMsgpack, mapReport)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Command (shellCommand, systemCommand)
@@ -55,5 +55,5 @@ myoUpdateCommands ::
   Object ->
   Handler r ()
 myoUpdateCommands o =
-  mapHandlerError do
+  mapReport do
     updateCommands =<< stopEitherWith CommandError.Misc (fromMsgpack o)

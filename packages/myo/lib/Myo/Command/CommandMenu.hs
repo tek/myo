@@ -10,8 +10,8 @@ import Ribosome (
   RpcError,
   ScratchId (ScratchId),
   Settings,
-  mapHandlerErrors,
-  resumeHandlerErrors,
+  mapReports,
+  resumeReports,
   scratch,
   )
 import Ribosome.Data.SettingError (SettingError)
@@ -81,7 +81,7 @@ myoCommands ::
   Members [Controller !! RunError, AtomicState CommandState, Async] r =>
   Handler r ()
 myoCommands =
-  resumeHandlerErrors @[Controller, Rpc] @[_, _] $ mapHandlerErrors @[RpcError, CommandError] do
+  resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError] do
     commandMenu >>= \case
       Success ident ->
         void (async (Controller.runIdent ident))

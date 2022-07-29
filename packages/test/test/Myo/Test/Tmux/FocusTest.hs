@@ -6,7 +6,7 @@ import Chiasma.Data.TmuxId (PaneId)
 import Chiasma.Interpreter.Codec (interpretCodecPanes)
 import Chiasma.Tmux (withPanes_)
 import Polysemy.Test (UnitTest, assertEq)
-import Ribosome (interpretPersistNull, mapHandlerError)
+import Ribosome (interpretPersistNull, mapReport)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
@@ -33,5 +33,5 @@ test_focusPane =
     setupDefaultTestUi
     myoTogglePane "make"
     myoFocus "make"
-    mapHandlerError do
+    mapReport do
       assertWait (codecError (withPanes_ panes)) (assertEq [PaneSelected 0 False, PaneSelected 1 True])

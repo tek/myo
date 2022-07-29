@@ -2,7 +2,7 @@ module Myo.Test.Embed where
 
 import Log (Severity (Debug, Trace))
 import Polysemy.Test (UnitTest)
-import Ribosome (HostConfig, mapHandlerError, setStderr)
+import Ribosome (HostConfig, mapReport, setStderr)
 import Ribosome.Test (testPluginEmbed)
 
 import Myo.Test.Run (
@@ -52,7 +52,7 @@ myoEmbedTmuxTestConf ::
 myoEmbedTmuxTestConf conf =
   runMyoTmuxTestStack conf .
   testPluginEmbed .
-  mapHandlerError
+  mapReport
 
 myoEmbedTmuxTest ::
   HasCallStack =>
@@ -83,7 +83,7 @@ myoSocketTmuxTestConf ::
 myoSocketTmuxTestConf conf =
   runMyoSocketTmuxTestStack conf .
   testPluginEmbed .
-  mapHandlerError
+  mapReport
 
 myoSocketTmuxTest ::
   HasCallStack =>

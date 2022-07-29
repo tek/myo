@@ -22,8 +22,8 @@ import Ribosome (
   ScratchId,
   ScratchState,
   Window,
-  mapHandlerError,
-  resumeHandlerError,
+  mapReport,
+  resumeReport,
   scratch,
   )
 import Ribosome.Api (
@@ -434,13 +434,13 @@ myoOutputQuit ::
   Member (Scratch !! RpcError) r =>
   Handler r ()
 myoOutputQuit =
-  resumeHandlerError (Scratch.kill scratchId)
+  resumeReport (Scratch.kill scratchId)
 
 myoOutputSelect ::
   Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoOutputSelect =
-  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
+  resumeReport @Rpc $ resumeReport @Scratch $ mapReport do
     mainWindow <- outputMainWindow
     window <- outputWindow
     report <- currentReport

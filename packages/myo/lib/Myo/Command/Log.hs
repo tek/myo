@@ -7,7 +7,7 @@ import Data.Char (isAlphaNum)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text (concatMap, lines, singleton)
 import Path (Abs, File, Path, toFilePath)
-import Ribosome (Handler, RpcError, Scratch, resumeHandlerError, scratch)
+import Ribosome (Handler, RpcError, Scratch, resumeReport, scratch)
 import qualified Ribosome.Scratch as Scratch
 
 import Myo.Command.Command (mainCommand, mainCommandIdent)
@@ -99,7 +99,7 @@ myoLogs ::
   Members [CommandLog, AtomicState CommandState, Scratch !! RpcError, Log] r =>
   Handler r ()
 myoLogs =
-  void $ resumeHandlerError @Scratch do
+  void $ resumeReport @Scratch do
     logs <- CommandLog.all
     Scratch.show ("# Command Logs" : "" : intercalate [""] (logLines logs)) options
   where

@@ -3,8 +3,7 @@ module Myo.Command.Parse where
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Exon (exon)
 import qualified Log
-import Ribosome (Handler, Rpc, RpcError, Scratch, SettingError, Settings, mapHandlerError)
-import Ribosome.Errors (pluginHandlerErrors)
+import Ribosome (Handler, Rpc, RpcError, Scratch, SettingError, Settings, mapReport, pluginLogReports)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Command (commandByIdent)
@@ -107,7 +106,7 @@ myoParse ::
   ParseOptions ->
   Handler r ()
 myoParse (ParseOptions _ ident _) =
-  pluginHandlerErrors $ mapHandlerError @OutputError $ mapHandlerError @CommandError do
+  pluginLogReports $ mapReport @OutputError $ mapReport @CommandError do
     cmd <- selectCommand ident
     parsedOutput <- stopNote (OutputError.NoEvents (Command.name cmd)) =<< parseCommand cmd
     storeParseResult (cmd ^. #ident) parsedOutput

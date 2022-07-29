@@ -2,7 +2,7 @@ module Myo.Command.Run where
 
 import Chiasma.Data.Ident (generateIdent)
 import qualified Data.Text as Text
-import Ribosome (Args (Args), Handler, mapHandlerError, resumeHandlerError)
+import Ribosome (Args (Args), Handler, mapReport, resumeReport)
 
 import Myo.Command.Command (commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
 import qualified Myo.Command.Data.Command as Command
@@ -24,7 +24,7 @@ myoRunIdent ::
   CommandId ->
   Handler r ()
 myoRunIdent i =
-  resumeHandlerError do
+  resumeReport do
     Controller.runIdent i
 
 myoRun ::
@@ -32,7 +32,7 @@ myoRun ::
   Text ->
   Handler r ()
 myoRun ident =
-  resumeHandlerError @Controller $ mapHandlerError do
+  resumeReport @Controller $ mapReport do
     Controller.runCommand =<< commandByIdentOrName "run" (Text.strip ident)
 
 reRun ::
@@ -47,7 +47,7 @@ myoReRun ::
   Either CommandId Int ->
   Handler r ()
 myoReRun spec =
-  resumeHandlerError @Controller $ mapHandlerError do
+  resumeReport @Controller $ mapReport do
     reRun spec
 
 defaultTarget :: UiTarget
@@ -59,7 +59,7 @@ myoLine ::
   RunLineOptions ->
   Handler r ()
 myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) =
-  resumeHandlerError @Controller $ mapHandlerError do
+  resumeReport @Controller $ mapReport do
     ident <- CommandId <$> generateIdent
     lines' <- stopNote RunError.NoLinesSpecified (mayLines <|> (pure <$> mayLine))
     target <- maybe (pure (Right defaultTarget)) findTarget mayTarget

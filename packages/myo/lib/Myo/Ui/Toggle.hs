@@ -9,7 +9,7 @@ import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (Codec)
 import Chiasma.Effect.TmuxClient (ScopedTmux)
-import Ribosome (Handler, Rpc, RpcError, mapHandlerError, resumeHandlerError)
+import Ribosome (Handler, Rpc, RpcError, mapReport, resumeReport)
 
 import qualified Myo.Data.ViewError as ViewError
 import Myo.Data.ViewError (ViewError)
@@ -41,7 +41,7 @@ myoTogglePane ::
   Ident ->
   Handler r ()
 myoTogglePane ident =
-  resumeHandlerError @Rpc $ mapHandlerError @ToggleError $ mapHandlerError @ViewError do
+  resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
     toggleOnePane ident
     resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)
 
@@ -51,6 +51,6 @@ myoToggleLayout ::
   Ident ->
   Handler r ()
 myoToggleLayout ident = do
-  resumeHandlerError @Rpc $ mapHandlerError @ToggleError $ mapHandlerError @ViewError do
+  resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
     toggleOneLayout ident
     resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)

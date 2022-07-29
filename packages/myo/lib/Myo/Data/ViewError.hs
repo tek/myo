@@ -7,7 +7,7 @@ import Chiasma.Data.Views (ViewsError)
 import Chiasma.Effect.Codec (NativeCodec, NativeCodecE)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Error))
-import Ribosome (ErrorMessage (ErrorMessage), HandlerError, ToErrorMessage (toErrorMessage), mapHandlerError)
+import Ribosome (Report (Report), Reportable (toReport), mapReport)
 
 data ViewError =
   TmuxApi TmuxError
@@ -21,20 +21,20 @@ data ViewError =
   Render RenderError
   deriving stock (Eq, Show)
 
-instance ToErrorMessage ViewError where
-  toErrorMessage = \case
+instance Reportable ViewError where
+  toReport = \case
     TmuxApi NoExe ->
-      ErrorMessage "Tmux isn't available" ["ViewError.TmuxApi:", show NoExe] Error
+      Report "Tmux isn't available" ["ViewError.TmuxApi:", show NoExe] Error
     TmuxApi e ->
-      ErrorMessage "tmux api error" ["ViewError.TmuxApi:", show e] Error
+      Report "tmux api error" ["ViewError.TmuxApi:", show e] Error
     TmuxCodec e ->
-      ErrorMessage "tmux codec error" ["ViewError.TmuxCodec:", show e] Error
+      Report "tmux codec error" ["ViewError.TmuxCodec:", show e] Error
     TmuxViews e ->
-      ErrorMessage "tmux views error" ["ViewError.TmuxViews:", show e] Error
+      Report "tmux views error" ["ViewError.TmuxViews:", show e] Error
     TreeMod e ->
-      ErrorMessage "tmux views error" ["ViewError.TreeMod:", show e] Error
+      Report "tmux views error" ["ViewError.TreeMod:", show e] Error
     Render e ->
-      ErrorMessage "tmux views error" ["ViewError.Render:", show e] Error
+      Report "tmux views error" ["ViewError.Render:", show e] Error
 
 tmuxError ::
   Member (Stop ViewError) r =>
@@ -68,10 +68,10 @@ resumeCodecError =
 
 handlerCodecError ::
   ∀ cmd r .
-  Members [NativeCodecE cmd, Stop HandlerError] r =>
+  Members [NativeCodecE cmd, Stop Report] r =>
   InterpreterFor (NativeCodec cmd) r
 handlerCodecError =
-  mapHandlerError . resumeCodecError . raiseUnder
+  mapReport . resumeCodecError . raiseUnder
 {-# inline handlerCodecError #-}
 
 viewsError ::
@@ -82,8 +82,8 @@ viewsError =
 {-# inline viewsError #-}
 
 handlerViewsError ::
-  Member (Stop HandlerError) r =>
+  Member (Stop Report) r =>
   InterpreterFor (Stop ViewsError) r
 handlerViewsError =
-  mapHandlerError . mapStop TmuxViews . raiseUnder
+  mapReport . mapStop TmuxViews . raiseUnder
 {-# inline handlerViewsError #-}

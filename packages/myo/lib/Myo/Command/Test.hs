@@ -4,7 +4,7 @@ import Chiasma.Data.Ident (Ident (Str))
 import Data.Hashable (hash)
 import Data.MessagePack (Object)
 import Exon (exon)
-import Ribosome (Handler, MsgpackDecode, Rpc, RpcError, Settings, mapHandlerError, resumeHandlerError, toMsgpack)
+import Ribosome (Handler, MsgpackDecode, Rpc, RpcError, Settings, mapReport, resumeReport, toMsgpack)
 import Ribosome.Api (nvimCallFunction)
 import Ribosome.Api.Window (currentCursor)
 import Ribosome.Data.SettingError (SettingError)
@@ -49,7 +49,7 @@ myoTestDetermineRunner ::
   Text ->
   Handler r Text
 myoTestDetermineRunner file =
-  resumeHandlerError do
+  resumeReport do
     vimTestCall "determine_runner" [toMsgpack file]
 
 myoTestExecutable ::
@@ -57,7 +57,7 @@ myoTestExecutable ::
   Text ->
   Handler r Text
 myoTestExecutable runner =
-  resumeHandlerError do
+  resumeReport do
     vimTestCall (runner <> "#executable") []
 
 myoTestBuildPosition ::
@@ -66,7 +66,7 @@ myoTestBuildPosition ::
   VimTestPosition ->
   Handler r [Text]
 myoTestBuildPosition runner pos =
-  resumeHandlerError do
+  resumeReport do
     vimTestCall (runner <> "#build_position") [toMsgpack ("nearest" :: Text), toMsgpack pos]
 
 myoTestBuildArgs ::
@@ -75,7 +75,7 @@ myoTestBuildArgs ::
   [Text] ->
   Handler r [Text]
 myoTestBuildArgs runner args =
-  resumeHandlerError do
+  resumeReport do
     vimTestCall (runner <> "#build_args") [toMsgpack args]
 
 vimTestCallWrap ::
@@ -138,5 +138,5 @@ myoVimTest ::
   Members [Controller !! RunError, Settings !! SettingError, Rpc !! RpcError] r =>
   Handler r ()
 myoVimTest =
-  resumeHandlerError @Settings $ resumeHandlerError @Controller do
-    Controller.runCommand =<< updateTestCommand =<< mapHandlerError vimTestLine
+  resumeReport @Settings $ resumeReport @Controller do
+    Controller.runCommand =<< updateTestCommand =<< mapReport vimTestLine

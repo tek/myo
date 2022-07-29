@@ -5,7 +5,7 @@ import Conc (Lock)
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Ribosome (HostError, Persist, PersistError, Rpc, RpcError, SettingError, Settings, reportStop)
+import Ribosome (LogReport, Persist, PersistError, Rpc, RpcError, SettingError, Settings, reportStop)
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command (Command, ident))
@@ -54,7 +54,7 @@ type PrepareStack =
     AtomicState Views,
     AtomicState CommandState,
     Reader LogDir,
-    DataLog HostError,
+    DataLog LogReport,
     ChronosTime,
     Async,
     Log,
@@ -73,7 +73,7 @@ prepare = \case
   RunTask Command {ident} (RunTaskDetails.UiShell shellIdent _) ->
     unlessM (Executions.running shellIdent) do
       Log.debug [exon|Starting inactive shell command `#{commandIdText shellIdent}` async for `#{commandIdText ident}`|]
-      void $ async $ reportStop @RunError (Just "command") do
+      void $ async $ reportStop @RunError do
         mapStop RunError.Command (runIdent shellIdent)
       waitForShell shellIdent
   RunTask _ RunTaskDetails.System ->

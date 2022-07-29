@@ -2,7 +2,7 @@ module Myo.Command.Data.CommandError where
 
 import Exon (exon)
 import Log (Severity (Error, Info, Warn))
-import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
+import Ribosome (Report (Report), Reportable (toReport))
 
 import Myo.Command.Data.Command (shortIdent)
 import Myo.Data.CommandId (CommandId, commandIdText)
@@ -23,33 +23,33 @@ data CommandError =
   NotAUiShell CommandId CommandId
   deriving stock (Eq, Show)
 
-instance ToErrorMessage CommandError where
-  toErrorMessage (Misc err) =
-    ErrorMessage (pre <> " " <> err) [pre, err] Error
+instance Reportable CommandError where
+  toReport (Misc err) =
+    Report (pre <> " " <> err) [pre, err] Error
     where
       pre = "command error:"
-  toErrorMessage (NoSuchCommand context ident) =
-    ErrorMessage err ["In context `" <> context <>"`:", err] Warn
+  toReport (NoSuchCommand context ident) =
+    Report err ["In context `" <> context <>"`:", err] Warn
     where
       err = "no command with ident `" <> ident <> "`"
-  toErrorMessage NoCommands =
-    ErrorMessage err [err] Warn
+  toReport NoCommands =
+    Report err [err] Warn
     where
       err = "no commands have been created yet"
-  toErrorMessage (NoSuchHistoryIndex index) =
-    ErrorMessage err [err] Warn
+  toReport (NoSuchHistoryIndex index) =
+    Report err [err] Warn
     where
       err = "no history entry at index " <> show index
-  toErrorMessage (NoSuchHistoryIdent ident) =
-    ErrorMessage err [err] Warn
+  toReport (NoSuchHistoryIdent ident) =
+    Report err [err] Warn
     where
       err = "no history entry with ident `" <> ident <> "`"
-  toErrorMessage NoHistory =
-    ErrorMessage err ["CommandError.NoHistory"] Info
+  toReport NoHistory =
+    Report err ["CommandError.NoHistory"] Info
     where
       err = "no history yet"
-  toErrorMessage (NotAUiShell cmd shell) =
-    ErrorMessage msg log Error
+  toReport (NotAUiShell cmd shell) =
+    Report msg log Error
     where
       msg =
         [exon|`#{shortIdent shell}` cannot be used as a shell for `#{shortIdent cmd}`|]

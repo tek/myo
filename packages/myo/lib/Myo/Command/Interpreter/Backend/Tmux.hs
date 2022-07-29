@@ -20,7 +20,7 @@ import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
 import Process (Pid)
-import Ribosome (HostError, Rpc, RpcError, ToErrorMessage, resumeReportError)
+import Ribosome (LogReport, Reportable, Rpc, RpcError, resumeLogReport)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command), commandShell, ident)
@@ -43,7 +43,7 @@ import Myo.Command.Proc (waitForShell)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcError (ProcError, unProcError)
 import Myo.Effect.Proc (Proc)
-import Myo.Tmux.Proc (panePid, shellBusy, waitForRunningProcess, leafPid)
+import Myo.Tmux.Proc (leafPid, panePid, shellBusy, waitForRunningProcess)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Render (renderTmux)
 
@@ -86,24 +86,24 @@ start TmuxTask {pane, command = Command {ident, cmdLines}} =
 
 type StartMonitoredStack =
   NativeCodecsE [TmuxCommand, Panes PaneMode] ++ [
-    DataLog HostError,
+    DataLog LogReport,
     Log
   ]
 
 startMonitored ::
-  ToErrorMessage tme =>
+  Reportable tme =>
   Members [ScopedTmuxMonitor tmres !! tme, NativeTmux, Stop CodecError] r =>
   Members StartMonitoredStack r =>
   Pid ->
   TmuxTask ->
   Sem r ()
 startMonitored shellPid task@TmuxTask {pane, command = Command {ident}} =
-  resumeReportError (Just "tmux") $ withTmuxMonitor TmuxMonitorTask {..} do
+  resumeLogReport $ withTmuxMonitor TmuxMonitorTask {..} do
     start task
     TmuxMonitor.wait
 
 startTask ::
-  ToErrorMessage tme =>
+  Reportable tme =>
   Members [ScopedTmuxMonitor tmres !! tme, NativeTmux, Stop CodecError] r =>
   Members StartMonitoredStack r =>
   Pid ->
@@ -165,7 +165,7 @@ type TmuxRunStack =
 
 runInTmux ::
   ∀ tmres tme r .
-  ToErrorMessage tme =>
+  Reportable tme =>
   Members TmuxRunStack r =>
   Members [ScopedTmuxMonitor tmres !! tme, Resource, Stop RunError] r =>
   TmuxTask ->
@@ -212,7 +212,7 @@ render =
 -- but if all uis share the same state, it's correct but should probably done before this
 -- but given that it returns a tmux-specific PaneId, they should probably be separate
 interpretBackendTmuxWithLog ::
-  ToErrorMessage sre =>
+  Reportable sre =>
   Members TmuxRunStack r =>
   Members [AtomicState UiState, ChronosTime, CommandLog, Rpc !! RpcError] r =>
   Members [Backend !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>

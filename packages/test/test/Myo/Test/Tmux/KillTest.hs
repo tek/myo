@@ -10,7 +10,7 @@ import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Chiasma.TmuxNative (withTmuxNative_)
 import Polysemy.Test (UnitTest, assert, evalMaybe, (/==))
-import Ribosome (mapHandlerError)
+import Ribosome (mapReport)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 
@@ -38,13 +38,13 @@ test_tmuxKill =
   myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLogSetting $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     thread1 <- testHandlerAsync do
-      mapHandlerError (runInTmux (TmuxTask Wait "make" 0 cmd))
+      mapReport (runInTmux (TmuxTask Wait "make" 0 cmd))
     assertWait (Executions.running ident) assert
     pid1 <- evalMaybe =<< Executions.pid ident
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [Lit "1"]
     thread2 <- testHandlerAsync do
-      mapHandlerError (runInTmux (TmuxTask Kill "make" 0 cmd))
+      mapReport (runInTmux (TmuxTask Kill "make" 0 cmd))
     thread1
     assertWait (Executions.running ident) assert
     pid2 <- evalMaybe =<< Executions.pid ident

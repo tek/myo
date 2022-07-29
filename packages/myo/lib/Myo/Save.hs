@@ -3,7 +3,7 @@ module Myo.Save where
 import Conc (Lock, lockOrSkip_)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Ribosome (Handler, Rpc, Settings, noautocmd, resumeHandlerError, silentBang)
+import Ribosome (Handler, Rpc, Settings, noautocmd, resumeReport, silentBang)
 import Ribosome.Api (nvimCommand)
 import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Settings as Settings
@@ -44,7 +44,7 @@ myoSave ::
   Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings !! SettingError, ChronosTime, Log, Resource] r =>
   Handler r ()
 myoSave =
-  resumeHandlerError save
+  resumeReport save
 
 saveAll ::
   Members [AtomicState LastSave, Lock @@ SaveLock, CommandLog, Settings, Rpc, ChronosTime, Log, Resource] r =>

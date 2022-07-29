@@ -17,15 +17,15 @@ import Data.MessagePack (Object)
 import Polysemy.Chronos (ChronosTime)
 import Ribosome (
   CompleteStyle (CompleteFiltered),
-  Errors,
   Execution (Async, Sync),
   Handler,
-  HostError,
+  LogReport,
   Persist,
   PersistError,
   PersistPath,
   PersistPathError,
   RemoteStack,
+  Reports,
   Rpc,
   RpcError,
   RpcHandler,
@@ -37,9 +37,8 @@ import Ribosome (
   completeWith,
   interpretPersist,
   interpretPersistPath,
-  reportError,
   reportStop,
-  resumeReportError,
+  resumeLogReport,
   rpc,
   rpcAutocmd,
   rpcCommand,
@@ -164,7 +163,7 @@ outputMappingHandlers =
 
 handlers ::
   Members MyoProdStack r =>
-  Members [Settings !! SettingError, Scratch !! RpcError, Rpc !! RpcError, DataLog HostError, Errors] r =>
+  Members [Settings !! SettingError, Scratch !! RpcError, Rpc !! RpcError, DataLog LogReport, Reports] r =>
   Members [ChronosTime, Mask Restoration, Log, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r]
 handlers =
@@ -229,14 +228,14 @@ prepare ::
   Members (NativeCodecsE [Panes PanePid, Panes PaneCoords]) r =>
   Members [NativeTmux !! TmuxError, AtomicState Views, AtomicState CommandState] r =>
   Members [Lock @@ LoadHistory, Resource, Log, Persist [HistoryEntry] !! PersistError] r =>
-  Members [Settings !! SettingError, Proc !! ProcError, Rpc !! RpcError, AtomicState UiState, DataLog HostError] r =>
+  Members [Settings !! SettingError, Proc !! ProcError, Rpc !! RpcError, AtomicState UiState, DataLog LogReport] r =>
   Sem r ()
 prepare = do
-  resuming @_ @Settings (reportError (Just "ui")) do
+  resumeLogReport @Settings do
     detect <- Settings.get Settings.detectUi
-    when detect (reportStop (Just "ui") detectDefaultUi)
+    when detect (reportStop detectDefaultUi)
     fetchCommands
-    resumeReportError @Rpc (Just "history") (resumeReportError @(Persist _) (Just "history") loadHistory)
+    resumeLogReport @Rpc (resumeLogReport @(Persist _) loadHistory)
 
 interpretMyoStack ::
   InterpretersFor MyoStack RemoteStack

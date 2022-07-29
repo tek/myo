@@ -2,7 +2,7 @@ module Myo.Test.Handler where
 
 import Log (Severity (Debug, Trace))
 import Polysemy.Test (UnitTest)
-import Ribosome (HostConfig, RpcHandler, mapHandlerError, setStderr)
+import Ribosome (HostConfig, RpcHandler, mapReport, setStderr)
 import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Test (testPluginConf, testPluginEmbed)
 import Ribosome.Test.EmbedTmux (HandlerStack)
@@ -48,7 +48,7 @@ myoEmbedTmuxTestHandlersConf conf handlers =
   runMyoTmuxTestStack conf .
   withHandlers handlers .
   testPluginEmbed .
-  mapHandlerError
+  mapReport
 
 myoEmbedTmuxTestHandlers ::
   HasCallStack =>

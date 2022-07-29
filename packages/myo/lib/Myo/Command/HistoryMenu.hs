@@ -7,8 +7,8 @@ import Ribosome (
   RpcError,
   ScratchId (ScratchId),
   Settings,
-  mapHandlerErrors,
-  resumeHandlerErrors,
+  mapReports,
+  resumeReports,
   scratch,
   )
 import Ribosome.Data.SettingError (SettingError)
@@ -72,7 +72,7 @@ myoHistory ::
   Members [Controller !! RunError, AtomicState CommandState, Async] r =>
   Handler r ()
 myoHistory =
-  resumeHandlerErrors @[Controller, Rpc] @[_, _] $ mapHandlerErrors @[RpcError, CommandError] do
+  resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError] do
     historyMenu >>= \case
       Success ident ->
         void (async (reRun (Left ident)))

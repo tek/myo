@@ -4,7 +4,7 @@ import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import Log (Severity (Error))
-import Ribosome (ErrorMessage (ErrorMessage), ToErrorMessage (toErrorMessage))
+import Ribosome (Report (Report), Reportable (toReport))
 
 data ToggleError =
   Tmux TmuxError
@@ -14,11 +14,11 @@ data ToggleError =
   Tree TreeModError
   deriving stock (Eq, Show, Generic)
 
-instance ToErrorMessage ToggleError where
-  toErrorMessage = \case
+instance Reportable ToggleError where
+  toReport = \case
     Tmux e ->
-      ErrorMessage "tmux error" ["ToggleError.Tmux:", show e] Error
+      Report "tmux error" ["ToggleError.Tmux:", show e] Error
     Render e ->
-      ErrorMessage "tmux error" ["ToggleError.Render:", show e] Error
+      Report "tmux error" ["ToggleError.Render:", show e] Error
     Tree e ->
-      ErrorMessage "tmux error" ["ToggleError.Tree:", show e] Error
+      Report "tmux error" ["ToggleError.Tree:", show e] Error

@@ -4,18 +4,18 @@ import qualified Data.Map.Strict as Map
 import Exon (exon)
 import Prettyprinter (Doc, line, nest, pretty, vsep)
 import Ribosome (
-  ErrorMessage (ErrorMessage),
-  Errors,
   Handler,
-  HandlerTag,
+  Report (Report),
+  ReportContext,
+  Reports,
   RpcError,
   Scratch,
   Settings,
-  StoredError (StoredError),
-  resumeHandlerError,
+  StoredReport (StoredReport),
+  reportContext,
+  resumeReport,
+  storedReports,
   )
-import qualified Ribosome.Errors as Errors
-import Ribosome.Host.Data.HandlerError (handlerTagName)
 import qualified Ribosome.Scratch as Scratch
 import Ribosome.Scratch (ScratchOptions (focus, name, syntax))
 import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
@@ -59,39 +59,39 @@ uiDiagnostics :: [Space] -> Doc a
 uiDiagnostics spaces =
   "## Ui" <> line <> (vsep . fmap pretty) spaces
 
-storedError :: StoredError -> Doc a
-storedError (StoredError (ErrorMessage _ log _) _) =
+storedError :: StoredReport -> Doc a
+storedError (StoredReport (Report _ log _) _) =
   case log of
     [] -> mempty
     (h : t) ->
       nest 2 (vsep (pretty <$> ([exon|* #{h}|] : t)))
 
-tagErrors :: HandlerTag -> [StoredError] -> Doc a
+tagErrors :: ReportContext -> [StoredReport] -> Doc a
 tagErrors t errs =
-  pretty [exon|### #{handlerTagName t}|] <> line <> vsep (storedError <$> errs)
+  pretty [exon|### #{reportContext t}|] <> line <> vsep (storedError <$> errs)
 
-errorDiagnostics :: Map HandlerTag [StoredError] -> Doc a
+errorDiagnostics :: Map ReportContext [StoredReport] -> Doc a
 errorDiagnostics errs | null errs =
   mempty
 errorDiagnostics errs =
-  "## Errors" <> line <> line <> vsep (uncurry tagErrors <$> Map.toAscList errs)
+  "## Reports" <> line <> line <> vsep (uncurry tagErrors <$> Map.toAscList errs)
 
 diagnostics ::
-  Members [Settings !! se, AtomicState UiState, AtomicState CommandState, Errors] r =>
+  Members [Settings !! se, AtomicState UiState, AtomicState CommandState, Reports] r =>
   Sem r (Doc a)
 diagnostics = do
   cmds <- atomicGets (cmdDiagnostics . CommandState.commands)
   ui <- atomicGets (uiDiagnostics . UiState.spaces)
-  errors <- errorDiagnostics <$> Errors.get
+  errors <- errorDiagnostics <$> storedReports
   pure $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
   where
     headline = "# Diagnostics"
 
 myoDiag ::
-  Members [Settings !! se, Scratch !! RpcError, AtomicState UiState, AtomicState CommandState, Errors] r =>
+  Members [Settings !! se, Scratch !! RpcError, AtomicState UiState, AtomicState CommandState, Reports] r =>
   Handler r ()
 myoDiag =
-  resumeHandlerError @Scratch do
+  resumeReport @Scratch do
     content <- diagnostics
     void $ Scratch.show (lines (show content)) options
   where

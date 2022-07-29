@@ -5,7 +5,8 @@ import qualified Data.ByteString as ByteString
 import Data.ByteString.Builder (Builder, byteString, toLazyByteString)
 import qualified Data.Map.Strict as Map
 import Data.Sequence (Seq ((:<|)), (|>))
-import Ribosome (HostError, SettingError, Settings, reportError)
+import Ribosome (LogReport, SettingError, Settings, logReport)
+import qualified Ribosome.Report as Report
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Data.CommandOutput (CommandOutput (..), CurrentOutput (..), OutputChunks (..), currentEmpty)
@@ -155,13 +156,14 @@ interpretCommandLog maxSize =
       atomicState' (swap . Map.mapAccumWithKey buildAndGetAccum mempty)
 
 maxSizeSetting ::
-  Members [Settings !! SettingError, DataLog HostError] r =>
+  Members [Settings !! SettingError, DataLog LogReport] r =>
   Sem r Int
 maxSizeSetting =
-  Settings.get Settings.maxLogSize !! \ e -> 10000 <$ reportError (Just "command-log") e
+  Report.context "command-log" do
+    Settings.get Settings.maxLogSize !! \ e -> 10000 <$ logReport e
 
 interpretCommandLogSetting ::
-  Members [Settings !! SettingError, DataLog HostError, Embed IO] r =>
+  Members [Settings !! SettingError, DataLog LogReport, Embed IO] r =>
   InterpreterFor CommandLog r
 interpretCommandLogSetting =
   interpretCommandLog maxSizeSetting

@@ -8,7 +8,7 @@ import Chiasma.Effect.Codec (NativeCommandCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import qualified Chiasma.View.State as Views (paneId)
-import Ribosome (Handler, mapHandlerError)
+import Ribosome (Handler, mapReport)
 
 import Myo.Data.ViewError (codecError, resumeTmuxError, viewsError)
 
@@ -17,5 +17,5 @@ myoFocus ::
   Ident ->
   Handler r ()
 myoFocus i =
-  mapHandlerError $ codecError $ resumeTmuxError $ withTmux_ do
+  mapReport $ codecError $ resumeTmuxError $ withTmux_ do
       selectPane =<< viewsError (Views.paneId i)

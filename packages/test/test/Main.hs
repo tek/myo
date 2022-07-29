@@ -2,6 +2,7 @@ module Main where
 
 import Myo.Test.Command.CommandMenuTest (test_commandMenu)
 import Myo.Test.Command.HistoryMenuTest (test_historyMenu)
+import Myo.Test.Command.HistoryTest (test_history)
 import Myo.Test.Command.UpdateTest (test_updateCommands)
 import Myo.Test.Command.VimTestTest (test_vimTest)
 import Myo.Test.CompleteTest (test_completeCommand)
@@ -31,7 +32,6 @@ import Myo.Test.Tmux.TogglePaneTest (test_shellPanePin, test_togglePane)
 import Myo.Test.Tmux.UpdateTest (test_updateUi)
 import Polysemy.Test (unitTest)
 import Test.Tasty (TestTree, defaultMain, testGroup)
-import Myo.Test.Command.HistoryTest (test_history)
 
 tests :: TestTree
 tests =

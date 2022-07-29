@@ -1,6 +1,6 @@
 module Myo.Command.Data.TmuxMonitorError where
 
-import Ribosome (ToErrorMessage (toErrorMessage))
+import Ribosome (Reportable (toReport))
 
 import Myo.Data.ViewError (ViewError)
 
@@ -11,10 +11,10 @@ data TmuxMonitorError sre =
   deriving stock (Eq, Show)
 
 instance (
-    ToErrorMessage sre
-  ) => ToErrorMessage (TmuxMonitorError sre) where
-    toErrorMessage = \case
+    Reportable sre
+  ) => Reportable (TmuxMonitorError sre) where
+    toReport = \case
       SocketReader sre ->
-        toErrorMessage sre
+        toReport sre
       View err ->
-        toErrorMessage err
+        toReport err

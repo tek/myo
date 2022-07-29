@@ -15,7 +15,7 @@ import Chiasma.TmuxApi (TmuxApi)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust)
-import Ribosome (HostError, SettingError, Settings, interpretPersistNull, resumeHandlerError)
+import Ribosome (LogReport, SettingError, Settings, interpretPersistNull, resumeReport)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -49,7 +49,7 @@ setup ::
   Sem r ()
 setup =
   testHandler do
-    resumeHandlerError setupDefaultTestUi
+    resumeReport setupDefaultTestUi
     myoAddSystemCommand cmd
   where
     cmd =
@@ -57,7 +57,7 @@ setup =
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 runAndCheck ::
-  Members [DataLog HostError, Hedgehog IO, Race, Embed IO] r =>
+  Members [DataLog LogReport, Hedgehog IO, Race, Embed IO] r =>
   Members [NativeTmux, NativeCommandCodec !! CodecError, Stop CodecError] r =>
   Members [Controller !! RunError, AtomicState CommandState, Error TestError, Error Failure, ChronosTime] r =>
   Sem r ()

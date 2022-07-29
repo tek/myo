@@ -49,7 +49,6 @@ library
       Myo.Command.Data.RunError
       Myo.Command.Data.RunEvent
       Myo.Command.Data.RunLineOptions
-      Myo.Command.Data.RunningCommand
       Myo.Command.Data.RunTask
       Myo.Command.Data.SocketReaderError
       Myo.Command.Data.StoreHistory

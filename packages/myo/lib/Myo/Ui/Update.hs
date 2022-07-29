@@ -6,9 +6,8 @@ import Chiasma.Ui.Data.View (Layout (Layout), Pane (Pane), View (View))
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry (ViewGeometry))
 import Chiasma.Ui.Data.ViewState (ViewState (ViewState))
 import Data.MessagePack (Object)
-import Ribosome (Handler, Settings, fromMsgpack, resumeHandlerError)
+import Ribosome (Handler, Settings, fromMsgpack, resumeReport)
 import Ribosome.Data.SettingError (SettingError)
-import qualified Ribosome.Host.Data.HandlerError as HandlerError
 
 import Myo.Ui.Data.AddLayoutOptions (AddLayoutOptions (..))
 import Myo.Ui.Data.AddPaneOptions (AddPaneOptions (..))
@@ -74,8 +73,8 @@ updateUi ::
   Object ->
   Handler r ()
 updateUi o =
-  resumeHandlerError do
-    UiSettingCodec layouts panes <- stopEitherWith HandlerError.simple (fromMsgpack o)
+  resumeReport do
+    UiSettingCodec layouts panes <- stopEitherWith fromText (fromMsgpack o)
     resetUi
     traverse_ (uncurry insertOrUpdateLayout) =<< traverse createLayout (fold layouts)
     traverse_ (uncurry insertOrUpdatePane) =<< traverse createPane (fold panes)

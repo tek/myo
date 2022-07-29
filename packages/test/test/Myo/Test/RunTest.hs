@@ -5,16 +5,16 @@ import qualified Data.Map.Strict as Map
 import Log (Severity (Error))
 import Polysemy.Test (Hedgehog, UnitTest, assertJust, evalLeft)
 import Ribosome (
-  ErrorMessage (ErrorMessage),
-  Errors,
-  HandlerTag,
-  HostError,
-  StoredError (StoredError),
-  ToErrorMessage (toErrorMessage),
+  LogReport,
+  Report (Report),
+  ReportContext,
+  Reportable (toReport),
+  Reports,
+  StoredReport (StoredReport),
   interpretPersistNull,
-  reportError,
+  logReport,
+  storedReports,
   )
-import qualified Ribosome.Errors as Errors
 import Ribosome.Test (testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -33,22 +33,23 @@ import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
+import qualified Ribosome.Report as Report
 
 newtype RunTestError =
   RunTestError { unTestError :: [Text] }
   deriving stock (Eq, Show)
   deriving newtype (Ord)
 
-instance ToErrorMessage RunTestError where
-  toErrorMessage (RunTestError e) =
-    ErrorMessage (unlines e) e Error
+instance Reportable RunTestError where
+  toReport (RunTestError e) =
+    Report (unlines e) e Error
 
 testError :: Text
 testError =
   "error"
 
-htag :: HandlerTag
-htag = "test"
+ctx :: ReportContext
+ctx = "test"
 
 runnerIdent :: Ident
 runnerIdent =
@@ -59,14 +60,14 @@ ident =
   "cmd"
 
 checkReport ::
-  Members [Hedgehog IO, Errors] r =>
+  Members [Hedgehog IO, Reports] r =>
   [Text] ->
   Sem r ()
 checkReport target = do
-  loggedError <- Map.lookup htag <$> Errors.get
+  loggedError <- Map.lookup ctx <$> storedReports
   assertJust [target] (fmap user <$> loggedError)
   where
-    user (StoredError (ErrorMessage _ l _) _) =
+    user (StoredReport (Report _ l _) _) =
       l
 
 dummyAccept :: RunTask -> Sem r (Maybe ())
@@ -74,14 +75,15 @@ dummyAccept _ =
   pure (Just ())
 
 dummyExecute ::
-  Member (DataLog HostError) r =>
+  Member (DataLog LogReport) r =>
   () ->
   Sem r ()
 dummyExecute () =
-  reportError (Just htag) (RunTestError [testError])
+  Report.setContext ctx do
+    logReport (RunTestError [testError])
 
 interpretBackendDummy ::
-  Member (DataLog HostError) r =>
+  Member (DataLog LogReport) r =>
   InterpreterFor (Backend !! RunError) r
 interpretBackendDummy =
   interpretBackendFail .
@@ -103,14 +105,15 @@ singleLineAccept RunTask {command = Command {cmdLines = l}} =
   pure (Just l)
 
 singleLineExecute ::
-  Member (DataLog HostError) r =>
+  Member (DataLog LogReport) r =>
   [Text] ->
   Sem r ()
 singleLineExecute l =
-  reportError (Just htag) (RunTestError l)
+  Report.setContext ctx do
+    logReport (RunTestError l)
 
 interpretBackendDummySingleLine ::
-  Member (DataLog HostError) r =>
+  Member (DataLog LogReport) r =>
   InterpreterFor (Backend !! RunError) r
 interpretBackendDummySingleLine =
   interpretBackendFail .

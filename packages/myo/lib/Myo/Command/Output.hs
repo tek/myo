@@ -1,7 +1,7 @@
 module Myo.Command.Output where
 
 import GHC.Natural (minusNaturalMaybe)
-import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapHandlerError, resumeHandlerError)
+import Ribosome (Handler, Rpc, RpcError, Scratch, Settings, mapReport, resumeReport)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Data.CommandState (CommandState)
@@ -57,12 +57,12 @@ myoPrev ::
   Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoPrev =
-  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
+  resumeReport @Rpc $ resumeReport @Scratch $ mapReport do
     cycleAndNavigate (-1)
 
 myoNext ::
   Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoNext =
-  resumeHandlerError @Rpc $ resumeHandlerError @Scratch $ mapHandlerError do
+  resumeReport @Rpc $ resumeReport @Scratch $ mapReport do
     cycleAndNavigate 1
