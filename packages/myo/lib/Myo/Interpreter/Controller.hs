@@ -88,12 +88,13 @@ runCommand ::
   Command ->
   Sem r ()
 runCommand cmd@Command {ident} = do
-  Log.debug [exon|Running command #{show cmd}|]
+  Log.debug [exon|Running #{show cmd}|]
   task <- runTask cmd
   CommandLog.archive ident
   prepare task
   resumeHoist RunError.Persist (pushHistory cmd)
   restop (Backend.execute task)
+  Log.debug [exon|Command `#{commandIdText ident}` executed successfully|]
 
 runIdent ::
   Members PrepareStack r =>
