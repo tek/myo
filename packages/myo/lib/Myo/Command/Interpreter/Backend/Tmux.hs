@@ -46,6 +46,7 @@ import Myo.Effect.Proc (Proc)
 import Myo.Tmux.Proc (leafPid, panePid, shellBusy, waitForRunningProcess)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Render (renderTmux)
+import Myo.Command.Data.SocatExe (SocatExe)
 
 acceptCommand ::
   Bool ->
@@ -214,7 +215,7 @@ render =
 interpretBackendTmuxWithLog ::
   Reportable sre =>
   Members TmuxRunStack r =>
-  Members [AtomicState UiState, ChronosTime, CommandLog, Rpc !! RpcError] r =>
+  Members [AtomicState UiState, ChronosTime, CommandLog, Rpc !! RpcError, Reader (Maybe SocatExe)] r =>
   Members [Backend !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>
   Sem r a ->
   Sem r a

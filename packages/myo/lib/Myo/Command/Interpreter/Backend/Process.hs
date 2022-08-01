@@ -4,6 +4,7 @@ import Conc (PScoped)
 import qualified Data.List as List
 import Exon (exon)
 import qualified Log
+import Path (toFilePath)
 import qualified Polysemy.Process as Process
 import Polysemy.Process (
   OutputPipe (Stderr, Stdout),
@@ -18,6 +19,8 @@ import Polysemy.Process (
   interpretProcessOutputTextLines,
   withProcess,
   )
+import Ribosome (Rpc, RpcError)
+import Ribosome.Api (nvimCwd)
 import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed (proc, setWorkingDir)
 
@@ -25,16 +28,13 @@ import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command, cmdLines))
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (System))
+import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (System, UiSystem))
 import Myo.Command.Effect.Backend (Backend)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcessTask (ProcessTask (ProcessTask))
-import Ribosome.Api (nvimCwd)
-import Ribosome (Rpc, RpcError)
-import Path (toFilePath)
 
 outputEvent ::
   Members [CommandLog, State [Text]] r =>
@@ -90,6 +90,8 @@ acceptCommand ::
   Sem r (Maybe ProcessTask)
 acceptCommand = \case
   RunTask cmd System ->
+    pure (processTask cmd)
+  RunTask cmd (UiSystem _) ->
     pure (processTask cmd)
   _ ->
     pure Nothing

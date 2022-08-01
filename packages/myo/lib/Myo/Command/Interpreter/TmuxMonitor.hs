@@ -1,5 +1,6 @@
 module Myo.Command.Interpreter.TmuxMonitor where
 
+import Chiasma.Command.Pane (pipePane)
 import Chiasma.Data.PipePaneParams (target)
 import qualified Chiasma.Data.Target as Target
 import Chiasma.Data.TmuxCommand (TmuxCommand (PipePane))
@@ -9,15 +10,21 @@ import Chiasma.Effect.Codec (NativeCommandCodecE)
 import qualified Chiasma.Effect.TmuxApi as Tmux
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
+import Chiasma.TmuxApi (Tmux)
 import Conc (PScoped, interpretPScopedResumableWith, interpretPScopedResumable_, race_)
 import Control.Lens.Regex.ByteString (match, regex)
+import Data.Char (isAlphaNum)
+import qualified Data.Text as Text
 import Exon (exon)
 import qualified Log
+import Path (Abs, File, Path)
 import Polysemy.Chronos (ChronosTime)
 import Process (Pid, unPid)
+import Ribosome (pathText)
 import Time (MilliSeconds (MilliSeconds), while)
 
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
+import Myo.Command.Data.SocatExe (SocatExe (SocatExe))
 import Myo.Command.Data.TmuxMonitorError (TmuxMonitorError (SocketReader, View))
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
@@ -26,7 +33,6 @@ import Myo.Command.Effect.Executions (Executions)
 import qualified Myo.Command.Effect.SocketReader as SocketReader
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
 import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (TmuxMonitorTask, ident, pane, shellPid))
-import Myo.Command.Log (pipePaneToSocket)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcError (ProcError)
 import Myo.Data.ViewError (ViewError (TmuxApi, TmuxCodec))
@@ -78,18 +84,35 @@ waitBasic ident shellPid =
     Executions.waitTerminate ident
     Log.debug [exon|Execution terminated for `#{commandIdText ident}`|]
 
+pipePaneToSocket ::
+  Member Tmux r =>
+  SocatExe ->
+  PaneId ->
+  Path Abs File ->
+  Sem r ()
+pipePaneToSocket (SocatExe socat) paneId path =
+  pipePane paneId [exon|'#{pathText socat} STDIN UNIX-SENDTO:#{escapedPath}'|]
+  where
+    escapedPath =
+      Text.concatMap escape (pathText path)
+    escape c =
+      prefix c <> Text.singleton c
+    prefix c | isAlphaNum c = ""
+    prefix _  = "\\"
+
 pipingToSocket ::
   Members [NativeTmux !! TmuxError, SocketReader, NativeCommandCodecE, Stop ViewError, Resource] r =>
   PaneId ->
+  SocatExe ->
   Sem r a ->
   Sem r a
-pipingToSocket pane =
+pipingToSocket pane socat =
   resumeHoist TmuxApi . mapStop TmuxCodec . bracket_ acquire release . insertAt @0
   where
     acquire = do
       socket <- SocketReader.path
       withTmux_ do
-        pipePaneToSocket pane socket
+        pipePaneToSocket socat pane socket
     release =
       withTmux_ do
         Tmux.send (PipePane def { target = Target.Pane pane })
@@ -104,17 +127,19 @@ startLog ident pane =
 
 withLog ::
   ∀ socket sre r a .
-  Members [NativeTmux !! TmuxError, ScopedSocketReader socket !! sre, NativeCommandCodecE, Resource] r =>
+  Member Resource r =>
+  Members [NativeTmux !! TmuxError, ScopedSocketReader socket !! sre, NativeCommandCodecE, Reader (Maybe SocatExe)] r =>
   TmuxMonitorTask ->
   (TmuxMonitorTask -> Sem (SocketReader : Stop (TmuxMonitorError sre) : r) a) ->
   Sem (Stop (TmuxMonitorError sre) : r) a
-withLog task@TmuxMonitorTask {..} use =
+withLog task@TmuxMonitorTask {..} use = do
+  socat <- ask
   resumeHoist SocketReader $ mapStop View do
-    socketReader ident $ pipingToSocket pane do
+    socketReader ident $ maybe id (pipingToSocket pane) socat do
       insertAt @1 (use task)
 
 interpretTmuxMonitor ::
-  Members [NativeTmux !! TmuxError, Proc !! ProcError, ChronosTime, CommandLog] r =>
+  Members [NativeTmux !! TmuxError, Proc !! ProcError, ChronosTime, CommandLog, Reader (Maybe SocatExe)] r =>
   Members [Executions, ScopedSocketReader socket !! sre, NativeCommandCodecE, Resource, Log, Race] r =>
   InterpreterFor (PScoped TmuxMonitorTask TmuxMonitorTask TmuxMonitor !! TmuxMonitorError sre) r
 interpretTmuxMonitor =

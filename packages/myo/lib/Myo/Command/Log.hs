@@ -1,12 +1,7 @@
 module Myo.Command.Log where
 
-import Chiasma.Command.Pane (pipePane)
-import Chiasma.Data.TmuxId (PaneId)
-import Chiasma.TmuxApi (Tmux)
-import Data.Char (isAlphaNum)
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as Text (concatMap, lines, singleton)
-import Path (Abs, File, Path, toFilePath)
+import qualified Data.Text as Text (lines)
 import Ribosome (Handler, RpcError, Scratch, resumeReport, scratch)
 import qualified Ribosome.Scratch as Scratch
 
@@ -20,19 +15,6 @@ import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
 import Myo.Data.CommandId (CommandId, commandIdText)
-
-pipePaneToSocket ::
-  Member Tmux r =>
-  PaneId ->
-  Path Abs File ->
-  Sem r ()
-pipePaneToSocket paneId path =
-  pipePane paneId cmd
-  where
-    cmd = "'socat STDIN UNIX-SENDTO:" <> (Text.concatMap escape . toText . toFilePath) path <> "'"
-    escape c = prefix c <> Text.singleton c
-    prefix c | isAlphaNum c = ""
-    prefix _  = "\\"
 
 mainCommandOrHistory ::
   Members [AtomicState CommandState, Stop CommandError] r =>

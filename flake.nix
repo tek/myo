@@ -14,7 +14,10 @@
       myo-test = fast inputs;
     };
 
-  in ribosome.lib.flake ({ config, lib, ...}: {
+  in ribosome.lib.flake ({ config, lib, ...}:
+  let
+    inherit (config) pkgs;
+  in {
     base = ./.;
     inherit overrides;
     depsFull = [ribosome];
@@ -34,12 +37,18 @@
       defaultApp = "myo";
     };
     hackage.versionFile = "ops/version.nix";
-    ghcid.shellConfig.buildInputs = with config.devGhc.pkgs; [pkgs.neovim pkgs.tmux pkgs.socat];
+    ghcid.shellConfig.buildInputs = [pkgs.neovim pkgs.tmux pkgs.socat];
     ghci = {
       preludePackage = "prelate";
       preludeModule = "Prelate";
       args = ["-fplugin=Polysemy.Plugin"];
       extensions = ["StandaloneKindSignatures" "OverloadedLabels" "ImpredicativeTypes"];
+    };
+    outputs.apps.myo = {
+      type = "app";
+      program =
+        let main = "${config.outputs.packages.myo}/bin/myo --socat ${pkgs.socat}/bin/socat";
+        in "${pkgs.writeScript "myo" main}";
     };
   });
 }

@@ -14,6 +14,10 @@ import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand
 import Chiasma.Interpreter.TmuxClient (interpretTmuxNativeEnvGraceful)
 import Conc (Lock, Restoration, interpretAtomic, interpretLockReentrant, withAsync_)
 import Data.MessagePack (Object)
+import Exon (exon)
+import Options.Applicative (Parser, help, long, option, readerError)
+import Options.Applicative.Types (readerAsk)
+import Path (parseAbsFile)
 import Polysemy.Chronos (ChronosTime)
 import Ribosome (
   CompleteStyle (CompleteFiltered),
@@ -24,6 +28,7 @@ import Ribosome (
   PersistError,
   PersistPath,
   PersistPathError,
+  PluginConfig (PluginConfig),
   RemoteStack,
   Reports,
   Rpc,
@@ -43,7 +48,7 @@ import Ribosome (
   rpcAutocmd,
   rpcCommand,
   rpcFunction,
-  runNvimPluginIO,
+  runNvimPluginCli,
   watchVariables,
   )
 import Ribosome.Menu (
@@ -66,6 +71,7 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.LoadHistory (LoadHistory)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Data.SocatExe (SocatExe (SocatExe))
 import Myo.Command.Data.SocketReaderError (SocketReaderError)
 import Myo.Command.Data.StoreHistory (StoreHistory)
 import Myo.Command.Effect.Backend (Backend)
@@ -80,6 +86,7 @@ import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxWithLog)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Command.Interpreter.SocatExe (interpretReaderSocatExe)
 import Myo.Command.Interpreter.SocketReader (SocketReaderResources, interpretSocketReader)
 import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoPrev)
@@ -88,6 +95,7 @@ import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
 import Myo.Command.Test (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
 import Myo.Command.Update (fetchCommands, myoUpdateCommands)
 import Myo.Complete (myoCompleteCommand)
+import Myo.Data.CliOptions (CliOptions (CliOptions))
 import Myo.Data.CommandId (CommandId)
 import Myo.Data.Env (Env)
 import Myo.Data.LastSave (LastSave)
@@ -125,6 +133,7 @@ type MyoStack =
     AtomicState Views,
     AtomicState CommandState,
     Reader LogDir,
+    Reader (Maybe SocatExe),
     NativeCodecE TmuxCommand,
     NativeCodecE (Panes PaneCoords),
     NativeCodecE (Panes PaneMode),
@@ -238,7 +247,7 @@ prepare = do
     resumeLogReport @Rpc (resumeLogReport @(Persist _) loadHistory)
 
 interpretMyoStack ::
-  InterpretersFor MyoStack RemoteStack
+  InterpretersFor MyoStack (RemoteStack CliOptions)
 interpretMyoStack =
   interpretLockReentrant . untag .
   interpretLockReentrant . untag .
@@ -250,6 +259,7 @@ interpretMyoStack =
   interpretCodecPanes .
   interpretCodecPanes .
   interpretCodecTmuxCommand .
+  interpretReaderSocatExe .
   interpretLogDir .
   interpretAtomic def .
   interpretAtomic def .
@@ -268,7 +278,7 @@ parsers =
   ]
 
 interpretMyoProd ::
-  InterpretersFor MyoProdStack RemoteStack
+  InterpretersFor MyoProdStack (RemoteStack CliOptions)
 interpretMyoProd =
   interpretMyoStack .
   interpretNvimMenusFinal .
@@ -288,6 +298,20 @@ interpretMyoProd =
   interpretParsing parsers .
   withAsync_ prepare
 
+options :: Parser CliOptions
+options =
+  CliOptions <$> optional (SocatExe <$> option fileParser (long "socat" <> help socatHelp))
+  where
+    fileParser = do
+      raw <- readerAsk
+      either (const (readerError [exon|not a valid path: #{raw}|])) pure (parseAbsFile raw)
+    socatHelp =
+      "The path to the `socat` executable"
+
+conf :: PluginConfig CliOptions
+conf =
+  PluginConfig "myo" def options
+
 myo :: IO ()
 myo =
-  runNvimPluginIO @MyoProdStack "myo" (interpretMyoProd . watchVariables variables) handlers
+  runNvimPluginCli @MyoProdStack conf (interpretMyoProd . watchVariables variables) handlers

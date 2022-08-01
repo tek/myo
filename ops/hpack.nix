@@ -96,6 +96,7 @@ in {
       "microlens-mtl"
       "mono-traversable"
       "network"
+      "optparse-applicative"
       "parsers"
       "path"
       "path-io"

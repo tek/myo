@@ -7,6 +7,7 @@ import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, UnitTest)
 import Ribosome (BootError, HostConfig, PluginConfig (PluginConfig), Rpc, RpcError, SettingError, Settings)
+import Ribosome.Data.CustomConfig (CustomConfig (CustomConfig))
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
 import Ribosome.Host.Interpret (with)
 import Ribosome.Test (EmbedHandlerStack, EmbedStackWith, TestConfig (TestConfig), runEmbedTest)
@@ -17,6 +18,8 @@ import Ribosome.Test.SocketTmux (SocketTmuxWith, TmuxHandlerStack, runSocketTmux
 import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
+import Myo.Command.Interpreter.SocatExe (interpretReaderSocatExe)
+import Myo.Data.CliOptions (CliOptions (CliOptions))
 import Myo.Data.ViewError (ViewError)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
@@ -42,6 +45,9 @@ interpretMyoTestStack =
   interpretCodecPanes .
   interpretCodecPanes .
   interpretCodecTmuxCommand .
+  runReader (CustomConfig (CliOptions Nothing)) .
+  interpretReaderSocatExe .
+  raiseUnder .
   withLogDir .
   interpretAtomic def .
   interpretAtomic def .
@@ -53,7 +59,7 @@ testConfig ::
   HostConfig ->
   TestConfig
 testConfig (HostConfig conf) =
-  TestConfig False (PluginConfig "myo" (HostConfig conf { dataLogConc = False }))
+  TestConfig False (PluginConfig "myo" (HostConfig conf { dataLogConc = False }) unit)
 
 type MyoTestStack =
   MyoStack ++ EmbedHandlerStack

@@ -50,6 +50,7 @@ library
       Myo.Command.Data.RunEvent
       Myo.Command.Data.RunLineOptions
       Myo.Command.Data.RunTask
+      Myo.Command.Data.SocatExe
       Myo.Command.Data.SocketReaderError
       Myo.Command.Data.StoreHistory
       Myo.Command.Data.TmuxMonitorError
@@ -70,6 +71,7 @@ library
       Myo.Command.Interpreter.Backend.Vim
       Myo.Command.Interpreter.CommandLog
       Myo.Command.Interpreter.Executions
+      Myo.Command.Interpreter.SocatExe
       Myo.Command.Interpreter.SocketReader
       Myo.Command.Interpreter.TmuxMonitor
       Myo.Command.Log
@@ -82,6 +84,7 @@ library
       Myo.Command.Test
       Myo.Command.Update
       Myo.Complete
+      Myo.Data.CliOptions
       Myo.Data.CommandId
       Myo.Data.Env
       Myo.Data.ExactlyOne
@@ -241,6 +244,7 @@ library
     , microlens-mtl
     , mono-traversable
     , network
+    , optparse-applicative
     , parsers
     , path
     , path-io
