@@ -1,26 +1,33 @@
 # Intro
 
-**myo** is a [Neovim] plugin written in [Haskell] and powered by [ribosome] and [nvim-hs].
+**Myo** is a [Neovim] plugin written in [Haskell] with the plugin framework [Ribosome].
 
 It provides several interacting features that include:
 * [**UI**](#ui): automatic opening, closing and layouting of tmux panes
 * [**Commands**](#commands): Execution of configurable shell commands in [tmux] or subprocesses
 * [**Output**](#output): Parsing, rendering and navigation of messages produced by commands
 
-**myo** benefits a lot from having per-project and per-project-type configuration for setting up language-specific commands.
+**Myo** benefits a lot from having per-project and per-project-type configuration for setting up language-specific commands.
 If you don't have a solution for this, the author also maintains [proteome], a project management plugin.
 
 ![Haskell output screenshot](img/haskell-output.png)
 
 # Install
 
-This plugin depends on the Haskell plugin manager [chromatin] and [nix].
-To install, request both *chromatin* and *myo* from your Neovim plugin manager:
+The plugin can be loaded by specifying the repo to a package manager like any other, for example by cloning it in a
+subdirectory of `'packpath'` or using one of the many plugin managers.
 
 ```vim
-Plug 'tek/chromatin'
 Plug 'tek/myo'
 ```
+
+Since the plugin is written in Haskell, its executable has to be fetched or built on the first start.
+
+* If the [Nix package manager](https://nixos.org/learn.html) is available, the plugin will be fetched from the Nix cache
+  (or built if the current commit isn't in the cache)
+* Otherwise it will be downloaded from Github's releases.
+* If the variable `g:myo_fetch_bin` is set to `1`, Nix is ignored and the binary is downloaded from Github
+  regardless.
 
 # Configuration
 
@@ -226,10 +233,8 @@ let g:myo_haskell_stack = v:false
 [Haskell]: https://www.haskell.org
 [ribosome]: https://github.com/tek/ribosome
 [chromatin]: https://github.com/tek/chromatin
-[nvim-hs]: https://github.com/neovimhaskell/nvim-hs
 [tmux]: https://github.com/tmux/tmux
 [proteome]: https://github.com/tek/proteome
-[nvim-hs.vim]: https://github.com/neovimhaskell/nvim-hs.vim
 [Scala]: https://scala-lang.org
 [sbt]: https://scala-sbt.org
 [chiasma]: https://github.com/tek/chiasma
