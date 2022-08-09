@@ -90,7 +90,7 @@ Panes open automatically when a command is executed in them, but there are funct
 ## MyoToggle
 
 ```vim
-call MyoToggle('sbt')
+:MyoTogglePane sbt
 ```
 
 will open the pane `sbt` in the lower right corner, or, if it is open already, minimize it to a size of two cells in the
@@ -163,7 +163,7 @@ This function allows you to run commands from the history.
 For example, to run the previous command again:
 
 ```vim
-call MyoReRun(0)
+:MyoReRun 0
 ```
 
 ## MyoHistory
@@ -183,7 +183,7 @@ command to execute something relating to the current cursor position.
 When running this function:
 
 ```vim
-call MyoVimTest()
+:MyoVimTest
 ```
 
 **myo** will call [vim-test] and execute its output in the pane or shell configured by `g:myo_test_pane` or
@@ -195,7 +195,7 @@ When a command is executed, its output is read into **myo**'s state.
 Running the command
 
 ```vim
-MyoParse
+:MyoParseLatest
 ```
 
 Will run the appropriate parser, read from the command option `pane` or the variable `g:myo_test_lang` (currently only
