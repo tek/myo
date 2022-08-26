@@ -17,13 +17,13 @@ import Ribosome (
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Menu (
   MenuItem,
+  MenuLoops,
   MenuResult (Error, Success),
-  NvimMenu,
-  menu,
-  runStaticNvimMenu,
+  NvimMenuUi,
+  WindowMenu,
   simpleMenuItem,
+  staticNvimMenu,
   withFocus,
-  withMappings,
   )
 
 import Myo.Command.Data.Command (Command (Command, cmdLines, displayName), ident)
@@ -57,19 +57,22 @@ commandItems = do
     menuItemText ident ls displayName =
       Text.unwords [menuItemName ident displayName, Text.take 100 (fromMaybe "<no command line>" (head ls))]
 
-type CommandMenuStack =
-  NvimMenu CommandId ++ [
+type CommandMenuStack ui =
+  [
+    NvimMenuUi ui,
+    MenuLoops CommandId,
     Settings !! SettingError,
-    Rpc !! RpcError
+    Rpc !! RpcError,
+    Log
   ]
 
 commandMenu ::
-  Members CommandMenuStack r =>
+  Members (CommandMenuStack ui) r =>
   Members [AtomicState CommandState, Stop CommandError, Stop RpcError] r =>
   Sem r (MenuResult CommandId)
 commandMenu = do
   items <- commandItems
-  runStaticNvimMenu items [] opts $ withMappings [("cr", withFocus pure)] menu
+  staticNvimMenu items def opts [("<cr>", withFocus pure)]
   where
     opts =
       scratch (ScratchId name) & #filetype ?~ name
@@ -77,7 +80,7 @@ commandMenu = do
       "myo-commands"
 
 myoCommands ::
-  Members CommandMenuStack r =>
+  Members (CommandMenuStack WindowMenu) r =>
   Members [Controller !! RunError, AtomicState CommandState, Async] r =>
   Handler r ()
 myoCommands =

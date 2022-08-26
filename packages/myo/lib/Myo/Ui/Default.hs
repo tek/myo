@@ -25,7 +25,6 @@ import Chiasma.Ui.Data.View (
   consPane,
   )
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry (ViewGeometry))
-import Control.Monad.Extra (findM)
 import Process (Pid (Pid))
 import Ribosome (Rpc, RpcError, Settings, mapUserMessage, resumeHoistUserMessage)
 import Ribosome.Api (vimPid)

@@ -5,7 +5,8 @@ import Polysemy.Test (UnitTest, (===))
 import Ribosome (interpretPersistNull)
 import Ribosome.Api (nvimGetVar)
 import qualified Ribosome.Menu as Menu
-import Ribosome.Menu (interpretNvimMenuFinal, promptInput)
+import Ribosome.Menu (promptInput)
+import Ribosome.Menu.Prompt (PromptEvent (Mapping))
 import Ribosome.Test (testError)
 
 import Myo.Command.CommandMenu (commandMenu)
@@ -21,9 +22,9 @@ import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
 
-inputChars :: [Text]
-inputChars =
-  ["k", "cr"]
+inputEvents :: [PromptEvent]
+inputEvents =
+  [Mapping "k", Mapping "<cr>"]
 
 commands :: [Command]
 commands =
@@ -36,7 +37,7 @@ test_commandMenu :: UnitTest
 test_commandMenu =
   myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendVim $ interpretController do
     atomicSet @CommandState #commands commands
-    Menu.Success ident <- interpretNvimMenuFinal $ promptInput inputChars do
+    Menu.Success ident <- promptInput inputEvents do
       testError @CommandError commandMenu
     testError (restop (Controller.runIdent ident))
     value <- nvimGetVar "command"

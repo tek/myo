@@ -51,15 +51,7 @@ import Ribosome (
   runNvimPluginCli,
   watchVariables,
   )
-import Ribosome.Menu (
-  MenuState,
-  MenusIOEffects,
-  NvimMenusIOEffects,
-  NvimRenderer,
-  interpretMenuRendererNvim,
-  interpretMenuStates,
-  interpretNvimMenusFinal,
-  )
+import Ribosome.Menu (MenuLoops, NvimMenus, interpretMenuLoops, interpretMenus)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
@@ -157,9 +149,8 @@ type MyoProdStack =
     NativeTmux !! TmuxError,
     ScopedSocketReader SocketReaderResources !! SocketReaderError,
     AtomicState LastSave,
-    NvimRenderer CommandId !! RpcError,
-    Scoped () (MenuState CommandId)
-  ] ++ MenusIOEffects ++ NvimMenusIOEffects ++ MyoStack
+    MenuLoops CommandId
+  ] ++ NvimMenus ++ MyoStack
 
 outputMappingHandlers ::
   Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
@@ -281,9 +272,8 @@ interpretMyoProd ::
   InterpretersFor MyoProdStack (RemoteStack CliOptions)
 interpretMyoProd =
   interpretMyoStack .
-  interpretNvimMenusFinal .
-  interpretMenuStates .
-  interpretMenuRendererNvim .
+  interpretMenus .
+  interpretMenuLoops .
   interpretAtomic def .
   interpretSocketReader .
   interpretTmuxNativeEnvGraceful Nothing .

@@ -15,6 +15,8 @@ import Ribosome (
   Handler,
   MapMode (MapNormal),
   Mapping (Mapping),
+  MappingAction (MappingCall),
+  MappingSpec (MappingSpec),
   Rpc,
   RpcError,
   RpcName,
@@ -337,8 +339,8 @@ outputSelectName =
 mappings :: [Mapping]
 mappings =
   [
-    Mapping outputQuitName "q" [MapNormal] Nothing,
-    Mapping outputSelectName "<cr>" [MapNormal] Nothing
+    Mapping (MappingCall outputQuitName) (MappingSpec "q" [MapNormal]) Nothing mempty,
+    Mapping (MappingCall outputSelectName) (MappingSpec "<cr>" [MapNormal]) Nothing mempty
   ]
 
 renderReport ::

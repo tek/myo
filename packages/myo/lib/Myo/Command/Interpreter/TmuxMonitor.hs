@@ -149,8 +149,7 @@ interpretTmuxMonitor =
       race_ (readOutput ident) (waitBasic ident shellPid)
 
 interpretTmuxMonitorNoLog ::
-  Members [Proc !! ProcError, ChronosTime] r =>
-  Members [Executions, Log, Race] r =>
+  Members [Proc !! ProcError, ChronosTime, Executions, Log, Race] r =>
   InterpreterFor (PScoped TmuxMonitorTask TmuxMonitorTask TmuxMonitor !! TmuxMonitorError Void) r
 interpretTmuxMonitorNoLog =
   interpretPScopedResumable_ pure \ TmuxMonitorTask {..} -> \case

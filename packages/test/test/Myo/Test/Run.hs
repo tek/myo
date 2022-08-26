@@ -6,7 +6,7 @@ import Path (reldir)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, UnitTest)
-import Ribosome (BootError, HostConfig, PluginConfig (PluginConfig), Rpc, RpcError, SettingError, Settings)
+import Ribosome (BootError, HostConfig, LogReport, PluginConfig (PluginConfig), Rpc, RpcError, SettingError, Settings)
 import Ribosome.Data.CustomConfig (CustomConfig (CustomConfig))
 import Ribosome.Host.Data.HostConfig (HostConfig (HostConfig), dataLogConc)
 import Ribosome.Host.Interpret (with)
@@ -31,7 +31,7 @@ withLogDir =
   with (Test.tempDir [reldir|log|]) \ d -> runReader (LogDir d)
 
 interpretMyoTestStack ::
-  Members [ChronosTime, Mask mres] r =>
+  Members [ChronosTime, Mask mres, DataLog LogReport] r =>
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =

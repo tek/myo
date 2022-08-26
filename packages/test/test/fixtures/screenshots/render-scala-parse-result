@@ -1,59 +1,59 @@
 
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
-[94m~[39m
+[94m~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+[94m~
+[94m~
+[94m~
+[94m~
+~
+[94m~
+[94m~
+[94m~
+[94m~
+[94m~
+[94m~
+~
 [7m[No Name]                                                                                                                                                                                                                     0,0-1          All
 [0;4m[38;5;159m[49m/path/to/file.scala[39m  [38;5;159m3[39m
-[0m[97m[101mexpected class or object definition[39m[49m
-  [30m[103mn[39m[49mame
+[0m[97m[101mexpected class or object definition
+[39m[49m  [30m[103mn[39m[49mame
 
-[38;5;159m/path/to/other_file.scala[39m  [38;5;159m7[39m
-[97m[101mterrible mistake[39m[49m
-  [97m[101m![38;5;159m[49mI[38;5;121m param[93m: Type[39m
-  [97m[101mFoo.bar[39m[49m invalid because
-  [97m[101m![38;5;159m[49mI[38;5;121m param2[93m: Class[39m
-  [30m[103mi[39m[49mmplicitly[38;5;121m[Class][39m
+[38;5;159m/path/to/other_file.scala[39m  [38;5;159m7
+[97m[101mterrible mistake
+[39m[49m  [97m[101m![38;5;159m[49mI[38;5;121m param[93m: Type
+[39m  [97m[101mFoo.bar[39m[49m invalid because
+  [97m[101m![38;5;159m[49mI[38;5;121m param2[93m: Class
+[39m  [30m[103mi[39m[49mmplicitly[38;5;121m[Class]
 
-[38;5;159m/path/to/third_file.scala[39m  [38;5;159m3[39m
-[97m[101mtype mismatch[39m[49m
-  Type[[97m[101mInt [39m[49m|[32m List[String][39m]
+[38;5;159m/path/to/third_file.scala[39m  [38;5;159m3
+[97m[101mtype mismatch
+[39m[49m  Type[[97m[101mInt [39m[49m|[32m List[String][39m]
   func([30m[103mp[39m[49maram)
 
 [1;7mmyo-report                                                                                                                                                                                                                    1,1            All

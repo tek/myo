@@ -26,6 +26,7 @@
       myo = ./packages/myo;
       myo-test = ./packages/test;
     };
+    devGhc.compiler = "ghc902";
     main = "myo";
     exe = "myo";
     branch = "main";

@@ -1,8 +1,9 @@
 module Myo.Test.Command.HistoryMenuTest where
 
 import Polysemy.Test (UnitTest, (===))
-import Ribosome.Menu (interpretNvimMenuFinal, promptInput)
+import Ribosome.Menu (promptInput)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
+import Ribosome.Menu.Prompt (PromptEvent (Mapping, Update))
 import Ribosome.Test (testError)
 
 import qualified Myo.Command.Data.Command as Command
@@ -13,9 +14,9 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import Myo.Command.HistoryMenu (historyMenu)
 import Myo.Test.Embed (myoTest)
 
-inputChars :: [Text]
-inputChars =
-  ["i", "l", "i", "n", "e", "esc", "k", "cr"]
+inputEvents :: [PromptEvent]
+inputEvents =
+  [Update "line", Mapping "k", Mapping "<cr>"]
 
 history :: [HistoryEntry]
 history =
@@ -28,6 +29,6 @@ test_historyMenu :: UnitTest
 test_historyMenu =
   myoTest do
     atomicSet @CommandState #history history
-    entry <- interpretNvimMenuFinal $ promptInput inputChars do
+    entry <- promptInput inputEvents do
       testError @CommandError historyMenu
     MenuResult.Success "c2" === entry

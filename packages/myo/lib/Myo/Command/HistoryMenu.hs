@@ -14,12 +14,12 @@ import Ribosome (
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Menu (
   MenuItem,
+  MenuLoops,
   MenuResult (Error, Success),
-  NvimMenu,
-  menu,
-  runStaticNvimMenu,
+  NvimMenuUi,
+  WindowMenu,
+  staticNvimMenu,
   withFocus,
-  withMappings,
   )
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 
@@ -47,20 +47,23 @@ historyItems = do
     menuItemText ident lines' displayName =
       Text.unwords [menuItemName ident displayName, Text.take 100 . fromMaybe "<no command line>" $ listToMaybe lines']
 
-type HistoryMenuStack =
-  NvimMenu CommandId ++ [
+type HistoryMenuStack ui =
+  [
+    NvimMenuUi ui,
+    MenuLoops CommandId,
     AtomicState CommandState,
     Settings !! SettingError,
-    Rpc !! RpcError
+    Rpc !! RpcError,
+    Log
   ]
 
 historyMenu ::
-  Members HistoryMenuStack r =>
+  Members (HistoryMenuStack ui) r =>
   Members [Stop CommandError, Stop RpcError] r =>
   Sem r (MenuResult CommandId)
 historyMenu = do
   items <- historyItems
-  runStaticNvimMenu items [] opts $ withMappings [("cr", withFocus pure)] menu
+  staticNvimMenu items def opts [("<cr>", withFocus pure)]
   where
     opts =
       scratch (ScratchId name) & #filetype ?~ name
@@ -68,7 +71,7 @@ historyMenu = do
       "myo-history"
 
 myoHistory ::
-  Members HistoryMenuStack r =>
+  Members (HistoryMenuStack WindowMenu) r =>
   Members [Controller !! RunError, AtomicState CommandState, Async] r =>
   Handler r ()
 myoHistory =
