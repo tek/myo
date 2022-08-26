@@ -191,9 +191,9 @@ handlers =
   <>
   rpc "MyoNext" Async myoNext
   <>
-  rpc "MyoHistory" Sync myoHistory
+  rpc "MyoHistory" Async myoHistory
   <>
-  rpc "MyoCommands" Sync myoCommands
+  rpc "MyoCommands" Async myoCommands
   <>
   rpc "MyoTogglePane" Async myoTogglePane
   <>
