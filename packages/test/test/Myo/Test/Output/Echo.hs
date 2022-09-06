@@ -8,7 +8,7 @@ import qualified Data.Vector as Vector (fromList, singleton)
 import Path (Abs, File, Path)
 import Prelude hiding (group)
 import Ribosome (Handler)
-import Ribosome.Path (pathText)
+import Ribosome.Host.Path (pathText)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions

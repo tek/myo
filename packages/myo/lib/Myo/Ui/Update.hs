@@ -6,7 +6,7 @@ import Chiasma.Ui.Data.View (Layout (Layout), Pane (Pane), View (View))
 import Chiasma.Ui.Data.ViewGeometry (ViewGeometry (ViewGeometry))
 import Chiasma.Ui.Data.ViewState (ViewState (ViewState))
 import Data.MessagePack (Object)
-import Ribosome (Handler, Settings, fromMsgpack, resumeReport)
+import Ribosome (Handler, Settings, fromMsgpack, resumeReport, toReport)
 import Ribosome.Data.SettingError (SettingError)
 
 import Myo.Ui.Data.AddLayoutOptions (AddLayoutOptions (..))
@@ -74,7 +74,7 @@ updateUi ::
   Handler r ()
 updateUi o =
   resumeReport do
-    UiSettingCodec layouts panes <- stopEitherWith fromText (fromMsgpack o)
+    UiSettingCodec layouts panes <- stopEitherWith toReport (fromMsgpack o)
     resetUi
     traverse_ (uncurry insertOrUpdateLayout) =<< traverse createLayout (fold layouts)
     traverse_ (uncurry insertOrUpdatePane) =<< traverse createPane (fold panes)

@@ -56,4 +56,4 @@ myoUpdateCommands ::
   Handler r ()
 myoUpdateCommands o =
   mapReport do
-    updateCommands =<< stopEitherWith CommandError.Misc (fromMsgpack o)
+    updateCommands =<< stopEitherWith (CommandError.Misc . show) (fromMsgpack o)

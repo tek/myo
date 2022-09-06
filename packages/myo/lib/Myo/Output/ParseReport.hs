@@ -436,7 +436,7 @@ myoOutputQuit ::
   Member (Scratch !! RpcError) r =>
   Handler r ()
 myoOutputQuit =
-  resumeReport (Scratch.kill scratchId)
+  resumeReport (Scratch.delete scratchId)
 
 myoOutputSelect ::
   Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
