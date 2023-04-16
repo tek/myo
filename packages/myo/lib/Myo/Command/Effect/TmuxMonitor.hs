@@ -1,7 +1,6 @@
 module Myo.Command.Effect.TmuxMonitor where
 
 import Chiasma.Data.TmuxId (PaneId)
-import Conc (PScoped, pscoped)
 import Process (Pid)
 
 import Myo.Data.CommandId (CommandId)
@@ -19,12 +18,12 @@ data TmuxMonitor :: Effect where
 
 makeSem ''TmuxMonitor
 
-type ScopedTmuxMonitor res =
-  PScoped TmuxMonitorTask res TmuxMonitor
+type ScopedTmuxMonitor =
+  Scoped TmuxMonitorTask TmuxMonitor
 
 withTmuxMonitor ::
-  Member (ScopedTmuxMonitor res) r =>
+  Member ScopedTmuxMonitor r =>
   TmuxMonitorTask ->
   InterpreterFor TmuxMonitor r
 withTmuxMonitor =
-  pscoped
+  scoped

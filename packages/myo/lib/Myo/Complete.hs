@@ -15,7 +15,7 @@ myoCompleteCommand ::
   Int ->
   Sem r [Text]
 myoCompleteCommand lead _ _ = do
-  cmds <- atomicGets CommandState.commands
+  cmds <- atomicGets (.commands)
   pure (mapMaybe match cmds)
   where
     match Command { ident = CommandId (Str ident) } | isPrefix ident =

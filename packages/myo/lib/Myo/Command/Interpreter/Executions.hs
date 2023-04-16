@@ -13,7 +13,7 @@ import qualified Time
 
 import Myo.Command.Data.ActiveTarget (ActiveTarget (ActiveCommand, ActiveCommandShell))
 import qualified Myo.Command.Data.Execution as Execution
-import Myo.Command.Data.Execution (Execution (Execution), ExecutionSync (ExecutionSync), state, sync, wait)
+import Myo.Command.Data.Execution (Execution (Execution), ExecutionSync (ExecutionSync), sync, wait)
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
 import Myo.Command.Data.ExecutionState (ExecutionState (..))
 import Myo.Command.Data.UiTarget (UiTarget)
@@ -168,7 +168,7 @@ getState ::
   CommandId ->
   Sem r (Maybe ExecutionState)
 getState i =
-  fmap state <$> getExecution i
+  fmap (.state) <$> getExecution i
 
 running ::
   Member (Proc !! ProcError) r =>
@@ -202,7 +202,7 @@ waitFor i =
   getExecution i >>= traverse_ \ e -> embed (readMVar (e ^. #sync . #wait))
 
 interpretExecutions ::
-  Members [Proc !! ProcError, ChronosTime, Log, Resource, Race, Mask mres, Embed IO] r =>
+  Members [Proc !! ProcError, ChronosTime, Log, Resource, Race, Mask, Embed IO] r =>
   InterpreterFor Executions r
 interpretExecutions =
   interpretMState (mempty :: ExecutionsData) .

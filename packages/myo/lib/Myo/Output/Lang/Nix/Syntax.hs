@@ -2,13 +2,7 @@ module Myo.Output.Lang.Nix.Syntax where
 
 import qualified Data.Map.Strict as Map
 import Exon (exon)
-import Ribosome.Syntax (
-  HiLink (..),
-  Syntax (Syntax),
-  SyntaxItem (..),
-  syntaxMatch,
-  syntaxVerbatim,
-  )
+import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch, syntaxVerbatim)
 
 import Myo.Output.Data.String (colMarker, lineNumber)
 
@@ -18,7 +12,7 @@ errorEnd =
 
 location :: SyntaxItem
 location =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoLocation" ("^.*" <> lineNumber <> ".*$")
     options = ["skipwhite", "skipnl"]
@@ -26,21 +20,21 @@ location =
 
 path :: SyntaxItem
 path =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoPath" ("^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=")
     options = ["contained"]
 
 lineNumberSymbol :: SyntaxItem
 lineNumberSymbol =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoLineNumber" ("\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze")
     options = ["contained"]
 
 errorMessage :: SyntaxItem
 errorMessage =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoNixError" ".*"
     options = ["contained", "skipwhite", "skipnl"]

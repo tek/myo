@@ -53,7 +53,7 @@ history ::
   Member (AtomicState CommandState) r =>
   Sem r [HistoryEntry]
 history =
-  atomicGets CommandState.history
+  atomicGets (.history)
 
 storeHistoryAt ::
   Members [Persist [HistoryEntry], AtomicState CommandState] r =>
@@ -92,7 +92,7 @@ pushHistory ::
   Command ->
   Sem r ()
 pushHistory cmd@Command {ident} =
-  unless (Command.skipHistory cmd) do
+  unless ((.skipHistory) cmd) do
     Log.debug [exon|Pushing command #{commandIdText ident} to history|]
     atomicModify' (#history %~ prep)
     storeHistory
@@ -105,7 +105,7 @@ lookupHistoryIndex ::
   Int ->
   Sem r Command
 lookupHistoryIndex index =
-  HistoryEntry.command <$> (err =<< atomicGets (firstOf (#history . element index)))
+  (.command) <$> (err =<< atomicGets (firstOf (#history . element index)))
   where
     err =
       stopNote (CommandError.NoSuchHistoryIndex index)
@@ -116,7 +116,7 @@ lookupHistoryIdent ::
   Sem r Command
 lookupHistoryIdent i = do
   hist <- atomicView #history
-  HistoryEntry.command <$> stopNote err (find match hist)
+  (.command) <$> stopNote err (find match hist)
   where
     match HistoryEntry {command = Command {ident}} =
       i == ident
@@ -137,7 +137,7 @@ mayHistoryBy ::
   a ->
   Sem r (Maybe Command)
 mayHistoryBy lens a =
-  fmap HistoryEntry.command <$> atomicGets entryLens
+  fmap (.command) <$> atomicGets entryLens
   where
     entryLens =
       firstOf (#history . folded . filtered (views (#command . lens) (a ==)))
@@ -201,4 +201,4 @@ displayNameByIdent ident =
   select <$> mayCommandOrHistoryBy #ident ident
   where
     select =
-      fromMaybe (commandIdText ident) . (>>= Command.displayName)
+      fromMaybe (commandIdText ident) . (>>= (.displayName))

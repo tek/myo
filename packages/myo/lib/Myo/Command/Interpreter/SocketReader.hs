@@ -1,6 +1,5 @@
 module Myo.Command.Interpreter.SocketReader where
 
-import Conc (interpretPScopedResumable)
 import Data.ByteString (hGetSome)
 import Exon (exon)
 import qualified Network.Socket as Socket
@@ -48,9 +47,9 @@ withSocket ident use =
 
 interpretSocketReader ::
   Members [Reader LogDir, Resource, Embed IO] r =>
-  InterpreterFor (ScopedSocketReader SocketReaderResources !! SocketReaderError) r
+  InterpreterFor (ScopedSocketReader !! SocketReaderError) r
 interpretSocketReader =
-  interpretPScopedResumable withSocket \ (SocketReaderResources handle path) -> \case
+  interpretScopedResumable withSocket \ (SocketReaderResources handle path) -> \case
     Path ->
       pure path
     Chunk ->

@@ -13,7 +13,7 @@ data Space =
   deriving stock (Eq, Show, Generic)
 
 instance Identifiable Space where
-  identify = ident
+  identify = (.ident)
 
 instance Pretty Space where
   pretty Space {..} =

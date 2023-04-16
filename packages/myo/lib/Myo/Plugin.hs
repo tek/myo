@@ -12,7 +12,7 @@ import Chiasma.Effect.Codec (NativeCodecE, NativeCodecsE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Interpreter.Codec (interpretCodecPanes, interpretCodecTmuxCommand)
 import Chiasma.Interpreter.TmuxClient (interpretTmuxNativeEnvGraceful)
-import Conc (Lock, Restoration, interpretAtomic, interpretLockReentrant, withAsync_)
+import Conc (Lock, interpretAtomic, interpretLockReentrant, withAsync_)
 import Data.MessagePack (Object)
 import Exon (exon)
 import Options.Applicative (Parser, help, long, option, readerError)
@@ -51,7 +51,7 @@ import Ribosome (
   runNvimPluginCli,
   watchVariables,
   )
-import Ribosome.Menu (MenuLoops, NvimMenus, interpretMenuLoops, interpretMenus)
+import Ribosome.Menu (ModalWindowMenus, NvimMenus, interpretMenus, interpretWindowMenu)
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
@@ -79,7 +79,7 @@ import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Interpreter.SocatExe (interpretReaderSocatExe)
-import Myo.Command.Interpreter.SocketReader (SocketReaderResources, interpretSocketReader)
+import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoPrev)
 import Myo.Command.Parse (myoParse, myoParseLatest)
@@ -147,9 +147,9 @@ type MyoProdStack =
     Persist [HistoryEntry] !! PersistError,
     PersistPath !! PersistPathError,
     NativeTmux !! TmuxError,
-    ScopedSocketReader SocketReaderResources !! SocketReaderError,
+    ScopedSocketReader !! SocketReaderError,
     AtomicState LastSave,
-    MenuLoops CommandId
+    ModalWindowMenus CommandId !! RpcError
   ] ++ NvimMenus ++ MyoStack
 
 outputMappingHandlers ::
@@ -164,7 +164,7 @@ outputMappingHandlers =
 handlers ::
   Members MyoProdStack r =>
   Members [Settings !! SettingError, Scratch !! RpcError, Rpc !! RpcError, DataLog LogReport, Reports] r =>
-  Members [ChronosTime, Mask Restoration, Log, Resource, Race, Async, Embed IO, Final IO] r =>
+  Members [ChronosTime, Mask, Log, Resource, Race, Async, Embed IO, Final IO] r =>
   [RpcHandler r]
 handlers =
   rpc "MyoDiag" Async myoDiag
@@ -272,8 +272,8 @@ interpretMyoProd ::
   InterpretersFor MyoProdStack (RemoteStack CliOptions)
 interpretMyoProd =
   interpretMyoStack .
+  interpretWindowMenu .
   interpretMenus .
-  interpretMenuLoops .
   interpretAtomic def .
   interpretSocketReader .
   interpretTmuxNativeEnvGraceful Nothing .

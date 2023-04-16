@@ -1,10 +1,17 @@
 {
   description = "Neovim Layout and Command Manager";
 
-  inputs.ribosome.url = git+https://git.tryp.io/tek/ribosome;
+  inputs = {
+    ribosome.url = "git+https://git.tryp.io/tek/ribosome";
+    hls.url = "github:haskell/haskell-language-server?ref=1.9.0.0";
+  };
 
-  outputs = { ribosome, ... }:
-  let
+  outputs = {ribosome, hls, ...}: ribosome.lib.pro ({config, ...}: {
+    compiler = "ghc925";
+    depsFull = [ribosome];
+    compat.enable = false;
+    hackage.versionFile = "ops/version.nix";
+    defaultApp = "myo";
 
     overrides = { buildInputs, fast, pkgs, source, ... }:
     let
@@ -14,42 +21,119 @@
       myo-test = fast inputs;
     };
 
-  in ribosome.lib.flake ({ config, lib, ...}:
-  let
-    inherit (config) pkgs;
-  in {
-    base = ./.;
-    inherit overrides;
-    depsFull = [ribosome];
-    compat.enable = false;
-    packages = {
-      myo = ./packages/myo;
-      myo-test = ./packages/test;
+    cabal = {
+      license = "BSD-2-Clause-Patent";
+      license-file = "LICENSE";
+      author = "Torsten Schmits";
+      meta = {
+        maintainer = "hackage@tryp.io";
+        category = "Neovim";
+        github = "tek/myo";
+        extra-source-files = ["readme.md" "changelog.md"];
+      };
+      ghc-options = ["-fplugin=Polysemy.Plugin"];
+      prelude = {
+        enable = true;
+        package = {
+          name = "prelate";
+          version = "^>= 0.5.1";
+        };
+        module = "Prelate";
+      };
+      dependencies = ["polysemy" "polysemy-plugin"];
     };
-    devGhc.compiler = "ghc902";
+
+    packages.myo = {
+      src = ./packages/myo;
+
+      cabal.meta.synopsis = "Neovim Layout and Command Manager";
+
+      library = {
+        enable = true;
+        dependencies = [
+          "attoparsec"
+          "chiasma"
+          "chronos"
+          "exon"
+          "extra"
+          "generic-lens"
+          "hashable"
+          "lens"
+          "lens-regex-pcre"
+          "messagepack"
+          "microlens-mtl"
+          "mono-traversable"
+          "network"
+          "optparse-applicative"
+          "parsers"
+          "path"
+          "path-io"
+          "pcre-light"
+          "polysemy-chronos"
+          "polysemy-process"
+          "prettyprinter"
+          "raw-strings-qq"
+          "ribosome"
+          "ribosome-host"
+          "ribosome-menu"
+          "template-haskell"
+          "transformers"
+          "typed-process"
+          "unix"
+          "uuid"
+          "vector"
+        ];
+      };
+
+      executable.enable = true;
+
+    };
+
+    packages.myo-test = {
+      src = ./packages/test;
+
+      cabal.meta.synopsis = "Myo tests";
+
+      test = {
+        enable = true;
+        dependencies = [
+          "chiasma"
+          "exon"
+          "hedgehog"
+          "lens"
+          "lens-regex-pcre"
+          "myo"
+          "path"
+          "polysemy-chronos"
+          "polysemy-process"
+          "polysemy-test"
+          "ribosome"
+          "ribosome-host"
+          "ribosome-menu"
+          "ribosome-test"
+          "tasty"
+          "vector"
+        ];
+      };
+
+    };
+
     main = "myo";
     exe = "myo";
     branch = "main";
     githubOrg = "tek";
     cachixName = "tek";
     cachixKey = "tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk=";
-    hpack = {
-      packages = import ./ops/hpack.nix { inherit config lib; };
-      defaultApp = "myo";
-    };
-    hackage.versionFile = "ops/version.nix";
-    ghcid.shellConfig.buildInputs = [pkgs.neovim pkgs.tmux pkgs.socat];
-    ghci = {
-      preludePackage = "prelate";
-      preludeModule = "Prelate";
-      args = ["-fplugin=Polysemy.Plugin"];
-      extensions = ["StandaloneKindSignatures" "OverloadedLabels" "ImpredicativeTypes"];
-    };
+
+    envs.dev.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.socat];
+    envs.hls.hls.package = hls.packages.${config.system}.haskell-language-server-925;
+
     outputs.apps.myo = {
       type = "app";
       program =
-        let main = "${config.outputs.packages.myo}/bin/myo --socat ${pkgs.socat}/bin/socat";
-        in "${pkgs.writeScript "myo" main}";
+        let main = "${config.outputs.packages.myo}/bin/myo --socat ${config.pkgs.socat}/bin/socat";
+        in "${config.pkgs.writeScript "myo" main}";
     };
+
   });
 }

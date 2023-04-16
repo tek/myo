@@ -77,4 +77,4 @@ test_parseScala :: UnitTest
 test_parseScala =
   myoTest do
     ParsedOutput _ events <- parseScala
-    target === (ReportLine.text <$> ParseReport.lines (compileReport 0 events))
+    target === ((.text) <$> (compileReport 0 events).lines)

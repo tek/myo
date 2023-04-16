@@ -13,7 +13,7 @@ newtype CommandId =
 
 instance Pretty CommandId where
   pretty =
-    pretty . unCommandId
+    pretty . (.unCommandId)
 
 instance MsgpackDecode CommandId where
   fromMsgpack =
@@ -29,4 +29,4 @@ json ''CommandId
 
 commandIdText :: CommandId -> Text
 commandIdText =
-  identText . unCommandId
+  identText . (.unCommandId)

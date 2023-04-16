@@ -14,7 +14,7 @@ interpretReaderSocatExe ::
   InterpreterFor (Reader (Maybe SocatExe)) r
 interpretReaderSocatExe sem = do
   CustomConfig (CliOptions cliSocat) <- ask
-  socat <- rightToMaybe <$> resolveExecutable [relfile|socat|] (unSocatExe <$> cliSocat)
+  socat <- rightToMaybe <$> resolveExecutable [relfile|socat|] ((.unSocatExe) <$> cliSocat)
   unless (isJust socat) do
     Report.warn err [err]
   runReader (SocatExe <$> socat) sem

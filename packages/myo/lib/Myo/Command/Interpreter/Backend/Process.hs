@@ -1,6 +1,5 @@
 module Myo.Command.Interpreter.Backend.Process where
 
-import Conc (PScoped)
 import qualified Data.List as List
 import Exon (exon)
 import qualified Log
@@ -46,14 +45,13 @@ outputEvent ident = \case
   Left out -> modify' (out :)
 
 runProcess ::
-  ∀ pres r .
   Members [Stop RunError, Log] r =>
-  Members [CommandLog, PScoped (String, [String]) pres (Process Text (Either Text ByteString)) !! ProcessError] r =>
+  Members [CommandLog, Scoped (String, [String]) (Process Text (Either Text ByteString)) !! ProcessError] r =>
   ProcessTask ->
   Sem r ()
 runProcess (ProcessTask ident cmd) = do
   Log.debug [exon|Starting subprocess for `#{commandIdText ident}`: #{cmdline}|]
-  evalState mempty $ resuming @_ @(PScoped _ _ _) checkError $ withProcess cmd do
+  evalState mempty $ resuming @_ @(Scoped _ _) checkError $ withProcess cmd do
     forever do
       outputEvent ident =<< Process.recv
   where
@@ -97,9 +95,8 @@ acceptCommand = \case
     pure Nothing
 
 interpretBackendProcess ::
-  ∀ pres r a .
   Members [Backend !! RunError, CommandLog, Log] r =>
-  Member (PScoped (String, [String]) pres (Process Text (Either Text ByteString)) !! ProcessError) r =>
+  Member (Scoped (String, [String]) (Process Text (Either Text ByteString)) !! ProcessError) r =>
   Sem r a ->
   Sem r a
 interpretBackendProcess =
@@ -115,6 +112,6 @@ interpretBackendProcessNative =
   interpretProcessOutputLines @'Stdout .
   interpretProcessOutputRight @'Stdout .
   interpretProcessInputText .
-  interpretProcessNative def conf .
+  interpretProcessNative def (fmap Right . conf) .
   interpretBackendProcess .
   insertAt @0

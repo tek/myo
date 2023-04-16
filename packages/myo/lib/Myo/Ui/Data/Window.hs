@@ -12,7 +12,7 @@ data Window =
   deriving stock (Eq, Show, Generic)
 
 instance Identifiable Window where
-  identify = ident
+  identify = (.ident)
 
 instance Pretty Window where
   pretty Window {..} =

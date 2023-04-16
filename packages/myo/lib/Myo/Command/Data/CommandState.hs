@@ -2,7 +2,6 @@ module Myo.Command.Data.CommandState where
 
 import Exon (exon)
 import Prelude hiding (output)
-import Text.Show (showParen, showsPrec)
 
 import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)

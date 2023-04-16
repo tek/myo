@@ -49,7 +49,7 @@ test_outputSelect =
     atomicSet @CommandState #output (Just (OutputState "test" [haskellSyntax] po def Nothing))
     testError compileAndRenderReport
     windowCountIs 2
-    win <- fmap Scratch.window . evalMaybe . head =<< Scratch.get
+    win <- fmap (.window) . evalMaybe . head =<< Scratch.get
     nvimSetCurrentWin win
     nvimInput "<cr>"
     assertWait currentCursor (assertEq (9, 2))

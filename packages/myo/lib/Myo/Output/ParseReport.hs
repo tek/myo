@@ -1,7 +1,6 @@
 module Myo.Output.ParseReport where
 
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
-import Data.List.Extra (firstJust)
 import Data.MonoTraversable (minimumByMay)
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
@@ -179,7 +178,7 @@ selectEventAt mainWindow outputWindow' (Location _ line col) abspath = do
   previousExists <- windowIsValid mainWindow
   window <- if previousExists && mainWindow /= outputWindow' then pure mainWindow else findWindow outputWindow'
   vimSetCurrentWindow window
-  existingBuffer <- join <$> (traverse (filterUnloaded . FileBuffer.buffer) =<< bufferForFile abspath)
+  existingBuffer <- join <$> (traverse (filterUnloaded . (.buffer)) =<< bufferForFile abspath)
   maybe (edit abspath) (nvimWinSetBuf window) existingBuffer
   setCursor window line (fromMaybe 0 col)
   vimCommand "normal! zv"
@@ -233,7 +232,7 @@ currentOutput ::
   Members [AtomicState CommandState, Stop OutputError] r =>
   Sem r OutputState
 currentOutput =
-  stopNote OutputError.NotParsed =<< atomicGets CommandState.output
+  stopNote OutputError.NotParsed =<< atomicGets (.output)
 
 currentOutputCommand ::
   Members [AtomicState CommandState, Stop OutputError] r =>
@@ -314,19 +313,19 @@ outputMainWindow ::
   Members [Scratch, Stop OutputError] r =>
   Sem r Window
 outputMainWindow =
-  Scratch.previous <$> outputScratch
+  (.previous) <$> outputScratch
 
 outputWindow ::
   Members [Scratch, Stop OutputError] r =>
   Sem r Window
 outputWindow =
-  Scratch.window <$> outputScratch
+  (.window) <$> outputScratch
 
 outputBuffer ::
   Members [Scratch, Stop OutputError] r =>
   Sem r Buffer
 outputBuffer =
-  Scratch.buffer <$> outputScratch
+  (.buffer) <$> outputScratch
 
 outputQuitName :: RpcName
 outputQuitName =
@@ -393,7 +392,7 @@ navigateToEvent jump eventIndex = do
     indexErr =
       OutputError.Internal [exon|invalid event index #{show eventIndex}|]
     isLastEvent report =
-      fromIntegral (EventIndex.unAbsolute eventIndex) == (length (report ^. #events) - 1)
+      fromIntegral ((.unAbsolute) eventIndex) == (length (report ^. #events) - 1)
 
 navigateToCurrentEvent ::
   Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>

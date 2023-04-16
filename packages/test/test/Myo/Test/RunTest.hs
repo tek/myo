@@ -15,11 +15,11 @@ import Ribosome (
   logReport,
   storedReports,
   )
+import qualified Ribosome.Report as Report
 import Ribosome.Test (testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
-import Myo.Command.Data.AddSystemCommandOptions (runner)
 import Myo.Command.Data.Command (Command (Command, cmdLines))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (line, runner)
@@ -33,7 +33,6 @@ import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
-import qualified Ribosome.Report as Report
 
 newtype RunTestError =
   RunTestError { unTestError :: [Text] }
@@ -93,7 +92,7 @@ test_runSystem :: UnitTest
 test_runSystem =
   myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummy $ interpretController do
     testHandler do
-      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
+      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { AddSystemCommandOptions.runner = Just runnerIdent }
       myoRunIdent ident
     checkReport [testError]
 
@@ -123,7 +122,7 @@ test_runLineSingle :: UnitTest
 test_runLineSingle =
   myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
     testHandler do
-      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { runner = Just runnerIdent }
+      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { AddSystemCommandOptions.runner = Just runnerIdent }
       myoLine def { line = Just cmdline, runner = Just runnerIdent }
     checkReport [cmdline]
 
@@ -131,7 +130,7 @@ test_runSubprocFail :: UnitTest
 test_runSubprocFail =
   myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
     r <- testHandler do
-      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { runner = Just runnerIdent }
+      myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { AddSystemCommandOptions.runner = Just runnerIdent }
       resumeEither (Controller.runIdent ident)
     _ <- evalLeft r
     unit

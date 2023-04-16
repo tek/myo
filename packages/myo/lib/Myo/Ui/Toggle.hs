@@ -21,7 +21,7 @@ import Myo.Ui.Render (renderTmux)
 
 type ToggleStack encode decode =
   [
-    ScopedTmux () encode decode !! TmuxError,
+    ScopedTmux encode decode !! TmuxError,
     Codec TmuxCommand encode decode !! CodecError,
     Codec (Panes Pane) encode decode !! CodecError
   ]

@@ -2,7 +2,6 @@ module Myo.Command.RunTaskDetails where
 
 import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command (..))
-import qualified Myo.Command.Data.Command as Command (interpreter)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter (CommandInterpreter (..))
 import Myo.Command.Data.CommandState (CommandState)
@@ -29,7 +28,7 @@ uiShellTaskDetails shellIdent =
   RunTaskDetails.UiShell shellIdent <$> (extractTarget =<< interpreter)
   where
     interpreter =
-      Command.interpreter <$> commandByIdent "uiShellTaskDetails-interpreter" shellIdent
+      (.interpreter) <$> commandByIdent "uiShellTaskDetails-interpreter" shellIdent
     extractTarget (CommandInterpreter.System (Just target)) =
       pure target
     extractTarget _ = do
@@ -41,7 +40,7 @@ runDetails ::
   Command ->
   Sem r RunTaskDetails
 runDetails =
-  analyze . Command.interpreter
+  analyze . (.interpreter)
   where
     analyze (CommandInterpreter.System Nothing) = pure systemTaskDetails
     analyze (CommandInterpreter.System (Just paneIdent)) = pure $ uiSystemTaskDetails paneIdent

@@ -5,7 +5,6 @@ import qualified Data.Text as Text
 import Ribosome (Args (Args), Handler, mapReport, resumeReport)
 
 import Myo.Command.Command (commandByIdentOrName, mayCommandByIdent, shellCommand, systemCommand)
-import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
@@ -70,7 +69,7 @@ myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill 
     cons =
       either shellCommand (systemCommand . Just)
     findTarget target =
-      maybe (Right (UiTarget target)) (Left . Command.ident) <$> mayCommandByIdent (CommandId target)
+      maybe (Right (UiTarget target)) (Left . (.ident)) <$> mayCommandByIdent (CommandId target)
 
 myoLineCmd ::
   Members [Controller !! RunError, AtomicState CommandState, Embed IO] r =>

@@ -36,7 +36,7 @@ paneData ::
   Member (AtomicState UiState) r =>
   Handler r [Text]
 paneData =
-  (>>= extractS) <$> atomicGets UiState.spaces
+  (>>= extractS) <$> atomicGets (.spaces)
   where
     extractS (Space _ windows) = windows >>= extractW
     extractW (Window _ layout) = bifoldMap viewName viewName layout

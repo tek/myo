@@ -37,6 +37,6 @@ test_parsePrevious =
         cmd <- testError (selectCommand (Just ident))
         CommandLog.archive ident
         CommandLog.append ident "unparsable"
-        outputEvents <- testError (fmap (fmap ParsedOutput.events) <$> parseCommand cmd)
+        outputEvents <- testError (fmap (fmap (.events)) <$> parseCommand cmd)
         let ParseReport events _ = compileReport 0 (foldMap fold outputEvents)
         Vector.empty /== events

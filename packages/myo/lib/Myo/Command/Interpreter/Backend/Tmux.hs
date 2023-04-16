@@ -93,7 +93,7 @@ type StartMonitoredStack =
 
 startMonitored ::
   Reportable tme =>
-  Members [ScopedTmuxMonitor tmres !! tme, NativeTmux, Stop CodecError] r =>
+  Members [ScopedTmuxMonitor !! tme, NativeTmux, Stop CodecError] r =>
   Members StartMonitoredStack r =>
   Pid ->
   TmuxTask ->
@@ -105,7 +105,7 @@ startMonitored shellPid task@TmuxTask {pane, command = Command {ident}} =
 
 startTask ::
   Reportable tme =>
-  Members [ScopedTmuxMonitor tmres !! tme, NativeTmux, Stop CodecError] r =>
+  Members [ScopedTmuxMonitor !! tme, NativeTmux, Stop CodecError] r =>
   Members StartMonitoredStack r =>
   Pid ->
   TmuxTask ->
@@ -142,7 +142,7 @@ waitForProcess shellPid TmuxTask {taskType, command = Command {ident}} = do
       Executions.terminate ident
     unless (taskType == Shell) do
       Log.info [exon|Waiting for running process to start `#{commandIdText ident}`|]
-      resumeHoist @_ @Proc (RunError.Proc . unProcError) (waitForRunningProcess shellPid)
+      resumeHoist @_ @Proc (RunError.Proc . (.unProcError)) (waitForRunningProcess shellPid)
 
 activeShellPid ::
   Members [Proc !! ProcError, Executions, ChronosTime, Stop RunError, Race] r =>
@@ -151,7 +151,7 @@ activeShellPid ::
 activeShellPid i = do
   waitForShell i
   mainPid <- stopNote (RunError.Proc "Command shell vanished") =<< Executions.pid i
-  resumeHoist @_ @Proc (RunError.Proc . unProcError) (leafPid mainPid)
+  resumeHoist @_ @Proc (RunError.Proc . (.unProcError)) (leafPid mainPid)
 
 type TmuxRunStack =
   [
@@ -165,10 +165,10 @@ type TmuxRunStack =
   NativeCodecsE [Panes Pane, Panes PanePid]
 
 runInTmux ::
-  ∀ tmres tme r .
+  ∀ tme r .
   Reportable tme =>
   Members TmuxRunStack r =>
-  Members [ScopedTmuxMonitor tmres !! tme, Resource, Stop RunError] r =>
+  Members [ScopedTmuxMonitor !! tme, Resource, Stop RunError] r =>
   TmuxTask ->
   Sem r ()
 runInTmux task@TmuxTask {pane, target, command = Command {ident, commandShell}} =
@@ -216,7 +216,7 @@ interpretBackendTmuxWithLog ::
   Reportable sre =>
   Members TmuxRunStack r =>
   Members [AtomicState UiState, ChronosTime, CommandLog, Rpc !! RpcError, Reader (Maybe SocatExe)] r =>
-  Members [Backend !! RunError, ScopedSocketReader socket !! sre, Race, AtomicState Views, Resource] r =>
+  Members [Backend !! RunError, ScopedSocketReader !! sre, Race, AtomicState Views, Resource] r =>
   Sem r a ->
   Sem r a
 interpretBackendTmuxWithLog =

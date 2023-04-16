@@ -4,25 +4,15 @@ import qualified Chiasma.Data.Ident as Ident
 import qualified Data.Text as Text
 import qualified Data.UUID as UUID
 import Exon (exon)
-import Ribosome (
-  Handler,
-  Rpc,
-  RpcError,
-  ScratchId (ScratchId),
-  Settings,
-  mapReports,
-  resumeReports,
-  scratch,
-  )
+import Ribosome (Handler, Rpc, RpcError, ScratchId (ScratchId), Settings, mapReports, resumeReports, scratch)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Menu (
   MenuItem,
-  MenuLoops,
   MenuResult (Error, Success),
-  NvimMenuUi,
+  ModalWindowMenus,
   WindowMenu,
   simpleMenuItem,
-  staticNvimMenu,
+  staticWindowMenu,
   withFocus,
   )
 
@@ -59,8 +49,7 @@ commandItems = do
 
 type CommandMenuStack ui =
   [
-    NvimMenuUi ui,
-    MenuLoops CommandId,
+    ModalWindowMenus CommandId !! RpcError,
     Settings !! SettingError,
     Rpc !! RpcError,
     Log
@@ -72,10 +61,10 @@ commandMenu ::
   Sem r (MenuResult CommandId)
 commandMenu = do
   items <- commandItems
-  staticNvimMenu items def opts [("<cr>", withFocus pure)]
+  staticWindowMenu items def opts [("<cr>", withFocus pure)]
   where
     opts =
-      scratch (ScratchId name) & #filetype ?~ name
+      def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
     name =
       "myo-commands"
 

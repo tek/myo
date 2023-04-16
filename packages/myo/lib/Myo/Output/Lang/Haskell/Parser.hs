@@ -217,7 +217,6 @@ runtimeEvent =
 
 parseHaskellErrors ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   LookAheadParsing m =>
   m (Vector HaskellEvent)

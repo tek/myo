@@ -19,7 +19,7 @@ mayCommandBy ::
   a ->
   Sem r (Maybe Command)
 mayCommandBy attr a =
-  atomicGets commands <&> find \ c -> c ^. attr == a
+  atomicGets (.commands) <&> find \ c -> c ^. attr == a
 
 noSuchCommand ::
   Member (Stop CommandError) r =>
@@ -94,7 +94,7 @@ latestCommand ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Sem r Command
 latestCommand =
-  fmap HistoryEntry.command . stopNote CommandError.NoCommands . head =<< atomicGets CommandState.history
+  fmap (.command) . stopNote CommandError.NoCommands . head =<< atomicGets (.history)
 
 mainCommand ::
   Members [AtomicState CommandState, Stop CommandError] r =>
@@ -114,4 +114,4 @@ mainCommandIdent ::
   CommandId ->
   Sem r CommandId
 mainCommandIdent =
-  fmap Command.ident . mainCommand
+  fmap (.ident) . mainCommand

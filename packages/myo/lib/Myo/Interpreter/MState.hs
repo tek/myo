@@ -7,7 +7,7 @@ import qualified Myo.Effect.MState as MState
 import Myo.Effect.MState (MState)
 
 interpretMState ::
-  Members [Resource, Race, Mask mres, Embed IO] r =>
+  Members [Resource, Race, Mask, Embed IO] r =>
   s ->
   InterpreterFor (MState s) r
 interpretMState initial =

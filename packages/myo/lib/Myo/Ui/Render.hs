@@ -21,7 +21,7 @@ import Myo.Ui.Space (myoSpaces)
 renderTmux ::
   Member (Codec TmuxCommand encode decode !! CodecError) r =>
   Member (Codec (Panes Pane) encode decode !! CodecError) r =>
-  Members [ScopedTmux () encode decode, AtomicState Views, AtomicState UiState, Stop RenderError, Rpc] r =>
+  Members [ScopedTmux encode decode, AtomicState Views, AtomicState UiState, Stop RenderError, Rpc] r =>
   Sem r ()
 renderTmux = do
   cwd <- nvimCwd

@@ -2,7 +2,7 @@ module Myo.Output.Data.ParsedOutput where
 
 import Control.Lens (allOf)
 import Data.Generics.Labels ()
-import Ribosome.Data.Syntax (Syntax)
+import Ribosome.Syntax (Syntax)
 
 import Myo.Output.Data.OutputEvents (OutputEvents)
 

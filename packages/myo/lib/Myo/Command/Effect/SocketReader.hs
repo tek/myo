@@ -1,6 +1,5 @@
 module Myo.Command.Effect.SocketReader where
 
-import Conc (PScoped, pscoped)
 import Path (Abs, File, Path)
 
 import Myo.Data.CommandId (CommandId)
@@ -11,12 +10,12 @@ data SocketReader :: Effect where
 
 makeSem ''SocketReader
 
-type ScopedSocketReader socket =
-  PScoped CommandId socket SocketReader
+type ScopedSocketReader =
+  Scoped CommandId SocketReader
 
 socketReader ::
-  Member (ScopedSocketReader socket) r =>
+  Member ScopedSocketReader r =>
   CommandId ->
   InterpreterFor SocketReader r
 socketReader =
-  pscoped
+  scoped

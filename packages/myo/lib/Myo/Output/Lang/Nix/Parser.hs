@@ -96,7 +96,6 @@ traceEvent =
 
 parseNixErrors ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   m (Vector NixEvent)
 parseNixErrors =

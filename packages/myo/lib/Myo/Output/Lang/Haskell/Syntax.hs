@@ -1,9 +1,12 @@
 module Myo.Output.Lang.Haskell.Syntax where
 
+import qualified Data.Map.Strict as Map
+import Exon (exon)
 import Ribosome.Syntax (
   HiLink (..),
   Highlight (..),
   Syntax (Syntax),
+  SyntaxGroup (SyntaxGroup),
   SyntaxItem (..),
   syntaxHighlight,
   syntaxMatch,
@@ -14,8 +17,6 @@ import Ribosome.Syntax (
 import Text.RawString.QQ (r)
 
 import Myo.Output.Data.String (colMarker, lineNumber)
-import Exon (exon)
-import qualified Data.Map.Strict as Map
 
 errorEnd :: Text
 errorEnd =
@@ -90,7 +91,7 @@ haskellInclude =
 
 location :: SyntaxItem
 location =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoLocation" ("^.*" <> lineNumber <> ".*$")
     options = ["skipwhite", "skipnl"]
@@ -98,21 +99,21 @@ location =
 
 path :: SyntaxItem
 path =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoPath" ("^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=")
     options = ["contained"]
 
 lineNumberSymbol :: SyntaxItem
 lineNumberSymbol =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoLineNumber" ("\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze")
     options = ["contained"]
 
 errorMessage :: SyntaxItem
 errorMessage =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoHsError" "^" errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
@@ -126,23 +127,23 @@ errorMessage =
 
 foundReq :: SyntaxItem
 foundReq =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
-    item = syntaxRegionOffset "MyoHsFoundReq" foundReqMarker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset "MyoHsFoundReq" foundReqMarker errorEnd Nothing (Just "ms=e+1") Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsFound")]
 
 kindMismatch :: SyntaxItem
 kindMismatch =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
-    item = syntaxRegionOffset "MyoHsKindMismatch" kindMismatchMarker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset "MyoHsKindMismatch" kindMismatchMarker errorEnd Nothing (Just "ms=e+1") Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsFound")]
 
 found :: SyntaxItem
 found =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsFound" "^.*$"
     options = ["contained", "skipnl"]
@@ -150,14 +151,14 @@ found =
 
 req :: SyntaxItem
 req =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoHsReq" "^.*$"
     options = ["contained"]
 
 code :: SyntaxItem
 code =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsCode" ".*"
     options = ["contained", "keepend"]
@@ -165,7 +166,7 @@ code =
 
 noInstance :: SyntaxItem
 noInstance =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoHsNoInstance" noInstanceMarker errorEnd Nothing
     options = ["contained"]
@@ -173,7 +174,7 @@ noInstance =
 
 noInstanceHead :: SyntaxItem
 noInstanceHead =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoInstanceHead" ("\\s*" <> noInstanceMarker <> ".*$")
     options = ["contained", "skipnl"]
@@ -181,7 +182,7 @@ noInstanceHead =
 
 noInstanceBang :: SyntaxItem
 noInstanceBang =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoInstanceBang" "!"
     options = ["contained"]
@@ -189,7 +190,7 @@ noInstanceBang =
 
 noInstanceKw :: SyntaxItem
 noInstanceKw =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoInstanceKw" "instance\\ze:"
     options = ["contained", "skipwhite"]
@@ -197,7 +198,7 @@ noInstanceKw =
 
 noInstanceTrigger :: SyntaxItem
 noInstanceTrigger =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoInstanceTrigger" ".*"
     options = ["contained", "skipnl", "keepend"]
@@ -205,7 +206,7 @@ noInstanceTrigger =
 
 noInstanceDesc :: SyntaxItem
 noInstanceDesc =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoInstanceDesc" ".*"
     options = ["contained", "skipnl", "keepend"]
@@ -213,7 +214,7 @@ noInstanceDesc =
 
 notInScope :: SyntaxItem
 notInScope =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoHsNotInScope" notInScopeMarker errorEnd Nothing
     options = ["contained"]
@@ -221,7 +222,7 @@ notInScope =
 
 notInScopeHead :: SyntaxItem
 notInScopeHead =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNotInScopeHead" ("\\s*" <> notInScopeMarker)
     options = ["contained", "skipnl"]
@@ -229,23 +230,23 @@ notInScopeHead =
 
 moduleImport :: SyntaxItem
 moduleImport =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
-    item = syntaxRegionOffset "MyoHsModuleImport" moduleImportMarker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset "MyoHsModuleImport" moduleImportMarker errorEnd Nothing (Just "ms=e+1") Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsModule")]
 
 nameImports :: SyntaxItem
 nameImports =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
-    item = syntaxRegionOffset "MyoHsNameImports" nameImportsMarker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset "MyoHsNameImports" nameImportsMarker errorEnd Nothing (Just "ms=e+1") Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsNames")]
 
 names :: SyntaxItem
 names =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNames" "^.*$"
     options = ["contained", "skipnl"]
@@ -253,23 +254,23 @@ names =
 
 name :: SyntaxItem
 name =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoHsName" "\\w\\+"
     options = ["contained"]
 
 moduleLine :: SyntaxItem
 moduleLine =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoHsModule" "^.*$"
     options = ["contained", "skipnl"]
 
 simpleMessage :: Text -> Text -> Text -> SyntaxItem
 simpleMessage name' next marker =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
-    item = syntaxRegionOffset ("MyoHs" <> name') marker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset (SyntaxGroup [exon|MyoHs#{name'}|]) marker errorEnd Nothing (Just "ms=e+1") Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHs" <> next)]
 
@@ -279,7 +280,7 @@ doNotationResultDiscarded =
 
 invalidImportName :: SyntaxItem
 invalidImportName =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoHsInvalidImportName" invalidImportNameMarker errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
@@ -287,7 +288,7 @@ invalidImportName =
 
 invalidImportNameHead :: SyntaxItem
 invalidImportNameHead =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsInvalidImportNameHead" invalidImportNameMarker
     options = ["contained", "skipnl"]
@@ -299,15 +300,15 @@ moduleNameMismatch =
 
 unknownModule :: SyntaxItem
 unknownModule =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
-    item = syntaxRegionOffset "MyoHsUnknownModule" unknownModuleMarker errorEnd Nothing "ms=e+1" ""
+    item = syntaxRegionOffset "MyoHsUnknownModule" unknownModuleMarker errorEnd Nothing (Just "ms=e+1") Nothing
     options = ["contained", "skipwhite", "skipnl"]
     params = Map.fromList [("contains", "MyoHsUnknownModuleHead")]
 
 unknownModuleHead :: SyntaxItem
 unknownModuleHead =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsUnknownModuleHead" unknownModuleMarker
     options = ["contained", "skipnl"]
@@ -327,7 +328,7 @@ ambiguousTypeVar =
 
 ambiguousTypeVarVar :: SyntaxItem
 ambiguousTypeVarVar =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsAmbiguousTypeVarVar" "^.*$"
     options = ["contained", "skipwhite", "skipnl"]
@@ -335,7 +336,7 @@ ambiguousTypeVarVar =
 
 ambiguousTypeVarMethod :: SyntaxItem
 ambiguousTypeVarMethod =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsAmbiguousTypeVarMethod" "^.*$"
     options = ["contained", "skipwhite", "skipnl"]
@@ -351,7 +352,7 @@ dataCtor =
 
 noEffect :: SyntaxItem
 noEffect =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoHsNoEffect" noEffectMarker errorEnd Nothing
     options = ["contained"]
@@ -359,7 +360,7 @@ noEffect =
 
 noEffectHead :: SyntaxItem
 noEffectHead =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoEffectHead" ("\\s*" <> noEffectMarker <> ".*$")
     options = ["contained", "skipnl"]
@@ -367,7 +368,7 @@ noEffectHead =
 
 noEffectBang :: SyntaxItem
 noEffectBang =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoEffectBang" "!"
     options = ["contained"]
@@ -375,7 +376,7 @@ noEffectBang =
 
 noEffectKw :: SyntaxItem
 noEffectKw =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoEffectKw" "effect\\ze:"
     options = ["contained", "skipwhite"]
@@ -383,7 +384,7 @@ noEffectKw =
 
 noEffectEffect :: SyntaxItem
 noEffectEffect =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoHsNoEffectEffect" ".*$"
     options = ["contained", "skipnl"]

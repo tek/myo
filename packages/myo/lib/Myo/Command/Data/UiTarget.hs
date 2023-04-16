@@ -13,11 +13,10 @@ newtype UiTarget =
 
 instance Pretty UiTarget where
   pretty =
-    pretty . unUiTarget
+    pretty . (.unUiTarget)
 
 instance Identifiable UiTarget where
-  identify =
-    unUiTarget
+  identify = (.unUiTarget)
 
 instance MsgpackDecode UiTarget where
   fromMsgpack =
@@ -33,4 +32,4 @@ json ''UiTarget
 
 uiTargetText :: UiTarget -> Text
 uiTargetText =
-  identText . unUiTarget
+  identText . (.unUiTarget)

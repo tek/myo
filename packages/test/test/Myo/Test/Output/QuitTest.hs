@@ -46,7 +46,7 @@ test_outputQuit =
     storeParseResult "test" [parsedOutput]
     testError compileAndRenderReport
     windowCountIs 2
-    win <- fmap Scratch.window . evalMaybe . head =<< Scratch.get
+    win <- fmap (.window) . evalMaybe . head =<< Scratch.get
     nvimSetCurrentWin win
     nvimInput "q"
     assertWait (length <$> nvimListWins) (assertEq 1)

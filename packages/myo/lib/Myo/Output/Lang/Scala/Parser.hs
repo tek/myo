@@ -4,7 +4,7 @@ import Data.Attoparsec.Text (parseOnly)
 import Data.Char (isSpace)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, char, newline, satisfy, string)
+import Text.Parser.Char (char, newline, satisfy, string)
 import Text.Parser.Combinators (choice, notFollowedBy, skipMany, skipOptional)
 import Text.Parser.Token (TokenParsing, natural)
 
@@ -48,7 +48,6 @@ eventStartSkipWs =
 
 locationLine ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   m (Location, EventType, Text)
 locationLine = do
@@ -60,7 +59,6 @@ locationLine = do
   pure (Location path (fromIntegral lineno - 1) (Just (fromIntegral colno - 1)), tpe, toText message)
 
 infoLine ::
-  CharParsing m =>
   TokenParsing m =>
   m Text
 infoLine =
@@ -68,7 +66,6 @@ infoLine =
 
 codeLine ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   m (Int, Text)
 codeLine = do
@@ -78,7 +75,6 @@ codeLine = do
   pure (length w - 1, t)
 
 colMarkerLine ::
-  CharParsing m =>
   TokenParsing m =>
   m ()
 colMarkerLine =
@@ -86,7 +82,6 @@ colMarkerLine =
 
 errorInfo ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   m ([Text], Int, Text)
 errorInfo = do
@@ -106,7 +101,6 @@ event = do
 
 parseScalaErrors ::
   Monad m =>
-  CharParsing m =>
   TokenParsing m =>
   m (Vector ScalaEvent)
 parseScalaErrors =

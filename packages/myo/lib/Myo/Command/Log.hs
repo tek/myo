@@ -37,7 +37,7 @@ mainCommandOrHistoryIdent ::
   CommandId ->
   Sem r CommandId
 mainCommandOrHistoryIdent context ident =
-  recurse . Command.interpreter =<< commandOrHistoryByIdent context ident
+  recurse . (.interpreter) =<< commandOrHistoryByIdent context ident
   where
     recurse (Shell target) =
       mainCommandIdent target
@@ -49,7 +49,7 @@ mayMainCommandOrHistory ::
   CommandId ->
   Sem r CommandId
 mayMainCommandOrHistory ident =
-  recurse . fmap Command.interpreter =<< mayCommandOrHistoryByIdent ident
+  recurse . fmap (.interpreter) =<< mayCommandOrHistoryByIdent ident
   where
     recurse (Just (Shell target)) =
       mayMainCommandOrHistory target
@@ -66,7 +66,7 @@ commandLogBy ::
   Sem r (Maybe Text)
 commandLogBy context ident lens a = do
   cmd <- commandOrHistoryBy context ident lens a
-  logIdent <- mainCommandOrHistoryIdent context (Command.ident cmd)
+  logIdent <- mainCommandOrHistoryIdent context ((.ident) cmd)
   CommandLog.get logIdent
 
 commandLogByName ::

@@ -96,9 +96,9 @@ storeParseResult ident parsed =
     outputState =
       OutputState ident (toList syntax) events (EventIndex.Absolute 0) Nothing
     syntax =
-      ParsedOutput.syntax <$> parsed
+      (.syntax) <$> parsed
     events =
-      foldMap ParsedOutput.events parsed
+      foldMap (.events) parsed
 
 myoParse ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>

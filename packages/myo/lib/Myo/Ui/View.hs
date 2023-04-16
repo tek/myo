@@ -3,6 +3,7 @@ module Myo.Ui.View where
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
 import qualified Chiasma.Ui.Data.TreeModError as TreeModError (TreeModError (..))
+import qualified Chiasma.Ui.Data.View as View
 import Chiasma.Ui.Data.View (
   LayoutView,
   Pane (Pane),
@@ -13,7 +14,6 @@ import Chiasma.Ui.Data.View (
   ViewTree,
   consLayout,
   )
-import qualified Chiasma.Ui.Data.View as View (_ident)
 import Chiasma.Ui.Data.ViewState (ViewState (ViewState))
 import Chiasma.Ui.Lens.Ident (matchIdentL)
 import Control.Lens (mapMOf, transformM)
@@ -83,7 +83,7 @@ insertLayoutIfNonexistent :: Ident -> LayoutView -> ViewTree -> Maybe ViewTree
 insertLayoutIfNonexistent _ (View newIdent _ _ _) (Tree (View currentIdent _ _ _) _) | newIdent == currentIdent =
   Nothing
 insertLayoutIfNonexistent targetLayoutIdent newLayout (Tree layout sub) =
-  let newSub = if View._ident layout == targetLayoutIdent then TreeNode (Tree newLayout []) : sub else sub
+  let newSub = if layout.ident == targetLayoutIdent then TreeNode (Tree newLayout []) : sub else sub
   in Just (Tree layout newSub)
 
 insertPaneIfNonexistent :: Ident -> PaneView -> ViewTree -> Maybe ViewTree
@@ -92,7 +92,7 @@ insertPaneIfNonexistent targetLayout pane (Tree layout@(View currentLayout _ _ _
   let newSub = if currentLayout == targetLayout then TreeLeaf pane : sub else sub
   pure (Tree layout newSub)
   where
-    paneIdent = View._ident pane
+    paneIdent = pane.ident
     match (TreeLeaf (View i _ _ _)) = if paneIdent == i then Nothing else Just ()
     match _ = Just ()
 

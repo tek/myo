@@ -75,7 +75,7 @@ append maxSize chunk = \case
 
 builder :: OutputChunks -> Builder
 builder =
-  foldMap byteString . chunks
+  foldMap byteString . (.chunks)
 
 build :: Builder -> Text
 build =
@@ -97,7 +97,7 @@ buildCurrent CommandOutput {current, ..} =
 
 buildPrev :: CommandOutput -> Maybe Text
 buildPrev =
-  fmap (either id build) . prev
+  fmap (either id build) . (.prev)
 
 currentToPrev :: CurrentOutput -> Either Text Builder
 currentToPrev = \case

@@ -11,7 +11,7 @@ import qualified Chiasma.Effect.TmuxApi as Tmux
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Chiasma.TmuxApi (Tmux)
-import Conc (PScoped, interpretPScopedResumableWith, interpretPScopedResumable_, race_)
+import Conc (race_)
 import Control.Lens.Regex.ByteString (match, regex)
 import Data.Char (isAlphaNum)
 import qualified Data.Text as Text
@@ -126,33 +126,33 @@ startLog ident pane =
   Log.debug [exon|Monitoring tmux command `#{commandIdText ident}` in `#{formatId pane}`|]
 
 withLog ::
-  ∀ socket sre r a .
+  ∀ sre r a .
   Member Resource r =>
-  Members [NativeTmux !! TmuxError, ScopedSocketReader socket !! sre, NativeCommandCodecE, Reader (Maybe SocatExe)] r =>
+  Members [NativeTmux !! TmuxError, ScopedSocketReader !! sre, NativeCommandCodecE, Reader (Maybe SocatExe)] r =>
   TmuxMonitorTask ->
   (TmuxMonitorTask -> Sem (SocketReader : Stop (TmuxMonitorError sre) : r) a) ->
   Sem (Stop (TmuxMonitorError sre) : r) a
 withLog task@TmuxMonitorTask {..} use = do
   socat <- ask
-  resumeHoist SocketReader $ mapStop View do
+  resumeHoist @sre SocketReader $ mapStop View do
     socketReader ident $ maybe id (pipingToSocket pane) socat do
       insertAt @1 (use task)
 
 interpretTmuxMonitor ::
   Members [NativeTmux !! TmuxError, Proc !! ProcError, ChronosTime, CommandLog, Reader (Maybe SocatExe)] r =>
-  Members [Executions, ScopedSocketReader socket !! sre, NativeCommandCodecE, Resource, Log, Race] r =>
-  InterpreterFor (PScoped TmuxMonitorTask TmuxMonitorTask TmuxMonitor !! TmuxMonitorError sre) r
+  Members [Executions, ScopedSocketReader !! sre, NativeCommandCodecE, Resource, Log, Race] r =>
+  InterpreterFor (Scoped TmuxMonitorTask TmuxMonitor !! TmuxMonitorError sre) r
 interpretTmuxMonitor =
-  interpretPScopedResumableWith @ScopeEffects withLog \ TmuxMonitorTask {..} -> \case
+  interpretScopedResumableWith @ScopeEffects withLog \ TmuxMonitorTask {..} -> \case
     Wait -> do
       startLog ident pane
       race_ (readOutput ident) (waitBasic ident shellPid)
 
 interpretTmuxMonitorNoLog ::
   Members [Proc !! ProcError, ChronosTime, Executions, Log, Race] r =>
-  InterpreterFor (PScoped TmuxMonitorTask TmuxMonitorTask TmuxMonitor !! TmuxMonitorError Void) r
+  InterpreterFor (Scoped TmuxMonitorTask TmuxMonitor !! TmuxMonitorError Void) r
 interpretTmuxMonitorNoLog =
-  interpretPScopedResumable_ pure \ TmuxMonitorTask {..} -> \case
+  interpretScopedResumable_ pure \ TmuxMonitorTask {..} -> \case
     Wait -> do
       startLog ident pane
       waitBasic ident shellPid

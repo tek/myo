@@ -31,7 +31,7 @@ withLogDir =
   with (Test.tempDir [reldir|log|]) \ d -> runReader (LogDir d)
 
 interpretMyoTestStack ::
-  Members [ChronosTime, Mask mres, DataLog LogReport] r =>
+  Members [ChronosTime, Mask, DataLog LogReport] r =>
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =

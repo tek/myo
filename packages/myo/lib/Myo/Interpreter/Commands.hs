@@ -13,4 +13,4 @@ interpretCommands ::
 interpretCommands =
   interpretResumable \case
     Latest ->
-      fmap HistoryEntry.command . stopNote CommandError.NoCommands . head =<< atomicGets CommandState.history
+      fmap (.command) . stopNote CommandError.NoCommands . head =<< atomicGets (.history)

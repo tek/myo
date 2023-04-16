@@ -2,7 +2,7 @@ module Myo.Tmux.Quit where
 
 import Chiasma.Command.Pane (closePane)
 import Chiasma.Data.TmuxError (TmuxError)
-import Chiasma.Data.View (viewId)
+import qualified Chiasma.Data.View
 import Chiasma.Data.Views (Views)
 import Chiasma.Effect.Codec (NativeCommandCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
@@ -24,4 +24,4 @@ closePanes =
     close vimPaneId = do
       panes <- atomicView @Views #_panes
       restop @TmuxError @NativeTmux $ withTmuxNative_ do
-        traverse_ closePane (filter (vimPaneId /=) (mapMaybe viewId panes))
+        traverse_ closePane (filter (vimPaneId /=) (mapMaybe (.id) panes))

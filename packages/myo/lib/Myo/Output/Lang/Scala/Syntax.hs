@@ -46,7 +46,7 @@ scalaInclude =
 
 location :: SyntaxItem
 location =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoLocation" ("^.*" <> lineNumber <> ".*$")
     options = ["skipwhite", "skipnl"]
@@ -54,21 +54,21 @@ location =
 
 path :: SyntaxItem
 path =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoPath" ("^.*\\ze\\( " <> lineNumber <> ".*$\\)\\@=")
     options = ["contained"]
 
 lineNumberItem :: SyntaxItem
 lineNumberItem =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoLineNumber" ("\\(" <> lineNumber <> " \\)\\@<=\\zs\\d\\+\\ze")
     options = ["contained"]
 
 errorMessage :: SyntaxItem
 errorMessage =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoError" "." errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
@@ -76,7 +76,7 @@ errorMessage =
 
 colMarkerConceal :: SyntaxItem
 colMarkerConceal =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoColMarker" colMarker
     options = ["conceal", "contained"]
@@ -84,14 +84,14 @@ colMarkerConceal =
 
 col :: SyntaxItem
 col =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoCol" "."
     options = ["contained"]
 
 code :: SyntaxItem
 code =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoScalaCode" "^.*$"
     options = ["contained", "keepend"]
@@ -99,7 +99,7 @@ code =
 
 splain :: SyntaxItem
 splain =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxRegion "MyoSplain" "\\s*!I" errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
@@ -107,7 +107,7 @@ splain =
 
 splainParam :: SyntaxItem
 splainParam =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainParam" (noInstanceMarker <> ".*$")
     options = ["contained"]
@@ -115,7 +115,7 @@ splainParam =
 
 splainParamMarker :: SyntaxItem
 splainParamMarker =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainParamMarker" "!I"
     options = ["contained"]
@@ -123,7 +123,7 @@ splainParamMarker =
 
 splainParamMarkerBang :: SyntaxItem
 splainParamMarkerBang =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainParamMarkerBang" "!"
     options = ["contained"]
@@ -131,7 +131,7 @@ splainParamMarkerBang =
 
 splainParamI :: SyntaxItem
 splainParamI =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainParamMarkerI" "I"
     options = ["contained", "skipwhite"]
@@ -139,7 +139,7 @@ splainParamI =
 
 splainParamName :: SyntaxItem
 splainParamName =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainParamName" "[^:]\\+\\ze:"
     options = ["contained"]
@@ -147,21 +147,21 @@ splainParamName =
 
 splainParamType :: SyntaxItem
 splainParamType =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxRegion "MyoSplainParamType" "." ("\\ze.*\\(invalid because\\|" <> colMarker <> "\\)") Nothing
     options = ["contained"]
 
 splainCandidate :: SyntaxItem
 splainCandidate =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoSplainCandidate" "\\S\\+\\ze invalid because"
     options = ["contained"]
 
 splainFoundReq :: SyntaxItem
 splainFoundReq =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainFoundReq" rex
     rex = "^.*" <> foundMarker <> ".\\{-}" <> separatorMarker <> foundreqSeparator <> ".\\{-}" <> reqMarker <> ".*$"
@@ -170,7 +170,7 @@ splainFoundReq =
 
 splainFound :: SyntaxItem
 splainFound =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainFound" rex
     rex = "\\zs" <> foundMarker <> ".\\{-}" <> separatorMarker <> "\\ze"
@@ -179,7 +179,7 @@ splainFound =
 
 splainReq :: SyntaxItem
 splainReq =
-  item { siOptions = options, siParams = params }
+  item { options, params }
   where
     item = syntaxMatch "MyoSplainReq" rex
     rex = foundreqSeparator <> "\\zs.\\{-}" <> reqMarker <> "\\ze"
@@ -188,7 +188,7 @@ splainReq =
 
 splainFoundReqMarker :: SyntaxItem
 splainFoundReqMarker =
-  item { siOptions = options }
+  item { options }
   where
     item = syntaxMatch "MyoSplainFoundReqMarker" rex
     rex = foundMarker <> "\\|" <> separatorMarker <> "\\|" <> reqMarker

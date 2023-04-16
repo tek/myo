@@ -8,6 +8,7 @@ import qualified Ribosome.Settings as Settings
 import Myo.Command.Command (shellCommand, systemCommand)
 import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (..))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (..))
+import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
@@ -25,7 +26,7 @@ updateCommands (CommandSettingCodec system shell) =
     createSystem :: AddSystemCommandOptions -> Command
     createSystem AddSystemCommandOptions {..} =
       (systemCommand target ident lines) {
-        runner,
+        Command.runner,
         lang,
         displayName,
         skipHistory = orFalse skipHistory,
@@ -36,7 +37,7 @@ updateCommands (CommandSettingCodec system shell) =
     createShell :: AddShellCommandOptions -> Command
     createShell AddShellCommandOptions {..} =
       (shellCommand target ident lines) {
-        runner,
+        Command.runner,
         lang,
         displayName,
         skipHistory = orFalse skipHistory,

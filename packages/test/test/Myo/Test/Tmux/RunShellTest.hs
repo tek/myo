@@ -14,7 +14,6 @@ import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 
 import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import qualified Myo.Command.Data.AddShellCommandOptions as AddShellCommandOptions
-import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (runner))
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (commandShell, runner, target))
 import qualified Myo.Command.Effect.Executions as Executions
@@ -83,7 +82,7 @@ test_tmuxRunShell =
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["cat"]) { runner, target = Just "make" }
-    myoAddShellCommand (AddShellCommandOptions.cons cmdIdent cmdLines shellIdent) { runner }
+    myoAddShellCommand (AddShellCommandOptions.cons cmdIdent cmdLines shellIdent) { AddShellCommandOptions.runner }
     myoRunIdent cmdIdent
     assertWait (Executions.running shellIdent) assert
     assertWait paneContent firstCondition

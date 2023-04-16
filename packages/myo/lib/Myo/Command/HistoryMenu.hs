@@ -1,26 +1,9 @@
 module Myo.Command.HistoryMenu where
 
 import qualified Data.Text as Text (take, unwords)
-import Ribosome (
-  Handler,
-  Rpc,
-  RpcError,
-  ScratchId (ScratchId),
-  Settings,
-  mapReports,
-  resumeReports,
-  scratch,
-  )
+import Ribosome (Handler, Rpc, RpcError, ScratchId (ScratchId), Settings, mapReports, resumeReports, scratch)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Menu (
-  MenuItem,
-  MenuLoops,
-  MenuResult (Error, Success),
-  NvimMenuUi,
-  WindowMenu,
-  staticNvimMenu,
-  withFocus,
-  )
+import Ribosome.Menu (MenuItem, MenuResult (Error, Success), ModalWindowMenus, WindowMenu, staticWindowMenu, withFocus)
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 
 import Myo.Command.CommandMenu (menuItemName)
@@ -49,8 +32,7 @@ historyItems = do
 
 type HistoryMenuStack ui =
   [
-    NvimMenuUi ui,
-    MenuLoops CommandId,
+    ModalWindowMenus CommandId !! RpcError,
     AtomicState CommandState,
     Settings !! SettingError,
     Rpc !! RpcError,
@@ -63,10 +45,10 @@ historyMenu ::
   Sem r (MenuResult CommandId)
 historyMenu = do
   items <- historyItems
-  staticNvimMenu items def opts [("<cr>", withFocus pure)]
+  staticWindowMenu items def opts [("<cr>", withFocus pure)]
   where
     opts =
-      scratch (ScratchId name) & #filetype ?~ name
+      def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
     name =
       "myo-history"
 

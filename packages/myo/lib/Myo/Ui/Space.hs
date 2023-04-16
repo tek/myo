@@ -8,4 +8,4 @@ myoSpaces ::
   Member (AtomicState UiState) r =>
   Sem r [Space]
 myoSpaces =
-  atomicGets UiState.spaces
+  atomicGets (.spaces)

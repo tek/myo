@@ -126,7 +126,6 @@ ws =
   skipOptional whiteSpace
 
 foundReq1 ::
-  Applicative m =>
   TokenParsing m =>
   m HaskellMessage
 foundReq1 =
@@ -293,7 +292,6 @@ nonExhausivePatterns =
       string "Pattern match(es) are non-exhaustive" *> ws *> string "In an equation for" *> ws *> qname
 
 kindMismatch ::
-  Applicative m =>
   TokenParsing m =>
   m HaskellMessage
 kindMismatch =

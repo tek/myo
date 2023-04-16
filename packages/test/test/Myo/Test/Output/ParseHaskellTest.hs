@@ -351,7 +351,7 @@ test_parseHaskellErrors :: UnitTest
 test_parseHaskellErrors =
   myoTest do
     ParsedOutput _ events <- parseHaskell
-    target === (ReportLine.text <$> ParseReport.lines (compileReport 1 events))
+    target === ((.text) <$> (compileReport 1 events).lines)
 
 parseHaskellGarbage ::
   Members [Test, Error TestError] r =>
@@ -378,4 +378,4 @@ test_parseGarbage :: UnitTest
 test_parseGarbage =
   myoTest do
     ParsedOutput _ events <- parseHaskellGarbage
-    garbageTarget === (ReportLine.text <$> ParseReport.lines (compileReport 0 events))
+    garbageTarget === ((.text) <$> (compileReport 0 events).lines)

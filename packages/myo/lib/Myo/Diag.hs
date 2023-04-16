@@ -80,8 +80,8 @@ diagnostics ::
   Members [Settings !! se, AtomicState UiState, AtomicState CommandState, Reports] r =>
   Sem r (Doc a)
 diagnostics = do
-  cmds <- atomicGets (cmdDiagnostics . CommandState.commands)
-  ui <- atomicGets (uiDiagnostics . UiState.spaces)
+  cmds <- atomicGets @CommandState (cmdDiagnostics . (.commands))
+  ui <- atomicGets @UiState (uiDiagnostics . (.spaces))
   errors <- errorDiagnostics <$> storedReports
   pure $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
   where
