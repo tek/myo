@@ -3,23 +3,13 @@
 
   inputs = {
     ribosome.url = "git+https://git.tryp.io/tek/ribosome";
-    hls.url = "github:haskell/haskell-language-server?ref=1.9.0.0";
   };
 
-  outputs = {ribosome, hls, ...}: ribosome.lib.pro ({config, ...}: {
-    compiler = "ghc925";
+  outputs = {ribosome, ...}: ribosome.lib.pro ({config, ...}: {
     depsFull = [ribosome];
     compat.enable = false;
     hackage.versionFile = "ops/version.nix";
-    defaultApp = "myo";
-
-    overrides = { buildInputs, fast, pkgs, source, ... }:
-    let
-      inputs = buildInputs [pkgs.neovim pkgs.tmux pkgs.xterm];
-    in {
-      myo = buildInputs [pkgs.socat] fast;
-      myo-test = fast inputs;
-    };
+    gen-overrides.enable = true;
 
     cabal = {
       license = "BSD-2-Clause-Patent";
@@ -36,12 +26,14 @@
         enable = true;
         package = {
           name = "prelate";
-          version = "^>= 0.5.1";
+          version = "^>= 0.6";
         };
         module = "Prelate";
       };
       dependencies = ["polysemy" "polysemy-plugin"];
     };
+
+    buildInputs = pkgs: [pkgs.neovim pkgs.tmux pkgs.xterm pkgs.socat];
 
     packages.myo = {
       src = ./packages/myo;
@@ -126,7 +118,6 @@
     cachixKey = "tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk=";
 
     envs.dev.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.socat];
-    envs.hls.hls.package = hls.packages.${config.system}.haskell-language-server-925;
 
     outputs.apps.myo = {
       type = "app";

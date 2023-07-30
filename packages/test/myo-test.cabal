@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -103,7 +103,7 @@ test-suite myo-test-test
       ViewPatterns
       OverloadedRecordDot
       NoFieldSelectors
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages -fplugin=Polysemy.Plugin
+  ghc-options: -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
       base ==4.*
     , chiasma
@@ -118,7 +118,7 @@ test-suite myo-test-test
     , polysemy-plugin
     , polysemy-process
     , polysemy-test
-    , prelate >=0.5.1 && <0.6
+    , prelate ==0.6.*
     , ribosome
     , ribosome-host
     , ribosome-menu
