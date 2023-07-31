@@ -7,6 +7,7 @@
 
   outputs = {ribosome, ...}: ribosome.lib.pro ({config, ...}: {
     depsFull = [ribosome];
+    compiler = "ghc94";
     compat.enable = false;
     hackage.versionFile = "ops/version.nix";
     gen-overrides.enable = true;
