@@ -23,8 +23,7 @@ import Myo.Effect.Controller (Controller)
 import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
 
 testName :: Text
-testName =
-  "<test>"
+testName = "<test>"
 
 vimTestPosition ::
   Members [Settings, Rpc] r =>

@@ -1,7 +1,7 @@
 module Main where
 
 import Myo.Test.Command.CommandMenuTest (test_commandMenu)
-import Myo.Test.Command.HistoryMenuTest (test_historyMenu)
+import Myo.Test.Command.HistoryMenuTest (test_historyMenu, test_historyMenuDelete)
 import Myo.Test.Command.HistoryTest (test_history)
 import Myo.Test.Command.UpdateTest (test_updateCommands)
 import Myo.Test.Command.VimTestTest (test_vimTest)
@@ -11,6 +11,7 @@ import Myo.Test.Output.CycleTest (test_outputNext, test_outputPrev)
 import Myo.Test.Output.EmptyOutputTest (test_emptyOutput)
 import Myo.Test.Output.HaskellRenderTest (test_haskellRender)
 import Myo.Test.Output.ParseHaskellTest (test_parseGarbage, test_parseHaskellErrors)
+import Myo.Test.Output.ParseNixTest (test_parseNixErrors)
 import Myo.Test.Output.ParseScalaTest (test_parseScala)
 import Myo.Test.Output.ParseTest (test_parsePrevious)
 import Myo.Test.Output.PathTest (test_outputResolvePath)
@@ -39,6 +40,7 @@ tests =
     testGroup "command" [
       unitTest "run a command from the menu" test_commandMenu,
       unitTest "select a command in the history menu" test_historyMenu,
+      unitTest "delete some entries from the history menu" test_historyMenuDelete,
       unitTest "add history entries when running commands, unique by command lines" test_history,
       unitTest "update commands via variable watcher" test_updateCommands,
       unitTest "run a vim-test command" test_vimTest
@@ -49,6 +51,7 @@ tests =
       unitTest "don't show the output window if events are empty" test_emptyOutput,
       unitTest "render haskell messages" test_haskellRender,
       unitTest "parse haskell errors" test_parseHaskellErrors,
+      unitTest "parse nix errors" test_parseNixErrors,
       unitTest "parse haskell garbage" test_parseGarbage,
       unitTest "parse scala messages" test_parseScala,
       unitTest "parse previous output if current is unparsable" test_parsePrevious,

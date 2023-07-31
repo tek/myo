@@ -47,4 +47,4 @@ test_parseNixErrors :: UnitTest
 test_parseNixErrors =
   myoTest do
     ParsedOutput _ events <- parseNix
-    target === (ReportLine.text <$> ParseReport.lines (compileReport 1 events))
+    target === ((.text) <$> (compileReport 1 events).lines)

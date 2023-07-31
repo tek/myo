@@ -25,6 +25,7 @@ import Myo.Command.Data.LoadHistory (LoadHistory)
 import Myo.Command.Data.StoreHistory (StoreHistory)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import qualified Myo.Settings as Settings
+import qualified Data.Set as Set
 
 -- TODO use variable watcher for this or simple index by the last two directory segments
 proteomePath ::
@@ -55,6 +56,24 @@ history ::
 history =
   atomicGets (.history)
 
+setHistory ::
+  Member (AtomicState CommandState) r =>
+  [HistoryEntry] ->
+  Sem r ()
+setHistory =
+  atomicSet #history
+
+removeHistoryEntries ::
+  Member (AtomicState CommandState) r =>
+  NonEmpty CommandId ->
+  Sem r ()
+removeHistoryEntries targets =
+  atomicModify' (#history %~ \ old -> foldr check [] old)
+  where
+    check entry z | elem entry.command.ident targetSet = z
+                  | otherwise = entry : z
+    targetSet = Set.fromList (toList targets)
+
 storeHistoryAt ::
   Members [Persist [HistoryEntry], AtomicState CommandState] r =>
   Path Rel File ->
@@ -76,7 +95,7 @@ loadHistoryFrom ::
   Sem r ()
 loadHistoryFrom path = do
   Log.debug [exon|Loading history from `#{pathText path}`|]
-  traverse_ (atomicSet #history) =<< Persist.load (Just path)
+  traverse_ setHistory =<< Persist.load (Just path)
 
 loadHistory ::
   Members [Rpc, Settings !! SettingError] r =>

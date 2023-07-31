@@ -23,7 +23,7 @@ MonadIO (t m)
 [97m[101mtype not in scope
 [39m[49mUnknown.Type
 
-[38;5;159m/path/to/File.hs[39m  [38;5;159m11
+[38;5;159m/path/to/File.hs[39m  [38;5;159m11[39m
 [97m[101mvariable not in scope[39m[49m
 var [93m::[39m IO a0
 
@@ -32,8 +32,8 @@ var [93m::[39m IO a0
 IO (Maybe Int)
 
 [38;5;159m/path/to/File.hs[39m  [38;5;159m11
-[97m[101mambiguous type var for constraint[39m[49m
-[35ma0[39m
+[97m[101mambiguous type var for constraint
+[35m[49ma0[39m
 funky
 Classy a0
 

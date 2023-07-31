@@ -3,7 +3,15 @@ module Myo.Command.HistoryMenu where
 import qualified Data.Text as Text (take, unwords)
 import Ribosome (Handler, Rpc, RpcError, ScratchId (ScratchId), Settings, mapReports, resumeReports, scratch)
 import Ribosome.Data.SettingError (SettingError)
-import Ribosome.Menu (MenuItem, MenuResult (Error, Success), ModalWindowMenus, WindowMenu, staticWindowMenu, withFocus)
+import Ribosome.Menu (
+  MenuItem,
+  MenuResult (Error, Success),
+  ModalWindowMenus,
+  WindowMenu,
+  staticWindowMenu,
+  withFocus,
+  withSelection,
+  )
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 
 import Myo.Command.CommandMenu (menuItemName)
@@ -13,10 +21,16 @@ import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.History (history)
+import Myo.Command.History (history, removeHistoryEntries)
 import Myo.Command.Run (reRun)
 import Myo.Data.CommandId (CommandId)
 import Myo.Effect.Controller (Controller)
+
+data HistoryAction =
+  Run CommandId
+  |
+  Delete (NonEmpty CommandId)
+  deriving stock (Eq, Show, Generic)
 
 historyItems ::
   Members [AtomicState CommandState, Stop CommandError] r =>
@@ -42,10 +56,10 @@ type HistoryMenuStack ui =
 historyMenu ::
   Members (HistoryMenuStack ui) r =>
   Members [Stop CommandError, Stop RpcError] r =>
-  Sem r (MenuResult CommandId)
+  Sem r (MenuResult HistoryAction)
 historyMenu = do
   items <- historyItems
-  staticWindowMenu items def opts [("<cr>", withFocus pure)]
+  staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", withSelection (pure . Delete))]
   where
     opts =
       def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
@@ -59,8 +73,10 @@ myoHistory ::
 myoHistory =
   resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError] do
     historyMenu >>= \case
-      Success ident ->
+      Success (Run ident) ->
         void (async (reRun (Left ident)))
+      Success (Delete idents) ->
+        removeHistoryEntries idents
       Error err ->
         stop (CommandError.Misc err)
       _ ->
