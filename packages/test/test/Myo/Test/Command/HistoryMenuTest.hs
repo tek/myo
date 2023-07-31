@@ -1,8 +1,7 @@
 module Myo.Test.Command.HistoryMenuTest where
 
-import Exon (exon)
-import Polysemy.Test (TestError (TestError), UnitTest, assertEq, (===))
-import Ribosome.Menu (MenuResult (Success), promptInput)
+import Polysemy.Test (UnitTest, assertEq, (===))
+import Ribosome.Menu (MenuResult (Aborted), promptInput)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Prompt (PromptEvent (Mapping, Update))
 import Ribosome.Test (testError)
@@ -12,8 +11,8 @@ import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
-import Myo.Command.History (history, removeHistoryEntries)
-import Myo.Command.HistoryMenu (HistoryAction (Delete, Run), historyMenu)
+import Myo.Command.History (history)
+import Myo.Command.HistoryMenu (HistoryAction (Run), historyMenu)
 import Myo.Data.CommandId (CommandId)
 import Myo.Test.Embed (myoTest)
 
@@ -39,19 +38,26 @@ test_historyMenu =
 
 inputEventsDelete :: [PromptEvent]
 inputEventsDelete =
-  [Mapping "k", Mapping "<space>", Mapping "k", Mapping "k", Mapping "<space>", Mapping "<space>", Mapping "d"]
+  [
+    Mapping "k",
+    Mapping "<space>",
+    Mapping "k",
+    Mapping "k",
+    Mapping "<space>",
+    Mapping "<space>",
+    Mapping "d",
+    Mapping "d",
+    Mapping "<esc>"
+  ]
 
 historyDeleted :: [HistoryEntry]
 historyDeleted =
-  [mkEntry "c1", mkEntry "c3", mkEntry "c4", mkEntry "c7", mkEntry "c8"]
+  [mkEntry "c1", mkEntry "c3", mkEntry "c4", mkEntry "c8"]
 
 test_historyMenuDelete :: UnitTest
 test_historyMenuDelete =
   myoTest do
     atomicSet @CommandState #history initialHistory
-    promptInput inputEventsDelete (testError @CommandError historyMenu) >>= \case
-      Success (Delete idents) ->
-        removeHistoryEntries idents
-      other ->
-        throw (TestError [exon|Wrong result: #{show other}|])
+    result <- promptInput inputEventsDelete (testError @CommandError historyMenu)
+    Aborted === result
     assertEq historyDeleted =<< history

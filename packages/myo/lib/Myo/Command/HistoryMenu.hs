@@ -4,13 +4,18 @@ import qualified Data.Text as Text (take, unwords)
 import Ribosome (Handler, Rpc, RpcError, ScratchId (ScratchId), Settings, mapReports, resumeReports, scratch)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Menu (
+  MenuAction (Render),
   MenuItem,
   MenuResult (Error, Success),
+  MenuWidget,
+  ModalState,
   ModalWindowMenus,
   WindowMenu,
+  deleteSelected,
+  menuState,
   staticWindowMenu,
   withFocus,
-  withSelection,
+  withSelection',
   )
 import Ribosome.Menu.Data.MenuItem (simpleMenuItem)
 
@@ -53,13 +58,22 @@ type HistoryMenuStack ui =
     Log
   ]
 
+delete ::
+  Member (AtomicState CommandState) r =>
+  MenuWidget (ModalState CommandId) r a
+delete =
+  menuState $ withSelection' \ idents -> do
+    removeHistoryEntries idents
+    deleteSelected
+    pure Render
+
 historyMenu ::
   Members (HistoryMenuStack ui) r =>
   Members [Stop CommandError, Stop RpcError] r =>
   Sem r (MenuResult HistoryAction)
 historyMenu = do
   items <- historyItems
-  staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", withSelection (pure . Delete))]
+  staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", delete)]
   where
     opts =
       def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
