@@ -27,6 +27,8 @@ import Myo.Command.Data.Command (Command (Command), commandShell, ident)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (UiShell, UiSystem))
+import Myo.Command.Data.SocatExe (SocatExe)
+import qualified Myo.Command.Data.TmuxTask
 import Myo.Command.Data.TmuxTask (TaskType (Kill, Shell, Wait), TmuxTask (TmuxTask), command, pane, target, taskType)
 import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
 import Myo.Command.Effect.Backend (Backend)
@@ -46,15 +48,15 @@ import Myo.Effect.Proc (Proc)
 import Myo.Tmux.Proc (leafPid, panePid, shellBusy, waitForRunningProcess)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Render (renderTmux)
-import Myo.Command.Data.SocatExe (SocatExe)
 
 acceptCommand ::
   Bool ->
   UiTarget ->
   PaneId ->
   Command ->
+  [Text] ->
   Maybe TmuxTask
-acceptCommand shell target pane command@Command {kill} =
+acceptCommand shell target pane command@Command {kill} compiled =
   Just TmuxTask {..}
   where
     taskType =
@@ -79,11 +81,11 @@ start ::
   Members (NativeCodecsE [TmuxCommand, Panes PaneMode]) r =>
   TmuxTask ->
   Sem r ()
-start TmuxTask {pane, command = Command {ident, cmdLines}} =
+start TmuxTask {pane, command = Command {ident}, compiled} =
   withTmuxApis_ @[TmuxCommand, Panes PaneMode] @CodecError do
     quitCopyMode pane
     Log.debug [exon|Sending command `#{commandIdText ident}` to tmux pane #{formatId pane}|]
-    sendKeys pane (cmdline cmdLines)
+    sendKeys pane (cmdline compiled)
 
 type StartMonitoredStack =
   NativeCodecsE [TmuxCommand, Panes PaneMode] ++ [
@@ -183,12 +185,12 @@ acceptTmux ::
   RunTask ->
   Sem r (Maybe TmuxTask)
 acceptTmux = \case
-  RunTask cmd (UiSystem target) -> do
+  RunTask _ cmd (UiSystem target) compiled _ -> do
     paneId <- mapStop RunError.Views (paneIdForIdent target)
-    pure (acceptCommand False target paneId cmd)
-  RunTask cmd (UiShell _ target) -> do
+    pure (acceptCommand False target paneId cmd compiled)
+  RunTask _ cmd (UiShell _ target) compiled _ -> do
     paneId <- mapStop RunError.Views (paneIdForIdent target)
-    pure (acceptCommand True target paneId cmd)
+    pure (acceptCommand True target paneId cmd compiled)
   _ ->
     pure Nothing
 

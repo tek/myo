@@ -2,12 +2,18 @@ module Myo.Command.Data.Command where
 
 import qualified Chiasma.Data.Ident as Ident
 import Chiasma.Data.Ident (Ident)
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
+import Exon (exon)
 import Prelude hiding (lines)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
+import qualified Myo.Command.Data.CommandSpec
+import Myo.Command.Data.CommandSpec (CommandSpec, parseCommandSpec')
+import Myo.Command.Data.CommandTemplate (renderTemplate)
+import Myo.Command.Data.Param (ParamDefault, ParamId, renderParamDefault)
 import Myo.Data.CommandId (CommandId (CommandId))
 
 newtype CommandLanguage =
@@ -21,7 +27,7 @@ data Command =
   Command {
     interpreter :: CommandInterpreter,
     ident :: CommandId,
-    cmdLines :: [Text],
+    cmdLines :: CommandSpec,
     runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
     displayName :: Maybe Text,
@@ -37,10 +43,10 @@ instance Pretty Command where
   pretty (Command {..}) =
     nest 2 . vsep $ header : info
     where
-      header =
-        "*" <+> pretty ident
-      info =
-        prettyIprt : prettyLines : opt
+      header = "*" <+> pretty ident
+
+      info = prettyIprt : prettyLines : prettyParams : opt
+
       opt =
         catMaybes [
           prettyRunner <$> runner,
@@ -50,17 +56,23 @@ instance Pretty Command where
           Just $ "kill" <+> pretty kill,
           Just $ "capture:" <+> pretty capture
           ]
+
       prettyIprt = "interpreter:" <+> pretty interpreter
       prettyRunner r = "runner:" <+> pretty r
-      prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> cmdLines)
+      prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> renderTemplate cmdLines.template)
+      prettyParams = nest 2 (vsep ("params:" : (pretty . renderParam <$> Map.toList cmdLines.params)))
       prettyLang (CommandLanguage a) = "language:" <+> pretty a
       prettyName n = "name:" <+> pretty n
 
+      renderParam :: (ParamId, ParamDefault) -> Text
+      renderParam (k, v) = [exon|##{k}: ##{renderParamDefault v}|]
+
 json ''Command
 
-cons :: CommandInterpreter -> CommandId -> [Text] -> Command
-cons interpreter ident cmdLines =
+consSpec :: CommandInterpreter -> CommandId -> CommandSpec -> Command
+consSpec interpreter ident cmdLines =
   Command {
+    cmdLines,
     runner = Nothing,
     lang = Nothing,
     displayName = Nothing,
@@ -71,6 +83,10 @@ cons interpreter ident cmdLines =
     commandShell = False,
     ..
   }
+
+cons :: CommandInterpreter -> CommandId -> [Text] -> Command
+cons interpreter ident cmdLines =
+  consSpec interpreter ident (parseCommandSpec' cmdLines)
 
 shortIdent :: CommandId -> Text
 shortIdent = \case

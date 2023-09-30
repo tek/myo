@@ -6,6 +6,7 @@ import Myo.Command.Data.Command (Command (Command))
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
+import Myo.Command.Data.CommandSpec (CommandSpec)
 import qualified Myo.Command.Data.CommandState as CommandState
 import Myo.Command.Data.CommandState (CommandState (commands))
 import qualified Myo.Command.Data.HistoryEntry as HistoryEntry
@@ -77,18 +78,18 @@ commandByIdentOrName context query = do
 systemCommand ::
   Maybe UiTarget ->
   CommandId ->
-  [Text] ->
+  CommandSpec ->
   Command
 systemCommand target =
-  Command.cons (System target)
+  Command.consSpec (System target)
 
 shellCommand ::
   CommandId ->
   CommandId ->
-  [Text] ->
+  CommandSpec ->
   Command
 shellCommand target =
-  Command.cons (Shell target)
+  Command.consSpec (Shell target)
 
 latestCommand ::
   Members [AtomicState CommandState, Stop CommandError] r =>

@@ -7,10 +7,14 @@
 
   outputs = {ribosome, ...}: ribosome.lib.pro ({config, ...}: {
     depsFull = [ribosome];
-    compiler = "ghc94";
     compat.enable = false;
     hackage.versionFile = "ops/version.nix";
     gen-overrides.enable = true;
+
+    overrides = {noprofiling, nodoc, ...}: {
+      myo = noprofiling nodoc;
+      myo-test = noprofiling nodoc;
+    };
 
     cabal = {
       license = "BSD-2-Clause-Patent";
@@ -27,7 +31,7 @@
         enable = true;
         package = {
           name = "prelate";
-          version = "^>= 0.6";
+          version = ">= 0.6 && < 0.8";
         };
         module = "Prelate";
       };
@@ -44,9 +48,15 @@
       library = {
         enable = true;
         dependencies = [
+          "aeson"
           "attoparsec"
           "chiasma"
           "chronos"
+          "constraints"
+          "constraints-extras"
+          "dependent-map"
+          "dependent-sum"
+          "dependent-sum-template"
           "exon"
           "extra"
           "generic-lens"
@@ -65,6 +75,7 @@
           "polysemy-chronos"
           "polysemy-process"
           "prettyprinter"
+          "random"
           "raw-strings-qq"
           "ribosome"
           "ribosome-host"
@@ -90,6 +101,7 @@
       test = {
         enable = true;
         dependencies = [
+          "aeson"
           "chiasma"
           "exon"
           "hedgehog"

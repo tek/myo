@@ -3,7 +3,7 @@ module Myo.Test.RunTest where
 import Chiasma.Data.Ident (Ident (Str))
 import qualified Data.Map.Strict as Map
 import Log (Severity (Error))
-import Polysemy.Test (Hedgehog, UnitTest, assertJust, evalLeft)
+import Polysemy.Test (Hedgehog, UnitTest, assertJust)
 import Ribosome (
   LogReport,
   Report (Report),
@@ -15,22 +15,25 @@ import Ribosome (
   logReport,
   storedReports,
   )
+import Ribosome.Api (defineFunction, nvimSetVar)
 import qualified Ribosome.Report as Report
 import Ribosome.Test (testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
-import Myo.Command.Data.Command (Command (Command, cmdLines))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions, systemOptions)
+import Myo.Command.Data.CommandSpec (parseCommandSpec')
+import Myo.Command.Data.Param (ParamDefault (ParamDefault), ParamId, ParamValue (ParamFlag))
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (line, runner)
-import Myo.Command.Data.RunTask (RunTask (RunTask), command)
+import qualified Myo.Command.Data.RunTask
+import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend, interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
-import Myo.Command.Run (myoLine, myoRunIdent)
+import Myo.Command.Run (myoLine, runIdent)
 import Myo.Data.CommandId (CommandId)
-import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
 
@@ -93,14 +96,14 @@ test_runSystem =
   myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummy $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { AddSystemCommandOptions.runner = Just runnerIdent }
-      myoRunIdent ident
+      runIdent ident mempty
     checkReport [testError]
 
 cmdline :: Text
 cmdline = "echo 'hello'"
 
 singleLineAccept :: RunTask -> Sem r (Maybe [Text])
-singleLineAccept RunTask {command = Command {cmdLines = l}} =
+singleLineAccept RunTask {compiled = l} =
   pure (Just l)
 
 singleLineExecute ::
@@ -123,14 +126,36 @@ test_runLineSingle =
   myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { AddSystemCommandOptions.runner = Just runnerIdent }
-      myoLine def { line = Just cmdline, runner = Just runnerIdent }
+      myoLine def { line = Just (parseCommandSpec' [cmdline]), runner = Just runnerIdent }
     checkReport [cmdline]
 
 test_runSubprocFail :: UnitTest
 test_runSubprocFail =
   myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
-    r <- testHandler do
+    testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { AddSystemCommandOptions.runner = Just runnerIdent }
-      resumeEither (Controller.runIdent ident)
-    _ <- evalLeft r
+      runIdent ident mempty
     unit
+
+paramDefaults :: Map ParamId ParamDefault
+paramDefaults =
+  [("par2", "default value 2"), ("par3", "default value 3"), ("par5", ParamDefault (ParamFlag False))]
+
+paramCommand :: AddSystemCommandOptions
+paramCommand =
+  systemOptions ident [line]
+  & #runner ?~ runnerIdent
+  & #params ?~ paramDefaults
+  where
+    line = "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5?bool value 1}{par6?bool value 2}"
+
+test_runParamCommand :: UnitTest
+test_runParamCommand =
+  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
+    testHandler do
+      myoAddSystemCommand paramCommand
+      nvimSetVar @Text "myo_param_par1" "var value 1"
+      nvimSetVar "myo_param_par6" True
+      defineFunction "Myo_param_par2" [] ["return 'fun value 2'"]
+      runIdent ident mempty
+    checkReport ["cmd: var value 1 / sub (var value 1) (fun value 2) / default value 3 / bool value 2"]

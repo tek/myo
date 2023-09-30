@@ -5,7 +5,7 @@ import qualified Chiasma.Command.Pane as Chiasma
 import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Tmux (withPanes_)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
-import Polysemy.Test (TestError, UnitTest, assert, (===))
+import Polysemy.Test (TestError (TestError), UnitTest, assert, (===))
 import Ribosome (interpretPersistNull)
 import Ribosome.Test (assertWait, testHandler)
 
@@ -17,7 +17,7 @@ import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
-import Myo.Command.Run (myoRunIdent)
+import Myo.Command.Run (runIdent)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Command (withTestHandlerAsync)
 import Myo.Test.Embed (myoEmbedTmuxTest)
@@ -43,7 +43,7 @@ setupTree ::
   Members [AtomicState UiState, Error TestError] r =>
   Sem r ()
 setupTree =
-  stopToErrorWith show do
+  stopToErrorWith (TestError . show) do
     insertLayout (viewCoords "s" "w" "wroot") layout
     insertPane (viewCoords "s" "w" "l") pane1
     insertPane (viewCoords "s" "w" "l") pane2
@@ -67,7 +67,7 @@ test_shellPanePin =
     setupDefaultTestUi
     insertPane (viewCoords "vim" "vim" "make") (consPane tid)
     myoAddSystemCommand (AddSystemCommandOptions.cons sid ["tail"]) { target = Just (UiTarget tid) }
-    withTestHandlerAsync (myoRunIdent sid) do
+    withTestHandlerAsync (runIdent sid mempty) do
       assertWait (Executions.running sid) assert
       panes <- withPanes_ @Chiasma.Pane @CodecError Chiasma.panes
       3 === length panes

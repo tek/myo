@@ -1,9 +1,10 @@
 module Myo.Command.History where
 
 import Conc (Lock, lockOrSkip_)
-import Control.Lens (element, firstOf, view, views)
+import Control.Lens (element, firstOf, views)
 import Control.Monad.Trans.Maybe (MaybeT (MaybeT, runMaybeT))
 import Data.List.Extra (nubOrdOn)
+import qualified Data.Set as Set
 import Exon (exon)
 import qualified Log
 import Path (Dir, File, Path, Rel, dirname, parent, relfile, (</>))
@@ -13,19 +14,21 @@ import qualified Ribosome.Persist as Persist
 import qualified Ribosome.Settings as Settings
 
 import Myo.Command.Command (mayCommandBy)
+import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command (Command, ident))
-import qualified Myo.Command.Data.Command as Command (displayName, skipHistory)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
+import qualified Myo.Command.Data.CommandSpec
 import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandState as CommandState (history)
-import Myo.Command.Data.HistoryEntry (HistoryEntry (HistoryEntry))
-import qualified Myo.Command.Data.HistoryEntry as HistoryEntry (command)
+import qualified Myo.Command.Data.CommandTemplate
+import qualified Myo.Command.Data.HistoryEntry
+import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry))
 import Myo.Command.Data.LoadHistory (LoadHistory)
+import Myo.Command.Data.Param (ParamValues)
 import Myo.Command.Data.StoreHistory (StoreHistory)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import qualified Myo.Settings as Settings
-import qualified Data.Set as Set
 
 -- TODO use variable watcher for this or simple index by the last two directory segments
 proteomePath ::
@@ -109,43 +112,50 @@ pushHistory ::
   Members [Rpc, Settings !! SettingError] r =>
   Members [Persist [HistoryEntry], AtomicState CommandState, Lock @@ StoreHistory, Log, Resource] r =>
   Command ->
+  CommandId ->
+  ParamValues ->
+  [Text] ->
   Sem r ()
-pushHistory cmd@Command {ident} =
+pushHistory cmd@Command {ident} exeId params compiled =
   unless ((.skipHistory) cmd) do
-    Log.debug [exon|Pushing command #{commandIdText ident} to history|]
+    Log.debug [exon|Pushing command '#{commandIdText ident}' to history, params: #{show params}|]
     atomicModify' (#history %~ prep)
     storeHistory
   where
-    prep es =
-      nubOrdOn (view (#command . #cmdLines)) (HistoryEntry cmd : es)
+    prep es = nubOrdOn entryKey (HistoryEntry cmd (Just (ExecutionParams exeId compiled params)) : es)
+
+    entryKey = \case
+      HistoryEntry _ (Just execution) -> execution.compiled
+      HistoryEntry c _ -> c.cmdLines.template.rendered
 
 lookupHistoryIndex ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Int ->
-  Sem r Command
+  Sem r HistoryEntry
 lookupHistoryIndex index =
-  (.command) <$> (err =<< atomicGets (firstOf (#history . element index)))
-  where
-    err =
-      stopNote (CommandError.NoSuchHistoryIndex index)
+  stopNote (CommandError.NoSuchHistoryIndex index) =<< atomicGets (firstOf (#history . element index))
 
 lookupHistoryIdent ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   CommandId ->
-  Sem r Command
+  Sem r HistoryEntry
 lookupHistoryIdent i = do
   hist <- atomicView #history
-  (.command) <$> stopNote err (find match hist)
+  stopNote err (find match hist)
   where
-    match HistoryEntry {command = Command {ident}} =
-      i == ident
+    match HistoryEntry {command, execution}
+      | Just e <- execution
+      , e.id == i
+      = True
+      | otherwise
+      = command.ident == i
     err =
       CommandError.NoSuchHistoryIdent (show i)
 
 lookupHistory ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Either CommandId Int ->
-  Sem r Command
+  Sem r HistoryEntry
 lookupHistory =
   either lookupHistoryIdent lookupHistoryIndex
 

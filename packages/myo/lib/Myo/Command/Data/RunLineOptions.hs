@@ -4,11 +4,12 @@ import Chiasma.Data.Ident (Ident)
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.Command (CommandLanguage)
+import Myo.Command.Data.CommandSpec (CommandSpec)
 
 data RunLineOptions =
   RunLineOptions {
-    line :: Maybe Text,
-    lines :: Maybe [Text],
+    line :: Maybe CommandSpec,
+    lines :: Maybe CommandSpec,
     target :: Maybe Ident,
     runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,

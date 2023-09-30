@@ -112,17 +112,17 @@ Commands are read from the `myo_commands` variable:
 
 ```vim
 let s:sbt_cmd = {
-      \ 'ident': 'sbt',
-      \ 'lines': ['sbt'],
-      \ 'target': 'sbt',
-      \ 'lang': 'scala',
-      \ }
+  \ 'ident': 'sbt',
+  \ 'lines': ['sbt'],
+  \ 'target': 'sbt',
+  \ 'lang': 'scala',
+  \ }
 let s:compile_cmd = {
-      \ 'ident': 'compile',
-      \ 'lines': ['test:compile'],
-      \ 'target': 'sbt',
-      \ 'lang': 'scala',
-      \ }
+  \ 'ident': 'compile',
+  \ 'lines': ['test:compile'],
+  \ 'target': 'sbt',
+  \ 'lang': 'scala',
+  \ }
 let g:myo_commands = { 'system': [s:sbt_cmd], 'shell': [s:compile_cmd] }
 ```
 
@@ -141,6 +141,35 @@ Its command line is `test:compile`, which is the text sent to `sbt`.
 * `lang` is used to find the appropriate parser for command output. Currently supported: `scala`, `haskell`.
 * `runner` may be `tmux` or `proc` (simple subprocess).
 * `displayName` is an optional override for the text to be displayed to the user instead of the `ident`.
+
+### Parameter interpolation
+
+Command lines may be template strings with references to parameters:
+
+```vim
+let ghc_test_cmd = {
+  \ 'ident': 'test',
+  \ 'lines': ['hadrian/build test {test_way:--test-way={test_way}} {test_options} {test_case:--only={test_case}}'],
+  \ 'params': { 'test_options': '-j6' }
+  \ 'target': 'make',
+  \ }
+```
+
+There are three variants of interpolations:
+
+* `{param_name}` substitutes the value and terminates with error if it is undefined
+* `{param_name:}` substitutes the value or the empty string
+* `{param_name:expr}` processes `expr` as a template or substitutes the empty string if the parameter is undefined
+
+Parameter values are determined from several sources, in decreasing order of precedence:
+
+* The nvim function `Myo_param_<name>`.
+  For example, for the param `{test_case}`, the function `Myo_param_test_case` is called.
+* The nvim variable `<scope>:myo_param_<name>` from the scopes `g:`, `t:`, `w:`, `b:` in that order.
+  For example, `b:myo_param_test_case`.
+* The default values specified in the command config's attribute `params`.
+  If this is specified, the interpolation styles `{param_name:}` and `{param_name}` behave identically and always
+  substitute the default as fallback.
 
 ## MyoRun
 

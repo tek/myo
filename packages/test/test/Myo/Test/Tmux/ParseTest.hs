@@ -20,7 +20,7 @@ import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxWithLog)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Parse (myoParse)
-import Myo.Command.Run (myoRunIdent)
+import Myo.Command.Run (runIdent)
 import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
@@ -55,7 +55,7 @@ test_parseTmux =
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
       ident <- addEchoCommand "tmux" [line1, line2] True
-      myoRunIdent ident
+      runIdent ident mempty
       waitForLog ident
       myoParse (ParseOptions Nothing Nothing Nothing)
       index <- currentLine
@@ -69,7 +69,7 @@ test_parseCaptureTmux =
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
       ident <- addEchoCommand "tmux" [line1, line2] True
-      myoRunIdent ident
+      runIdent ident mempty
       waitForLog ident
       myoParse (ParseOptions Nothing Nothing Nothing)
       index <- currentLine

@@ -11,7 +11,7 @@ import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Parse (parseCommand, selectCommand)
-import Myo.Command.Run (myoRunIdent)
+import Myo.Command.Run (runIdent)
 import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Output.Data.ParseReport (ParseReport (ParseReport))
@@ -32,7 +32,7 @@ test_parsePrevious =
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
         ident <- addEchoCommand "proc" lines' False
-        myoRunIdent ident
+        runIdent ident mempty
         assertWait (CommandLog.get ident) evalMaybe
         cmd <- testError (selectCommand (Just ident))
         CommandLog.archive ident

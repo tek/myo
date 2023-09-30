@@ -4,6 +4,7 @@ import Chiasma.Codec.Data (Pane)
 import Chiasma.Codec.Data.PaneCoords (PaneCoords)
 import Chiasma.Codec.Data.PaneMode (PaneMode)
 import Chiasma.Codec.Data.PanePid (PanePid)
+import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.Panes (Panes)
 import Chiasma.Data.TmuxCommand (TmuxCommand)
 import Chiasma.Data.TmuxError (TmuxError)
@@ -66,6 +67,7 @@ import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.SocatExe (SocatExe (SocatExe))
 import Myo.Command.Data.SocketReaderError (SocketReaderError)
 import Myo.Command.Data.StoreHistory (StoreHistory)
+import Myo.Command.Edit (EditItem)
 import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Effect.Executions (Executions)
@@ -99,6 +101,7 @@ import Myo.Effect.Controller (Controller)
 import Myo.Effect.Proc (Proc)
 import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.InputIdent (interpretInputIdentRandom)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Effect.Parsing (OutputParser, Parsing)
@@ -135,7 +138,8 @@ type MyoStack =
     Backend !! RunError,
     Lock @@ SaveLock,
     Lock @@ StoreHistory,
-    Lock @@ LoadHistory
+    Lock @@ LoadHistory,
+    Input Ident
   ]
 
 type MyoProdStack =
@@ -149,7 +153,8 @@ type MyoProdStack =
     NativeTmux !! TmuxError,
     ScopedSocketReader !! SocketReaderError,
     AtomicState LastSave,
-    ModalWindowMenus CommandId !! RpcError
+    ModalWindowMenus CommandId !! RpcError,
+    ModalWindowMenus EditItem !! RpcError
   ] ++ NvimMenus ++ MyoStack
 
 outputMappingHandlers ::
@@ -240,6 +245,7 @@ prepare = do
 interpretMyoStack ::
   InterpretersFor MyoStack (RemoteStack CliOptions)
 interpretMyoStack =
+  interpretInputIdentRandom .
   interpretLockReentrant . untag .
   interpretLockReentrant . untag .
   interpretLockReentrant . untag .
@@ -273,6 +279,7 @@ interpretMyoProd ::
 interpretMyoProd =
   interpretMyoStack .
   interpretWindowMenu .
+  interpretMenus .
   interpretMenus .
   interpretAtomic def .
   interpretSocketReader .

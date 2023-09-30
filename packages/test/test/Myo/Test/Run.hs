@@ -21,6 +21,7 @@ import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Interpreter.SocatExe (interpretReaderSocatExe)
 import Myo.Data.CliOptions (CliOptions (CliOptions))
 import Myo.Data.ViewError (ViewError)
+import Myo.Interpreter.InputIdent (interpretInputIdentRandom)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Plugin (MyoStack)
 
@@ -35,6 +36,7 @@ interpretMyoTestStack ::
   Members [Test, Rpc !! RpcError, Settings !! SettingError, Error BootError, Race, Log, Resource, Async, Embed IO] r =>
   InterpretersFor MyoStack r
 interpretMyoTestStack =
+  interpretInputIdentRandom .
   interpretLockReentrant . untag .
   interpretLockReentrant . untag .
   interpretLockReentrant . untag .

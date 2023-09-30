@@ -4,6 +4,8 @@ import Chiasma.Data.Ident (Ident)
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.Command (CommandLanguage)
+import Myo.Command.Data.CommandTemplate (CommandTemplate, parseCommandTemplate')
+import Myo.Command.Data.Param (ParamDefaults)
 import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Data.CommandId (CommandId)
 import Myo.Orphans ()
@@ -11,7 +13,8 @@ import Myo.Orphans ()
 data AddSystemCommandOptions =
   AddSystemCommandOptions {
     ident :: CommandId,
-    lines :: [Text],
+    lines :: CommandTemplate,
+    params :: Maybe ParamDefaults,
     runner :: Maybe Ident,
     target :: Maybe UiTarget,
     lang :: Maybe CommandLanguage,
@@ -26,4 +29,8 @@ data AddSystemCommandOptions =
 
 cons :: CommandId -> [Text] -> AddSystemCommandOptions
 cons i l =
-  AddSystemCommandOptions i l Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  AddSystemCommandOptions i (parseCommandTemplate' l)
+  Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
+systemOptions :: CommandId -> [Text] -> AddSystemCommandOptions
+systemOptions = cons

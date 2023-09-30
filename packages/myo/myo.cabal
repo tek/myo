@@ -30,6 +30,9 @@ library
       Myo.Command.Add
       Myo.Command.Command
       Myo.Command.CommandMenu
+      Myo.Command.CommandSpec
+      Myo.Command.CommandSpec.Render
+      Myo.Command.CommandSpec.Resolve
       Myo.Command.Data.ActiveTarget
       Myo.Command.Data.AddShellCommandOptions
       Myo.Command.Data.AddSystemCommandOptions
@@ -38,7 +41,9 @@ library
       Myo.Command.Data.CommandInterpreter
       Myo.Command.Data.CommandOutput
       Myo.Command.Data.CommandSettingCodec
+      Myo.Command.Data.CommandSpec
       Myo.Command.Data.CommandState
+      Myo.Command.Data.CommandTemplate
       Myo.Command.Data.Execution
       Myo.Command.Data.ExecutionLock
       Myo.Command.Data.ExecutionState
@@ -47,6 +52,7 @@ library
       Myo.Command.Data.LogDir
       Myo.Command.Data.MonitorEvent
       Myo.Command.Data.OutputState
+      Myo.Command.Data.Param
       Myo.Command.Data.ParseOptions
       Myo.Command.Data.ProcPids
       Myo.Command.Data.RunError
@@ -61,6 +67,8 @@ library
       Myo.Command.Data.UiTarget
       Myo.Command.Data.VimTask
       Myo.Command.Data.VimTestPosition
+      Myo.Command.Edit
+      Myo.Command.Edit.Syntax
       Myo.Command.Effect.Backend
       Myo.Command.Effect.CommandLog
       Myo.Command.Effect.Executions
@@ -105,6 +113,7 @@ library
       Myo.Effect.Proc
       Myo.Interpreter.Commands
       Myo.Interpreter.Controller
+      Myo.Interpreter.InputIdent
       Myo.Interpreter.MState
       Myo.Interpreter.Proc
       Myo.Loop
@@ -203,10 +212,16 @@ library
       NoFieldSelectors
   ghc-options: -fplugin=Polysemy.Plugin -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
-      attoparsec
+      aeson
+    , attoparsec
     , base ==4.*
     , chiasma
     , chronos
+    , constraints
+    , constraints-extras
+    , dependent-map
+    , dependent-sum
+    , dependent-sum-template
     , exon
     , extra
     , generic-lens
@@ -226,8 +241,9 @@ library
     , polysemy-chronos
     , polysemy-plugin
     , polysemy-process
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , prettyprinter
+    , random
     , raw-strings-qq
     , ribosome
     , ribosome-host
@@ -289,7 +305,7 @@ executable myo
     , myo
     , polysemy
     , polysemy-plugin
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
   mixins:
       base hiding (Prelude)
     , prelate (Prelate as Prelude)

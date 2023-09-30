@@ -8,6 +8,7 @@ import Myo.Command.Data.AddShellCommandOptions (AddShellCommandOptions (..))
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (..))
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
+import Myo.Command.Data.CommandSpec (CommandSpec (CommandSpec))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Data.Maybe (orFalse)
 
@@ -20,7 +21,7 @@ myoAddSystemCommand (AddSystemCommandOptions {..}) =
   where
     cmd :: Command
     cmd =
-      (systemCommand target ident lines) {
+      (systemCommand target ident (CommandSpec lines (fold params))) {
         Command.runner,
         lang,
         skipHistory = orFalse skipHistory,
@@ -38,7 +39,7 @@ myoAddShellCommand AddShellCommandOptions {..} =
   where
     cmd :: Command
     cmd =
-      (shellCommand target ident lines) {
+      (shellCommand target ident (CommandSpec lines (fold params))) {
         Command.runner,
         lang,
         skipHistory = orFalse skipHistory,

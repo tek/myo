@@ -138,4 +138,5 @@ myoVimTest ::
   Handler r ()
 myoVimTest =
   resumeReport @Settings $ resumeReport @Controller do
-    Controller.runCommand =<< updateTestCommand =<< mapReport vimTestLine
+    cmd <- updateTestCommand =<< mapReport vimTestLine
+    Controller.runCommand cmd mempty

@@ -21,6 +21,8 @@ data CommandError =
   NoHistory
   |
   NotAUiShell CommandId CommandId
+  |
+  InvalidTemplateEdit Text Text
   deriving stock (Eq, Show)
 
 instance Reportable CommandError where
@@ -55,3 +57,8 @@ instance Reportable CommandError where
         [exon|`#{shortIdent shell}` cannot be used as a shell for `#{shortIdent cmd}`|]
       log =
         ["CommandError.NotAUiShell:", [exon|cmd: #{commandIdText cmd}|], [exon|shell: #{commandIdText shell}|]]
+  toReport (InvalidTemplateEdit items err) =
+    Report msg log Error
+    where
+      msg = [exon|New command is invalid: #{err}|]
+      log = ["CommandError.InvalidTemplateEdit:", err, items]

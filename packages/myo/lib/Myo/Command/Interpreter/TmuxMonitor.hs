@@ -53,7 +53,7 @@ pollPid ::
   Sem r ()
 pollPid ident shellPid = do
   resumeAs @_ @Proc Nothing (commandPid shellPid) >>= maybe noPid \ pid -> do
-    Log.debug [exon|Setting command pid for `#{commandIdText ident}`: #{show (unPid pid)}|]
+    Log.debug [exon|Setting command pid for `#{commandIdText ident}`: #{show pid.unPid}|]
     Executions.setState ident (ExecutionState.Tracked pid)
     while (MilliSeconds 500) do
       False <! Proc.exists pid

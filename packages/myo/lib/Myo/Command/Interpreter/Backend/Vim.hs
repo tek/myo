@@ -4,7 +4,6 @@ import qualified Ribosome as Rpc
 import Ribosome (Rpc, RpcError, silentBang)
 import Ribosome.Host.Api.Data (nvimCommand)
 
-import Myo.Command.Data.Command (Command (Command), cmdLines)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (Vim))
@@ -16,8 +15,8 @@ acceptVim ::
   RunTask ->
   Sem r (Maybe VimTask)
 acceptVim = \case
-  RunTask Command {cmdLines} (Vim silent target) ->
-    pure (Just (VimTask cmdLines silent target))
+  RunTask _ _ (Vim silent target) compiled _ ->
+    pure (Just (VimTask compiled silent target))
   _ ->
     pure Nothing
 

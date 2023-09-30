@@ -6,9 +6,10 @@ import Ribosome.Api (nvimCallFunction, nvimSetVar)
 import Ribosome.Api.Autocmd (doautocmd)
 import Ribosome.Test (assertWait, testPluginEmbed)
 
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
+import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions, systemOptions)
 import Myo.Command.Data.Command (Command (Command), cmdLines, ident)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
+import Myo.Command.Data.CommandSpec (renderCommandSpec)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Data.CommandId (commandIdText)
 import Myo.Plugin (variables)
@@ -16,14 +17,14 @@ import Myo.Test.Run (runMyoTestStack)
 
 commands1 :: [AddSystemCommandOptions]
 commands1 =
-  [AddSystemCommandOptions "c1" ["tail"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing]
+  [systemOptions "c1" ["tail"]]
 
 commands2 :: [AddSystemCommandOptions]
 commands2 =
   [
-    AddSystemCommandOptions "c1" ["tails"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing,
-    AddSystemCommandOptions "c2" ["echo"] Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
-    ]
+    systemOptions "c1" ["tails"],
+    systemOptions "c2" ["echo"]
+  ]
 
 codec :: [AddSystemCommandOptions] -> CommandSettingCodec
 codec cmds =
@@ -35,7 +36,7 @@ cmdData ::
 cmdData =
   fmap extract <$> atomicView #commands
   where
-    extract (Command {ident, cmdLines}) = (commandIdText ident, cmdLines)
+    extract (Command {ident, cmdLines}) = (commandIdText ident, renderCommandSpec cmdLines)
 
 getCmdData ::
   Member Rpc r =>

@@ -1,0 +1,92 @@
+[
+  {
+    "command": {
+      "interpreter": {
+        "tag": "System",
+        "systemTarget": {
+          "tag": "Str",
+          "contents": "make"
+        }
+      },
+      "ident": {
+        "tag": "Str",
+        "contents": "test 1"
+      },
+      "cmdLines": "run a {param}",
+      "runner": {
+        "tag": "Str",
+        "contents": "tmux"
+      },
+      "lang": "haskell",
+      "displayName": "<test>",
+      "skipHistory": false,
+      "kill": false,
+      "capture": true,
+      "maxLogBytes": null,
+      "commandShell": false
+    }
+  },
+  {
+    "command": {
+      "interpreter": {
+        "tag": "System",
+        "systemTarget": {
+          "tag": "Str",
+          "contents": "make"
+        }
+      },
+      "ident": {
+        "tag": "Str",
+        "contents": "test 2"
+      },
+      "cmdLines": [
+        "run another test"
+      ],
+      "runner": {
+        "tag": "Str",
+        "contents": "tmux"
+      },
+      "lang": "haskell",
+      "displayName": "<test>",
+      "skipHistory": false,
+      "kill": false,
+      "capture": true,
+      "maxLogBytes": null,
+      "commandShell": false
+    }
+  },
+  {
+    "command": {
+      "interpreter": {
+        "tag": "System",
+        "systemTarget": {
+          "tag": "Str",
+          "contents": "make"
+        }
+      },
+      "ident": {
+        "tag": "Str",
+        "contents": "test 1"
+      },
+      "cmdLines": {
+        "params": {
+          "param": "test"
+        },
+        "template": [
+          "run a {param}"
+        ]
+      },
+      "runner": {
+        "tag": "Str",
+        "contents": "tmux"
+      },
+      "lang": "haskell",
+      "displayName": "<test>",
+      "skipHistory": false,
+      "kill": false,
+      "capture": true,
+      "maxLogBytes": null,
+      "commandShell": false
+    }
+  }
+]

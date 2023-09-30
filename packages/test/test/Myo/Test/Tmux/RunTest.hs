@@ -19,7 +19,7 @@ import Ribosome (LogReport, SettingError, Settings, interpretPersistNull, resume
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
-import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (AddSystemCommandOptions))
+import Myo.Command.Data.AddSystemCommandOptions (systemOptions)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
@@ -53,7 +53,9 @@ setup =
     myoAddSystemCommand cmd
   where
     cmd =
-      AddSystemCommandOptions ident cmds (Just "tmux") (Just "make") Nothing Nothing Nothing Nothing Nothing Nothing
+      systemOptions ident cmds
+      & #runner ?~ "tmux"
+      & #target ?~ "make"
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 runAndCheck ::

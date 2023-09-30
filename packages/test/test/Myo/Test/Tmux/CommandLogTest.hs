@@ -17,7 +17,8 @@ import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
-import Myo.Command.Data.TmuxTask (TaskType (Wait), TmuxTask (TmuxTask))
+import qualified Myo.Command.Data.TmuxTask as TmuxTask
+import Myo.Command.Data.TmuxTask (TaskType (Wait))
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Tmux (runInTmux)
@@ -41,7 +42,7 @@ test_tmuxTruncCommandLog =
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     thread1 <- testHandlerAsync do
-      runStop (runInTmux (TmuxTask Wait "make" 0 cmd))
+      runStop (runInTmux (TmuxTask.noParams Wait "make" 0 cmd))
     assertWait (Executions.running cmdIdent) assert
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [k]

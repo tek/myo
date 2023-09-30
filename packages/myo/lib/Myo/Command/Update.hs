@@ -12,6 +12,7 @@ import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec (CommandSettingCodec))
+import Myo.Command.Data.CommandSpec (CommandSpec (CommandSpec))
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Data.Maybe (orFalse)
 import qualified Myo.Settings as Settings
@@ -25,7 +26,7 @@ updateCommands (CommandSettingCodec system shell) =
   where
     createSystem :: AddSystemCommandOptions -> Command
     createSystem AddSystemCommandOptions {..} =
-      (systemCommand target ident lines) {
+      (systemCommand target ident (CommandSpec lines (fold params))) {
         Command.runner,
         lang,
         displayName,
@@ -36,7 +37,7 @@ updateCommands (CommandSettingCodec system shell) =
       }
     createShell :: AddShellCommandOptions -> Command
     createShell AddShellCommandOptions {..} =
-      (shellCommand target ident lines) {
+      (shellCommand target ident (CommandSpec lines (fold params))) {
         Command.runner,
         lang,
         displayName,

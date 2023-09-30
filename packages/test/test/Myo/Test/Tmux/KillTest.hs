@@ -17,7 +17,8 @@ import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (..))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
-import Myo.Command.Data.TmuxTask (TaskType (Kill, Wait), TmuxTask (TmuxTask))
+import qualified Myo.Command.Data.TmuxTask as TmuxTask
+import Myo.Command.Data.TmuxTask (TaskType (Kill, Wait))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Tmux (runInTmux)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
@@ -38,13 +39,13 @@ test_tmuxKill =
   myoEmbedTmuxTest $ interpretSocketReader $ interpretCommandLogSetting $ interpretTmuxMonitor $ testHandler do
     Settings.update Settings.processTimeout 2
     thread1 <- testHandlerAsync do
-      mapReport (runInTmux (TmuxTask Wait "make" 0 cmd))
+      mapReport (runInTmux (TmuxTask.noParams Wait "make" 0 cmd))
     assertWait (Executions.running ident) assert
     pid1 <- evalMaybe =<< Executions.pid ident
     withTmuxNative_ @TmuxCommand do
       sendKeys 0 [Lit "1"]
     thread2 <- testHandlerAsync do
-      mapReport (runInTmux (TmuxTask Kill "make" 0 cmd))
+      mapReport (runInTmux (TmuxTask.noParams Kill "make" 0 cmd))
     thread1
     assertWait (Executions.running ident) assert
     pid2 <- evalMaybe =<< Executions.pid ident

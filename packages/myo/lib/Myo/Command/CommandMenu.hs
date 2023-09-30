@@ -16,13 +16,15 @@ import Ribosome.Menu (
   withFocus,
   )
 
-import Myo.Command.Data.Command (Command (Command, cmdLines, displayName), ident)
+import qualified Myo.Command.Data.Command
+import Myo.Command.Data.Command (Command, ident)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.CommandSpec (renderCommandSpec)
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Run (runIdentAsync)
 import Myo.Data.CommandId (CommandId (CommandId))
-import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 
 menuItemName :: CommandId -> Maybe Text -> Text
@@ -35,17 +37,29 @@ menuItemName (CommandId ident) displayName =
       Ident.Uuid a ->
         Text.take 6 (UUID.toText a)
 
+cmdlineItem :: Maybe CommandId -> Command -> Maybe [Text] -> MenuItem CommandId
+cmdlineItem idOverride command compiled =
+  simpleMenuItem ident menuItemText
+  where
+    ident = fromMaybe command.ident idOverride
+
+    menuItemText =
+      Text.unwords [
+        menuItemName ident command.displayName,
+        Text.take 100 (fromMaybe "<no command line>" (head cmdline))
+      ]
+
+    cmdline = fromMaybe (renderCommandSpec command.cmdLines) compiled
+
+commandItem :: Command -> MenuItem CommandId
+commandItem command = cmdlineItem Nothing command Nothing
+
 commandItems ::
   Members [AtomicState CommandState, Stop CommandError] r =>
   Sem r [MenuItem CommandId]
 commandItems = do
   cmds <- stopNote CommandError.NoCommands . nonEmpty =<< atomicView #commands
-  pure (toList (menuItem <$> cmds))
-  where
-    menuItem Command {..} =
-      simpleMenuItem ident (menuItemText ident cmdLines displayName)
-    menuItemText ident ls displayName =
-      Text.unwords [menuItemName ident displayName, Text.take 100 (fromMaybe "<no command line>" (head ls))]
+  pure (toList (commandItem <$> cmds))
 
 type CommandMenuStack ui =
   [
@@ -76,7 +90,7 @@ myoCommands =
   resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError] do
     commandMenu >>= \case
       Success ident ->
-        void (async (Controller.runIdent ident))
+        runIdentAsync ident mempty
       Error err ->
         stop (CommandError.Misc err)
       _ ->

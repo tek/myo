@@ -17,8 +17,8 @@ import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
+import Myo.Command.Run (runIdent)
 import Myo.Data.CommandId (commandIdText)
-import qualified Myo.Effect.Controller as Controller
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Test.Embed (myoTest)
 
@@ -39,6 +39,6 @@ test_commandMenu =
     atomicSet @CommandState #commands commands
     Menu.Success ident <- promptInput inputEvents do
       testError @CommandError commandMenu
-    testError (restop (Controller.runIdent ident))
+    testError (runIdent ident mempty)
     value <- nvimGetVar "command"
     ("c2" :: Text) === value

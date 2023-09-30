@@ -24,7 +24,7 @@ import System.Exit (ExitCode (ExitFailure, ExitSuccess))
 import System.Process.Typed (proc, setWorkingDir)
 
 import qualified Myo.Command.Data.Command as Command
-import Myo.Command.Data.Command (Command (Command, cmdLines))
+import Myo.Command.Data.Command (Command (Command))
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask (RunTask), RunTaskDetails (System, UiSystem))
@@ -74,9 +74,9 @@ conf (exe, args) = do
   cwd <- Nothing <! (Just <$> nvimCwd)
   pure (maybe id (setWorkingDir . toFilePath) cwd (proc exe args))
 
-processTask :: Command -> Maybe ProcessTask
-processTask = \case
-  Command {ident, cmdLines = [l]} ->
+processTask :: Command -> [Text] -> Maybe ProcessTask
+processTask Command {ident} = \case
+  [l] ->
     case List.words (toString l) of
       (h : t) -> Just (ProcessTask ident (h, t))
       [] -> Nothing
@@ -87,10 +87,10 @@ acceptCommand ::
   RunTask ->
   Sem r (Maybe ProcessTask)
 acceptCommand = \case
-  RunTask cmd System ->
-    pure (processTask cmd)
-  RunTask cmd (UiSystem _) ->
-    pure (processTask cmd)
+  RunTask _ cmd System compiled _ ->
+    pure (processTask cmd compiled)
+  RunTask _ cmd (UiSystem _) compiled _ ->
+    pure (processTask cmd compiled)
   _ ->
     pure Nothing
 

@@ -31,6 +31,7 @@ test-suite myo-test-test
   other-modules:
       Myo.Test.Command
       Myo.Test.Command.CommandMenuTest
+      Myo.Test.Command.CommandSpecTest
       Myo.Test.Command.HistoryMenuTest
       Myo.Test.Command.HistoryTest
       Myo.Test.Command.UpdateTest
@@ -105,7 +106,8 @@ test-suite myo-test-test
       NoFieldSelectors
   ghc-options: -fplugin=Polysemy.Plugin -threaded -rtsopts -with-rtsopts=-N -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
   build-depends:
-      base ==4.*
+      aeson
+    , base ==4.*
     , chiasma
     , exon
     , hedgehog
@@ -118,7 +120,7 @@ test-suite myo-test-test
     , polysemy-plugin
     , polysemy-process
     , polysemy-test
-    , prelate ==0.6.*
+    , prelate >=0.6 && <0.8
     , ribosome
     , ribosome-host
     , ribosome-menu

@@ -3,6 +3,7 @@ module Myo.Command.Data.RunTask where
 import Chiasma.Data.Ident (Ident)
 
 import Myo.Command.Data.Command (Command)
+import Myo.Command.Data.Param (ParamValues)
 import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Data.CommandId (CommandId)
 
@@ -26,7 +27,10 @@ data RunTaskDetails =
 
 data RunTask =
   RunTask {
+    ident :: Ident,
     command :: Command,
-    details :: RunTaskDetails
+    details :: RunTaskDetails,
+    compiled :: [Text],
+    params :: ParamValues
   }
   deriving stock (Eq, Show, Generic)
