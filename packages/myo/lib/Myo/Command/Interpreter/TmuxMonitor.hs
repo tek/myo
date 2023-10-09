@@ -21,7 +21,6 @@ import Path (Abs, File, Path)
 import Polysemy.Chronos (ChronosTime)
 import Process (Pid, unPid)
 import Ribosome (pathText)
-import Time (MilliSeconds (MilliSeconds), while)
 
 import qualified Myo.Command.Data.ExecutionState as ExecutionState
 import Myo.Command.Data.SocatExe (SocatExe (SocatExe))
@@ -34,33 +33,23 @@ import qualified Myo.Command.Effect.SocketReader as SocketReader
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
 import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (TmuxMonitorTask, ident, pane, shellPid))
 import Myo.Data.CommandId (CommandId, commandIdText)
-import Myo.Data.ProcError (ProcError)
 import Myo.Data.ViewError (ViewError (TmuxApi, TmuxCodec))
-import qualified Myo.Effect.Proc as Proc
-import Myo.Effect.Proc (Proc)
 import Myo.Loop (useWhileJust)
-import Myo.Tmux.Proc (commandPid)
-
-type ScopeEffects =
-  '[
-    SocketReader
-  ]
 
 pollPid ::
-  Members [Executions, Proc !! ProcError, ChronosTime, Log] r =>
+  Members [Executions, ChronosTime, Log] r =>
   CommandId ->
   Pid ->
   Sem r ()
 pollPid ident shellPid = do
-  resumeAs @_ @Proc Nothing (commandPid shellPid) >>= maybe noPid \ pid -> do
-    Log.debug [exon|Setting command pid for `#{commandIdText ident}`: #{show pid.unPid}|]
+  Executions.shellCommandPid shellPid >>= maybe noPid \ pid -> do
+    Log.debug [exon|Setting command pid for '#{cid}': #{show pid.unPid}|]
     Executions.setState ident (ExecutionState.Tracked pid)
-    while (MilliSeconds 500) do
-      False <! Proc.exists pid
-    Log.debug [exon|Process for `#{commandIdText ident}` has terminated|]
+    Executions.pollPid ident
+    Log.debug [exon|Process for '#{cid}' has terminated|]
   where
-    noPid =
-      Log.debug [exon|Process for `#{commandIdText ident}` terminated before initial pid was found|]
+    noPid = Log.debug [exon|Process for '#{cid}' terminated before initial pid was found|]
+    cid = commandIdText ident
 
 sanitizeOutput :: ByteString -> ByteString
 sanitizeOutput =
@@ -72,17 +61,17 @@ readOutput ::
   Sem r ()
 readOutput ident = do
   useWhileJust SocketReader.chunk (CommandLog.append ident . sanitizeOutput)
-  Log.debug [exon|Socket for `#{commandIdText ident}` has been closed|]
+  Log.debug [exon|Socket for '#{commandIdText ident}' has been closed|]
 
 waitBasic ::
-  Members [Executions, Proc !! ProcError, ChronosTime, Race, Log] r =>
+  Members [Executions, ChronosTime, Race, Log] r =>
   CommandId ->
   Pid ->
   Sem r ()
 waitBasic ident shellPid =
   race_ (pollPid ident shellPid) do
     Executions.waitTerminate ident
-    Log.debug [exon|Execution terminated for `#{commandIdText ident}`|]
+    Log.debug [exon|Execution terminated for '#{commandIdText ident}'|]
 
 pipePaneToSocket ::
   Member Tmux r =>
@@ -123,7 +112,7 @@ startLog ::
   PaneId ->
   Sem r ()
 startLog ident pane =
-  Log.debug [exon|Monitoring tmux command `#{commandIdText ident}` in `#{formatId pane}`|]
+  Log.debug [exon|Monitoring tmux command '#{commandIdText ident}' in '#{formatId pane}'|]
 
 withLog ::
   ∀ sre r a .
@@ -139,21 +128,21 @@ withLog task@TmuxMonitorTask {..} use = do
       insertAt @1 (use task)
 
 interpretTmuxMonitor ::
-  Members [NativeTmux !! TmuxError, Proc !! ProcError, ChronosTime, CommandLog, Reader (Maybe SocatExe)] r =>
+  Members [NativeTmux !! TmuxError, ChronosTime, CommandLog, Reader (Maybe SocatExe)] r =>
   Members [Executions, ScopedSocketReader !! sre, NativeCommandCodecE, Resource, Log, Race] r =>
   InterpreterFor (Scoped TmuxMonitorTask TmuxMonitor !! TmuxMonitorError sre) r
 interpretTmuxMonitor =
-  interpretScopedResumableWith @ScopeEffects withLog \ TmuxMonitorTask {..} -> \case
+  interpretScopedResumableWith @'[SocketReader] withLog \ TmuxMonitorTask {..} -> \case
     Wait -> do
       startLog ident pane
       race_ (readOutput ident) (waitBasic ident shellPid)
 
 interpretTmuxMonitorNoLog ::
-  Members [Proc !! ProcError, ChronosTime, Executions, Log, Race] r =>
+  Members [ChronosTime, Executions, Log, Race] r =>
   InterpreterFor (Scoped TmuxMonitorTask TmuxMonitor !! TmuxMonitorError Void) r
 interpretTmuxMonitorNoLog =
   interpretScopedResumable_ pure \ TmuxMonitorTask {..} -> \case
     Wait -> do
       startLog ident pane
       waitBasic ident shellPid
-      Log.debug [exon|tmux monitor for `#{commandIdText ident}` has terminated|]
+      Log.debug [exon|tmux monitor for '#{commandIdText ident}' has terminated|]

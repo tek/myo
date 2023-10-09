@@ -25,6 +25,7 @@ import Ribosome (
   Window,
   mapReport,
   resumeReport,
+  resumeReports,
   scratch,
   )
 import Ribosome.Api (
@@ -53,10 +54,11 @@ import qualified Ribosome.Scratch as Scratch
 import Ribosome.Scratch (ScratchOptions (syntax))
 import Ribosome.Syntax (Syntax)
 
-import qualified Myo.Command.Data.CommandState as CommandState
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.OutputState (OutputState)
 import Myo.Data.CommandId (CommandId)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute (Absolute, unAbsolute))
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -229,58 +231,43 @@ selectCurrentLineEventFrom report outputWindow' mainWindow =
   selectMaybeEvent mainWindow outputWindow' =<< eventByLine report <$> windowLine outputWindow'
 
 currentOutput ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Sem r OutputState
 currentOutput =
-  stopNote OutputError.NotParsed =<< atomicGets (.output)
+  stopNote OutputError.NotParsed =<< Commands.currentOutput
 
 currentOutputCommand ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Sem r CommandId
 currentOutputCommand =
   view #command <$> currentOutput
 
 currentEvents ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Sem r OutputEvents
 currentEvents =
   view #events <$> currentOutput
 
 currentSyntax ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Sem r [Syntax]
 currentSyntax =
   view #syntax <$> currentOutput
 
 currentReport ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Sem r ParseReport
 currentReport =
   stopNote OutputError.NotParsed =<< view #report <$> currentOutput
 
 currentEvent ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Sem r EventIndex.Absolute
 currentEvent =
   view #currentEvent <$> currentOutput
 
-modifyOutput ::
-  Member (AtomicState CommandState) r =>
-  (OutputState -> OutputState) ->
-  Sem r ()
-modifyOutput f =
-  atomicModify' (#output . _Just %~ f)
-
-setOutput ::
-  Member (AtomicState CommandState) r =>
-  Lens' OutputState a ->
-  a ->
-  Sem r ()
-setOutput l a =
-  atomicModify' (#output . _Just . l .~ a)
-
 cycleIndex ::
-  Members [AtomicState CommandState, Stop OutputError] r =>
+  Members [Commands, Stop OutputError] r =>
   Int ->
   Sem r Bool
 cycleIndex offset = do
@@ -293,7 +280,7 @@ cycleIndex offset = do
       fromIntegral current + offset
     new =
       fromIntegral (fromMaybe 0 (computed `mod` eventCount))
-  atomicModify' (#output . _Just . #currentEvent .~ EventIndex.Absolute new)
+  Commands.setCurrentEvent (EventIndex.Absolute new)
   pure (new /= current)
 
 noScratch ::
@@ -359,7 +346,7 @@ renderReport (ParseReport _ reportLines) syntax = do
       (scratch scratchId) {Scratch.mappings = mappings, syntax = syntax}
 
 renderCurrentReport ::
-  Members [AtomicState CommandState, Scratch, Rpc, Stop OutputError] r =>
+  Members [Commands, Scratch, Rpc, Stop OutputError] r =>
   Sem r ()
 renderCurrentReport = do
   report <- currentReport
@@ -367,13 +354,13 @@ renderCurrentReport = do
   renderReport report syntax
 
 ensureReportScratch ::
-  Members [AtomicState CommandState, Scratch, Rpc, Stop OutputError] r =>
+  Members [Commands, Scratch, Rpc, Stop OutputError] r =>
   Sem r ()
 ensureReportScratch =
   whenM (isNothing <$> Scratch.find scratchId) renderCurrentReport
 
 navigateToEvent ::
-  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Members [Commands, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
   Bool ->
   EventIndex.Absolute ->
   Sem r ()
@@ -395,7 +382,7 @@ navigateToEvent jump eventIndex = do
       fromIntegral ((.unAbsolute) eventIndex) == (length (report ^. #events) - 1)
 
 navigateToCurrentEvent ::
-  Members [AtomicState CommandState, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Members [Commands, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
   Bool ->
   Sem r ()
 navigateToCurrentEvent jump =
@@ -438,10 +425,10 @@ myoOutputQuit =
   resumeReport (Scratch.delete scratchId)
 
 myoOutputSelect ::
-  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Members [Commands !! CommandError, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoOutputSelect =
-  resumeReport @Rpc $ resumeReport @Scratch $ mapReport do
+  resumeReports @[Rpc, Scratch, Commands] @[_, _, _] $ mapReport do
     mainWindow <- outputMainWindow
     window <- outputWindow
     report <- currentReport

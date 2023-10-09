@@ -5,80 +5,44 @@ import qualified Data.Text as Text (lines)
 import Ribosome (Handler, RpcError, Scratch, resumeReport, scratch)
 import qualified Ribosome.Scratch as Scratch
 
-import Myo.Command.Command (mainCommand, mainCommandIdent)
 import qualified Myo.Command.Data.Command as Command
-import Myo.Command.Data.Command (Command)
-import Myo.Command.Data.CommandError (CommandError)
+import Myo.Command.Data.Command (Command (Command))
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell))
-import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
-import Myo.Command.History (commandOrHistoryBy, commandOrHistoryByIdent, mayCommandOrHistoryByIdent)
 import Myo.Data.CommandId (CommandId, commandIdText)
+import Myo.Data.CommandName (CommandName)
+import Myo.Data.CommandQuery (CommandQuery, queryId, queryNameBoth)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 
-mainCommandOrHistory ::
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Text ->
-  CommandId ->
+mainCommand ::
+  Member Commands r =>
+  CommandQuery ->
   Sem r Command
-mainCommandOrHistory context ident = do
-  cmd <- commandOrHistoryByIdent context ident
-  recurse cmd (cmd ^. #interpreter)
+mainCommand query =
+  check =<< Commands.query query
   where
-    recurse cmd = \case
-      Shell target ->
-        mainCommand target
-      _ ->
-        pure cmd
+    check = \case
+      Command {interpreter = Shell target} -> mainCommand (queryId target)
+      cmd -> pure cmd
 
-mainCommandOrHistoryIdent ::
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Text ->
-  CommandId ->
+mainCommandId ::
+  Member Commands r =>
+  CommandQuery ->
   Sem r CommandId
-mainCommandOrHistoryIdent context ident =
-  recurse . (.interpreter) =<< commandOrHistoryByIdent context ident
-  where
-    recurse (Shell target) =
-      mainCommandIdent target
-    recurse _ =
-      pure ident
-
-mayMainCommandOrHistory ::
-  Member (AtomicState CommandState) r =>
-  CommandId ->
-  Sem r CommandId
-mayMainCommandOrHistory ident =
-  recurse . fmap (.interpreter) =<< mayCommandOrHistoryByIdent ident
-  where
-    recurse (Just (Shell target)) =
-      mayMainCommandOrHistory target
-    recurse _ =
-      pure ident
-
-commandLogBy ::
-  Eq a =>
-  Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
-  Text ->
-  Text ->
-  Lens' Command a ->
-  a ->
-  Sem r (Maybe Text)
-commandLogBy context ident lens a = do
-  cmd <- commandOrHistoryBy context ident lens a
-  logIdent <- mainCommandOrHistoryIdent context ((.ident) cmd)
-  CommandLog.get logIdent
+mainCommandId =
+  fmap (.ident) . mainCommand
 
 commandLogByName ::
-  Members [CommandLog, AtomicState CommandState, Stop CommandError] r =>
-  Text ->
-  Text ->
+  Members [Commands !! e, CommandLog] r =>
+  CommandName ->
   Sem r (Maybe Text)
-commandLogByName context name =
-  commandLogBy context name #displayName (Just name)
+commandLogByName name =
+  resumeOr (mainCommand (queryNameBoth name)) (\ c -> CommandLog.get c.ident) (const (pure Nothing))
 
 myoLogs ::
-  Members [CommandLog, AtomicState CommandState, Scratch !! RpcError, Log] r =>
+  Members [CommandLog, Scratch !! RpcError] r =>
   Handler r ()
 myoLogs =
   void $ resumeReport @Scratch do

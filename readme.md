@@ -126,7 +126,8 @@ let s:compile_cmd = {
 let g:myo_commands = { 'system': [s:sbt_cmd], 'shell': [s:compile_cmd] }
 ```
 
-This snippet defines a _system command_ (run directly in the tmux pane) with the command line `sbt` that will be executed in the previously created pane `sbt` (defined by the `target` field).
+This snippet defines a _system command_ (run directly in the tmux pane) with the command line `sbt` that will be
+executed in the previously created pane `sbt` (defined by the `target` field).
 
 Next, it defines a _shell command_ named `compile`, which has as its target the name of a system command, here `sbt`.
 This means that when running this command, it will be sent to the tmux pane running `sbt` (it will be started if

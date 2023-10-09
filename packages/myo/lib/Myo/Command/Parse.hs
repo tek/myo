@@ -6,11 +6,9 @@ import qualified Log
 import Ribosome (Handler, Rpc, RpcError, Scratch, SettingError, Settings, mapReport, pluginLogReports)
 import qualified Ribosome.Settings as Settings
 
-import Myo.Command.Command (commandByIdent)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command, ident, lang), CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.LogDir (LogDir)
 import Myo.Command.Data.OutputState (OutputState (OutputState))
 import Myo.Command.Data.ParseOptions (ParseOptions (ParseOptions))
@@ -20,6 +18,7 @@ import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Log (commandLogByName)
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Data.CommandId (CommandId)
+import Myo.Data.CommandName (CommandName (CommandName))
 import qualified Myo.Effect.Commands as Commands
 import Myo.Effect.Commands (Commands)
 import qualified Myo.Effect.Controller as Controller
@@ -34,21 +33,20 @@ import Myo.Output.Effect.Parsing (Parsing)
 import qualified Myo.Settings as Settings
 
 selectCommand ::
-  Members [AtomicState CommandState, Stop CommandError] r =>
-  Member (Commands !! CommandError) r =>
+  Member Commands r =>
   Maybe CommandId ->
   Sem r Command
 selectCommand ident =
-  restop do
-    maybe Commands.latest (commandByIdent "selectCommand") ident
+  maybe Commands.latest Commands.queryId ident
 
 commandOutputByName ::
-  Members [CommandLog, AtomicState CommandState, Stop OutputError] r =>
-  Text ->
-  Text ->
+  Members [Commands !! CommandError, CommandLog, Stop OutputError] r =>
+  CommandName ->
   Sem r Text
-commandOutputByName context name =
-  stopNote (OutputError.NoOutput name) =<< mapStop OutputError.Command (commandLogByName context name)
+commandOutputByName name =
+  stopNote err =<< resumeHoistAs err (commandLogByName name)
+  where
+    err = OutputError.NoOutput (coerce name)
 
 projectLanguage ::
   Member (Settings !! SettingError) r =>
@@ -68,14 +66,13 @@ commandParseLang = \case
 
 parseCommand ::
   Members [Settings !! SettingError, Parsing !! OutputError] r =>
-  Members [Controller !! RunError, CommandLog, Reader LogDir, AtomicState CommandState, Stop OutputError, Log] r =>
+  Members [Controller !! RunError, CommandLog, Reader LogDir, Stop OutputError, Log] r =>
   Command ->
   Sem r (Maybe (NonEmpty ParsedOutput))
 parseCommand cmd =
   mapStop OutputError.Command do
     Log.debug [exon|Parsing command #{show cmd}|]
     lang <- commandParseLang cmd
-    -- cmd <- mainCommandOrHistory ident
     when (cmd ^. #capture) $ mapStop OutputError.Run do
       restop (Controller.captureOutput (cmd ^. #ident))
     restop @OutputError $ runMaybeT do
@@ -86,12 +83,12 @@ parseCommand cmd =
       cmd ^. #ident
 
 storeParseResult ::
-  Member (AtomicState CommandState) r =>
+  Member Commands r =>
   CommandId ->
   NonEmpty ParsedOutput ->
   Sem r ()
 storeParseResult ident parsed =
-  atomicSet #output (Just outputState)
+  Commands.setCurrentOutput outputState
   where
     outputState =
       OutputState ident (toList syntax) events (EventIndex.Absolute 0) Nothing
@@ -102,20 +99,20 @@ storeParseResult ident parsed =
 
 myoParse ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
+  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, Log] r =>
   ParseOptions ->
   Handler r ()
 myoParse (ParseOptions _ ident _) =
   pluginLogReports $ mapReport @OutputError $ mapReport @CommandError do
-    cmd <- selectCommand ident
-    parsedOutput <- stopNote (OutputError.NoEvents (Command.name cmd)) =<< parseCommand cmd
-    storeParseResult (cmd ^. #ident) parsedOutput
+    cmd <- restop (selectCommand ident)
+    parsedOutput <- stopNote (OutputError.NoEvents (Command.describe cmd)) =<< parseCommand cmd
+    restop (storeParseResult (cmd ^. #ident) parsedOutput)
     display <- Settings.get Settings.displayResult
-    when display compileAndRenderReport
+    when display (restop compileAndRenderReport)
 
 myoParseLatest ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, AtomicState CommandState, Log] r =>
+  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, Log] r =>
   Handler r ()
 myoParseLatest =
   myoParse def

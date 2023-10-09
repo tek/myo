@@ -18,5 +18,5 @@ instance Reportable SocketReaderError where
       let msg = "Can't create command output socket. Check permissions of /tmp!"
       in Report msg ["SocketReaderError.BindFailed:", err] Warn
     InvalidIdent (commandIdText -> ident) ->
-      let msg = [exon|Can't use command name `#{ident}` as socket path.|]
+      let msg = [exon|Can't use command name '#{ident}' as socket path.|]
       in Report msg ["SocketReaderError.InvalidIdent:", ident] Warn

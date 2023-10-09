@@ -27,8 +27,7 @@ data CurrentOutput =
   deriving stock (Eq, Show)
 
 instance Default CurrentOutput where
-  def =
-    Unbuilt def
+  def = Unbuilt def
 
 currentEmpty :: CurrentOutput -> Bool
 currentEmpty = \case
@@ -44,5 +43,4 @@ data CommandOutput =
   deriving stock (Generic)
 
 instance Default CommandOutput where
-  def =
-    CommandOutput Nothing def
+  def = CommandOutput Nothing def

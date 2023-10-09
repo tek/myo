@@ -18,11 +18,12 @@ import qualified Myo.Command.Data.RunError as RunError (RunError (VimTest))
 import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Command.Data.VimTestPosition (VimTestPosition (VimTestPosition))
 import Myo.Data.CommandId (CommandId (CommandId))
+import Myo.Data.CommandName (CommandName)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
 
-testName :: Text
+testName :: CommandName
 testName = "<test>"
 
 vimTestPosition ::
@@ -113,7 +114,7 @@ testInterpreter target _ =
 
 testIdent :: Text -> CommandId
 testIdent name =
-  CommandId (Str [exon|#{testName}-#{show (abs (hash name))}|])
+  CommandId (Str [exon|##{testName}-#{show (abs (hash name))}|])
 
 updateTestCommand ::
   Members [Settings, Settings !! SettingError] r =>

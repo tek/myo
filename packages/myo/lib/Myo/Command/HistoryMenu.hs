@@ -20,15 +20,16 @@ import Ribosome.Menu (
 import Myo.Command.CommandMenu (cmdlineItem)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.HistoryEntry
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
+import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Edit (EditItem, editHistoryEntry)
-import Myo.Command.History (history, removeHistoryEntries)
 import Myo.Command.Run (reRunAsync)
 import Myo.Data.CommandId (CommandId)
 import Myo.Effect.Controller (Controller)
+import qualified Myo.Effect.History as History
+import Myo.Effect.History (History)
 
 data HistoryAction =
   Run CommandId
@@ -43,27 +44,27 @@ historyItem entry =
   cmdlineItem ((.id) <$> entry.execution) entry.command ((.compiled) <$> entry.execution)
 
 historyItems ::
-  Members [AtomicState CommandState, Stop CommandError] r =>
+  Members [History, Stop CommandError] r =>
   Sem r [MenuItem CommandId]
 historyItems = do
-  entries <- stopNote CommandError.NoHistory . nonEmpty =<< history
+  entries <- stopNote CommandError.NoHistory . nonEmpty =<< History.all
   pure (toList (historyItem <$> entries))
 
 type HistoryMenuStack =
   [
     ModalWindowMenus CommandId !! RpcError,
-    AtomicState CommandState,
+    History !! RunError,
     Settings !! SettingError,
     Rpc !! RpcError,
     Log
   ]
 
 delete ::
-  Member (AtomicState CommandState) r =>
+  Member History r =>
   MenuWidget (ModalState CommandId) r a
 delete =
   menuState $ withSelection' \ idents -> do
-    removeHistoryEntries idents
+    History.remove idents
     deleteSelected
     menuRenderIndex
 
@@ -73,11 +74,12 @@ edit =
 
 historyMenu ::
   Members HistoryMenuStack r =>
-  Members [Stop CommandError, Stop RpcError] r =>
+  Members [Stop RunError, Stop RpcError] r =>
   Sem r (MenuResult HistoryAction)
-historyMenu = do
-  items <- historyItems
-  staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", delete), ("e", edit)]
+historyMenu =
+  restop @RunError @History do
+    items <- mapStop RunError.Command historyItems
+    staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", delete), ("e", edit)]
   where
     opts =
       def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
@@ -93,15 +95,15 @@ historyMenu = do
 myoHistory ::
   Members HistoryMenuStack r =>
   Members [ModalWindowMenus EditItem !! RpcError, ReportLog] r =>
-  Members [Controller !! RunError, AtomicState CommandState, Input Ident, Async] r =>
+  Members [Controller !! RunError, Input Ident, Async] r =>
   Handler r ()
 myoHistory =
-  resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError] do
+  resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError, RunError] do
     historyMenu >>= \case
       Success (Run ident) ->
         reRunAsync (Left ident) mempty
       Success (Delete idents) ->
-        removeHistoryEntries idents
+        restop @RunError (History.remove idents)
       Success (Edit ident) ->
         editHistoryEntry ident
       Error err ->

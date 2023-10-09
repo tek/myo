@@ -1,7 +1,8 @@
 module Myo.Output.Data.OutputError where
 
+import Exon (exon)
 import Log (Severity (Error, Warn))
-import Ribosome (Report (Report), SettingError, Reportable (..))
+import Ribosome (Report (Report), Reportable (..), SettingError)
 
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
@@ -42,7 +43,7 @@ instance Reportable OutputError where
   toReport (NoLang ident) =
     Report msg [msg] Warn
     where
-      msg = "command `" <> commandIdText ident <> "` has no language"
+      msg = [exon|command '#{commandIdText ident}' has no language|]
   toReport (Setting e) =
     toReport e
   toReport (NoHandler (CommandLanguage lang)) =
@@ -53,10 +54,10 @@ instance Reportable OutputError where
     Report msg ["OutputError.Parse:", err] Warn
     where
       msg = "failed to parse command output"
-  toReport (NoEvents ident) =
+  toReport (NoEvents name) =
     Report msg [msg] Warn
     where
-      msg = "no events in output of command `" <> ident <> "`"
+      msg = [exon|No events in output of command '#{name}'|]
   toReport (NoOutput ident) =
     Report msg [msg] Warn
     where

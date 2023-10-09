@@ -1,12 +1,15 @@
 module Myo.Test.CompleteTest where
 
 import Polysemy.Test (UnitTest, (===))
+import Ribosome.Test (resumeTestError)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Complete (myoCompleteCommand)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
+import Myo.Interpreter.Commands (interpretCommandsTransient)
 import Myo.Test.Embed (myoTest)
 
 commands :: [Command]
@@ -18,7 +21,7 @@ commands =
 
 test_completeCommand :: UnitTest
 test_completeCommand =
-  myoTest do
-    atomicSet @CommandState #commands commands
+  myoTest $ interpretCommandsTransient [] do
+    resumeTestError @Commands (traverse_ Commands.add commands)
     result <- myoCompleteCommand "cmd-1" "" 0
     ["cmd-15", "cmd-16"] === result

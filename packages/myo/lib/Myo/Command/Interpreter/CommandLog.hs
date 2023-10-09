@@ -122,8 +122,8 @@ setCurrent text CommandOutput {..} =
 buildAndGet :: Maybe CommandOutput -> (Maybe Text, Maybe CommandOutput)
 buildAndGet =
   fmap buildCurrent >>> \case
-  Nothing -> (Nothing, Nothing)
-  Just (co, t) -> (Just t, Just co)
+    Nothing -> (Nothing, Nothing)
+    Just (co, t) -> (Just t, Just co)
 
 buildAndGetAccum :: Map CommandId Text -> CommandId -> CommandOutput -> (Map CommandId Text, CommandOutput)
 buildAndGetAccum acc ident co =

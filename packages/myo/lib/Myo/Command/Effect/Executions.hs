@@ -19,6 +19,8 @@ data Executions :: Effect where
   Wait :: CommandId -> Executions m ()
   Terminate :: CommandId -> Executions m ()
   WaitTerminate :: CommandId -> Executions m ()
+  ShellCommandPid :: Pid -> Executions m (Maybe Pid)
+  PollPid :: CommandId -> Executions m ()
 
 makeSem ''Executions
 

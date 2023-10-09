@@ -8,7 +8,6 @@ import Path (relfile)
 import Polysemy.Chronos (ChronosTime)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust, evalMaybe)
-import Ribosome (interpretPersistNull)
 import Ribosome.Api (currentBufferContent, currentLine)
 import Ribosome.Test (assertWait, resumeTestError, testHandler)
 
@@ -17,15 +16,13 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxWithLog)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
 import Myo.Command.Parse (myoParse)
 import Myo.Command.Run (runIdent)
 import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
-import Myo.Interpreter.Commands (interpretCommands)
-import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Output.Echo (addEchoCommand, echoLang, parseEcho)
@@ -49,8 +46,8 @@ waitForLog i =
 
 test_parseTmux :: UnitTest
 test_parseTmux =
-  myoEmbedTmuxTest $ interpretCommandLogSetting $ interpretSocketReader $ interpretBackendTmuxWithLog $
-  interpretSync $ interpretPersistNull $ interpretCommands $ interpretController do
+  myoEmbedTmuxTest $ interpretSocketReader $ interpretBackendTmuxWithLog $ interpretSync $
+  interpretControllerTransient [] do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
@@ -63,8 +60,8 @@ test_parseTmux =
 
 test_parseCaptureTmux :: UnitTest
 test_parseCaptureTmux =
-  myoEmbedTmuxTest $ interpretCommandLogSetting $ interpretSocketReader $ interpretBackendTmuxWithLog $
-  interpretSync $ interpretPersistNull $ interpretCommands $ interpretController do
+  myoEmbedTmuxTest $ interpretSocketReader $ interpretBackendTmuxWithLog $ interpretSync $
+  interpretControllerTransient [] do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do

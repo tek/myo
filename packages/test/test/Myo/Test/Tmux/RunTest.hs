@@ -15,19 +15,19 @@ import Chiasma.TmuxApi (TmuxApi)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust)
-import Ribosome (LogReport, SettingError, Settings, interpretPersistNull, resumeReport)
+import Ribosome (LogReport, SettingError, Settings, resumeReport)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (systemOptions)
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoRun)
 import Myo.Data.CommandId (CommandId, commandIdText)
+import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller)
-import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
 import Myo.Ui.Data.UiState (UiState)
@@ -44,12 +44,12 @@ ident :: CommandId
 ident = "cmd"
 
 setup ::
-  Members [Settings !! SettingError, AtomicState UiState, AtomicState CommandState, Error TestError] r =>
+  Members [Settings !! SettingError, AtomicState UiState, Commands !! CommandError, Error TestError] r =>
   Member (AtomicState Views) r =>
   Sem r ()
 setup =
   testHandler do
-    resumeReport setupDefaultTestUi
+    resumeReport @Settings setupDefaultTestUi
     myoAddSystemCommand cmd
   where
     cmd =
@@ -61,7 +61,7 @@ setup =
 runAndCheck ::
   Members [DataLog LogReport, Hedgehog IO, Race, Embed IO] r =>
   Members [NativeTmux, NativeCommandCodec !! CodecError, Stop CodecError] r =>
-  Members [Controller !! RunError, AtomicState CommandState, Error TestError, Error Failure, ChronosTime] r =>
+  Members [Controller !! RunError, Commands !! CommandError, Error TestError, Error Failure, ChronosTime] r =>
   Sem r ()
 runAndCheck = do
   testHandler (myoRun (commandIdText ident))
@@ -71,13 +71,13 @@ runAndCheck = do
 
 test_tmuxRunSys :: UnitTest
 test_tmuxRunSys =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController do
+  myoEmbedTmuxTest $ interpretBackendTmuxNoLog $ interpretControllerTransient [] do
     setup
     runAndCheck
 
 test_quitCopyMode :: UnitTest
 test_quitCopyMode =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController do
+  myoEmbedTmuxTest $ interpretBackendTmuxNoLog $ interpretControllerTransient [] do
     setup
     testHandler (myoTogglePane "make")
     withTmuxApis @[TmuxCommand, Panes PaneMode, Panes Pane] $

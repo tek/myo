@@ -10,6 +10,7 @@ import Ribosome.Api (doautocmd, nvimCallFunction, nvimSetVar)
 import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import Ribosome.Test (assertWait, testPluginEmbed)
 
+import Myo.Interpreter.Commands (interpretCommandsNoHistory)
 import Myo.Plugin (variables)
 import Myo.Test.Run (runMyoTestStack)
 import qualified Myo.Ui.Data.AddLayoutOptions as AddLayoutOptions (AddLayoutOptions (ident, layout))
@@ -50,7 +51,8 @@ getUiData =
 
 test_updateUi :: UnitTest
 test_updateUi =
-  runMyoTestStack def $ withHandlers [rpcFunction "PaneData" Sync paneData] $ watchVariables variables $ testPluginEmbed do
+  runMyoTestStack def $ interpretCommandsNoHistory $ withHandlers [rpcFunction "PaneData" Sync paneData] $
+  watchVariables variables $ testPluginEmbed do
     nvimSetVar "myo_ui" ui1
     doautocmd "CmdlineLeave"
     assertWait getUiData (assertEq ["main", "vim", "test", "vim", "make", "make", "scratch"])

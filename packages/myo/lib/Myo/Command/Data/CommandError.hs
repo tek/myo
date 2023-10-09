@@ -6,17 +6,17 @@ import Ribosome (Report (Report), Reportable (toReport))
 
 import Myo.Command.Data.Command (shortIdent)
 import Myo.Data.CommandId (CommandId, commandIdText)
+import qualified Myo.Data.CommandQuery as CommandQuery
+import Myo.Data.CommandQuery (CommandQuery)
 
 data CommandError =
   Misc Text
   |
-  NoSuchCommand Text Text
+  NoSuchCommand CommandQuery
   |
   NoCommands
   |
   NoSuchHistoryIndex Int
-  |
-  NoSuchHistoryIdent Text
   |
   NoHistory
   |
@@ -30,10 +30,10 @@ instance Reportable CommandError where
     Report (pre <> " " <> err) [pre, err] Error
     where
       pre = "command error:"
-  toReport (NoSuchCommand context ident) =
-    Report err ["In context `" <> context <>"`:", err] Warn
+  toReport (NoSuchCommand query) =
+    Report err ["CommandError.NoSuchCommand:", err] Warn
     where
-      err = "no command with ident `" <> ident <> "`"
+      err = [exon|No match for #{CommandQuery.describe query}|]
   toReport NoCommands =
     Report err [err] Warn
     where
@@ -42,10 +42,6 @@ instance Reportable CommandError where
     Report err [err] Warn
     where
       err = "no history entry at index " <> show index
-  toReport (NoSuchHistoryIdent ident) =
-    Report err [err] Warn
-    where
-      err = "no history entry with ident `" <> ident <> "`"
   toReport NoHistory =
     Report err ["CommandError.NoHistory"] Info
     where
@@ -54,7 +50,7 @@ instance Reportable CommandError where
     Report msg log Error
     where
       msg =
-        [exon|`#{shortIdent shell}` cannot be used as a shell for `#{shortIdent cmd}`|]
+        [exon|'#{shortIdent shell}' cannot be used as a shell for '#{shortIdent cmd}'|]
       log =
         ["CommandError.NotAUiShell:", [exon|cmd: #{commandIdText cmd}|], [exon|shell: #{commandIdText shell}|]]
   toReport (InvalidTemplateEdit items err) =

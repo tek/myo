@@ -4,16 +4,14 @@ import qualified Data.Vector as Vector
 import Path (relfile)
 import qualified Polysemy.Test as Test
 import Polysemy.Test (UnitTest, evalMaybe, (/==))
-import Ribosome (interpretPersistNull)
-import Ribosome.Test (assertWait, testError, testHandler)
+import Ribosome.Test (assertWait, resumeTestError, testError, testHandler)
 
 import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Parse (parseCommand, selectCommand)
 import Myo.Command.Run (runIdent)
-import Myo.Interpreter.Commands (interpretCommands)
-import Myo.Interpreter.Controller (interpretController)
+import Myo.Effect.Commands (Commands)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Output.Data.ParseReport (ParseReport (ParseReport))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (events)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
@@ -27,14 +25,13 @@ lines' =
 
 test_parsePrevious :: UnitTest
 test_parsePrevious =
-  myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendProcessNative $ interpretCommands $
-  interpretController do
+  myoTest $ interpretBackendProcessNative $ interpretControllerTransient [] do
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
         ident <- addEchoCommand "proc" lines' False
         runIdent ident mempty
         assertWait (CommandLog.get ident) evalMaybe
-        cmd <- testError (selectCommand (Just ident))
+        cmd <- resumeTestError @Commands (selectCommand (Just ident))
         CommandLog.archive ident
         CommandLog.append ident "unparsable"
         outputEvents <- testError (fmap (fmap (.events)) <$> parseCommand cmd)

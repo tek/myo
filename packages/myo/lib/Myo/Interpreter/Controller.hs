@@ -2,25 +2,20 @@ module Myo.Interpreter.Controller where
 
 import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.RenderError (RenderError)
-import Chiasma.Data.Views (Views)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Conc (Lock)
 import Exon (exon)
 import qualified Log
 import Polysemy.Chronos (ChronosTime)
-import Ribosome (LogReport, Persist, PersistError, Rpc, RpcError, SettingError, Settings, reportStop)
+import Ribosome (ReportLog, Rpc, RpcError, reportStop)
 
-import Myo.Command.Command (commandByIdent)
 import Myo.Command.Data.Command (Command (Command, ident))
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.Param (ParamValues)
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunTask as RunTaskDetails
 import Myo.Command.Data.RunTask (RunTask (RunTask))
-import Myo.Command.Data.StoreHistory (StoreHistory)
 import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
 import qualified Myo.Command.Effect.Backend as Backend
 import Myo.Command.Effect.Backend (Backend)
@@ -28,17 +23,22 @@ import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
-import Myo.Command.History (commandOrHistoryByIdent, pushHistory)
 import Myo.Command.Proc (waitForShell)
 import Myo.Command.RunTask (runTask)
 import Myo.Data.CommandId (CommandId (CommandId), commandIdText)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller (CaptureOutput, RunCommand))
+import qualified Myo.Effect.History as History
+import Myo.Effect.History (History)
+import Myo.Interpreter.Commands (interpretCommands, interpretCommandsNoHistory)
+import Myo.Interpreter.History (interpretHistoryTransient)
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Lens.Toggle (openOnePane)
 
 preparePane ::
-  Members [Backend !! RunError, AtomicState Views, AtomicState UiState, Stop RunError, Rpc] r =>
+  Members [Backend !! RunError, AtomicState UiState, Stop RunError] r =>
   UiTarget ->
   Sem r ()
 preparePane (UiTarget ident) =
@@ -48,18 +48,15 @@ preparePane (UiTarget ident) =
 
 type PrepareStack =
   [
-    Settings !! SettingError,
-    Persist [HistoryEntry] !! PersistError,
     Rpc !! RpcError,
-    Lock @@ StoreHistory,
     CommandLog,
     Executions,
     Backend !! RunError,
+    Commands !! CommandError,
+    History !! RunError,
     AtomicState UiState,
-    AtomicState Views,
-    AtomicState CommandState,
     Input Ident,
-    DataLog LogReport,
+    ReportLog,
     ChronosTime,
     Async,
     Log,
@@ -67,49 +64,56 @@ type PrepareStack =
     Race
   ]
 
+-- | Run a shell async because Backend potentially blocks to read output.
+runShellAsync ::
+  Members PrepareStack r =>
+  Command ->
+  Sem r ()
+runShellAsync shellCmd =
+  void $ async $ reportStop @RunError do
+    runCommand shellCmd mempty
+
 prepare ::
-  Members [Rpc, Stop RunError] r =>
+  Member (Stop RunError) r =>
   Members PrepareStack r =>
   RunTask ->
   Sem r ()
 prepare = \case
-  RunTask _ _ (RunTaskDetails.UiSystem ident) _ _ -> do
+  RunTask {details = RunTaskDetails.UiSystem ident} ->
     preparePane ident
-  RunTask _ Command {ident} (RunTaskDetails.UiShell shellIdent _) _ _ ->
+  RunTask {command = Command {ident}, details = RunTaskDetails.UiShell shellIdent _} ->
     unlessM (Executions.running shellIdent) do
-      Log.debug [exon|Starting inactive shell command `#{commandIdText shellIdent}` async for `#{commandIdText ident}`|]
-      void $ async $ reportStop @RunError $ mapStop RunError.Command do
-        shellCmd <- commandByIdent "run" shellIdent
-        runCommand shellCmd mempty
+      Log.debug [exon|Starting inactive shell command '#{commandIdText shellIdent}' async for '#{commandIdText ident}'|]
+      shellCmd <- resumeHoist RunError.Command (Commands.queryId shellIdent)
+      runShellAsync shellCmd
       waitForShell shellIdent
-  RunTask _ _ RunTaskDetails.System _ _ ->
+  RunTask {details = RunTaskDetails.System} ->
     unit
-  RunTask _ _ (RunTaskDetails.Vim _ _) _ _ ->
+  RunTask {details = RunTaskDetails.Vim _ _} ->
     unit
 
--- TODO create effect for history
 runCommand ::
   Members PrepareStack r =>
-  Members [Rpc, Stop RunError, Stop CommandError] r =>
+  Member (Stop RunError) r =>
   Command ->
   ParamValues ->
   Sem r ()
 runCommand cmd@Command {ident} params = do
   Log.debug [exon|Running #{show cmd}|]
-  task <- runTask cmd params
+  task <- resumeHoist RunError.Command (runTask cmd params)
   CommandLog.archive ident
   prepare task
-  resumeHoist RunError.Persist (pushHistory cmd (CommandId task.ident) task.params task.compiled)
+  restop (History.push cmd (CommandId task.ident) task.params task.compiled)
   restop (Backend.execute task)
-  Log.debug [exon|Command `#{commandIdText ident}` executed successfully|]
+  Log.debug [exon|Command '#{commandIdText ident}' executed successfully|]
 
 captureOutput ::
-  Member (Rpc !! RpcError) r =>
-  Members [Backend !! RunError, AtomicState CommandState, Stop RunError, Stop CommandError, Input Ident] r =>
+  Members [Rpc !! RpcError, History, Commands] r =>
+  Members [Backend !! RunError, Stop RunError, Stop CommandError, Input Ident] r =>
   CommandId ->
   Sem r ()
 captureOutput ident = do
-  cmd <- commandOrHistoryByIdent "capture" ident
+  cmd <- Commands.queryIdBoth ident
   task <- runTask cmd mempty
   restop (Backend.captureOutput task)
 
@@ -132,5 +136,31 @@ interpretController =
       handleErrors do
         runCommand cmd params
     CaptureOutput ident ->
-      mapStop RunError.Command do
+      mapStop RunError.Command $ restop @RunError @History $ restop @CommandError @Commands do
         captureOutput ident
+
+interpretControllerTransient ::
+  Members [CommandLog, Backend !! RunError, AtomicState UiState, Input Ident] r =>
+  Members [Rpc !! RpcError, ReportLog, ChronosTime, Executions, Log, Resource, Async, Race, Embed IO] r =>
+  [HistoryEntry] ->
+  InterpretersFor [
+    Controller !! RunError,
+    Commands !! CommandError,
+    History !! RunError
+  ] r
+interpretControllerTransient history =
+  interpretHistoryTransient history .
+  interpretCommands .
+  interpretController
+
+interpretControllerNoHistory ::
+  Members [CommandLog, Backend !! RunError, AtomicState UiState, Input Ident] r =>
+  Members [Rpc !! RpcError, ReportLog, ChronosTime, Executions, Log, Resource, Async, Race, Embed IO] r =>
+  InterpretersFor [
+    Controller !! RunError,
+    Commands !! CommandError,
+    History !! RunError
+  ] r
+interpretControllerNoHistory =
+  interpretCommandsNoHistory .
+  interpretController

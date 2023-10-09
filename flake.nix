@@ -1,9 +1,7 @@
 {
   description = "Neovim Layout and Command Manager";
 
-  inputs = {
-    ribosome.url = "git+https://git.tryp.io/tek/ribosome";
-  };
+  inputs.ribosome.url = "git+https://git.tryp.io/tek/ribosome";
 
   outputs = {ribosome, ...}: ribosome.lib.pro ({config, ...}: {
     depsFull = [ribosome];

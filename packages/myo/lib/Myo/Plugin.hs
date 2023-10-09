@@ -59,7 +59,6 @@ import Myo.Command.Add (myoAddShellCommand, myoAddSystemCommand)
 import Myo.Command.CommandMenu (myoCommands)
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.LoadHistory (LoadHistory)
 import Myo.Command.Data.LogDir (LogDir)
@@ -72,7 +71,6 @@ import Myo.Command.Effect.Backend (Backend)
 import Myo.Command.Effect.CommandLog (CommandLog)
 import Myo.Command.Effect.Executions (Executions)
 import Myo.Command.Effect.SocketReader (ScopedSocketReader)
-import Myo.Command.History (loadHistory)
 import Myo.Command.HistoryMenu (myoHistory)
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
@@ -98,9 +96,12 @@ import Myo.Data.SaveLock (SaveLock)
 import Myo.Diag (myoDiag)
 import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller)
+import qualified Myo.Effect.History as History
+import Myo.Effect.History (History)
 import Myo.Effect.Proc (Proc)
 import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.History (interpretHistory)
 import Myo.Interpreter.InputIdent (interpretInputIdentRandom)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Output.Data.OutputError (OutputError)
@@ -123,10 +124,10 @@ import Myo.Ui.Update (updateUi)
 type MyoStack =
   [
     Executions,
+    CommandLog,
     AtomicState Env,
     AtomicState UiState,
     AtomicState Views,
-    AtomicState CommandState,
     Reader LogDir,
     Reader (Maybe SocatExe),
     NativeCodecE TmuxCommand,
@@ -147,7 +148,7 @@ type MyoProdStack =
     Parsing !! OutputError,
     Controller !! RunError,
     Commands !! CommandError,
-    CommandLog,
+    History !! RunError,
     Persist [HistoryEntry] !! PersistError,
     PersistPath !! PersistPathError,
     NativeTmux !! TmuxError,
@@ -158,7 +159,7 @@ type MyoProdStack =
   ] ++ NvimMenus ++ MyoStack
 
 outputMappingHandlers ::
-  Members [AtomicState CommandState, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Members [Commands !! CommandError, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   [RpcHandler r]
 outputMappingHandlers =
   [
@@ -221,7 +222,7 @@ handlers =
   outputMappingHandlers
 
 variables ::
-  Members [AtomicState CommandState, AtomicState UiState, Settings !! SettingError, Embed IO] r =>
+  Members [Commands !! CommandError, AtomicState UiState, Settings !! SettingError, Embed IO] r =>
   Map WatchedVariable (Object -> Handler r ())
 variables =
   [
@@ -231,16 +232,16 @@ variables =
 
 prepare ::
   Members (NativeCodecsE [Panes PanePid, Panes PaneCoords]) r =>
-  Members [NativeTmux !! TmuxError, AtomicState Views, AtomicState CommandState] r =>
-  Members [Lock @@ LoadHistory, Resource, Log, Persist [HistoryEntry] !! PersistError] r =>
+  Members [NativeTmux !! TmuxError, AtomicState Views, Commands !! CommandError] r =>
+  Members [Resource, Log, History !! RunError] r =>
   Members [Settings !! SettingError, Proc !! ProcError, Rpc !! RpcError, AtomicState UiState, DataLog LogReport] r =>
   Sem r ()
 prepare = do
   resumeLogReport @Settings do
     detect <- Settings.get Settings.detectUi
     when detect (reportStop detectDefaultUi)
-    fetchCommands
-    resumeLogReport @Rpc (resumeLogReport @(Persist _) loadHistory)
+    resumeLogReport @Commands fetchCommands
+    resumeLogReport @History History.load
 
 interpretMyoStack ::
   InterpretersFor MyoStack (RemoteStack CliOptions)
@@ -261,7 +262,7 @@ interpretMyoStack =
   interpretAtomic def .
   interpretAtomic def .
   interpretAtomic def .
-  interpretAtomic def .
+  interpretCommandLogSetting .
   interpretExecutions
 
 parsers ::
@@ -286,10 +287,10 @@ interpretMyoProd =
   interpretTmuxNativeEnvGraceful Nothing .
   interpretPersistPath True .
   interpretPersist "history" .
-  interpretCommandLogSetting .
   interpretBackendVim .
   interpretBackendProcessNative .
   interpretBackendTmuxWithLog .
+  interpretHistory .
   interpretCommands .
   interpretController .
   interpretParsing parsers .

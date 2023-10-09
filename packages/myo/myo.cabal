@@ -28,8 +28,8 @@ source-repository head
 library
   exposed-modules:
       Myo.Command.Add
-      Myo.Command.Command
       Myo.Command.CommandMenu
+      Myo.Command.Commands
       Myo.Command.CommandSpec
       Myo.Command.CommandSpec.Render
       Myo.Command.CommandSpec.Resolve
@@ -48,6 +48,7 @@ library
       Myo.Command.Data.ExecutionLock
       Myo.Command.Data.ExecutionState
       Myo.Command.Data.HistoryEntry
+      Myo.Command.Data.HistoryState
       Myo.Command.Data.LoadHistory
       Myo.Command.Data.LogDir
       Myo.Command.Data.MonitorEvent
@@ -74,7 +75,6 @@ library
       Myo.Command.Effect.Executions
       Myo.Command.Effect.SocketReader
       Myo.Command.Effect.TmuxMonitor
-      Myo.Command.History
       Myo.Command.HistoryMenu
       Myo.Command.Interpreter.Backend.Generic
       Myo.Command.Interpreter.Backend.Process
@@ -97,6 +97,8 @@ library
       Myo.Complete
       Myo.Data.CliOptions
       Myo.Data.CommandId
+      Myo.Data.CommandName
+      Myo.Data.CommandQuery
       Myo.Data.Env
       Myo.Data.ExactlyOne
       Myo.Data.LastSave
@@ -109,10 +111,12 @@ library
       Myo.Diag
       Myo.Effect.Commands
       Myo.Effect.Controller
+      Myo.Effect.History
       Myo.Effect.MState
       Myo.Effect.Proc
       Myo.Interpreter.Commands
       Myo.Interpreter.Controller
+      Myo.Interpreter.History
       Myo.Interpreter.InputIdent
       Myo.Interpreter.MState
       Myo.Interpreter.Proc

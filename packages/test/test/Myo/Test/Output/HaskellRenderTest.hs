@@ -9,11 +9,13 @@ import Ribosome.Api.Buffer (currentBufferContent)
 import Ribosome.Api.Syntax (executeSyntax)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Syntax (Syntax (..), syntaxHighlight)
-import Ribosome.Test (testError)
+import Ribosome.Test (resumeTestError, testError)
 import Ribosome.Test.Screenshot (awaitScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Command.Parse (storeParseResult)
+import Myo.Effect.Commands (Commands)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
@@ -266,12 +268,12 @@ myoSyntax = do
 
 test_haskellRender :: UnitTest
 test_haskellRender =
-  myoSocketTmuxTest do
+  myoSocketTmuxTest $ interpretControllerTransient [] do
     Settings.update Settings.outputSelectFirst True
     Settings.update Settings.outputAutoJump False
     setupHighlights
-    storeParseResult "test" [parsedOutput]
-    testError compileAndRenderReport
+    resumeTestError @Commands (storeParseResult "test" [parsedOutput])
+    testError (resumeTestError @Commands compileAndRenderReport)
     nvimCommand "wincmd w"
     nvimCommand "wincmd o"
     assertEq target =<< currentBufferContent

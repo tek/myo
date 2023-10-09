@@ -2,25 +2,28 @@ module Myo.Complete where
 
 import Chiasma.Data.Ident (Ident (Str))
 import qualified Data.Text as Text
+import Ribosome (Report, resumeReport)
 
 import Myo.Command.Data.Command (Command (Command), displayName, ident)
-import qualified Myo.Command.Data.CommandState as CommandState
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Data.CommandId (CommandId (CommandId))
+import Myo.Data.CommandName (CommandName (CommandName))
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 
 myoCompleteCommand ::
-  Member (AtomicState CommandState) r =>
+  Members [Commands !! CommandError, Stop Report] r =>
   Text ->
   Text ->
   Int ->
   Sem r [Text]
 myoCompleteCommand lead _ _ = do
-  cmds <- atomicGets (.commands)
+  cmds <- resumeReport Commands.all
   pure (mapMaybe match cmds)
   where
-    match Command { ident = CommandId (Str ident) } | isPrefix ident =
+    match Command {ident = CommandId (Str ident)} | isPrefix ident =
       Just ident
-    match Command { displayName = Just name } | isPrefix name =
+    match Command {displayName = Just (CommandName name)} | isPrefix name =
       Just name
     match _ =
       Nothing

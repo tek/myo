@@ -8,6 +8,7 @@ import Myo.Command.Data.CommandTemplate (CommandTemplate, parseCommandTemplate')
 import Myo.Command.Data.Param (ParamDefaults)
 import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Data.CommandId (CommandId)
+import Myo.Data.CommandName (CommandName)
 import Myo.Orphans ()
 
 data AddSystemCommandOptions =
@@ -18,7 +19,7 @@ data AddSystemCommandOptions =
     runner :: Maybe Ident,
     target :: Maybe UiTarget,
     lang :: Maybe CommandLanguage,
-    displayName :: Maybe Text,
+    displayName :: Maybe CommandName,
     skipHistory :: Maybe Bool,
     kill :: Maybe Bool,
     capture :: Maybe Bool,

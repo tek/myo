@@ -14,8 +14,9 @@ import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
 import Myo.Command.Data.AddSystemCommandOptions (capture, lang, runner, target)
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandError (CommandError)
 import Myo.Data.CommandId (CommandId)
+import Myo.Effect.Commands (Commands)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative (Relative))
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
@@ -54,7 +55,7 @@ parseEcho file text' =
       OutputEventMeta (Just (Location (pathText file) 0 Nothing)) 0
 
 addEchoCommand ::
-  Member (AtomicState CommandState) r =>
+  Member (Commands !! CommandError) r =>
   Text ->
   [Text] ->
   Bool ->

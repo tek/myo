@@ -17,6 +17,7 @@ import Ribosome.Test.SocketTmux (SocketTmuxWith, TmuxHandlerStack, runSocketTmux
 
 import Myo.Command.Data.LogDir (LogDir (LogDir))
 import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Interpreter.SocatExe (interpretReaderSocatExe)
 import Myo.Data.CliOptions (CliOptions (CliOptions))
@@ -54,7 +55,7 @@ interpretMyoTestStack =
   interpretAtomic def .
   interpretAtomic def .
   interpretAtomic def .
-  interpretAtomic def .
+  interpretCommandLog (pure 100) .
   interpretExecutions
 
 testConfig ::

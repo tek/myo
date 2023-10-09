@@ -37,7 +37,6 @@ import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.CommandError (CommandError (InvalidTemplateEdit, Misc))
 import qualified Myo.Command.Data.CommandSpec
 import Myo.Command.Data.CommandSpec (CommandSpec (CommandSpec))
-import Myo.Command.Data.CommandState (CommandState)
 import qualified Myo.Command.Data.CommandTemplate
 import Myo.Command.Data.CommandTemplate (CommandTemplate, parseCommandTemplate)
 import qualified Myo.Command.Data.HistoryEntry
@@ -52,10 +51,11 @@ import Myo.Command.Data.Param (
   )
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Edit.Syntax (editSyntax)
-import Myo.Command.History (lookupHistoryIdent)
 import Myo.Command.Run (reRun, runCommand)
 import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Effect.Controller (Controller)
+import qualified Myo.Effect.History as History
+import Myo.Effect.History (History)
 
 data EditItem =
   Param ParamId ParamValue
@@ -180,7 +180,7 @@ updateCommand template command
     pure (Just (command & #ident .~ newId & #cmdLines .~ CommandSpec template mempty))
 
 runAction ::
-  Members [Controller !! RunError, AtomicState CommandState, Stop CommandError, Stop Report] r =>
+  Members [Controller !! RunError, History !! RunError, Stop CommandError, Stop Report] r =>
   Command ->
   ParamValues ->
   EditAction ->
@@ -196,7 +196,7 @@ runAction command newParams action changed
   = stop (Misc "Save not implemented")
 
 handleAction ::
-  Members [Controller !! RunError, AtomicState CommandState, Input Ident, Stop CommandError, Stop Report] r =>
+  Members [Controller !! RunError, History !! RunError, Input Ident, Stop CommandError, Stop Report] r =>
   HistoryEntry ->
   MenuResult EditResult ->
   Sem r ()
@@ -215,9 +215,11 @@ type EditMenuStack =
   [
     ModalWindowMenus EditItem !! RpcError,
     Controller !! RunError,
-    AtomicState CommandState,
+    History !! RunError,
     Input Ident,
+    Stop RunError,
     Stop CommandError,
+    Stop RpcError,
     Stop Report,
     ReportLog,
     Log
@@ -240,22 +242,18 @@ app =
 -- TODO edit also runner and other options?
 editHistoryEntryMenu ::
   Members EditMenuStack r =>
-  Members [Stop CommandError, Stop RpcError] r =>
   CommandId ->
   Sem r (HistoryEntry, MenuResult EditResult)
 editHistoryEntryMenu cid = do
-  entry <- lookupHistoryIdent cid
+  entry <- restop (History.queryId cid)
   result <- staticWindowMenu (editItems entry) def opts app
   pure (entry, result)
   where
-    opts =
-      def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
-    name =
-      "myo-command-edit"
+    opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
+    name = "myo-command-edit"
 
 editHistoryEntry ::
   Members EditMenuStack r =>
-  Members [Stop CommandError, Stop RpcError] r =>
   CommandId ->
   Sem r ()
 editHistoryEntry cid = do

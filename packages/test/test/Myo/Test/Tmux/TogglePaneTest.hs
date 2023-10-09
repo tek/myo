@@ -6,7 +6,6 @@ import Chiasma.Data.CodecError (CodecError)
 import Chiasma.Tmux (withPanes_)
 import Chiasma.Ui.Data.View (Layout, Pane, View, consLayoutVertical, consPane)
 import Polysemy.Test (TestError (TestError), UnitTest, assert, (===))
-import Ribosome (interpretPersistNull)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -14,11 +13,9 @@ import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOpt
 import Myo.Command.Data.AddSystemCommandOptions (target)
 import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
 import qualified Myo.Command.Effect.Executions as Executions
-import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (runIdent)
-import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Test.Command (withTestHandlerAsync)
 import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Ui.Data.UiState (UiState)
@@ -50,8 +47,7 @@ setupTree =
 
 test_togglePane :: UnitTest
 test_togglePane =
-  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $
-  interpretBackendTmuxNoLog $ interpretController $ testHandler do
+  myoEmbedTmuxTest $ interpretBackendTmuxNoLog $ interpretControllerTransient [] $ testHandler do
     _ <- createSpace "s"
     _ <- createWindow (viewCoords "s" "w" "wroot")
     setupTree
@@ -62,8 +58,7 @@ test_togglePane =
 
 test_shellPanePin :: UnitTest
 test_shellPanePin =
-  myoEmbedTmuxTest $ interpretBackendFail $ interpretPersistNull $ interpretCommandLogSetting $
-  interpretBackendTmuxNoLog $ interpretController $ testHandler do
+  myoEmbedTmuxTest $ interpretBackendTmuxNoLog $ interpretControllerTransient [] $ testHandler do
     setupDefaultTestUi
     insertPane (viewCoords "vim" "vim" "make") (consPane tid)
     myoAddSystemCommand (AddSystemCommandOptions.cons sid ["tail"]) { target = Just (UiTarget tid) }

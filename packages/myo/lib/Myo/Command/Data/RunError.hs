@@ -143,7 +143,7 @@ instance Reportable RunError where
     toReport err
 
   toReport (ShellDidntStart i (MilliSeconds timeout)) =
-    Report [exon|The shell `#{commandIdText i}` didn't start within #{show timeout}ms|] log Error
+    Report [exon|The shell '#{commandIdText i}' didn't start within #{show timeout}ms|] log Error
     where
       log = ["RunError.ShellDidntStart:", show i, show timeout]
 

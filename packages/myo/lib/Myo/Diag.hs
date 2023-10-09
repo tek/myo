@@ -13,7 +13,7 @@ import Ribosome (
   Settings,
   StoredReport (StoredReport),
   reportContext,
-  resumeReport,
+  resumeReports,
   storedReports,
   )
 import qualified Ribosome.Scratch as Scratch
@@ -21,8 +21,9 @@ import Ribosome.Scratch (ScratchOptions (focus, name, syntax))
 import Ribosome.Syntax (HiLink (..), Syntax (Syntax), SyntaxItem (..), syntaxMatch)
 
 import Myo.Command.Data.Command (Command)
-import qualified Myo.Command.Data.CommandState as CommandState
-import Myo.Command.Data.CommandState (CommandState)
+import Myo.Command.Data.CommandError (CommandError)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 import Myo.Ui.Data.Space (Space)
 import qualified Myo.Ui.Data.UiState as UiState
 import Myo.Ui.Data.UiState (UiState)
@@ -77,10 +78,10 @@ errorDiagnostics errs =
   "## Reports" <> line <> line <> vsep (uncurry tagErrors <$> Map.toAscList errs)
 
 diagnostics ::
-  Members [Settings !! se, AtomicState UiState, AtomicState CommandState, Reports] r =>
+  Members [Settings !! se, Commands, AtomicState UiState, Reports] r =>
   Sem r (Doc a)
 diagnostics = do
-  cmds <- atomicGets @CommandState (cmdDiagnostics . (.commands))
+  cmds <- cmdDiagnostics <$> Commands.all
   ui <- atomicGets @UiState (uiDiagnostics . (.spaces))
   errors <- errorDiagnostics <$> storedReports
   pure $ headline <> line <> line <> cmds <> line <> line <> ui <> line <> line <> errors
@@ -88,10 +89,10 @@ diagnostics = do
     headline = "# Diagnostics"
 
 myoDiag ::
-  Members [Settings !! se, Scratch !! RpcError, AtomicState UiState, AtomicState CommandState, Reports] r =>
+  Members [Settings !! se, Commands !! CommandError, Scratch !! RpcError, AtomicState UiState, Reports] r =>
   Handler r ()
 myoDiag =
-  resumeReport @Scratch do
+  resumeReports @[Scratch, Commands] @[_, _] do
     content <- diagnostics
     void $ Scratch.show (lines (show content)) options
   where

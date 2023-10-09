@@ -8,12 +8,15 @@ import Ribosome.Api (nvimInput, nvimListWins, nvimSetCurrentWin)
 import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import qualified Ribosome.Scratch as Scratch
 import qualified Ribosome.Settings as Settings
-import Ribosome.Test (assertWait, testError, testPluginEmbed)
+import Ribosome.Test (assertWait, resumeTestError, testError, testPluginEmbed)
 import Ribosome.Test.Ui (windowCountIs)
 
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Command.Parse (storeParseResult)
+import Myo.Effect.Commands (Commands)
+import Myo.Interpreter.Commands (interpretCommandsNoHistory)
 import Myo.Output.Data.Location (Location (Location))
+import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import Myo.Output.Lang.Haskell.Report (HaskellMessage (FoundReq1, NoMethod), formatReportLine)
@@ -41,10 +44,11 @@ parsedOutput =
 
 test_outputQuit :: UnitTest
 test_outputQuit =
-  runMyoTestStack def $ withHandlers [rpcCommand outputQuitName Sync myoOutputQuit] $ testPluginEmbed do
+  runMyoTestStack def $ withHandlers [rpcCommand outputQuitName Sync myoOutputQuit] $ interpretCommandsNoHistory $
+  testPluginEmbed $ resumeTestError @Commands do
     Settings.update Settings.outputAutoJump False
     storeParseResult "test" [parsedOutput]
-    testError compileAndRenderReport
+    testError @OutputError compileAndRenderReport
     windowCountIs 2
     win <- fmap (.window) . evalMaybe . head =<< Scratch.get
     nvimSetCurrentWin win

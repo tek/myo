@@ -45,7 +45,7 @@ import Myo.Command.Proc (waitForShell)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ProcError (ProcError, unProcError)
 import Myo.Effect.Proc (Proc)
-import Myo.Tmux.Proc (leafPid, panePid, shellBusy, waitForRunningProcess)
+import Myo.Tmux.Proc (leafPid, panePid)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Render (renderTmux)
 
@@ -84,7 +84,7 @@ start ::
 start TmuxTask {pane, command = Command {ident}, compiled} =
   withTmuxApis_ @[TmuxCommand, Panes PaneMode] @CodecError do
     quitCopyMode pane
-    Log.debug [exon|Sending command `#{commandIdText ident}` to tmux pane #{formatId pane}|]
+    Log.debug [exon|Sending command '#{commandIdText ident}' to tmux pane #{formatId pane}|]
     sendKeys pane (cmdline compiled)
 
 type StartMonitoredStack =
@@ -125,26 +125,11 @@ waitForCommand ::
 waitForCommand (TmuxTask {taskType, target}) =
   Executions.activeTarget target >>= traverse_ \ ident -> do
     when (taskType == Kill) do
-      Log.info [exon|Killing running command `#{commandIdText ident}`|]
+      Log.info [exon|Killing running command '#{commandIdText ident}'|]
       Executions.terminate ident
     unless (taskType == Shell) do
-      Log.info [exon|Waiting for running command `#{commandIdText ident}`|]
+      Log.info [exon|Waiting for running command '#{commandIdText ident}'|]
       Executions.wait ident
-
--- TODO this isn't used
-waitForProcess ::
-  Members [Executions, Proc !! ProcError, Log, ChronosTime, Stop RunError] r =>
-  Pid ->
-  TmuxTask ->
-  Sem r ()
-waitForProcess shellPid TmuxTask {taskType, command = Command {ident}} = do
-  whenM (False <! shellBusy shellPid) do
-    when (taskType == Kill) do
-      Log.info [exon|Killing running process to start `#{commandIdText ident}`|]
-      Executions.terminate ident
-    unless (taskType == Shell) do
-      Log.info [exon|Waiting for running process to start `#{commandIdText ident}`|]
-      resumeHoist @_ @Proc (RunError.Proc . (.unProcError)) (waitForRunningProcess shellPid)
 
 activeShellPid ::
   Members [Proc !! ProcError, Executions, ChronosTime, Stop RunError, Race] r =>
@@ -212,7 +197,7 @@ render =
     renderTmux
 
 -- TODO if multiple executors accept ui tasks, stopping when the pane isn't part of the state might be wrong.
--- but if all uis share the same state, it's correct but should probably done before this
+-- but if all uis share the same state, it's correct but should probably be done before this
 -- but given that it returns a tmux-specific PaneId, they should probably be separate
 interpretBackendTmuxWithLog ::
   Reportable sre =>

@@ -2,24 +2,23 @@ module Myo.Test.Command.CommandMenuTest where
 
 import Exon (exon)
 import Polysemy.Test (UnitTest, (===))
-import Ribosome (interpretPersistNull)
 import Ribosome.Api (nvimGetVar)
 import qualified Ribosome.Menu as Menu
 import Ribosome.Menu (promptInput)
 import Ribosome.Menu.Prompt (PromptEvent (Mapping))
-import Ribosome.Test (testError)
+import Ribosome.Test (resumeTestError, testError)
 
 import Myo.Command.CommandMenu (commandMenu)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (runIdent)
 import Myo.Data.CommandId (commandIdText)
-import Myo.Interpreter.Controller (interpretController)
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Test.Embed (myoTest)
 
 inputEvents :: [PromptEvent]
@@ -35,8 +34,8 @@ commands =
 
 test_commandMenu :: UnitTest
 test_commandMenu =
-  myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendVim $ interpretController do
-    atomicSet @CommandState #commands commands
+  myoTest $ interpretBackendVim $ interpretControllerTransient [] do
+    resumeTestError @Commands (traverse_ Commands.add commands)
     Menu.Success ident <- promptInput inputEvents do
       testError @CommandError commandMenu
     testError (runIdent ident mempty)

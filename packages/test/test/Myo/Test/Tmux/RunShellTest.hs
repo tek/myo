@@ -8,7 +8,6 @@ import Chiasma.Effect.Codec (NativeCodecE)
 import Chiasma.Effect.TmuxClient (NativeTmux)
 import Chiasma.Tmux (withTmux_)
 import Polysemy.Test (Hedgehog, UnitTest, assert, assertEq, (===))
-import Ribosome (interpretPersistNull)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Test (assertWait, testHandler, testHandlerAsync)
 
@@ -18,10 +17,9 @@ import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOpt
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions (commandShell, runner, target))
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxNoLog)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Proc (killCommand, terminateCommand)
 import Myo.Command.Run (runIdent)
-import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import qualified Myo.Settings as Settings (processTimeout)
 import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Tmux.Output (cleanLines)
@@ -52,22 +50,22 @@ firstCondition ::
   Member (Hedgehog IO) r =>
   [Text] ->
   Sem r ()
-firstCondition out = do
-  "cat" : output1 === out
+firstCondition out =
+  output1 === dropWhile ("cat" ==) out
 
 secondCondition ::
   Member (Hedgehog IO) r =>
   [Text] ->
   Sem r ()
 secondCondition out =
-  "cat" : output1 ++ output1 === out
+  output1 ++ output1 === dropWhile ("cat" ==) out
 
 thirdCondition ::
   Member (Hedgehog IO) r =>
   [Text] ->
   Sem r ()
 thirdCondition out = do
-  "cat" : output1 ++ output1 ++ ["Terminated", "cat"] ++ output1 === out
+  output1 ++ output1 ++ ["Terminated", "cat"] ++ output1 === dropWhile ("cat" ==) out
 
 paneContent ::
   Members [NativeTmux, NativeCodecE TmuxCommand, Stop CodecError] r =>
@@ -77,8 +75,7 @@ paneContent =
 
 test_tmuxRunShell :: UnitTest
 test_tmuxRunShell =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $ interpretController $
-  testHandler do
+  myoEmbedTmuxTest $ interpretBackendTmuxNoLog $ interpretControllerTransient [] $ testHandler do
     Settings.update Settings.processTimeout 2
     setupDefaultTestUi
     myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["cat"]) { runner, target = Just "make" }
@@ -103,8 +100,7 @@ test_tmuxRunShell =
 
 test_tmuxUnixShell :: UnitTest
 test_tmuxUnixShell =
-  myoEmbedTmuxTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendTmuxNoLog $
-  interpretController $ testHandler do
+  myoEmbedTmuxTest $ interpretBackendTmuxNoLog $ interpretControllerTransient [] $ testHandler do
     setupDefaultTestUi
     myoAddSystemCommand (AddSystemCommandOptions.cons shellIdent ["bash --norc"]) {
       runner,

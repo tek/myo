@@ -1,9 +1,10 @@
 module Myo.Test.DiagTest where
 
+import Polysemy.Test (UnitTest, assertEq)
 import Ribosome.Api.Buffer (currentBufferContent)
 
 import Myo.Diag (myoDiag)
-import Polysemy.Test (UnitTest, assertEq)
+import Myo.Interpreter.Commands (interpretCommandsNoHistory)
 import Myo.Test.Embed (myoTest)
 
 target :: [Text]
@@ -20,6 +21,6 @@ target = [
 
 test_diag :: UnitTest
 test_diag =
-  myoTest do
-    myoDiag
+  myoTest $ interpretCommandsNoHistory do
+    subsume myoDiag
     assertEq target =<< currentBufferContent

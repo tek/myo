@@ -50,7 +50,7 @@ runProcess ::
   ProcessTask ->
   Sem r ()
 runProcess (ProcessTask ident cmd) = do
-  Log.debug [exon|Starting subprocess for `#{commandIdText ident}`: #{cmdline}|]
+  Log.debug [exon|Starting subprocess for '#{commandIdText ident}': #{cmdline}|]
   evalState mempty $ resuming @_ @(Scoped _ _) checkError $ withProcess cmd do
     forever do
       outputEvent ident =<< Process.recv
@@ -63,7 +63,7 @@ runProcess (ProcessTask ident cmd) = do
       Exit ExitSuccess -> unit
       Exit (ExitFailure code) -> failure [exon|exit code #{show code}|]
     failure msg = do
-      Log.debug [exon|Subprocess for `#{commandIdText ident}` failed: #{msg}|]
+      Log.debug [exon|Subprocess for '#{commandIdText ident}' failed: #{msg}|]
       stop . RunError.SubprocFailed msg =<< get
 
 conf ::

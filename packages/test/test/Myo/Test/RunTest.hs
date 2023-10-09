@@ -2,8 +2,8 @@ module Myo.Test.RunTest where
 
 import Chiasma.Data.Ident (Ident (Str))
 import qualified Data.Map.Strict as Map
-import Log (Severity (Error))
-import Polysemy.Test (Hedgehog, UnitTest, assertJust)
+import Log (Severity (Error, Warn))
+import Polysemy.Test (Hedgehog, UnitTest, assertJust, assertLeft)
 import Ribosome (
   LogReport,
   Report (Report),
@@ -11,7 +11,6 @@ import Ribosome (
   Reportable (toReport),
   Reports,
   StoredReport (StoredReport),
-  interpretPersistNull,
   logReport,
   storedReports,
   )
@@ -29,12 +28,11 @@ import Myo.Command.Data.RunLineOptions (line, runner)
 import qualified Myo.Command.Data.RunTask
 import Myo.Command.Data.RunTask (RunTask (RunTask))
 import Myo.Command.Effect.Backend (Backend)
-import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend, interpretBackendFail)
+import Myo.Command.Interpreter.Backend.Generic (captureUnsupported, interceptBackend)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Command.Run (myoLine, runIdent)
 import Myo.Data.CommandId (CommandId)
-import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Test.Embed (myoTest)
 
 newtype RunTestError =
@@ -85,15 +83,15 @@ dummyExecute () =
     logReport (RunTestError [testError])
 
 interpretBackendDummy ::
-  Member (DataLog LogReport) r =>
-  InterpreterFor (Backend !! RunError) r
+  Members [Backend !! RunError, DataLog LogReport] r =>
+  Sem r a ->
+  Sem r a
 interpretBackendDummy =
-  interpretBackendFail .
   interceptBackend dummyAccept dummyExecute (captureUnsupported "dummy") unit
 
 test_runSystem :: UnitTest
 test_runSystem =
-  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummy $ interpretController do
+  myoTest $ interpretBackendDummy $ interpretControllerTransient [] do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { AddSystemCommandOptions.runner = Just runnerIdent }
       runIdent ident mempty
@@ -115,15 +113,15 @@ singleLineExecute l =
     logReport (RunTestError l)
 
 interpretBackendDummySingleLine ::
-  Member (DataLog LogReport) r =>
-  InterpreterFor (Backend !! RunError) r
+  Members [Backend !! RunError, DataLog LogReport] r =>
+  Sem r a ->
+  Sem r a
 interpretBackendDummySingleLine =
-  interpretBackendFail .
   interceptBackend singleLineAccept singleLineExecute (captureUnsupported "dummy") unit
 
 test_runLineSingle :: UnitTest
 test_runLineSingle =
-  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
+  myoTest $ interpretBackendDummySingleLine $ interpretControllerTransient [] do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls"]) { AddSystemCommandOptions.runner = Just runnerIdent }
       myoLine def { line = Just (parseCommandSpec' [cmdline]), runner = Just runnerIdent }
@@ -131,11 +129,13 @@ test_runLineSingle =
 
 test_runSubprocFail :: UnitTest
 test_runSubprocFail =
-  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendProcessNative $ interpretController do
+  myoTest $ interpretBackendProcessNative $ interpretControllerTransient [] do
     testHandler do
       myoAddSystemCommand (AddSystemCommandOptions.cons ident ["ls -234234"]) { AddSystemCommandOptions.runner = Just runnerIdent }
-      runIdent ident mempty
-    unit
+      _ <- assertLeft err =<< runStop @Report (runIdent ident mempty)
+      unit
+  where
+    err = Report "subprocess failed: exit code 2" ["RunError.SubprocFailed"] Warn
 
 paramDefaults :: Map ParamId ParamDefault
 paramDefaults =
@@ -151,7 +151,7 @@ paramCommand =
 
 test_runParamCommand :: UnitTest
 test_runParamCommand =
-  myoTest $ interpretCommandLogSetting $ interpretPersistNull $ interpretBackendDummySingleLine $ interpretController do
+  myoTest $ interpretBackendDummySingleLine $ interpretControllerTransient [] do
     testHandler do
       myoAddSystemCommand paramCommand
       nvimSetVar @Text "myo_param_par1" "var value 1"

@@ -7,25 +7,27 @@ import Ribosome.Api (nvimGetVar)
 import Ribosome.Menu (MenuResult (Aborted, Success), promptInput)
 import qualified Ribosome.Menu.Data.MenuResult as MenuResult
 import Ribosome.Menu.Prompt (PromptEvent (Mapping, Update))
-import Ribosome.Test (testError)
+import Ribosome.Test (resumeTestError, testError)
 
 import Myo.Command.CommandSpec (compileTemplateWith)
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandSpec (CommandSpec (CommandSpec))
-import Myo.Command.Data.CommandState (CommandState)
 import Myo.Command.Data.CommandTemplate (parseCommandTemplate')
 import qualified Myo.Command.Data.HistoryEntry
 import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry))
 import Myo.Command.Data.Param (ParamDefault (ParamDefault), ParamValues)
+import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Edit (editHistoryEntryMenu, handleAction)
-import Myo.Command.History (history)
 import Myo.Command.HistoryMenu (HistoryAction (Edit, Run), historyMenu)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
 import Myo.Data.CommandId (CommandId (CommandId))
+import qualified Myo.Effect.History as History
+import Myo.Effect.History (History)
+import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
+import Myo.Interpreter.History (interpretHistoryTransient, interpretHistoryWith)
 import Myo.Test.Embed (myoTest)
 
 inputEvents :: [PromptEvent]
@@ -42,10 +44,9 @@ initialHistory =
 
 test_historyMenu :: UnitTest
 test_historyMenu =
-  myoTest do
-    atomicSet @CommandState #history initialHistory
+  myoTest $ interpretPersistNull $ interpretHistoryWith initialHistory do
     entry <- promptInput inputEvents do
-      testError @CommandError historyMenu
+      testError @RunError historyMenu
     MenuResult.Success (Run "c2") === entry
 
 inputEventsDelete :: [PromptEvent]
@@ -68,18 +69,17 @@ historyDeleted =
 
 test_historyMenuDelete :: UnitTest
 test_historyMenuDelete =
-  myoTest do
-    atomicSet @CommandState #history initialHistory
-    result <- promptInput inputEventsDelete (testError @CommandError historyMenu)
+  myoTest $ interpretPersistNull $ interpretHistoryWith initialHistory do
+    result <- promptInput inputEventsDelete (testError @RunError historyMenu)
     Aborted === result
-    assertEq historyDeleted =<< history
+    assertEq historyDeleted =<< resumeTestError History.all
 
 params :: ParamValues
 params =
   [("par1", "value 1"), ("par2", "value 2")]
 
-originalId :: CommandId
-originalId =
+exeId :: CommandId
+exeId =
   CommandId (Str "exe1")
 
 historyEdit ::
@@ -87,7 +87,7 @@ historyEdit ::
   Sem r [HistoryEntry]
 historyEdit = do
   compiled <- fromEither (first TestError (compileTemplateWith tpl params))
-  pure [HistoryEntry cmd (Just (ExecutionParams originalId compiled params))]
+  pure [HistoryEntry cmd (Just (ExecutionParams exeId compiled params))]
   where
     cmd = Command.consSpec (CommandInterpreter.Vim False Nothing) "1" spec
     spec = CommandSpec tpl (coerce params)
@@ -107,17 +107,19 @@ editEvents =
     Mapping "r"
   ]
 
+-- TODO can this use the same promptInput for both menus?
 test_historyMenuEdit :: UnitTest
 test_historyMenuEdit =
-  myoTest $ interpretPersistNull $ interpretCommandLogSetting $ interpretBackendVim $ interpretController $
-  testError @CommandError do
-    atomicSet @CommandState #history =<< historyEdit
-    Success (Edit i) <- promptInput [Mapping "e"] do
-      historyMenu
-    (entry, action) <- promptInput editEvents do
-      editHistoryEntryMenu i
-    handleAction entry action
-    value <- nvimGetVar "command"
-    ("value 1 new value {par3}" :: Text) === value
-    newId <- evalMaybe =<< head . fmap (.command.ident) <$> history
-    originalId /== newId
+  myoTest do
+    initHistory <- historyEdit
+    interpretBackendVim $ interpretHistoryTransient initHistory $
+      interpretCommands $ interpretController $ testError @CommandError $ testError @RunError do
+        Success (Edit i) <- promptInput [Mapping "e"] do
+          historyMenu
+        (entry, action) <- promptInput editEvents do
+          editHistoryEntryMenu i
+        handleAction entry action
+        value <- nvimGetVar "command"
+        ("value 1 new value {par3}" :: Text) === value
+        newId <- evalMaybe =<< head . fmap (.command.ident) <$> resumeTestError @History History.all
+        exeId /== newId

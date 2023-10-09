@@ -9,12 +9,14 @@ import Prelude hiding (lines)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
-import Myo.Command.Data.CommandInterpreter (CommandInterpreter)
+import Myo.Command.Data.CommandInterpreter (CommandInterpreter (..))
 import qualified Myo.Command.Data.CommandSpec
 import Myo.Command.Data.CommandSpec (CommandSpec, parseCommandSpec')
 import Myo.Command.Data.CommandTemplate (renderTemplate)
 import Myo.Command.Data.Param (ParamDefault, ParamId, renderParamDefault)
-import Myo.Data.CommandId (CommandId (CommandId))
+import Myo.Command.Data.UiTarget (UiTarget)
+import Myo.Data.CommandId (CommandId (CommandId), commandIdText)
+import Myo.Data.CommandName (CommandName (CommandName))
 
 newtype CommandLanguage =
   CommandLanguage Text
@@ -30,7 +32,7 @@ data Command =
     cmdLines :: CommandSpec,
     runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
-    displayName :: Maybe Text,
+    displayName :: Maybe CommandName,
     skipHistory :: Bool,
     kill :: Bool,
     capture :: Bool,
@@ -93,6 +95,36 @@ shortIdent = \case
   CommandId (Ident.Str n) -> n
   CommandId (Ident.Uuid i) -> Text.take 6 (show i)
 
-name :: Command -> Text
-name Command {..} =
-  fromMaybe (shortIdent ident) displayName
+describe :: Command -> Text
+describe Command {..} =
+  maybe (shortIdent ident) coerce displayName
+
+commandHasId :: CommandId -> Command -> Bool
+commandHasId target Command {ident} = ident == target
+
+commandHasName :: CommandName -> Command -> Bool
+commandHasName target = \case
+  Command {displayName = Just name} -> name == target
+  _ -> False
+
+commandHasAny :: Text -> Command -> Bool
+commandHasAny target = \case
+  Command {ident} | commandIdText ident == target -> True
+  Command {displayName = Just (CommandName name)} | name == target -> True
+  _ -> False
+
+systemCommand ::
+  Maybe UiTarget ->
+  CommandId ->
+  CommandSpec ->
+  Command
+systemCommand target =
+  consSpec (System target)
+
+shellCommand ::
+  CommandId ->
+  CommandId ->
+  CommandSpec ->
+  Command
+shellCommand target =
+  consSpec (Shell target)
