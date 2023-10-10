@@ -6,6 +6,7 @@ import qualified Data.Vector as Vector (fromList)
 import Polysemy.Test (TestError, UnitTest, (===))
 import Ribosome.Test (testError)
 
+import Myo.Output.Data.OutputParser (runOutputParser)
 import qualified Myo.Output.Data.ParseReport as ParseReport
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine
@@ -41,7 +42,7 @@ parseNix ::
   Members [Error TestError, Embed IO] r =>
   Sem r ParsedOutput
 parseNix =
-  testError (nixOutputParser haskellOutput)
+  testError (runOutputParser nixOutputParser haskellOutput)
 
 test_parseNixErrors :: UnitTest
 test_parseNixErrors =

@@ -16,7 +16,7 @@ import Text.Parser.Token (TokenParsing, brackets, natural, parens)
 
 import Myo.Output.Data.Location (Location (Location))
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError (Parse))
-import Myo.Output.Effect.Parsing (OutputParser)
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent (HaskellEvent))
 import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType (..))
 import Myo.Output.Lang.Haskell.Report (haskellReport)
@@ -251,6 +251,7 @@ sanitizeHaskellOutput =
       [removeControlCharsRE, removeProgressIndicator1RE, removeProgressIndicator2RE, removeModulePrefixRE]
 
 haskellOutputParser :: OutputParser r
-haskellOutputParser out = do
-  parsed <- stopEitherWith (OutputError.Parse . toText) (parseOnly parseHaskellErrors (sanitizeHaskellOutput out))
-  stopEither (haskellReport parsed)
+haskellOutputParser =
+  OutputParser \ out -> do
+    parsed <- stopEitherWith (OutputError.Parse . toText) (parseOnly parseHaskellErrors (sanitizeHaskellOutput out))
+    stopEither (haskellReport parsed)

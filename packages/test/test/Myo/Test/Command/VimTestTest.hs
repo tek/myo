@@ -13,6 +13,8 @@ import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Parse (commandOutputByName, myoParseLatest)
 import Myo.Command.Test (myoVimTest, testName)
 import Myo.Interpreter.Controller (interpretControllerTransient)
+import Myo.Interpreter.Outputs (interpretOutputs)
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Settings (testLang, testRunner)
 import Myo.Test.Embed (myoTest)
@@ -30,13 +32,13 @@ mockVimTestFunctions fname = do
 
 test_vimTest :: UnitTest
 test_vimTest =
-  myoTest $ interpretBackendProcessNative $ interpretControllerTransient [] do
+  myoTest $ interpretBackendProcessNative $ interpretOutputs $ interpretControllerTransient [] do
     fname <- Test.fixturePath [relfile|vim-test/file|]
     Settings.update testRunner "proc"
     Settings.update testLang echoLang
     mockVimTestFunctions fname
     testHandler myoVimTest
     assertWait (testError (commandOutputByName testName)) (assertEq "echoline 1")
-    interpretParsing [(echoLang, [parseEcho fname])] do
+    interpretParsing [(echoLang, [OutputParser (parseEcho fname)])] do
       testHandler myoParseLatest
     assertEq ["echoline 1"] =<< currentBufferContent

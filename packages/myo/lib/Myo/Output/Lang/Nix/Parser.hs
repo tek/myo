@@ -19,9 +19,9 @@ import Myo.Output.Data.OutputError (OutputError)
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError (Parse))
 import Myo.Output.Data.OutputEvent (OutputEvent (OutputEvent), OutputEventMeta (OutputEventMeta))
 import Myo.Output.Data.OutputEvents (OutputEvents (OutputEvents))
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import Myo.Output.Data.ReportLine (ReportLine (ReportLine))
-import Myo.Output.Effect.Parsing (OutputParser)
 import Myo.Output.Lang.Nix.Data.NixEvent (NixEvent (NixEvent))
 import Myo.Output.Lang.Nix.Report (nixReport)
 import Myo.Regex (regexML, removeControlCharsRE)
@@ -160,4 +160,4 @@ nixOutputParser ::
   Member (Embed IO) r =>
   OutputParser r
 nixOutputParser =
-  adaptPaths <=< parseNix
+  OutputParser (adaptPaths <=< parseNix)

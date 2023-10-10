@@ -54,11 +54,10 @@ import qualified Ribosome.Scratch as Scratch
 import Ribosome.Scratch (ScratchOptions (syntax))
 import Ribosome.Syntax (Syntax)
 
-import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.OutputState (OutputState)
 import Myo.Data.CommandId (CommandId)
-import qualified Myo.Effect.Commands as Commands
-import Myo.Effect.Commands (Commands)
+import qualified Myo.Effect.Outputs as Outputs
+import Myo.Effect.Outputs (Outputs)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Absolute (Absolute, unAbsolute))
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -231,43 +230,49 @@ selectCurrentLineEventFrom report outputWindow' mainWindow =
   selectMaybeEvent mainWindow outputWindow' =<< eventByLine report <$> windowLine outputWindow'
 
 currentOutput ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Sem r OutputState
 currentOutput =
-  stopNote OutputError.NotParsed =<< Commands.currentOutput
+  stopNote OutputError.NotParsed =<< Outputs.currentOutput
 
 currentOutputCommand ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Sem r CommandId
 currentOutputCommand =
   view #command <$> currentOutput
 
+currentOutputCommandDesc ::
+  Members [Outputs, Stop OutputError] r =>
+  Sem r Text
+currentOutputCommandDesc =
+  view #desc <$> currentOutput
+
 currentEvents ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Sem r OutputEvents
 currentEvents =
   view #events <$> currentOutput
 
 currentSyntax ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Sem r [Syntax]
 currentSyntax =
   view #syntax <$> currentOutput
 
 currentReport ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Sem r ParseReport
 currentReport =
   stopNote OutputError.NotParsed =<< view #report <$> currentOutput
 
 currentEvent ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Sem r EventIndex.Absolute
 currentEvent =
   view #currentEvent <$> currentOutput
 
 cycleIndex ::
-  Members [Commands, Stop OutputError] r =>
+  Members [Outputs, Stop OutputError] r =>
   Int ->
   Sem r Bool
 cycleIndex offset = do
@@ -280,7 +285,7 @@ cycleIndex offset = do
       fromIntegral current + offset
     new =
       fromIntegral (fromMaybe 0 (computed `mod` eventCount))
-  Commands.setCurrentEvent (EventIndex.Absolute new)
+  Outputs.setCurrentEvent (EventIndex.Absolute new)
   pure (new /= current)
 
 noScratch ::
@@ -346,7 +351,7 @@ renderReport (ParseReport _ reportLines) syntax = do
       (scratch scratchId) {Scratch.mappings = mappings, syntax = syntax}
 
 renderCurrentReport ::
-  Members [Commands, Scratch, Rpc, Stop OutputError] r =>
+  Members [Outputs, Scratch, Rpc, Stop OutputError] r =>
   Sem r ()
 renderCurrentReport = do
   report <- currentReport
@@ -354,13 +359,13 @@ renderCurrentReport = do
   renderReport report syntax
 
 ensureReportScratch ::
-  Members [Commands, Scratch, Rpc, Stop OutputError] r =>
+  Members [Outputs, Scratch, Rpc, Stop OutputError] r =>
   Sem r ()
 ensureReportScratch =
   whenM (isNothing <$> Scratch.find scratchId) renderCurrentReport
 
 navigateToEvent ::
-  Members [Commands, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Members [Outputs, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
   Bool ->
   EventIndex.Absolute ->
   Sem r ()
@@ -382,7 +387,7 @@ navigateToEvent jump eventIndex = do
       fromIntegral ((.unAbsolute) eventIndex) == (length (report ^. #events) - 1)
 
 navigateToCurrentEvent ::
-  Members [Commands, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
+  Members [Outputs, Scratch, Rpc, Rpc !! RpcError, Stop OutputError, Embed IO] r =>
   Bool ->
   Sem r ()
 navigateToCurrentEvent jump =
@@ -425,10 +430,10 @@ myoOutputQuit =
   resumeReport (Scratch.delete scratchId)
 
 myoOutputSelect ::
-  Members [Commands !! CommandError, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Members [Outputs, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   Handler r ()
 myoOutputSelect =
-  resumeReports @[Rpc, Scratch, Commands] @[_, _, _] $ mapReport do
+  resumeReports @[Rpc, Scratch] @[_, _] $ mapReport do
     mainWindow <- outputMainWindow
     window <- outputWindow
     report <- currentReport

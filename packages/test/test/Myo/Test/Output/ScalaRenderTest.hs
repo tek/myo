@@ -9,13 +9,12 @@ import Ribosome.Api (nvimCommand, nvimCommandOutput)
 import Ribosome.Api.Syntax (executeSyntax)
 import qualified Ribosome.Settings as Settings
 import Ribosome.Syntax (Syntax (..), syntaxHighlight)
-import Ribosome.Test (resumeTestError, testError)
+import Ribosome.Test (testError)
 import Ribosome.Test.Screenshot (awaitScreenshot)
 
 import Myo.Command.Output (compileAndRenderReport)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Effect.Commands (Commands)
-import Myo.Interpreter.Commands (interpretCommandsNoHistory)
+import Myo.Interpreter.Outputs (interpretOutputs)
 import qualified Myo.Output.Data.EventIndex as EventIndex (Relative (Relative))
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -142,12 +141,12 @@ myoSyntax = do
 
 test_scalaRender :: UnitTest
 test_scalaRender =
-  myoSocketTmuxTest $ interpretCommandsNoHistory do
+  myoSocketTmuxTest $ interpretOutputs do
     Settings.update Settings.outputSelectFirst True
     Settings.update Settings.outputAutoJump False
     setupHighlights
-    resumeTestError @Commands (storeParseResult "test" [parsedOutput])
-    testError @OutputError (resumeTestError @Commands compileAndRenderReport)
+    storeParseResult "test" "test" [parsedOutput]
+    testError @OutputError compileAndRenderReport
     nvimCommand "wincmd w"
     syntax <- myoSyntax
     syntaxTarget === syntax

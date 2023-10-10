@@ -42,7 +42,6 @@ library
       Myo.Command.Data.CommandOutput
       Myo.Command.Data.CommandSettingCodec
       Myo.Command.Data.CommandSpec
-      Myo.Command.Data.CommandState
       Myo.Command.Data.CommandTemplate
       Myo.Command.Data.Execution
       Myo.Command.Data.ExecutionLock
@@ -113,12 +112,14 @@ library
       Myo.Effect.Controller
       Myo.Effect.History
       Myo.Effect.MState
+      Myo.Effect.Outputs
       Myo.Effect.Proc
       Myo.Interpreter.Commands
       Myo.Interpreter.Controller
       Myo.Interpreter.History
       Myo.Interpreter.InputIdent
       Myo.Interpreter.MState
+      Myo.Interpreter.Outputs
       Myo.Interpreter.Proc
       Myo.Loop
       Myo.Network.Socket
@@ -129,6 +130,7 @@ library
       Myo.Output.Data.OutputEvent
       Myo.Output.Data.OutputEvents
       Myo.Output.Data.OutputLine
+      Myo.Output.Data.OutputParser
       Myo.Output.Data.ParsedOutput
       Myo.Output.Data.ParseReport
       Myo.Output.Data.ParseResult

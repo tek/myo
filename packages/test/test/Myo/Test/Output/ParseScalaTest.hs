@@ -6,6 +6,7 @@ import Data.Vector (Vector)
 import Polysemy.Test (TestError, UnitTest, (===))
 import Ribosome.Test.Error (testError)
 
+import Myo.Output.Data.OutputParser (runOutputParser)
 import qualified Myo.Output.Data.ParseReport as ParseReport
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine
@@ -71,7 +72,7 @@ parseScala ::
   Member (Error TestError) r =>
   Sem r ParsedOutput
 parseScala =
-  testError (scalaOutputParser scalaOutput)
+  testError (runOutputParser scalaOutputParser scalaOutput)
 
 test_parseScala :: UnitTest
 test_parseScala =

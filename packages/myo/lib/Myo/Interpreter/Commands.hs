@@ -9,12 +9,10 @@ import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError (NoSuchCommand))
-import qualified Myo.Command.Data.CommandState as CommandState
-import Myo.Command.Data.CommandState (CommandState (CommandState))
 import qualified Myo.Command.Data.HistoryEntry
 import Myo.Command.Data.HistoryEntry (HistoryEntry)
-import Myo.Command.Data.OutputState (OutputState)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Data.CommandId (CommandId)
 import qualified Myo.Data.CommandQuery
 import Myo.Data.CommandQuery (CommandQuery, CommandQueryDomain (..), CommandQueryField)
 import Myo.Effect.Commands (Commands (..))
@@ -22,11 +20,13 @@ import qualified Myo.Effect.History as History
 import Myo.Effect.History (History)
 import Myo.Interpreter.History (interpretHistoryNull, interpretHistoryTransient)
 
+type CommandState = Map CommandId Command
+
 commandList ::
   Member (AtomicState CommandState) r =>
   Sem r [Command]
 commandList =
-  atomicGets \ s -> Map.elems s.commands
+  atomicGets Map.elems
 
 queryCommand ::
   Member (AtomicState CommandState) r =>
@@ -55,23 +55,15 @@ runQuery query =
   runMaybeT do
     MaybeT (queryCommand query.field query.domain) <|> MaybeT (queryHistory query)
 
-overOutput ::
-  Member (AtomicState CommandState) r =>
-  (OutputState -> OutputState) ->
-  Sem r ()
-overOutput f =
-  atomicModify' \case
-    CommandState {output = o, ..} -> CommandState {output = f <$> o, ..}
-
 interpretCommandsWith ::
   Members [History !! e, Embed IO] r =>
   [Command] ->
   InterpreterFor (Commands !! CommandError) r
 interpretCommandsWith initial =
-  interpretAtomic (CommandState (Map.fromList (initial <&> \ c -> (c.ident, c))) Nothing) .
+  interpretAtomic (Map.fromList (initial <&> \ c -> (c.ident, c))) .
   interpretResumable \case
     All ->
-      atomicGets \ s -> Map.elems s.commands
+      commandList
     Latest ->
       resumeHoistAs CommandError.NoHistory (History.latest <&> \ e -> e.command)
     Query query ->
@@ -79,17 +71,7 @@ interpretCommandsWith initial =
     Lookup query ->
       runQuery query
     Add cmd ->
-      atomicModify' (#commands . at cmd.ident ?~ cmd)
-    CurrentOutput ->
-      atomicGets (.output)
-    SetCurrentOutput o ->
-      atomicModify' (#output ?~ o)
-    SetCurrentReport report ->
-      overOutput (#report ?~ report)
-    SetCurrentEvent e ->
-      atomicModify' \case
-        CommandState {output = Just o, ..} -> CommandState {output = Just (o & #currentEvent .~ e), ..}
-        s -> s
+      atomicModify' (at cmd.ident ?~ cmd)
   . raiseUnder
 
 interpretCommands ::
@@ -108,10 +90,7 @@ interpretCommandsNoHistory =
 interpretCommandsTransient ::
   Members [Log, Embed IO] r =>
   [HistoryEntry] ->
-  InterpretersFor [
-    Commands !! CommandError,
-    History !! RunError
-  ] r
+  InterpretersFor [Commands !! CommandError, History !! RunError] r
 interpretCommandsTransient history =
   interpretHistoryTransient history .
   interpretCommands

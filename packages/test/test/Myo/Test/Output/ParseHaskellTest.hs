@@ -9,6 +9,7 @@ import qualified Polysemy.Test as Test
 import Polysemy.Test (Test, TestError, UnitTest, (===))
 import Ribosome.Test (testError)
 
+import Myo.Output.Data.OutputParser (runOutputParser)
 import qualified Myo.Output.Data.ParseReport as ParseReport
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import qualified Myo.Output.Data.ReportLine as ReportLine
@@ -345,7 +346,7 @@ parseHaskell ::
   Member (Error TestError) r =>
   Sem r ParsedOutput
 parseHaskell =
-    testError (haskellOutputParser haskellOutput)
+    testError (runOutputParser haskellOutputParser haskellOutput)
 
 test_parseHaskellErrors :: UnitTest
 test_parseHaskellErrors =
@@ -358,7 +359,7 @@ parseHaskellGarbage ::
   Sem r ParsedOutput
 parseHaskellGarbage = do
   out <- Test.fixture [relfile|output/parse/haskell-garbage|]
-  testError (haskellOutputParser (toText out))
+  testError (runOutputParser haskellOutputParser (toText out))
 
 garbageTarget :: Vector Text
 garbageTarget =

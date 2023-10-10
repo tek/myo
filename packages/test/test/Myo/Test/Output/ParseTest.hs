@@ -12,6 +12,7 @@ import Myo.Command.Parse (parseCommand, selectCommand)
 import Myo.Command.Run (runIdent)
 import Myo.Effect.Commands (Commands)
 import Myo.Interpreter.Controller (interpretControllerTransient)
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import Myo.Output.Data.ParseReport (ParseReport (ParseReport))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput (events)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
@@ -27,7 +28,7 @@ test_parsePrevious :: UnitTest
 test_parsePrevious =
   myoTest $ interpretBackendProcessNative $ interpretControllerTransient [] do
     file <- Test.fixturePath [relfile|tmux/parse/file|]
-    interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
+    interpretParsing [(echoLang, [OutputParser (parseEcho file)])] $ testHandler do
         ident <- addEchoCommand "proc" lines' False
         runIdent ident mempty
         assertWait (CommandLog.get ident) evalMaybe

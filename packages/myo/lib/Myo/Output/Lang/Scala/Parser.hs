@@ -10,7 +10,7 @@ import Text.Parser.Token (TokenParsing, natural)
 
 import Myo.Output.Data.Location (Location (Location))
 import qualified Myo.Output.Data.OutputError as OutputError (OutputError (Parse))
-import Myo.Output.Effect.Parsing (OutputParser)
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import Myo.Output.Lang.Scala.Data.ScalaEvent (EventType, ScalaEvent (ScalaEvent))
 import qualified Myo.Output.Lang.Scala.Data.ScalaEvent as EventType (EventType (..))
 import Myo.Output.Lang.Scala.Report (scalaReport)
@@ -108,4 +108,6 @@ parseScalaErrors =
 
 scalaOutputParser :: OutputParser r
 scalaOutputParser =
-  stopEither . scalaReport <=< stopEitherWith (OutputError.Parse . toText) . parseOnly parseScalaErrors
+  OutputParser \ out -> do
+    events <- stopEitherWith (OutputError.Parse . toText) (parseOnly parseScalaErrors out)
+    stopEither (scalaReport events)

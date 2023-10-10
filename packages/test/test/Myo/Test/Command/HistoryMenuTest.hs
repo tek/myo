@@ -107,7 +107,6 @@ editEvents =
     Mapping "r"
   ]
 
--- TODO can this use the same promptInput for both menus?
 test_historyMenuEdit :: UnitTest
 test_historyMenuEdit =
   myoTest do

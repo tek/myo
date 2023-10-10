@@ -10,6 +10,7 @@ import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command (Command, ident, lang), CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.LogDir (LogDir)
+import qualified Myo.Command.Data.OutputState
 import Myo.Command.Data.OutputState (OutputState (OutputState))
 import Myo.Command.Data.ParseOptions (ParseOptions (ParseOptions))
 import Myo.Command.Data.RunError (RunError)
@@ -23,6 +24,8 @@ import qualified Myo.Effect.Commands as Commands
 import Myo.Effect.Commands (Commands)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
+import qualified Myo.Effect.Outputs as Outputs
+import Myo.Effect.Outputs (Outputs)
 import qualified Myo.Output.Data.EventIndex as EventIndex
 import qualified Myo.Output.Data.OutputError as OutputError
 import Myo.Output.Data.OutputError (OutputError)
@@ -83,15 +86,23 @@ parseCommand cmd =
       cmd ^. #ident
 
 storeParseResult ::
-  Member Commands r =>
+  Member Outputs r =>
   CommandId ->
+  Text ->
   NonEmpty ParsedOutput ->
   Sem r ()
-storeParseResult ident parsed =
-  Commands.setCurrentOutput outputState
+storeParseResult ident desc parsed =
+  Outputs.setCurrentOutput outputState
   where
     outputState =
-      OutputState ident (toList syntax) events (EventIndex.Absolute 0) Nothing
+      OutputState {
+        command = ident,
+        desc,
+        syntax = toList syntax,
+        events,
+        currentEvent = EventIndex.Absolute 0,
+        report = Nothing
+      }
     syntax =
       (.syntax) <$> parsed
     events =
@@ -99,20 +110,20 @@ storeParseResult ident parsed =
 
 myoParse ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, Log] r =>
+  Members [Outputs, Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, Log] r =>
   ParseOptions ->
   Handler r ()
 myoParse (ParseOptions _ ident _) =
   pluginLogReports $ mapReport @OutputError $ mapReport @CommandError do
     cmd <- restop (selectCommand ident)
     parsedOutput <- stopNote (OutputError.NoEvents (Command.describe cmd)) =<< parseCommand cmd
-    restop (storeParseResult (cmd ^. #ident) parsedOutput)
+    storeParseResult cmd.ident (Command.describe cmd) parsedOutput
     display <- Settings.get Settings.displayResult
     when display (restop compileAndRenderReport)
 
 myoParseLatest ::
   Members [Rpc !! RpcError, Controller !! RunError, Reader LogDir, CommandLog, Parsing !! OutputError, Embed IO] r =>
-  Members [Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, Log] r =>
+  Members [Outputs, Commands !! CommandError, Settings !! SettingError, Scratch !! RpcError, Log] r =>
   Handler r ()
 myoParseLatest =
   myoParse def

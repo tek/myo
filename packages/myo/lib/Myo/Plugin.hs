@@ -98,14 +98,17 @@ import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller)
 import qualified Myo.Effect.History as History
 import Myo.Effect.History (History)
+import Myo.Effect.Outputs (Outputs)
 import Myo.Effect.Proc (Proc)
 import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Interpreter.History (interpretHistory)
 import Myo.Interpreter.InputIdent (interpretInputIdentRandom)
+import Myo.Interpreter.Outputs (interpretOutputs)
 import Myo.Interpreter.Proc (interpretProc)
 import Myo.Output.Data.OutputError (OutputError)
-import Myo.Output.Effect.Parsing (OutputParser, Parsing)
+import Myo.Output.Data.OutputParser (OutputParser)
+import Myo.Output.Effect.Parsing (Parsing)
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Output.Lang.Haskell.Parser (haskellOutputParser)
 import Myo.Output.Lang.Nix.Parser (nixOutputParser)
@@ -146,6 +149,7 @@ type MyoStack =
 type MyoProdStack =
   [
     Parsing !! OutputError,
+    Outputs,
     Controller !! RunError,
     Commands !! CommandError,
     History !! RunError,
@@ -159,7 +163,7 @@ type MyoProdStack =
   ] ++ NvimMenus ++ MyoStack
 
 outputMappingHandlers ::
-  Members [Commands !! CommandError, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
+  Members [Outputs, Scratch !! RpcError, Rpc !! RpcError, Embed IO] r =>
   [RpcHandler r]
 outputMappingHandlers =
   [
@@ -293,6 +297,7 @@ interpretMyoProd =
   interpretHistory .
   interpretCommands .
   interpretController .
+  interpretOutputs .
   interpretParsing parsers .
   withAsync_ prepare
 

@@ -11,14 +11,13 @@ import Ribosome.Api.Window (currentCursor)
 import Ribosome.Host.Interpreter.Handlers (withHandlers)
 import qualified Ribosome.Scratch as Scratch
 import qualified Ribosome.Settings as Settings
-import Ribosome.Test (assertWait, resumeTestError, testError, testPluginEmbed)
+import Ribosome.Test (assertWait, testError, testPluginEmbed)
 import Ribosome.Test.Ui (windowCountIs)
 
 import Myo.Command.Data.OutputState (OutputState (OutputState))
 import Myo.Command.Output (compileAndRenderReport)
-import qualified Myo.Effect.Commands as Commands
-import Myo.Effect.Commands (Commands)
-import Myo.Interpreter.Controller (interpretControllerTransient)
+import qualified Myo.Effect.Outputs as Outputs
+import Myo.Interpreter.Outputs (interpretOutputs)
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
@@ -44,13 +43,13 @@ parsedOutput file =
 
 test_outputSelect :: UnitTest
 test_outputSelect =
-  runMyoTestStack def $ interpretControllerTransient [] $ withHandlers outputMappingHandlers $ testPluginEmbed do
+  runMyoTestStack def $ interpretOutputs $ withHandlers outputMappingHandlers $ testPluginEmbed do
     Settings.update Settings.outputAutoJump False
     Settings.update Settings.outputSelectFirst True
     file <- Test.fixturePath [relfile|output/select/File.hs|]
     let po = parsedOutput (pathText file)
-    resumeTestError @Commands (Commands.setCurrentOutput (OutputState "test" [haskellSyntax] po def Nothing))
-    testError @OutputError (resumeTestError @Commands compileAndRenderReport)
+    Outputs.setCurrentOutput (OutputState "test" "test" [haskellSyntax] po def Nothing)
+    testError @OutputError compileAndRenderReport
     windowCountIs 2
     win <- fmap (.window) . evalMaybe . head =<< Scratch.get
     nvimSetCurrentWin win

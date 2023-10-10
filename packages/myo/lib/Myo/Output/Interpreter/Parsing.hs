@@ -4,8 +4,9 @@ import qualified Data.Map.Strict as Map
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Output.Data.OutputError (OutputError (NoHandler))
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import qualified Myo.Output.Data.ParsedOutput as ParsedOutput
-import Myo.Output.Effect.Parsing (OutputParser, Parsing (Parse))
+import Myo.Output.Effect.Parsing (Parsing (Parse))
 
 interpretParsing ::
   Map CommandLanguage [OutputParser r] ->
@@ -14,4 +15,4 @@ interpretParsing parsers =
   interpretResumable \case
     Parse lang out -> do
       langParsers <- stopNote (NoHandler lang) (Map.lookup lang parsers)
-      nonEmpty . filter (not . ParsedOutput.empty) <$> traverse ($ out) langParsers
+      nonEmpty . filter (not . ParsedOutput.empty) <$> for langParsers \ (OutputParser p) -> p out

@@ -23,6 +23,8 @@ import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
 import Myo.Interpreter.Controller (interpretControllerTransient)
+import Myo.Interpreter.Outputs (interpretOutputs)
+import Myo.Output.Data.OutputParser (OutputParser (OutputParser))
 import Myo.Output.Interpreter.Parsing (interpretParsing)
 import Myo.Test.Embed (myoEmbedTmuxTest)
 import Myo.Test.Output.Echo (addEchoCommand, echoLang, parseEcho)
@@ -47,10 +49,10 @@ waitForLog i =
 test_parseTmux :: UnitTest
 test_parseTmux =
   myoEmbedTmuxTest $ interpretSocketReader $ interpretBackendTmuxWithLog $ interpretSync $
-  interpretControllerTransient [] do
+  interpretOutputs $ interpretControllerTransient [] do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
-    interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
+    interpretParsing [(echoLang, [OutputParser (parseEcho file)])] $ testHandler do
       ident <- addEchoCommand "tmux" [line1, line2] True
       runIdent ident mempty
       waitForLog ident
@@ -61,10 +63,10 @@ test_parseTmux =
 test_parseCaptureTmux :: UnitTest
 test_parseCaptureTmux =
   myoEmbedTmuxTest $ interpretSocketReader $ interpretBackendTmuxWithLog $ interpretSync $
-  interpretControllerTransient [] do
+  interpretOutputs $ interpretControllerTransient [] do
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
-    interpretParsing [(echoLang, [parseEcho file])] $ testHandler do
+    interpretParsing [(echoLang, [OutputParser (parseEcho file)])] $ testHandler do
       ident <- addEchoCommand "tmux" [line1, line2] True
       runIdent ident mempty
       waitForLog ident

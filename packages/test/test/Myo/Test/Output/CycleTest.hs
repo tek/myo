@@ -7,16 +7,13 @@ import qualified Polysemy.Test as Test
 import Polysemy.Test (Hedgehog, Test, TestError, UnitTest)
 import Ribosome (Rpc, RpcError, Scratch, Settings, Window, pathText)
 import qualified Ribosome.Settings as Settings
-import Ribosome.Test (resumeTestError, testError, testHandler)
+import Ribosome.Test (testError, testHandler)
 import Ribosome.Test.Ui (currentCursorIs, cursorIs, windowCountIs)
 
-import Myo.Command.Data.CommandError (CommandError)
-import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Output (compileAndRenderReport, myoNext, myoPrev)
 import Myo.Command.Parse (storeParseResult)
-import Myo.Effect.Commands (Commands)
-import Myo.Effect.History (History)
-import Myo.Interpreter.Commands (interpretCommandsTransient)
+import Myo.Effect.Outputs (Outputs)
+import Myo.Interpreter.Outputs (interpretOutputs)
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
@@ -48,20 +45,20 @@ parsedOutput file =
   ParsedOutput def (parsedOutputCons formatReportLine (Vector.zipWith LangOutputEvent (events file) messages))
 
 cycleTestRender ::
-  Members [Commands !! CommandError, History !! RunError, Hedgehog IO, Test, Error TestError] r =>
+  Members [Outputs, Hedgehog IO, Test, Error TestError] r =>
   Members [Scratch, Rpc, Rpc !! RpcError, Settings, Embed IO] r =>
   Sem r Window
 cycleTestRender = do
   file <- Test.fixturePath [relfile|output/select/File.hs|]
   let po = [parsedOutput (pathText file)]
-  resumeTestError @Commands (storeParseResult "test" po)
-  testError @OutputError (resumeTestError @Commands compileAndRenderReport)
+  storeParseResult "test" "test" po
+  testError @OutputError compileAndRenderReport
   windowCountIs 2
   testError outputWindow
 
 test_outputPrev :: UnitTest
 test_outputPrev =
-  myoTest $ interpretCommandsTransient [] $ testHandler do
+  myoTest $ interpretOutputs $ testHandler do
     Settings.update Settings.outputSelectFirst False
     ow <- cycleTestRender
     currentCursorIs 3 4
@@ -72,7 +69,7 @@ test_outputPrev =
 
 test_outputNext :: UnitTest
 test_outputNext =
-  myoTest $ interpretCommandsTransient [] $ testHandler do
+  myoTest $ interpretOutputs $ testHandler do
     Settings.update Settings.outputSelectFirst True
     ow <- cycleTestRender
     currentCursorIs 9 2

@@ -10,6 +10,7 @@ import Myo.Output.Data.ParseReport (ParseReport)
 data OutputState =
   OutputState {
     command :: CommandId,
+    desc :: Text,
     syntax :: [Syntax],
     events :: OutputEvents,
     currentEvent :: EventIndex.Absolute,
