@@ -11,7 +11,7 @@ import Ribosome.Test (assertWait, testError, testHandler)
 
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Parse (commandOutputByName, myoParseLatest)
-import Myo.Command.Test (myoVimTest, testName)
+import Myo.Command.VimTest (myoVimTest, testName)
 import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Interpreter.Outputs (interpretOutputs)
 import Myo.Output.Data.OutputParser (OutputParser (OutputParser))

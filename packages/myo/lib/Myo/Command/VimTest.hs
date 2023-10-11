@@ -1,4 +1,4 @@
-module Myo.Command.Test where
+module Myo.Command.VimTest where
 
 import Chiasma.Data.Ident (Ident (Str))
 import Data.Hashable (hash)
@@ -21,7 +21,7 @@ import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Data.CommandName (CommandName)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
-import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier, testParamDefaults)
+import Myo.Settings (testCapture, testLang, testPane, testParamDefaults, testRunner, testShell, vimTestFileNameModifier)
 
 testName :: CommandName
 testName = "<test>"
