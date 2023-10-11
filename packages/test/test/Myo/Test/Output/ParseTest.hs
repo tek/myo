@@ -29,12 +29,12 @@ test_parsePrevious =
   myoTest $ interpretBackendProcessNative $ interpretControllerTransient [] do
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [OutputParser (parseEcho file)])] $ testHandler do
-        ident <- addEchoCommand "proc" lines' False
+        ident <- addEchoCommand lines' False
         runIdent ident mempty
         assertWait (CommandLog.get ident) evalMaybe
         cmd <- resumeTestError @Commands (selectCommand (Just ident))
         CommandLog.archive ident
-        CommandLog.append ident "unparsable"
+        CommandLog.append ident Nothing "unparsable"
         outputEvents <- testError (fmap (fmap (.events)) <$> parseCommand cmd)
         let ParseReport events _ = compileReport 0 (foldMap fold outputEvents)
         Vector.empty /== events

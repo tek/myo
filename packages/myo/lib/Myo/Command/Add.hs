@@ -17,17 +17,17 @@ myoAddSystemCommand ::
   Member (Commands !! CommandError) r =>
   AddSystemCommandOptions ->
   Handler r ()
-myoAddSystemCommand (AddSystemCommandOptions {..}) =
+myoAddSystemCommand AddSystemCommandOptions {..} =
   resumeReport (Commands.add cmd)
   where
     cmd :: Command
     cmd =
       (systemCommand target ident (CommandSpec lines (fold params))) {
-        Command.runner,
-        lang,
+        Command.lang,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,
         capture = orFalse capture,
+        maxLogBytes,
         commandShell = orFalse commandShell
       }
 
@@ -41,9 +41,9 @@ myoAddShellCommand AddShellCommandOptions {..} =
     cmd :: Command
     cmd =
       (shellCommand target ident (CommandSpec lines (fold params))) {
-        Command.runner,
-        lang,
+        Command.lang,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,
-        capture = orFalse capture
+        capture = orFalse capture,
+        maxLogBytes
       }

@@ -38,10 +38,11 @@ import Myo.Data.ProcessTask (ProcessTask (ProcessTask))
 outputEvent ::
   Members [CommandLog, State [Text]] r =>
   CommandId ->
+  Maybe Int ->
   Either Text ByteString ->
   Sem r ()
-outputEvent ident = \case
-  Right out -> CommandLog.append ident out
+outputEvent ident maxLogBytes = \case
+  Right out -> CommandLog.append ident maxLogBytes out
   Left out -> modify' (out :)
 
 runProcess ::
@@ -49,11 +50,11 @@ runProcess ::
   Members [CommandLog, Scoped (String, [String]) (Process Text (Either Text ByteString)) !! ProcessError] r =>
   ProcessTask ->
   Sem r ()
-runProcess (ProcessTask ident cmd) = do
+runProcess (ProcessTask ident cmd maxLogBytes) = do
   Log.debug [exon|Starting subprocess for '#{commandIdText ident}': #{cmdline}|]
   evalState mempty $ resuming @_ @(Scoped _ _) checkError $ withProcess cmd do
     forever do
-      outputEvent ident =<< Process.recv
+      outputEvent ident maxLogBytes =<< Process.recv
   where
     cmdline =
       toText [exon|#{fst cmd} #{List.unwords (snd cmd)}|]
@@ -75,10 +76,10 @@ conf (exe, args) = do
   pure (maybe id (setWorkingDir . toFilePath) cwd (proc exe args))
 
 processTask :: Command -> [Text] -> Maybe ProcessTask
-processTask Command {ident} = \case
+processTask Command {ident, maxLogBytes} = \case
   [l] ->
     case List.words (toString l) of
-      (h : t) -> Just (ProcessTask ident (h, t))
+      (h : t) -> Just (ProcessTask ident (h, t) maxLogBytes)
       [] -> Nothing
   _ ->
     Nothing

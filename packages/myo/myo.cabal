@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      Myo.Api.Function
       Myo.Command.Add
       Myo.Command.CommandMenu
       Myo.Command.Commands
@@ -86,11 +87,13 @@ library
       Myo.Command.Interpreter.TmuxMonitor
       Myo.Command.Log
       Myo.Command.Output
+      Myo.Command.Override
       Myo.Command.Parse
       Myo.Command.Proc
       Myo.Command.Run
       Myo.Command.RunTask
       Myo.Command.RunTaskDetails
+      Myo.Command.Test
       Myo.Command.Update
       Myo.Command.VimTest
       Myo.Complete

@@ -53,7 +53,7 @@ test_parseTmux =
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [OutputParser (parseEcho file)])] $ testHandler do
-      ident <- addEchoCommand "tmux" [line1, line2] True
+      ident <- addEchoCommand [line1, line2] True
       runIdent ident mempty
       waitForLog ident
       myoParse (ParseOptions Nothing Nothing Nothing)
@@ -67,7 +67,7 @@ test_parseCaptureTmux =
     setupDefaultTestUi
     file <- Test.fixturePath [relfile|tmux/parse/file|]
     interpretParsing [(echoLang, [OutputParser (parseEcho file)])] $ testHandler do
-      ident <- addEchoCommand "tmux" [line1, line2] True
+      ident <- addEchoCommand [line1, line2] True
       runIdent ident mempty
       waitForLog ident
       myoParse (ParseOptions Nothing Nothing Nothing)

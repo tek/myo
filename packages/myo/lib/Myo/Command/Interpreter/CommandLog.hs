@@ -141,9 +141,9 @@ interpretCommandLog maxSize =
   reinterpret \case
     Set ident text ->
       atomicModify' (Map.alter (Just . setCurrent text . fromMaybe def) ident . Map.adjust archive ident)
-    Append ident chunk -> do
+    Append ident maxSizeOverride chunk -> do
       size <- raise maxSize
-      atomicModify' (Map.alter (Just . append size chunk) ident)
+      atomicModify' (Map.alter (Just . append (fromMaybe size maxSizeOverride) chunk) ident)
     Archive ident ->
       atomicModify' (Map.adjust archive ident)
     ArchiveAll ->

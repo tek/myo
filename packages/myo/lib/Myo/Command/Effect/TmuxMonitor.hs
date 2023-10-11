@@ -9,7 +9,8 @@ data TmuxMonitorTask =
   TmuxMonitorTask {
     ident :: CommandId,
     pane :: PaneId,
-    shellPid :: Pid
+    shellPid :: Pid,
+    maxLogBytes :: Maybe Int
   }
   deriving stock (Eq, Show)
 

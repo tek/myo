@@ -2,7 +2,18 @@ module Myo.Command.Run where
 
 import Chiasma.Data.Ident (Ident)
 import qualified Data.Text as Text
-import Ribosome (Args (Args), Handler, Report, ReportLog, logReport, mapReport, resumeReport)
+import Ribosome (
+  Args (Args),
+  Handler,
+  Report,
+  ReportLog,
+  Rpc,
+  RpcError,
+  logReport,
+  mapReport,
+  resumeReport,
+  resumeReports,
+  )
 
 import Myo.Command.Data.Command (Command (..), shellCommand, systemCommand)
 import Myo.Command.Data.CommandError (CommandError)
@@ -14,6 +25,7 @@ import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions), line)
 import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
+import Myo.Command.Override (queryRegularOverrides)
 import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Data.CommandQuery (queryAny, queryId, queryIdH, queryIndex)
 import Myo.Data.Maybe (orFalse)
@@ -68,12 +80,14 @@ runCommandAsync ident params =
   runAsync (runCommand ident params)
 
 myoRun ::
-  Members [Controller !! RunError, Commands !! CommandError] r =>
+  Members [Controller !! RunError, Commands !! CommandError, Rpc !! RpcError] r =>
   Text ->
   Handler r ()
-myoRun ident = do
-  cmd <- resumeReport $ Commands.query (queryAny (Text.strip ident))
-  runCommand cmd mempty
+myoRun ident =
+  resumeReports @[Commands, Rpc] @[_, _] do
+    base <- Commands.query (queryAny (Text.strip ident))
+    (cmd, params) <- mapReport (queryRegularOverrides base)
+    runCommand cmd params
 
 lookupHistory ::
   Member History r =>
@@ -123,7 +137,7 @@ myoLine ::
   Members [Controller !! RunError, Commands !! CommandError, Input Ident] r =>
   RunLineOptions ->
   Handler r ()
-myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill capture) =
+myoLine (RunLineOptions mayLine mayLines mayTarget lang skipHistory kill capture) =
   resumeReport @Controller $ mapReport @RunError do
     ident <- CommandId <$> input
     lines' <- stopNote RunError.NoLinesSpecified (mayLines <|> mayLine)
@@ -132,7 +146,6 @@ myoLine (RunLineOptions mayLine mayLines mayTarget runner lang skipHistory kill 
   where
     cmd ident target cmdLines =
       (cons target ident cmdLines) {
-        runner,
         lang,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,

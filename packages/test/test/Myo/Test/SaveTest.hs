@@ -34,7 +34,7 @@ pushOutput ::
   Member CommandLog r =>
   Sem r ()
 pushOutput =
-  CommandLog.append ident "log line"
+  CommandLog.append ident Nothing "log line"
 
 type SaveTestStack =
   [Sync (), CommandLog, AtomicState LastSave]

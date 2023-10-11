@@ -34,7 +34,7 @@ import qualified Ribosome.Report as Report
 
 import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command)
-import Myo.Command.Data.CommandError (CommandError (InvalidTemplateEdit, Misc))
+import Myo.Command.Data.CommandError (CommandError (InvalidTemplate, Misc))
 import qualified Myo.Command.Data.CommandSpec
 import Myo.Command.Data.CommandSpec (CommandSpec (CommandSpec))
 import qualified Myo.Command.Data.CommandTemplate
@@ -202,7 +202,7 @@ handleAction ::
   Sem r ()
 handleAction entry = \case
   Success (EditResult action newItems) -> do
-    (newTemplate, newParams) <- stopEitherWith (InvalidTemplateEdit (show newItems)) (newCommandSpec newItems)
+    (newTemplate, newParams) <- stopEitherWith (InvalidTemplate True (show newItems)) (newCommandSpec newItems)
     updateCommand newTemplate entry.command >>= \case
       Just newCommand -> runAction newCommand newParams action True
       Nothing -> runAction entry.command newParams action False

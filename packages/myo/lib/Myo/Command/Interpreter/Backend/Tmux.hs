@@ -100,7 +100,7 @@ startMonitored ::
   Pid ->
   TmuxTask ->
   Sem r ()
-startMonitored shellPid task@TmuxTask {pane, command = Command {ident}} =
+startMonitored shellPid task@TmuxTask {pane, command = Command {ident, maxLogBytes}} =
   resumeLogReport $ withTmuxMonitor TmuxMonitorTask {..} do
     start task
     TmuxMonitor.wait

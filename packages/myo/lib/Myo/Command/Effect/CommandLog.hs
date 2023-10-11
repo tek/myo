@@ -7,7 +7,7 @@ import Myo.Data.CommandId (CommandId)
 
 data CommandLog :: Effect where
   Set :: CommandId -> Text -> CommandLog m ()
-  Append :: CommandId -> ByteString -> CommandLog m ()
+  Append :: CommandId -> Maybe Int -> ByteString -> CommandLog m ()
   Archive :: CommandId -> CommandLog m ()
   ArchiveAll :: CommandLog m ()
   Get :: CommandId -> CommandLog m (Maybe Text)

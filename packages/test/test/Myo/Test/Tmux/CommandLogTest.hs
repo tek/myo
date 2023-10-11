@@ -61,8 +61,6 @@ test_tmuxTruncCommandLog =
         Text.replicate 20 "x"
       cmd :: Command
       cmd =
-        (Command.cons (System (Just "make")) cmdIdent ["cat"]) {runner}
+        (Command.cons (System (Just "make")) cmdIdent ["cat"])
       cmdIdent =
         "cat"
-      runner =
-        Just "tmux"

@@ -1,6 +1,5 @@
 module Myo.Test.Output.Echo where
 
-import Chiasma.Data.Ident (Ident (Str))
 import Control.Lens (IndexedTraversal')
 import Control.Lens.Regex.Text (Match, group, regex)
 import qualified Data.Text as Text (stripPrefix)
@@ -12,7 +11,7 @@ import Ribosome.Host.Path (pathText)
 
 import Myo.Command.Add (myoAddSystemCommand)
 import qualified Myo.Command.Data.AddSystemCommandOptions as AddSystemCommandOptions
-import Myo.Command.Data.AddSystemCommandOptions (capture, lang, runner, target)
+import Myo.Command.Data.AddSystemCommandOptions (capture, lang, target)
 import Myo.Command.Data.Command (CommandLanguage (CommandLanguage))
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Data.CommandId (CommandId)
@@ -56,16 +55,14 @@ parseEcho file text' =
 
 addEchoCommand ::
   Member (Commands !! CommandError) r =>
-  Text ->
   [Text] ->
   Bool ->
   Handler r CommandId
-addEchoCommand runner lines' capture =
+addEchoCommand lines' capture =
   ident <$ myoAddSystemCommand opts
   where
     opts =
       (AddSystemCommandOptions.cons ident cmds) {
-        runner = Just (Str runner),
         target = Just "make",
         lang = Just echoLang,
         capture = Just capture

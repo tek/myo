@@ -10,6 +10,8 @@ import qualified Myo.Data.CommandQuery as CommandQuery
 import Myo.Data.CommandQuery (CommandQuery)
 
 data CommandError =
+  User Text
+  |
   Misc Text
   |
   NoSuchCommand CommandQuery
@@ -22,10 +24,12 @@ data CommandError =
   |
   NotAUiShell CommandId CommandId
   |
-  InvalidTemplateEdit Text Text
+  InvalidTemplate Bool Text Text
   deriving stock (Eq, Show)
 
 instance Reportable CommandError where
+  toReport (User err) =
+    Report err ["CommandError.User:", err] Error
   toReport (Misc err) =
     Report (pre <> " " <> err) [pre, err] Error
     where
@@ -53,8 +57,10 @@ instance Reportable CommandError where
         [exon|'#{shortIdent shell}' cannot be used as a shell for '#{shortIdent cmd}'|]
       log =
         ["CommandError.NotAUiShell:", [exon|cmd: #{commandIdText cmd}|], [exon|shell: #{commandIdText shell}|]]
-  toReport (InvalidTemplateEdit items err) =
+  toReport (InvalidTemplate edit extra err) =
     Report msg log Error
     where
-      msg = [exon|New command is invalid: #{err}|]
-      log = ["CommandError.InvalidTemplateEdit:", err, items]
+      msg = [exon|Parse error in#{new} command template: #{err}|]
+      new | edit = " new"
+          | otherwise = ""
+      log = ["CommandError.InvalidTemplate:", err, extra]

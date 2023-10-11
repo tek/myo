@@ -140,8 +140,13 @@ Its command line is `test:compile`, which is the text sent to `sbt`.
 * `lines` is a list of command lines that will be executed in tmux. For subprocess commands, only one line is valid.
 * `target` points to a pane or shell in which the command will be run.
 * `lang` is used to find the appropriate parser for command output. Currently supported: `scala`, `haskell`.
-* `runner` may be `tmux` or `proc` (simple subprocess).
 * `displayName` is an optional override for the text to be displayed to the user instead of the `ident`.
+* `skipHistory` is a boolean that excludes the command from the command history.
+* `kill` is a boolean that causes a running command to be killed when another one is run in the same target.
+* `capture` is a boolean that changes how the command's output is parsed.
+  If it is `true`, the currently visible output in a tmux pane is used; otherwise, the entire output since the start of
+  execution.
+* `maxLogBytes` is a number that limits the size of the stored output.
 
 ### Parameter interpolation
 
@@ -164,6 +169,8 @@ There are three variants of interpolations:
 
 Parameter values are determined from several sources, in decreasing order of precedence:
 
+* Overrides from edits in a menu.
+* Overrides from the command option callback.
 * The nvim function `Myo_param_<name>`.
   For example, for the param `{test_case}`, the function `Myo_param_test_case` is called.
 * The nvim variable `<scope>:myo_param_<name>` from the scopes `g:`, `t:`, `w:`, `b:` in that order.
@@ -187,6 +194,53 @@ This invocation will:
 
 Subsequent invocations will check the stored process ID and skip the second step if it is alive.
 
+### Per-invocation option overrides
+
+The command's options may be overridden by a Neovim callback.
+If the callback exists, **myo** will call it whenever `MyoRun` is executed.
+The functions name has the schema `MyoOverrides_<command-name>`, where the name is escaped by substituting
+non-alphanumerical characters by `_`.
+The name is either the command's `displayName` or, if that's undefined, its `ident`.
+For example, for a command named `some test-command`, the function name will be `MyoOverrides_some_test_command`.
+
+The user may return arbitrary command options from that function, in particular a command line and a set of
+interpolation parameter values.
+
+The purpose of this is to adapt options based on the current cursor context, to "run the test at the cursor position".
+A special Neovim command, `MyoTest`, uses an automatically created command to make this more explicit.
+
+The function must take an argument, which will contain the following data:
+
+```json
+{
+  "path": "/path/to/file",
+  "line": 5,
+  "col": 10
+}
+```
+
+These denote the position of the cursor.
+If the current buffer is not a file, the `path` attribute will be absent.
+The indexes are zero-based.
+
+The function's return value may either be a dict or a single command line string.
+
+If the `command` attribute is returned, the named command will be executed instead of the originally requested one.
+This is primarily useful for `MyoTest`.
+
+If `myo-test` isn't defined, a default configuration will be created.
+This command can be used to set a template string for all test executions that is dynamically changed by parameter
+values returned from `MyoTestOverrides`.
+
+The `lines` attribute, or the returned string, overrides the command's default template, which may contain interpolation
+placeholders that will be resolved as described above.
+
+If the `params` attribute is returned, it will be used to override the parameter values from the sources described
+above.
+
+If the `shell` attribute is returned, it will set the command by that name as the shell in which the test will run;
+otherwise, the `target` attribute may set the tmux pane target.
+
 ## MyoReRun
 
 This function allows you to run commands from the history.
@@ -196,11 +250,24 @@ For example, to run the previous command again:
 :MyoReRun 0
 ```
 
+## MyoTest
+
+This Neovim command/function runs the command `myo-test`, which will be created with default settings if the user didn't
+configure it.
+It will call the function `MyoTestOverrides` instead of the command name based function to determine the overrides.
+This is mere convenience to ensure that a command for running the cursor test is always available.
+
 ## MyoHistory
 
 This command displays the history in a scratch buffer with a prompt for substring searching.
 Selecting one of the entries with `<cr>` will rerun the command.
-The prompt starts in normal mode, where you can navigate with `j`/`k`, switch to insert mode with `i`, `a`, `I` and `A`, and abort with `q`, `<esc>` and `<c-c>`.
+The prompt starts in normal mode, where you can cycle through the history with `j`/`k`, run a command with `<cr>`,
+and abort with `<esc>` or `<c-c>`.
+
+Pressing `e` will change to a different view, in which each of the command lines and parameters will be listed.
+Pressing `<cr>` on one of them will load its value into the prompt, where it can be modified and written back with
+another press of `<cr>`.
+When you are satisfied with the edits, you can press `r` to run the command with the modified values.
 
 ## MyoCommands
 

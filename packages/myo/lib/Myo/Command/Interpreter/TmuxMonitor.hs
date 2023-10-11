@@ -31,7 +31,7 @@ import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
 import qualified Myo.Command.Effect.SocketReader as SocketReader
 import Myo.Command.Effect.SocketReader (ScopedSocketReader, SocketReader, socketReader)
-import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (TmuxMonitorTask, ident, pane, shellPid))
+import Myo.Command.Effect.TmuxMonitor (TmuxMonitor (Wait), TmuxMonitorTask (..))
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Data.ViewError (ViewError (TmuxApi, TmuxCodec))
 import Myo.Loop (useWhileJust)
@@ -58,9 +58,10 @@ sanitizeOutput =
 readOutput ::
   Members [SocketReader, CommandLog, Log] r =>
   CommandId ->
+  Maybe Int ->
   Sem r ()
-readOutput ident = do
-  useWhileJust SocketReader.chunk (CommandLog.append ident . sanitizeOutput)
+readOutput ident maxLogBytes = do
+  useWhileJust SocketReader.chunk (CommandLog.append ident maxLogBytes . sanitizeOutput)
   Log.debug [exon|Socket for '#{commandIdText ident}' has been closed|]
 
 waitBasic ::
@@ -135,7 +136,7 @@ interpretTmuxMonitor =
   interpretScopedResumableWith @'[SocketReader] withLog \ TmuxMonitorTask {..} -> \case
     Wait -> do
       startLog ident pane
-      race_ (readOutput ident) (waitBasic ident shellPid)
+      race_ (readOutput ident maxLogBytes) (waitBasic ident shellPid)
 
 interpretTmuxMonitorNoLog ::
   Members [ChronosTime, Executions, Log, Race] r =>

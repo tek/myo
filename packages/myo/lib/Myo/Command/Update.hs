@@ -30,23 +30,23 @@ updateCommands (CommandSettingCodec system shell) =
     createSystem :: AddSystemCommandOptions -> Command
     createSystem AddSystemCommandOptions {..} =
       (systemCommand target ident (CommandSpec lines (fold params))) {
-        Command.runner,
-        lang,
+        Command.lang,
         displayName,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,
         capture = orFalse capture,
+        maxLogBytes,
         commandShell = orFalse commandShell
       }
     createShell :: AddShellCommandOptions -> Command
     createShell AddShellCommandOptions {..} =
       (shellCommand target ident (CommandSpec lines (fold params))) {
-        Command.runner,
-        lang,
+        Command.lang,
         displayName,
         skipHistory = orFalse skipHistory,
         kill = orFalse kill,
-        capture = orFalse capture
+        capture = orFalse capture,
+        maxLogBytes
       }
 
 fetchCommands ::

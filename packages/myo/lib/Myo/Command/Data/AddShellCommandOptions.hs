@@ -1,6 +1,5 @@
 module Myo.Command.Data.AddShellCommandOptions where
 
-import Chiasma.Data.Ident (Ident)
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.Command (CommandLanguage)
@@ -15,12 +14,12 @@ data AddShellCommandOptions =
     ident :: CommandId,
     lines :: CommandTemplate,
     params :: Maybe ParamDefaults,
-    runner :: Maybe Ident,
     target :: CommandId,
     lang :: Maybe CommandLanguage,
     displayName :: Maybe CommandName,
     skipHistory :: Maybe Bool,
     kill :: Maybe Bool,
+    maxLogBytes :: Maybe Int,
     capture :: Maybe Bool
   }
   deriving stock (Eq, Show, Generic)
@@ -28,7 +27,7 @@ data AddShellCommandOptions =
 
 cons :: CommandId -> [Text] -> CommandId -> AddShellCommandOptions
 cons i l t =
-  AddShellCommandOptions i (parseCommandTemplate' l) Nothing Nothing t Nothing Nothing Nothing Nothing Nothing
+  AddShellCommandOptions i (parseCommandTemplate' l) Nothing t Nothing Nothing Nothing Nothing Nothing Nothing
 
 shellOptions :: CommandId -> [Text] -> CommandId -> AddShellCommandOptions
 shellOptions = cons

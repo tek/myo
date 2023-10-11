@@ -1,6 +1,5 @@
 module Myo.Command.Data.AddSystemCommandOptions where
 
-import Chiasma.Data.Ident (Ident)
 import Ribosome (MsgpackDecode, MsgpackEncode)
 
 import Myo.Command.Data.Command (CommandLanguage)
@@ -16,13 +15,13 @@ data AddSystemCommandOptions =
     ident :: CommandId,
     lines :: CommandTemplate,
     params :: Maybe ParamDefaults,
-    runner :: Maybe Ident,
     target :: Maybe UiTarget,
     lang :: Maybe CommandLanguage,
     displayName :: Maybe CommandName,
     skipHistory :: Maybe Bool,
     kill :: Maybe Bool,
     capture :: Maybe Bool,
+    maxLogBytes :: Maybe Int,
     commandShell :: Maybe Bool
   }
   deriving stock (Eq, Show, Generic)

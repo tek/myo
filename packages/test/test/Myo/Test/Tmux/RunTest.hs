@@ -15,7 +15,7 @@ import Chiasma.TmuxApi (TmuxApi)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust)
-import Ribosome (LogReport, SettingError, Settings, resumeReport)
+import Ribosome (LogReport, SettingError, Settings, resumeReport, Rpc, RpcError)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -54,12 +54,11 @@ setup =
   where
     cmd =
       systemOptions ident cmds
-      & #runner ?~ "tmux"
       & #target ?~ "make"
     cmds = ["echo '" <> line1 <> "'", "echo '" <> line2 <> "'"]
 
 runAndCheck ::
-  Members [DataLog LogReport, Hedgehog IO, Race, Embed IO] r =>
+  Members [Rpc !! RpcError, DataLog LogReport, Hedgehog IO, Race, Embed IO] r =>
   Members [NativeTmux, NativeCommandCodec !! CodecError, Stop CodecError] r =>
   Members [Controller !! RunError, Commands !! CommandError, Error TestError, Error Failure, ChronosTime] r =>
   Sem r ()

@@ -29,11 +29,13 @@ test-suite myo-test-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Myo.Test.Backend
       Myo.Test.Command
       Myo.Test.Command.CommandMenuTest
       Myo.Test.Command.CommandSpecTest
       Myo.Test.Command.HistoryMenuTest
       Myo.Test.Command.HistoryTest
+      Myo.Test.Command.TestTest
       Myo.Test.Command.UpdateTest
       Myo.Test.Command.VimTestTest
       Myo.Test.CompleteTest

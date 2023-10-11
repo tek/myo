@@ -1,7 +1,6 @@
 module Myo.Command.Data.Command where
 
 import qualified Chiasma.Data.Ident as Ident
-import Chiasma.Data.Ident (Ident)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import Exon (exon)
@@ -25,12 +24,12 @@ newtype CommandLanguage =
 
 json ''CommandLanguage
 
+-- TODO commandShell should probably be in CommandInterpreter.Shell
 data Command =
   Command {
     interpreter :: CommandInterpreter,
     ident :: CommandId,
     cmdLines :: CommandSpec,
-    runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
     displayName :: Maybe CommandName,
     skipHistory :: Bool,
@@ -51,7 +50,6 @@ instance Pretty Command where
 
       opt =
         catMaybes [
-          prettyRunner <$> runner,
           prettyLang <$> lang,
           prettyName <$> displayName,
           Just $ "skip history:" <+> pretty skipHistory,
@@ -60,7 +58,6 @@ instance Pretty Command where
           ]
 
       prettyIprt = "interpreter:" <+> pretty interpreter
-      prettyRunner r = "runner:" <+> pretty r
       prettyLines = nest 2 . vsep $ "lines:" : (pretty <$> renderTemplate cmdLines.template)
       prettyParams = nest 2 (vsep ("params:" : (pretty . renderParam <$> Map.toList cmdLines.params)))
       prettyLang (CommandLanguage a) = "language:" <+> pretty a
@@ -75,7 +72,6 @@ consSpec :: CommandInterpreter -> CommandId -> CommandSpec -> Command
 consSpec interpreter ident cmdLines =
   Command {
     cmdLines,
-    runner = Nothing,
     lang = Nothing,
     displayName = Nothing,
     skipHistory = False,

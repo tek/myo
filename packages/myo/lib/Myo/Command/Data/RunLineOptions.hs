@@ -11,7 +11,6 @@ data RunLineOptions =
     line :: Maybe CommandSpec,
     lines :: Maybe CommandSpec,
     target :: Maybe Ident,
-    runner :: Maybe Ident,
     lang :: Maybe CommandLanguage,
     skipHistory :: Maybe Bool,
     kill :: Maybe Bool,

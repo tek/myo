@@ -5,7 +5,7 @@ import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import Exon (exon)
-import Ribosome (MsgpackDecode, Rpc, RpcError, toMsgpack)
+import Ribosome (MsgpackDecode, Rpc, RpcError)
 import Ribosome.Api (nvimCallFunction)
 import Ribosome.Api.Variable (
   VariableError (VariableTypeMismatch),
@@ -15,6 +15,7 @@ import Ribosome.Api.Variable (
   )
 import qualified Ribosome.Host.Data.RpcError as RpcError
 
+import Myo.Api.Function (functionExists)
 import Myo.Command.Data.Param (
   DefinedParam (DefinedParam, UndefinedParam),
   DefinedParams,
@@ -45,7 +46,7 @@ resolveParamFun ::
   Text ->
   Sem r (DefinedParam a)
 resolveParamFun ptag name = do
-  resumeHoist RunError.Rpc (nvimCallFunction "exists" [toMsgpack [exon|*#{name}|]]) >>= \case
+  resumeHoist RunError.Rpc (functionExists name) >>= \case
     True -> DefinedParam <$> resumeHoist (resultError (Some ptag)) (nvimCallFunction name [])
     False -> pure UndefinedParam
 

@@ -11,7 +11,7 @@ import Ribosome.Data.SettingError (SettingError)
 import qualified Ribosome.Effect.Settings as Settings
 
 import qualified Myo.Command.Data.Command as Command
-import Myo.Command.Data.Command (Command, capture, displayName, lang, runner)
+import Myo.Command.Data.Command (Command, capture, displayName, lang)
 import Myo.Command.Data.CommandInterpreter (CommandInterpreter (Shell, System))
 import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.RunError as RunError (RunError (VimTest))
@@ -21,7 +21,7 @@ import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Data.CommandName (CommandName)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
-import Myo.Settings (testCapture, testLang, testPane, testParamDefaults, testRunner, testShell, vimTestFileNameModifier)
+import Myo.Settings (testCapture, testLang, testPane, testParamDefaults, testShell, vimTestFileNameModifier)
 
 testName :: CommandName
 testName = "<test>"
@@ -122,7 +122,6 @@ updateTestCommand ::
   Text ->
   Sem r Command
 updateTestCommand testLine = do
-  runner <- Settings.get testRunner
   shell <- Settings.maybe testShell
   target <- Settings.get testPane
   lang <- Settings.maybe testLang
@@ -130,7 +129,6 @@ updateTestCommand testLine = do
   params <- Settings.get testParamDefaults
   let interpreter = testInterpreter target shell
   pure $ Command.withParams params (Command.cons interpreter (testIdent testLine) [testLine]) {
-    runner = Just runner,
     displayName = Just testName,
     capture,
     lang

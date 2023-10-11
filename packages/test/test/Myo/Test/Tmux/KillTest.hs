@@ -56,8 +56,6 @@ test_tmuxKill =
     where
       cmd :: Command
       cmd =
-        (Command.cons (System (Just "make")) ident ["cat"]) {runner, kill = True}
+        (Command.cons (System (Just "make")) ident ["cat"]) {kill = True}
       ident =
         "cat"
-      runner =
-        Just "tmux"
