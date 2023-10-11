@@ -13,7 +13,7 @@ import Myo.Command.Data.CommandInterpreter (CommandInterpreter (..))
 import qualified Myo.Command.Data.CommandSpec
 import Myo.Command.Data.CommandSpec (CommandSpec, parseCommandSpec')
 import Myo.Command.Data.CommandTemplate (renderTemplate)
-import Myo.Command.Data.Param (ParamDefault, ParamId, renderParamDefault)
+import Myo.Command.Data.Param (ParamDefault, ParamDefaults, ParamId, renderParamDefault)
 import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Data.CommandId (CommandId (CommandId), commandIdText)
 import Myo.Data.CommandName (CommandName (CommandName))
@@ -89,6 +89,10 @@ consSpec interpreter ident cmdLines =
 cons :: CommandInterpreter -> CommandId -> [Text] -> Command
 cons interpreter ident cmdLines =
   consSpec interpreter ident (parseCommandSpec' cmdLines)
+
+withParams :: ParamDefaults -> Command -> Command
+withParams defs =
+  #cmdLines . #params .~ defs
 
 shortIdent :: CommandId -> Text
 shortIdent = \case

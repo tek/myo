@@ -21,7 +21,7 @@ import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Data.CommandName (CommandName)
 import qualified Myo.Effect.Controller as Controller
 import Myo.Effect.Controller (Controller)
-import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier)
+import Myo.Settings (testCapture, testLang, testPane, testRunner, testShell, vimTestFileNameModifier, testParamDefaults)
 
 testName :: CommandName
 testName = "<test>"
@@ -88,6 +88,7 @@ vimTestCallWrap ::
 vimTestCallWrap fun =
   nvimCallFunction ("MyoTest" <> fun)
 
+-- TODO can we call vim-test directly? I think this is just legacy
 assembleVimTestLine ::
   Member Rpc r =>
   VimTestPosition ->
@@ -126,8 +127,9 @@ updateTestCommand testLine = do
   target <- Settings.get testPane
   lang <- Settings.maybe testLang
   capture <- Settings.or False testCapture
+  params <- Settings.get testParamDefaults
   let interpreter = testInterpreter target shell
-  pure (Command.cons interpreter (testIdent testLine) [testLine]) {
+  pure $ Command.withParams params (Command.cons interpreter (testIdent testLine) [testLine]) {
     runner = Just runner,
     displayName = Just testName,
     capture,

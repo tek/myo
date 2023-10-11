@@ -8,6 +8,7 @@ import Time (Seconds)
 
 import Myo.Command.Data.Command (CommandLanguage)
 import Myo.Command.Data.CommandSettingCodec (CommandSettingCodec)
+import Myo.Command.Data.Param (ParamDefaults)
 import Myo.Command.Data.UiTarget (UiTarget)
 import Myo.Data.CommandId (CommandId)
 import Myo.Ui.Data.UiSettingCodec (UiSettingCodec)
@@ -79,6 +80,10 @@ testLang =
 testCapture :: Setting Bool
 testCapture =
   Setting "test_capture" True Nothing
+
+testParamDefaults :: Setting ParamDefaults
+testParamDefaults =
+  Setting "test_param_defaults" True (Just mempty)
 
 processTimeout :: Setting Int
 processTimeout =

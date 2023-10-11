@@ -245,20 +245,6 @@ To prevent this, set:
 let g:myo_default_commands = v:false
 ```
 
-## Haskell
-
-The commands `stack-build` and `stack-test` with `--fast --pedantic` are
-created, as well as their variants without `--pedantic` that are suffixed with
-`-lenient`.
-
-A pane at the bottom of the `make` layout is created for the command `ghci`.
-
-To prevent the stack commands from being created, set:
-
-```vim
-let g:myo_haskell_stack = v:false
-```
-
 [Neovim]: https://github.com/neovim/neovim
 [Haskell]: https://www.haskell.org
 [ribosome]: https://github.com/tek/ribosome
