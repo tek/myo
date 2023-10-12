@@ -10,21 +10,26 @@ import Ribosome.Menu (
   ModalState,
   ModalWindowMenus,
   deleteSelected,
+  menuOk,
   menuRenderIndex,
   menuState,
+  menuSuccess,
   staticWindowMenu,
   withFocus,
+  withFocus',
   withSelection',
   )
+import qualified Ribosome.Report as Report
 
 import Myo.Command.CommandMenu (cmdlineItem)
+import Myo.Command.CommandSpec (compileTemplateWithDefaults)
 import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import qualified Myo.Command.Data.HistoryEntry
-import Myo.Command.Data.HistoryEntry (HistoryEntry)
+import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry))
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Edit (EditItem, editHistoryEntry)
+import Myo.Command.Edit (EditItem, editHistoryEntry, editHistoryEntryCompiled)
 import Myo.Command.Run (reRunAsync)
 import Myo.Data.CommandId (CommandId)
 import Myo.Effect.Controller (Controller)
@@ -37,6 +42,8 @@ data HistoryAction =
   Delete (NonEmpty CommandId)
   |
   Edit CommandId
+  |
+  EditCompiled CommandId [Text]
   deriving stock (Eq, Show, Generic)
 
 historyItem :: HistoryEntry -> MenuItem CommandId
@@ -56,6 +63,7 @@ type HistoryMenuStack =
     History !! RunError,
     Settings !! SettingError,
     Rpc !! RpcError,
+    ReportLog,
     Log
   ]
 
@@ -72,6 +80,21 @@ edit :: MenuWidget (ModalState CommandId) r HistoryAction
 edit =
   withFocus \ i -> pure (Edit i)
 
+editCompiled ::
+  Members [History, ReportLog] r =>
+  MenuWidget (ModalState CommandId) r HistoryAction
+editCompiled =
+  withFocus' \ i -> do
+    History.queryId i >>= \case
+      HistoryEntry {execution = Just ExecutionParams {compiled}} ->
+        menuSuccess (EditCompiled i compiled)
+      HistoryEntry {command} ->
+        case compileTemplateWithDefaults command of
+          Right compiled -> menuSuccess (EditCompiled i compiled)
+          Left err -> do
+            Report.info "This command cannot be edited without parameters." ["Edit menu: Can't edit compiled", err]
+            menuOk
+
 historyMenu ::
   Members HistoryMenuStack r =>
   Members [Stop RunError, Stop RpcError] r =>
@@ -79,12 +102,10 @@ historyMenu ::
 historyMenu =
   restop @RunError @History do
     items <- mapStop RunError.Command historyItems
-    staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", delete), ("e", edit)]
+    staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", delete), ("e", edit), ("E", editCompiled)]
   where
-    opts =
-      def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
-    name =
-      "myo-history"
+    opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
+    name = "myo-history"
 
 -- TODO pretty sure the async part is from a time when the menu needed to be executed synchronously – the handler for
 -- MyoHistory is Async, so it should be fine to run the command sync
@@ -106,6 +127,8 @@ myoHistory =
         restop @RunError (History.remove idents)
       Success (Edit ident) ->
         editHistoryEntry ident
+      Success (EditCompiled ident cmdlines) ->
+        editHistoryEntryCompiled ident cmdlines
       Error err ->
         stop (CommandError.Misc err)
       Aborted ->

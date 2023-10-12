@@ -7,6 +7,8 @@ import Exon (exon)
 import Ribosome (Rpc, RpcError)
 
 import Myo.Command.CommandSpec.Resolve (paramNames, resolveParams, resolveParamsPure)
+import qualified Myo.Command.Data.Command
+import Myo.Command.Data.Command (Command (Command))
 import Myo.Command.Data.CommandSpec (CommandSpec (..))
 import Myo.Command.Data.CommandTemplate (
   CommandSegment (..),
@@ -16,6 +18,7 @@ import Myo.Command.Data.CommandTemplate (
 import Myo.Command.Data.Param (
   DefinedParam (DefinedParam, UndefinedParam),
   DefinedParams,
+  ParamDefault (ParamDefault),
   ParamId (..),
   ParamTag (ParamBool, ParamText),
   ParamValue (ParamFlag, ParamValue),
@@ -139,3 +142,7 @@ compileTemplateWith CommandTemplate {segments} params = do
     present = foldMap collectParams segments
 
     noParam (paramTagName -> name) = Left [exon|No value for '#{name}'|]
+
+compileTemplateWithDefaults :: Command -> Either Text [Text]
+compileTemplateWithDefaults Command {cmdLines = CommandSpec {template, params}} =
+  compileTemplateWith template (coerce params)

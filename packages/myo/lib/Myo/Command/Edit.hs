@@ -236,9 +236,6 @@ app =
     (onlyPrompt "<cr>", update)
   ]
 
--- TODO could have another mode triggered by a separate mapping in the history menu that doesn't include params and
--- operates only on the interpolated command
---
 -- TODO edit also runner and other options?
 editHistoryEntryMenu ::
   Members EditMenuStack r =>
@@ -258,4 +255,34 @@ editHistoryEntry ::
   Sem r ()
 editHistoryEntry cid = do
   (entry, result) <- editHistoryEntryMenu cid
+  handleAction entry result
+
+editCompiledItems :: [Text] -> [MenuItem EditItem]
+editCompiledItems cmdlines =
+  reverse (zipWith (cmdlineItem width single) [0..] cmdlines)
+  where
+    width | single = 7
+          | otherwise = 9
+    single = length cmdlines == 1
+
+editHistoryEntryCompiledMenu ::
+  Members EditMenuStack r =>
+  CommandId ->
+  [Text] ->
+  Sem r (HistoryEntry, MenuResult EditResult)
+editHistoryEntryCompiledMenu cid cmdlines = do
+  entry <- restop (History.queryId cid)
+  result <- staticWindowMenu (editCompiledItems cmdlines) def opts app
+  pure (entry, result)
+  where
+    opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
+    name = "myo-command-edit"
+
+editHistoryEntryCompiled ::
+  Members EditMenuStack r =>
+  CommandId ->
+  [Text] ->
+  Sem r ()
+editHistoryEntryCompiled cid cmdlines = do
+  (entry, result) <- editHistoryEntryCompiledMenu cid cmdlines
   handleAction entry result

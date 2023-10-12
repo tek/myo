@@ -14,6 +14,7 @@ data ExecutionParams =
 
 json ''ExecutionParams
 
+-- TODO after a few weeks, make ExecutionParams mandatory and create a json decoder that skips entries that lack them.
 data HistoryEntry =
   HistoryEntry {
     command :: Command,

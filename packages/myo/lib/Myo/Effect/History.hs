@@ -6,7 +6,7 @@ import Myo.Command.Data.HistoryEntry (HistoryEntry)
 import Myo.Command.Data.Param (ParamValues)
 import Myo.Data.CommandId (CommandId)
 import qualified Myo.Data.CommandQuery as CommandQuery
-import Myo.Data.CommandQuery (CommandQuery, CommandQueryDomain (QueryHistory))
+import Myo.Data.CommandQuery (CommandQuery)
 
 data History :: Effect where
   All :: History m [HistoryEntry]
@@ -23,7 +23,7 @@ queryId ::
   CommandId ->
   Sem r HistoryEntry
 queryId i =
-  query (CommandQuery.queryId i & #domain .~ QueryHistory)
+  query (CommandQuery.queryIdH i)
 
 queryCommand ::
   Member History r =>
