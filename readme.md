@@ -208,6 +208,8 @@ interpolation parameter values.
 
 The purpose of this is to adapt options based on the current cursor context, to "run the test at the cursor position".
 A special Neovim command, `MyoTest`, uses an automatically created command to make this more explicit.
+Importantly, this doesn't happen when the command is rerun from the history – the first invocation can lock in a certain
+position, to be repeated later without changing to the new position of the cursor.
 
 The function must take an argument, which will contain the following data:
 
@@ -215,7 +217,9 @@ The function must take an argument, which will contain the following data:
 {
   "path": "/path/to/file",
   "line": 5,
-  "col": 10
+  "col": 10,
+  "text": "content of the cursor line",
+  "cword": "result of expand('<cword>')"
 }
 ```
 

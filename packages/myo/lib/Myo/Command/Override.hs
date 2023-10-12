@@ -5,8 +5,8 @@ import Data.Char (isAlphaNum)
 import qualified Data.Text as Text
 import Exon (exon)
 import Path (Abs, File, Path)
-import Ribosome (MsgpackDecode, MsgpackEncode (..), Rpc)
-import Ribosome.Api (currentBufferPath, currentCursor)
+import Ribosome (MsgpackDecode, MsgpackEncode (..), Rpc, RpcError)
+import Ribosome.Api (currentBufferPath, currentCursor, nvimBufGetLines, nvimGetCurrentBuf, nvimCallFunction)
 
 import Myo.Api.Function (callIfExists)
 import qualified Myo.Command.Data.Command as Command
@@ -28,7 +28,9 @@ data TestPosition =
   TestPosition {
     path :: Maybe (Path Abs File),
     line :: Int,
-    col :: Int
+    col :: Int,
+    text :: Text,
+    cword :: Text
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackDecode, MsgpackEncode)
@@ -90,14 +92,19 @@ assembleOverriddenCommand defaultBase overrides = do
   pure (withOverrides overrides base)
 
 queryOverrides ::
-  Members [Commands, Stop CommandError, Rpc] r =>
+  Members [Commands, Stop CommandError, Rpc !! RpcError, Rpc] r =>
   Sem r Command ->
   Text ->
   Sem r (Command, ParamValues)
 queryOverrides base callback = do
   path <- currentBufferPath
   (lno, col) <- currentCursor
-  let pos = TestPosition path lno col
+  (text, cword) <- fold <$> resumeAs @RpcError Nothing do
+    buf <- nvimGetCurrentBuf
+    bufLine <- head <$> nvimBufGetLines buf lno (lno + 1) False
+    cword <- nvimCallFunction "expand" [toMsgpack ("<cword>" :: Text)]
+    pure (Just (fold bufLine, cword))
+  let pos = TestPosition path lno col text cword
   callIfExists callback [toMsgpack pos] >>= \case
     Just (Right overrides) -> do
       cmd <- assembleOverriddenCommand base overrides
@@ -128,7 +135,7 @@ overridesCallbackForId displayName cid = do
   pure [exon|MyoOverrides_#{Text.map escapeForNvim name}|]
 
 queryRegularOverrides ::
-  Members [Commands, Stop CommandError, Rpc] r =>
+  Members [Commands, Stop CommandError, Rpc !! RpcError, Rpc] r =>
   Command ->
   Sem r (Command, ParamValues)
 queryRegularOverrides base = do

@@ -40,7 +40,7 @@ emptyTestCmdline =
   " Either set a default for the command 'myo-test' or return it from 'MyoTestOverrides()'."
 
 runTest ::
-  Members [Controller, Commands, Rpc, Stop CommandError] r =>
+  Members [Controller, Commands, Rpc !! RpcError, Rpc, Stop CommandError] r =>
   Sem r ()
 runTest = do
   (cmd, params) <- queryOverrides baseCommand testCommandCallback
