@@ -189,7 +189,7 @@ runAction ::
 runAction command newParams action changed
   | Run <- action
   , changed
-  = runCommand command newParams
+  = runCommand command newParams Nothing
   | Run <- action
   = reRun (Left command.ident) (Just newParams)
   | otherwise

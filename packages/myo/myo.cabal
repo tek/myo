@@ -86,6 +86,8 @@ library
       Myo.Command.Interpreter.SocketReader
       Myo.Command.Interpreter.TmuxMonitor
       Myo.Command.Log
+      Myo.Command.Optparse
+      Myo.Command.Optparse.Tokens
       Myo.Command.Output
       Myo.Command.Override
       Myo.Command.Parse

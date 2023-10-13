@@ -15,7 +15,7 @@ import Chiasma.TmuxApi (TmuxApi)
 import Hedgehog.Internal.Property (Failure)
 import Polysemy.Chronos (ChronosTime)
 import Polysemy.Test (Hedgehog, TestError, UnitTest, assert, assertJust)
-import Ribosome (LogReport, SettingError, Settings, resumeReport, Rpc, RpcError)
+import Ribosome (Args (Args), LogReport, Rpc, RpcError, SettingError, Settings, resumeReport)
 import Ribosome.Test (assertWait, testHandler)
 
 import Myo.Command.Add (myoAddSystemCommand)
@@ -63,7 +63,7 @@ runAndCheck ::
   Members [Controller !! RunError, Commands !! CommandError, Error TestError, Error Failure, ChronosTime] r =>
   Sem r ()
 runAndCheck = do
-  testHandler (myoRun (commandIdText ident))
+  testHandler (myoRun (commandIdText ident) (Args ""))
   withTmux $ restop $ assertWait (cleanLines <$> capturePane (PaneId 1)) \ out -> do
     assert (elem line1 out)
     assert (elem line2 out)

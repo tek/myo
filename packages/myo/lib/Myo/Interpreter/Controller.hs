@@ -23,6 +23,7 @@ import qualified Myo.Command.Effect.CommandLog as CommandLog
 import Myo.Command.Effect.CommandLog (CommandLog)
 import qualified Myo.Command.Effect.Executions as Executions
 import Myo.Command.Effect.Executions (Executions)
+import Myo.Command.Optparse (OptparseArgs)
 import Myo.Command.Proc (waitForShell)
 import Myo.Command.RunTask (runTask)
 import Myo.Data.CommandId (CommandId (CommandId), commandIdText)
@@ -71,7 +72,7 @@ runShellAsync ::
   Sem r ()
 runShellAsync shellCmd =
   void $ async $ reportStop @RunError do
-    runCommand shellCmd mempty
+    runCommand shellCmd mempty Nothing
 
 prepare ::
   Member (Stop RunError) r =>
@@ -97,10 +98,11 @@ runCommand ::
   Member (Stop RunError) r =>
   Command ->
   ParamValues ->
+  Maybe OptparseArgs ->
   Sem r ()
-runCommand cmd@Command {ident} params = do
+runCommand cmd@Command {ident} params optparseArgs = do
   Log.debug [exon|Running #{show cmd}|]
-  task <- resumeHoist RunError.Command (runTask cmd params)
+  task <- resumeHoist RunError.Command (runTask cmd params optparseArgs)
   CommandLog.archive ident
   prepare task
   restop (History.push cmd (CommandId task.ident) task.params task.compiled)
@@ -114,7 +116,7 @@ captureOutput ::
   Sem r ()
 captureOutput ident = do
   cmd <- Commands.queryIdBoth ident
-  task <- runTask cmd mempty
+  task <- runTask cmd mempty Nothing
   restop (Backend.captureOutput task)
 
 handleErrors ::
@@ -132,9 +134,9 @@ interpretController ::
   InterpreterFor (Controller !! RunError) r
 interpretController =
   interpretResumable \case
-    RunCommand cmd params ->
+    RunCommand cmd params optparseArgs ->
       handleErrors do
-        runCommand cmd params
+        runCommand cmd params optparseArgs
     CaptureOutput ident ->
       mapStop RunError.Command $ restop @RunError @History $ restop @CommandError @Commands do
         captureOutput ident

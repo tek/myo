@@ -67,6 +67,8 @@ data RunError =
   BadParamValue (Some ParamTag) (Maybe RpcError)
   |
   ParamFunError (Some ParamTag) RpcError
+  |
+  Optparse Text
   deriving stock (Show)
 
 instance Reportable RunError where
@@ -162,5 +164,10 @@ instance Reportable RunError where
   toReport (ParamFunError (Some ptag) err) =
     Report [exon|The function for command parameter '#{name}' failed: #{rpcError err}|] log Error
     where
-      log = ["RunErroParamFunError:", name, rpcError err]
+      log = ["RunError.ParamFunError:", name, rpcError err]
       name = paramTagName ptag
+
+  toReport (Optparse err) =
+    Report err log Error
+    where
+      log = ["RunError.Optparse:", err]

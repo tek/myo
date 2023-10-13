@@ -25,6 +25,8 @@ import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunLineOptions (RunLineOptions (RunLineOptions), line)
 import Myo.Command.Data.UiTarget (UiTarget (UiTarget))
+import qualified Myo.Command.Optparse as Optparse
+import Myo.Command.Optparse (OptparseArgs)
 import Myo.Command.Override (queryRegularOverrides)
 import Myo.Data.CommandId (CommandId (CommandId))
 import Myo.Data.CommandQuery (queryAny, queryId, queryIdH, queryIndex)
@@ -52,7 +54,7 @@ runIdent ::
 runIdent ident params =
   resumeReport @Controller $ resumeReport @Commands do
     cmd <- Commands.queryId ident
-    Controller.runCommand cmd params
+    Controller.runCommand cmd params Nothing
 
 runIdentAsync ::
   Members [Controller !! RunError, Commands !! CommandError, Async, ReportLog] r =>
@@ -66,10 +68,11 @@ runCommand ::
   Members [Controller !! RunError, Stop Report] r =>
   Command ->
   ParamValues ->
+  Maybe OptparseArgs ->
   Sem r ()
-runCommand cmd params =
+runCommand cmd params optparseArgs =
   resumeReport @Controller do
-    Controller.runCommand cmd params
+    Controller.runCommand cmd params optparseArgs
 
 runCommandAsync ::
   Members [Controller !! RunError, Commands !! CommandError, Async, ReportLog] r =>
@@ -77,17 +80,18 @@ runCommandAsync ::
   ParamValues ->
   Sem r ()
 runCommandAsync ident params =
-  runAsync (runCommand ident params)
+  runAsync (runCommand ident params Nothing)
 
 myoRun ::
   Members [Controller !! RunError, Commands !! CommandError, Rpc !! RpcError] r =>
   Text ->
+  Args ->
   Handler r ()
-myoRun ident =
+myoRun ident args =
   resumeReports @[Commands, Rpc] @[_, _] do
     base <- Commands.query (queryAny (Text.strip ident))
     (cmd, params) <- mapReport (queryRegularOverrides base)
-    runCommand cmd params
+    runCommand cmd params (Optparse.fromArgs args)
 
 lookupHistory ::
   Member History r =>
@@ -96,6 +100,7 @@ lookupHistory ::
 lookupHistory =
   History.query . either queryIdH queryIndex
 
+-- TODO support optparse
 reRun ::
   Members [Controller !! RunError, History !! RunError, Stop Report] r =>
   Either CommandId Int ->
@@ -104,7 +109,7 @@ reRun ::
 reRun target params =
   resumeReport @Controller do
     entry <- resumeReport @History (lookupHistory target)
-    Controller.runCommand entry.command (maybe (fold params) (.params) entry.execution)
+    Controller.runCommand entry.command (maybe (fold params) (.params) entry.execution) Nothing
 
 reRunAsync ::
   Members [Controller !! RunError, History !! RunError, Async, ReportLog] r =>
@@ -142,7 +147,7 @@ myoLine (RunLineOptions mayLine mayLines mayTarget lang skipHistory kill capture
     ident <- CommandId <$> input
     lines' <- stopNote RunError.NoLinesSpecified (mayLines <|> mayLine)
     target <- maybe (pure (Right defaultTarget)) findTarget mayTarget
-    Controller.runCommand (cmd ident target lines') mempty
+    Controller.runCommand (cmd ident target lines') mempty Nothing
   where
     cmd ident target cmdLines =
       (cons target ident cmdLines) {

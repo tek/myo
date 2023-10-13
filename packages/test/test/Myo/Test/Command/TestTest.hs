@@ -29,7 +29,7 @@ testCommandTest = do
   nvimSetVar "myo_param_par6" True
   defineFunction "Myo_param_par2" [] ["return 'fun value 2'"]
   defineFunction "MyoTestOverrides" ["meta"] [[exon|return { 'lines': '#{line}', 'params': { #{testParams} } }|]]
-  resumeTestError @Controller $ resumeTestError @Commands $ testError runTest
+  resumeTestError @Controller $ resumeTestError @Commands $ testError (runTest Nothing)
   where
     testParams = [exon|'par3': 'test-par-3', 'par5': v:true |]
 
@@ -53,5 +53,5 @@ test_testCommandDefault =
 test_testCommandEmpty :: UnitTest
 test_testCommandEmpty =
   myoTest $ interpretBackendDummySingleLine $ interpretControllerTransient [] do
-    result <- resumeTestError @Controller $ resumeTestError @Commands $ runStop runTest
+    result <- resumeTestError @Controller $ resumeTestError @Commands $ runStop (runTest Nothing)
     assertLeft (CommandError.User emptyTestCmdline) result

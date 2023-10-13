@@ -64,6 +64,9 @@ testConfig ::
 testConfig (HostConfig conf) =
   TestConfig False (PluginConfig "myo" (HostConfig conf { dataLogConc = False }) unit)
 
+type MyoTestStackWith r =
+  (r ++ MyoStack) ++ EmbedHandlerStack
+
 type MyoTestStack =
   MyoStack ++ EmbedHandlerStack
 

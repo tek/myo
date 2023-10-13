@@ -1,10 +1,13 @@
 module Myo.Test.RunTest where
 
+import qualified Conc
+import Exon (exon)
 import Log (Severity (Warn))
 import Polysemy.Test (UnitTest, assertLeft)
-import Ribosome (Report (Report))
-import Ribosome.Api (defineFunction, nvimSetVar)
+import Ribosome (Execution (Sync), Report (Report), rpcCommand)
+import Ribosome.Api (defineFunction, nvimCommand, nvimSetVar)
 import Ribosome.Test (testHandler)
+import Time (Seconds (Seconds))
 
 import Myo.Command.Add (myoAddSystemCommand)
 import Myo.Command.Data.AddSystemCommandOptions (AddSystemCommandOptions, systemOptions)
@@ -12,11 +15,12 @@ import Myo.Command.Data.CommandSpec (parseCommandSpec')
 import Myo.Command.Data.Param (ParamDefault (ParamDefault), ParamId, ParamValue (ParamFlag))
 import Myo.Command.Data.RunLineOptions (line)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
-import Myo.Command.Run (myoLine, runIdent)
-import Myo.Data.CommandId (CommandId)
+import Myo.Command.Run (myoLine, myoRun, runIdent)
+import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Test.Backend (checkReport, interpretBackendDummy, interpretBackendDummySingleLine, testError)
 import Myo.Test.Embed (myoTest)
+import Myo.Test.Handler (myoTestHandlers)
 
 ident :: CommandId
 ident =
@@ -60,7 +64,7 @@ paramCommand =
   systemOptions ident [line]
   & #params ?~ paramDefaults
   where
-    line = "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5?bool value 1}{par6?bool value 2}"
+    line = "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5? / bool value 1}{par6? / bool value 2}"
 
 test_runParamCommand :: UnitTest
 test_runParamCommand =
@@ -71,4 +75,19 @@ test_runParamCommand =
       nvimSetVar "myo_param_par6" True
       defineFunction "Myo_param_par2" [] ["return 'fun value 2'"]
       runIdent ident mempty
-    checkReport ["cmd: var value 1 / sub (var value 1) (fun value 2) / default value 3 / bool value 2"]
+    checkReport ["cmd: var value 1 / sub (var value 1) (fun value 2) / default value 3 /  / bool value 2"]
+
+test_runParamCommandOptparse :: UnitTest
+test_runParamCommandOptparse = do
+  let
+    extra = interpretBackendDummySingleLine . interpretControllerTransient []
+    handlers = [rpcCommand "MyoRun" Sync myoRun]
+  myoTestHandlers @[_, _, _] extra handlers do
+    testHandler do
+      myoAddSystemCommand paramCommand
+      nvimSetVar @Text "myo_param_par1" "var value 1"
+      nvimSetVar "myo_param_par6" True
+      defineFunction "Myo_param_par2" [] ["return 'fun value 2'"]
+      Conc.timeout_ (throw "MyoRun command timed out") (Seconds 3) do
+        nvimCommand [exon|MyoRun #{commandIdText ident} --par1=par1-opt --par2='par2 " opt' --par4="par4 ' op"t --par5|]
+    checkReport [[exon|cmd: par1-opt / sub (par1-opt) (par2 " opt) / default value 3 / par4 ' opt / bool value 1 / bool value 2|]]

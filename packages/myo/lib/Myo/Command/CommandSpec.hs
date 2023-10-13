@@ -28,6 +28,7 @@ import Myo.Command.Data.Param (
   )
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Optparse (OptparseArgs, optparseParams)
 
 foldParams ::
   ∀ m a .
@@ -112,10 +113,12 @@ compileCommandSpec ::
   ∀ r .
   Members [Rpc !! RpcError, Stop RunError] r =>
   ParamValues ->
+  Maybe OptparseArgs ->
   CommandSpec ->
   Sem r (Map ParamId ParamValue, [Text])
-compileCommandSpec overrides CommandSpec {template = CommandTemplate {segments}, params} = do
-  definedParams <- resolveParams params overrides present
+compileCommandSpec overrides optparseArgs CommandSpec {template = CommandTemplate {segments}, params} = do
+  optparseOverrides <- traverse (stopEitherWith RunError.Optparse . optparseParams present) optparseArgs
+  definedParams <- resolveParams params (overrides <> fold optparseOverrides) present
   let
     lookup :: ∀ x . ParamTag x -> Sem r (DefinedParam x)
     lookup ptag = internalError (DMap.lookup ptag definedParams)

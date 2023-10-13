@@ -1,6 +1,6 @@
 module Myo.Command.Test where
 
-import Ribosome (Handler, Rpc, RpcError, mapReport, resumeReports)
+import Ribosome (Args, Handler, Rpc, RpcError, mapReport, resumeReports)
 
 import qualified Myo.Command.Data.Command as Command
 import Myo.Command.Data.Command (Command)
@@ -10,6 +10,8 @@ import Myo.Command.Data.CommandInterpreter (CommandInterpreter (System))
 import qualified Myo.Command.Data.CommandSpec
 import qualified Myo.Command.Data.CommandTemplate
 import Myo.Command.Data.RunError (RunError)
+import qualified Myo.Command.Optparse as Optparse
+import Myo.Command.Optparse (OptparseArgs)
 import Myo.Command.Override (queryOverrides)
 import Myo.Data.CommandId (CommandId)
 import Myo.Data.CommandQuery (queryId)
@@ -41,15 +43,18 @@ emptyTestCmdline =
 
 runTest ::
   Members [Controller, Commands, Rpc !! RpcError, Rpc, Stop CommandError] r =>
+  Maybe OptparseArgs ->
   Sem r ()
-runTest = do
+runTest optparseArgs = do
   (cmd, params) <- queryOverrides baseCommand testCommandCallback
   case cmd.cmdLines.template.rendered of
     [] -> stop (CommandError.User emptyTestCmdline)
-    _ -> Controller.runCommand cmd params
+    _ -> Controller.runCommand cmd params optparseArgs
 
 myoTest ::
   Members [Controller !! RunError, Commands !! CommandError, Rpc !! RpcError] r =>
+  Args ->
   Handler r ()
-myoTest = do
-  resumeReports @[Controller, Commands, Rpc] @[_, _, _] $ mapReport @CommandError runTest
+myoTest args = do
+  resumeReports @[Controller, Commands, Rpc] @[_, _, _] $ mapReport @CommandError do
+    runTest (Optparse.fromArgs args)

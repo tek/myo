@@ -245,6 +245,17 @@ above.
 If the `shell` attribute is returned, it will set the command by that name as the shell in which the test will run;
 otherwise, the `target` attribute may set the tmux pane target.
 
+### CLI style overrides
+
+The commands `MyoRun` and `MyoTest` allow an additional method for parameter overrides – CLI arguments:
+
+```vim
+MyoRun compile --debug=on --name='test name' --fast
+```
+
+These have the highest precedence.
+The `--param=value` variant works for string arguments, while `--flag` enables booleans.
+
 ## MyoReRun
 
 This function allows you to run commands from the history.

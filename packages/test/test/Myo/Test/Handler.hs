@@ -2,38 +2,55 @@ module Myo.Test.Handler where
 
 import Log (Severity (Debug, Trace))
 import Polysemy.Test (UnitTest)
-import Ribosome (HostConfig, RpcHandler, mapReport, setStderr)
-import Ribosome.Host.Interpreter.Handlers (withHandlers)
-import Ribosome.Test (testPluginConf, testPluginEmbed)
+import Ribosome (HostConfig, RpcHandler, mapReport, setStderr, withHandlers)
+import Ribosome.Host.Interpret (HigherOrder)
+import Ribosome.Test (EmbedHandlerStack, testPluginConf, testPluginEmbed)
 import Ribosome.Test.EmbedTmux (HandlerStack)
 
 import Myo.Plugin (MyoStack)
-import Myo.Test.Run (MyoTest, MyoTestStack, MyoTmuxTest, interpretMyoTestStack, runMyoTmuxTestStack, testConfig)
+import Myo.Test.Run (
+  MyoTestStack,
+  MyoTestStackWith,
+  MyoTestWith,
+  MyoTmuxTest,
+  interpretMyoTestStack,
+  runMyoTmuxTestStack,
+  testConfig,
+  )
 
 myoTestHandlersConf ::
+  ∀ r .
   HasCallStack =>
+  HigherOrder (r ++ MyoStack) EmbedHandlerStack =>
   HostConfig ->
-  [RpcHandler MyoTestStack] ->
-  Sem MyoTest () ->
+  (∀ x . Sem (MyoTestStackWith r) x -> Sem MyoTestStack x) ->
+  [RpcHandler (MyoTestStackWith r)] ->
+  Sem (MyoTestWith r) () ->
   UnitTest
-myoTestHandlersConf conf handlers =
-  testPluginConf @MyoStack (testConfig conf) interpretMyoTestStack handlers
+myoTestHandlersConf conf extra handlers =
+  testPluginConf @(r ++ MyoStack) (testConfig conf) (interpretMyoTestStack . extra) handlers
 
 myoTestHandlers ::
+  ∀ r .
   HasCallStack =>
-  [RpcHandler MyoTestStack] ->
-  Sem MyoTest () ->
+  HigherOrder (r ++ MyoStack) EmbedHandlerStack =>
+  (∀ x . Sem (MyoTestStackWith r) x -> Sem MyoTestStack x) ->
+  [RpcHandler (MyoTestStackWith r)] ->
+  Sem (MyoTestWith r) () ->
   UnitTest
 myoTestHandlers =
-  myoTestHandlersConf def
+  myoTestHandlersConf @r def
 
 myoTestHandlersDebug ::
+  ∀ r .
   HasCallStack =>
-  [RpcHandler MyoTestStack] ->
-  Sem MyoTest () ->
+  HigherOrder (r ++ MyoStack) EmbedHandlerStack =>
+  (∀ x . Sem (MyoTestStackWith r) x -> Sem MyoTestStack x) ->
+  [RpcHandler (MyoTestStackWith r)] ->
+  Sem (MyoTestWith r) () ->
   UnitTest
 myoTestHandlersDebug =
-  myoTestHandlersConf (setStderr Debug def)
+  myoTestHandlersConf @r (setStderr Debug def)
 
 type MyoTmuxHandlerTestStack =
   MyoStack ++ HandlerStack
