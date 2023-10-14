@@ -1,6 +1,5 @@
 module Myo.Command.CommandMenu where
 
-import qualified Data.Text as Text
 import Exon (exon)
 import Ribosome (Handler, ReportLog, Rpc, RpcError, ScratchId (ScratchId), mapReports, resumeReports, scratch)
 import Ribosome.Menu (
@@ -33,7 +32,7 @@ cmdlineItem idOverride command compiled =
 
     menuItemText = [exon|[#{Command.describe command}] #{cmdlineDisplay}|]
 
-    cmdlineDisplay = Text.take 100 (fromMaybe "<no command line>" (head cmdline))
+    cmdlineDisplay = fromMaybe "<no command line>" (head cmdline)
 
     cmdline = fromMaybe (renderCommandSpec command.cmdLines) compiled
 
