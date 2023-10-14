@@ -5,7 +5,7 @@ import Data.Char (isAlphaNum)
 import qualified Data.Text as Text
 import Exon (exon)
 import Path (stripProperPrefix)
-import Ribosome (MsgpackDecode, MsgpackEncode (..), Rpc, RpcError)
+import Ribosome (MsgpackDecode, MsgpackEncode (..), Rpc, RpcError, rpcError)
 import Ribosome.Api (currentBufferPath, currentCursor, nvimBufGetLines, nvimCallFunction, nvimCwd, nvimGetCurrentBuf)
 import Ribosome.Host.Path (pathText)
 
@@ -117,7 +117,7 @@ queryOverrides base callback = do
   let
     rel = foldMap pathText (stripProperPrefix cwd =<< path)
     pos = TestPosition (maybe (pathText cwd) pathText path) rel lno col text cword
-  callIfExists callback [toMsgpack pos] >>= \case
+  resumeHoist callbackFailure (callIfExists callback [toMsgpack pos]) >>= \case
     Just (Right (Right overrides)) -> do
       cmd <- assembleOverriddenCommand base overrides
       pure (cmd, fold overrides.params)
@@ -130,6 +130,8 @@ queryOverrides base callback = do
     Nothing -> do
       cmd <- base
       pure (cmd, mempty)
+  where
+    callbackFailure err = CommandError.User [exon|#{callback} failed: #{rpcError err}|]
 
 overridesCallbackSuffix :: Maybe CommandName -> CommandId -> Maybe Text
 overridesCallbackSuffix (Just (CommandName name)) _ = Just name
