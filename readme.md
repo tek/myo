@@ -216,6 +216,7 @@ The function must take an argument, which will contain the following data:
 ```json
 {
   "path": "/path/to/file",
+  "rel": "relative/path/to/file",
   "line": 5,
   "col": 10,
   "text": "content of the cursor line",
@@ -224,7 +225,8 @@ The function must take an argument, which will contain the following data:
 ```
 
 These denote the position of the cursor.
-If the current buffer is not a file, the `path` attribute will be absent.
+If the current buffer is not a file, the `path` attribute will contain Neovim's current working directory and `rel` will
+be empty.
 The indexes are zero-based.
 
 The function's return value may either be a dict or a single command line string.

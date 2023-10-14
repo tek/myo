@@ -4,9 +4,10 @@ import qualified Chiasma.Data.Ident as Ident
 import Data.Char (isAlphaNum)
 import qualified Data.Text as Text
 import Exon (exon)
-import Path (Abs, File, Path)
+import Path (stripProperPrefix)
 import Ribosome (MsgpackDecode, MsgpackEncode (..), Rpc, RpcError)
-import Ribosome.Api (currentBufferPath, currentCursor, nvimBufGetLines, nvimGetCurrentBuf, nvimCallFunction)
+import Ribosome.Api (currentBufferPath, currentCursor, nvimBufGetLines, nvimCallFunction, nvimCwd, nvimGetCurrentBuf)
+import Ribosome.Host.Path (pathText)
 
 import Myo.Api.Function (callIfExists)
 import qualified Myo.Command.Data.Command as Command
@@ -26,7 +27,8 @@ import Myo.Effect.Commands (Commands)
 
 data TestPosition =
   TestPosition {
-    path :: Maybe (Path Abs File),
+    path :: Text,
+    relative :: Text,
     line :: Int,
     col :: Int,
     text :: Text,
@@ -97,6 +99,7 @@ queryOverrides ::
   Text ->
   Sem r (Command, ParamValues)
 queryOverrides base callback = do
+  cwd <- nvimCwd
   path <- currentBufferPath
   (lno, col) <- currentCursor
   (text, cword) <- fold <$> resumeAs @RpcError Nothing do
@@ -104,7 +107,9 @@ queryOverrides base callback = do
     bufLine <- head <$> nvimBufGetLines buf lno (lno + 1) False
     cword <- nvimCallFunction "expand" [toMsgpack ("<cword>" :: Text)]
     pure (Just (fold bufLine, cword))
-  let pos = TestPosition path lno col text cword
+  let
+    rel = foldMap pathText (stripProperPrefix cwd =<< path)
+    pos = TestPosition (maybe (pathText cwd) pathText path) rel lno col text cword
   callIfExists callback [toMsgpack pos] >>= \case
     Just (Right overrides) -> do
       cmd <- assembleOverriddenCommand base overrides
