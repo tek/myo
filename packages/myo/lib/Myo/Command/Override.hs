@@ -28,7 +28,7 @@ import Myo.Effect.Commands (Commands)
 data TestPosition =
   TestPosition {
     path :: Text,
-    relative :: Text,
+    rel :: Text,
     line :: Int,
     col :: Int,
     text :: Text,
