@@ -54,6 +54,13 @@ data Overrides =
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackDecode, MsgpackEncode)
 
+data ErrorResponse =
+  ErrorResponse {
+    error :: Text
+  }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (MsgpackDecode, MsgpackEncode)
+
 override :: Traversal' Command a -> Maybe a -> Command -> Command
 override lens = \case
   Just a -> lens .~ a
@@ -111,9 +118,11 @@ queryOverrides base callback = do
     rel = foldMap pathText (stripProperPrefix cwd =<< path)
     pos = TestPosition (maybe (pathText cwd) pathText path) rel lno col text cword
   callIfExists callback [toMsgpack pos] >>= \case
-    Just (Right overrides) -> do
+    Just (Right (Right overrides)) -> do
       cmd <- assembleOverriddenCommand base overrides
       pure (cmd, fold overrides.params)
+    Just (Right (Left (ErrorResponse err))) -> do
+      stop (CommandError.User [exon|#{callback} aborted: #{err}|])
     Just (Left line) -> do
       spec <- stopEitherWith (CommandError.InvalidTemplate False line) (parseCommandSpec (Left line))
       cmd <- base
