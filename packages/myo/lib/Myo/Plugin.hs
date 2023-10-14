@@ -123,6 +123,7 @@ import Myo.Ui.Default (detectDefaultUi)
 import Myo.Ui.Focus (myoFocus)
 import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
 import Myo.Ui.Update (updateUi)
+import Myo.Command.Test (myoTest)
 
 type MyoStack =
   [
@@ -184,6 +185,8 @@ handlers =
   rpc "MyoReRun" Async myoReRun
   <>
   rpc "MyoLine" Async myoLine
+  <>
+  rpc "MyoTest" Async myoTest
   <>
   rpc "MyoVimTest" Async myoVimTest
   <>
