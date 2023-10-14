@@ -64,7 +64,7 @@ paramCommand =
   systemOptions ident [line]
   & #params ?~ paramDefaults
   where
-    line = "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5? / bool value 1}{par6? / bool value 2}"
+    line = "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5? / bool value 1}{par6? / bool value 2}{par7:optional {par7}}"
 
 test_runParamCommand :: UnitTest
 test_runParamCommand =

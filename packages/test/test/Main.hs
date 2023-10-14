@@ -22,7 +22,13 @@ import Myo.Test.Output.SanitizeTest (test_sanitize)
 import Myo.Test.Output.ScalaRenderTest (test_scalaRender)
 import Myo.Test.Output.SelectTest (test_outputSelect)
 import Myo.Test.ProcTest (test_proc)
-import Myo.Test.RunTest (test_runLineSingle, test_runParamCommand, test_runSubprocFail, test_runSystem)
+import Myo.Test.RunTest (
+  test_runLineSingle,
+  test_runParamCommand,
+  test_runParamCommandOptparse,
+  test_runSubprocFail,
+  test_runSystem,
+  )
 import Myo.Test.SaveTest (test_save)
 import Myo.Test.Tmux.CommandLogTest (test_tmuxTruncCommandLog)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
@@ -54,6 +60,7 @@ tests =
         unitTest "single ad-hoc cmdline" test_runLineSingle,
         unitTest "failing command with the subproc runner" test_runSubprocFail,
         unitTest "command with parameters" test_runParamCommand,
+        unitTest "test command with optparse args" test_runParamCommandOptparse,
         unitTest "test command" test_testCommand,
         unitTest "test command with custom command with defaults" test_testCommandDefault
       ],

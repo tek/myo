@@ -35,7 +35,7 @@ foldParams ::
   Monad m =>
   Monoid a =>
   (Text -> m a) ->
-  (∀ x . a -> ParamTag x -> ParamSegment x -> m a) ->
+  (∀ x . m a -> ParamTag x -> ParamSegment x -> m a) ->
   NonEmpty CommandSegment ->
   m a
 foldParams lit f =
@@ -46,9 +46,7 @@ foldParams lit f =
 
     segment = \case
       SegmentLit t -> lit t
-      SegmentParam pid sub -> do
-        s <- paramSub sub
-        f s pid sub
+      SegmentParam pid sub -> f (paramSub sub) pid sub
 
     paramSub :: ParamSegment x -> m a
     paramSub = \case
@@ -60,7 +58,7 @@ foldParams lit f =
 collectParams :: NonEmpty CommandSegment -> DefinedParams
 collectParams =
   DMap.fromList . runIdentity . foldParams (pure mempty) \ res (paramTagName -> pid) sub ->
-    pure (param pid sub : res)
+    pure (param pid sub : runIdentity res)
   where
     param pid = \case
       ParamFlagTemplate _ -> ParamBool pid :=> UndefinedParam
@@ -78,7 +76,7 @@ compileParam ::
   Monad m =>
   (∀ y . ParamTag y -> m (DefinedParam y)) ->
   (∀ y a . ParamTag y -> m a) ->
-  Text ->
+  m Text ->
   ParamTag x ->
   ParamSegment x ->
   m Text
@@ -90,9 +88,9 @@ compileParam lookup noParam sub ptag seg = do
     (ParamOptional, UndefinedParam) -> pure ""
     (ParamOptional, DefinedParam t) -> pure t
     (ParamTemplate _, UndefinedParam) -> pure ""
-    (ParamTemplate _, DefinedParam _) -> pure sub
+    (ParamTemplate _, DefinedParam _) -> sub
     (ParamFlagTemplate _, UndefinedParam) -> pure ""
-    (ParamFlagTemplate _, DefinedParam True) -> pure sub
+    (ParamFlagTemplate _, DefinedParam True) -> sub
     (ParamFlagTemplate _, DefinedParam False) -> pure ""
 
 toValues :: DefinedParams -> Map ParamId ParamValue
