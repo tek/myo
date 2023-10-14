@@ -92,7 +92,7 @@ cmdlineItem :: Int -> Bool -> Int -> Text -> MenuItem EditItem
 cmdlineItem width single index cline =
   MenuItem (Cmdline index cline) text [text]
   where
-    text = [exon| 🟢 #{padding}#{desc}: ##{cline}|]
+    text = [exon| ✏️ #{padding}#{desc}: ##{cline}|]
     padding = Text.replicate (max 0 (width - Text.length desc)) " "
     desc = [exon|cmdline#{indexIndicator}|]
     indexIndicator | single = ""
