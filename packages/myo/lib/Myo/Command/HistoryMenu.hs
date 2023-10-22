@@ -17,6 +17,7 @@ import Ribosome.Menu (
   staticWindowMenu,
   withFocus,
   withFocus',
+  withInsert,
   withSelection',
   )
 import qualified Ribosome.Report as Report
@@ -102,10 +103,18 @@ historyMenu ::
 historyMenu =
   restop @RunError @History do
     items <- mapStop RunError.Command historyItems
-    staticWindowMenu items def opts [("<cr>", withFocus (pure . Run)), ("d", delete), ("e", edit), ("E", editCompiled)]
+    staticWindowMenu items def opts actions
   where
     opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
     name = "myo-history"
+
+    actions =
+      [
+        (withInsert "<cr>", withFocus (pure . Run)),
+        ("d", delete),
+        ("e", edit),
+        ("E", editCompiled)
+      ]
 
 -- TODO pretty sure the async part is from a time when the menu needed to be executed synchronously – the handler for
 -- MyoHistory is Async, so it should be fine to run the command sync
