@@ -78,5 +78,5 @@ eventReport (NixEvent loc messageText) =
       LangOutputEvent (OutputEventMeta (Just loc) 0)
 
 nixReport :: Vector NixEvent -> Either OutputError ParsedOutput
-nixReport =
-  fmap (ParsedOutput nixSyntax . parsedOutputCons formatReportLine) <$> traverse eventReport
+nixReport events =
+  ParsedOutput nixSyntax . parsedOutputCons formatReportLine <$> traverse eventReport events

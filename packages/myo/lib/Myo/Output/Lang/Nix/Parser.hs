@@ -7,12 +7,12 @@ import Data.Char (digitToInt)
 import qualified Data.Text as Text
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Path (parseRelFile, toFilePath, (</>))
+import Path (Abs, Dir, Path, parseRelFile, toFilePath, (</>))
 import Path.IO (doesFileExist, getCurrentDir)
 import Prelude hiding (try)
-import Text.Parser.Char (CharParsing, anyChar, char, newline, text)
+import Text.Parser.Char (CharParsing, anyChar, char, text)
 import Text.Parser.Combinators (choice, manyTill, skipMany, skipOptional, try)
-import Text.Parser.Token (TokenParsing, integer, natural)
+import Text.Parser.Token (TokenParsing, integer)
 
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
@@ -25,9 +25,7 @@ import Myo.Output.Data.ReportLine (ReportLine (ReportLine))
 import Myo.Output.Lang.Nix.Data.NixEvent (NixEvent (NixEvent))
 import Myo.Output.Lang.Nix.Report (nixReport)
 import Myo.Regex (regexML, removeControlCharsRE)
-import Myo.Text.Parser.Combinators (anyTillChar, colon, minus, skipLine, tillEol, ws)
-import Exon (exon)
-import qualified Log
+import Myo.Text.Parser.Combinators (colon, lineBreak, minus, skipLine, tillEol, ws)
 
 number :: TokenParsing m => Integer -> m Char -> m Integer
 number base baseDigit =
@@ -39,7 +37,7 @@ path ::
   m Text
 path = do
   slash <- char '/'
-  rest <- toText <$> manyTill anyChar (try (choice [newline, colon]))
+  rest <- toText <$> manyTill anyChar (try (choice [lineBreak, void colon]))
   pure (Text.cons slash rest)
 
 normalize :: Integral a => a -> Int
@@ -69,18 +67,8 @@ location ::
   m Location
 location = do
   p <- path
-  (l, c) <- lineCol <* ws
+  (l, c) <- lineCol <* colon <* ws
   pure (Location p l c)
-
-assertionLine ::
-  TokenParsing m =>
-  m ()
-assertionLine =
-  text "error:" *>
-  ws *>
-  anyTillChar ':' *>
-  natural *>
-  ws
 
 traceEvent ::
   Monad m =>
@@ -101,7 +89,7 @@ parseNixErrors ::
   TokenParsing m =>
   m (Vector NixEvent)
 parseNixErrors =
-  Vector.fromList . catMaybes <$> many (choice events <* skipMany newline)
+  Vector.fromList . catMaybes <$> many (choice events <* skipMany lineBreak)
   where
     events =
       [
@@ -117,11 +105,10 @@ sanitizeNixOutput =
       [removeControlCharsRE]
 
 parseNix ::
-  Members [Stop OutputError, Log] r =>
+  Member (Stop OutputError) r =>
   Text ->
   Sem r ParsedOutput
 parseNix out = do
-  Log.debug [exon|Parsing nix output: #{sanitized}|]
   parsed <- stopEitherWith (OutputError.Parse . toText) (parseOnly parseNixErrors sanitized)
   stopEither (nixReport parsed)
   where
@@ -133,13 +120,13 @@ storePathRE =
 
 adaptPath ::
   Member (Embed IO) r =>
+  Path Abs Dir ->
   OutputEvent ->
   Sem r OutputEvent
-adaptPath = \case
+adaptPath cwd = \case
   OutputEvent (OutputEventMeta (Just (Location p line col)) level) ls -> do
     (newPath, newLines) <- case parseRelFile (toString (replaceStorePath p)) of
       Right localPath -> do
-        cwd <- embed getCurrentDir
         exists <- doesFileExist (cwd </> localPath)
         pure (if exists then (toText (toFilePath localPath), sanitizeLine <$> ls) else (p, ls))
       Left _ ->
@@ -158,11 +145,12 @@ adaptPaths ::
   ParsedOutput ->
   Sem r ParsedOutput
 adaptPaths (ParsedOutput syntax (OutputEvents events)) = do
-  eventsWithLocalPaths <- traverse adaptPath events
+  cwd <- embed getCurrentDir
+  eventsWithLocalPaths <- traverse (adaptPath cwd) events
   pure (ParsedOutput syntax (OutputEvents eventsWithLocalPaths))
 
 nixOutputParser ::
-  Members [Log, Embed IO] r =>
+  Member (Embed IO) r =>
   OutputParser r
 nixOutputParser =
   OutputParser (adaptPaths <=< parseNix)

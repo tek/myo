@@ -2,7 +2,7 @@ module Myo.Text.Parser.Combinators where
 
 import qualified Data.Text as Text (drop, dropEnd, intercalate, splitOn, take, takeEnd)
 import Prelude hiding (try)
-import Text.Parser.Char (CharParsing, alphaNum, anyChar, char, newline, noneOf)
+import Text.Parser.Char (CharParsing, alphaNum, anyChar, char, noneOf, oneOf)
 import Text.Parser.Combinators (choice, manyTill, skipOptional, try)
 import Text.Parser.Token (TokenParsing, brackets, parens, whiteSpace)
 
@@ -20,18 +20,31 @@ ws ::
 ws =
   skipOptional whiteSpace
 
+lineBreakChars :: String
+lineBreakChars = "\n\r"
+
+lineBreak ::
+  CharParsing m =>
+  m ()
+lineBreak = void (oneOf lineBreakChars)
+
+notLineBreak ::
+  CharParsing m =>
+  m Char
+notLineBreak = noneOf lineBreakChars
+
 tillInLine ::
   CharParsing m =>
   m a ->
   m Text
-tillInLine =
-  fmap toText <$> manyTill (noneOf ['\n'])
+tillInLine skip =
+  toText <$> manyTill (noneOf lineBreakChars) skip
 
 tillEol ::
   CharParsing m =>
   m Text
 tillEol =
-  tillInLine newline
+  tillInLine lineBreak
 
 skipLine ::
   CharParsing m =>
@@ -41,7 +54,7 @@ skipLine =
 
 emptyLine :: Monad m => CharParsing m => m ()
 emptyLine =
-  void $ newline *> many (char ' ') *> newline
+  void $ lineBreak *> many (char ' ') *> lineBreak
 
 data Expr =
   Plain [Text]
@@ -153,7 +166,7 @@ typeExpr =
   Apply <$> many ((try pars <|> try bracks <|> plain) <* ws)
   where
     plain =
-      Single . toText <$> some (noneOf " ()[]\n‘'’")
+      Single . toText <$> some (noneOf " ()[]\n\r‘'’")
     pars =
       Parens <$> parens typeExpr
     bracks =

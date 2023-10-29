@@ -14,8 +14,8 @@ import Myo.Output.Lang.Nix.Parser (nixOutputParser)
 import Myo.Output.ParseReport (compileReport)
 import Myo.Test.Embed (myoTest)
 
-haskellOutput :: Text
-haskellOutput =
+nixOutput :: Text
+nixOutput =
   Text.unlines [
     "leading crap",
     "error: value is a function while a list was expected",
@@ -42,7 +42,7 @@ parseNix ::
   Members [Error TestError, Log, Embed IO] r =>
   Sem r ParsedOutput
 parseNix =
-  testError (runOutputParser nixOutputParser haskellOutput)
+  testError (runOutputParser nixOutputParser nixOutput)
 
 test_parseNixErrors :: UnitTest
 test_parseNixErrors =
