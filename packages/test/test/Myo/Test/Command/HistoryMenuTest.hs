@@ -28,7 +28,7 @@ import Myo.Effect.History (History)
 import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Interpreter.History (interpretHistoryTransient, interpretHistoryWith)
-import Myo.Test.Embed (myoTest)
+import Myo.Test.Embed (myoTest, myoTest)
 
 inputEvents :: [PromptEvent]
 inputEvents =
@@ -96,15 +96,14 @@ historyEdit = do
 editEvents :: [PromptEvent]
 editEvents =
   [
-    Mapping "<cr>",
+    Mapping "e",
     Update "new value",
-    Mapping "<cr>",
+    Mapping "<esc>",
     Mapping "k",
     Mapping "k",
-    Mapping "<cr>",
+    Mapping "e",
     Update "let g:command = '{par1} {par2} \\{par3\\}'",
-    Mapping "<cr>",
-    Mapping "r"
+    Mapping "<cr>"
   ]
 
 test_historyMenuEdit :: UnitTest

@@ -9,9 +9,11 @@ import Ribosome.Menu (
   MenuApp,
   MenuItem (..),
   MenuResult (Aborted, Error, Success),
+  MenuSem,
   MenuWidget,
   ModalState,
   ModalWindowMenus,
+  PromptState (PromptState),
   PromptText (PromptText),
   menuAttachPrompt,
   menuDetachPrompt,
@@ -24,11 +26,13 @@ import Ribosome.Menu (
   staticWindowMenu,
   use,
   withFocus',
+  withInsert,
   )
 import qualified Ribosome.Menu.Data.Entry
 import Ribosome.Menu.Data.Entry (Entry (Entry))
 import qualified Ribosome.Menu.Data.MenuItem
 import Ribosome.Menu.MenuState (items)
+import Ribosome.Menu.Prompt (PromptControl (PromptControlApp))
 import qualified Ribosome.Menu.Prompt.Data.Prompt
 import qualified Ribosome.Report as Report
 
@@ -134,10 +138,10 @@ updateItem :: Text -> MenuItem EditItem -> Either Text (MenuItem EditItem)
 updateItem new MenuItem {meta} =
   updateEditItem new meta <&> \ newMeta -> MenuItem {meta = newMeta, text = new, render = [new]}
 
-update ::
+tryUpdate ::
   Member ReportLog r =>
-  MenuWidget (ModalState EditItem) r a
-update = do
+  MenuSem (ModalState EditItem) r Bool
+tryUpdate = do
   PromptText newValue <- asks (.prompt.text)
   result <- modifyFocus' \ old@Entry {..} -> do
     case updateItem newValue item of
@@ -146,15 +150,31 @@ update = do
   case join result of
     Just err -> do
       Report.info err ["Edit menu: item update failed", err]
-      menuOk
+      pure False
     Nothing ->
-      menuDetachPrompt (Just "")
+      pure True
 
-finish :: EditAction -> MenuWidget (ModalState EditItem) r EditResult
-finish action =
-  menuState do
+update ::
+  Member ReportLog r =>
+  MenuWidget (ModalState EditItem) r a
+update =
+  tryUpdate >>= \case
+    True -> menuDetachPrompt (Just "")
+    False -> menuOk
+
+finish ::
+  Member ReportLog r =>
+  EditAction ->
+  MenuWidget (ModalState EditItem) r EditResult
+finish action = do
+  success <- ask >>= \case
+    PromptState {control = PromptControlApp} -> tryUpdate
+    _ -> pure True
+  if success
+  then menuState do
     its <- use items
     menuSuccess (EditResult action (toList its))
+  else menuOk
 
 newCommandSpec :: [MenuItem EditItem] -> Either Text (CommandTemplate, ParamValues)
 newCommandSpec newItems = do
@@ -230,10 +250,10 @@ app ::
   MenuApp (ModalState EditItem) r EditResult
 app =
   [
-    ("r", finish Run),
+    (withInsert "<cr>", finish Run),
     ("s", finish Save),
-    (notPrompt "<cr>", edit),
-    (onlyPrompt "<cr>", update)
+    (notPrompt "e", edit),
+    (onlyPrompt "<esc>", update)
   ]
 
 -- TODO edit also runner and other options?

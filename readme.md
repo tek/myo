@@ -282,9 +282,9 @@ The prompt starts in normal mode, where you can cycle through the history with `
 and abort with `<esc>` or `<c-c>`.
 
 Pressing `e` will change to a different view, in which each of the command lines and parameters will be listed.
-Pressing `<cr>` on one of them will load its value into the prompt, where it can be modified and written back with
-another press of `<cr>`.
-When you are satisfied with the edits, you can press `r` to run the command with the modified values.
+Pressing `e` again on one of them will load its value into the prompt, where it can be modified and written back with
+`<esc>`.
+When you are satisfied with the edits, you can press `<cr>` to run the command with the modified values.
 
 ## MyoCommands
 
