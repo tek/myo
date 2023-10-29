@@ -8,8 +8,10 @@ import qualified Data.Text as Text
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Path (Abs, Dir, Path, parseRelFile, toFilePath, (</>))
-import Path.IO (doesFileExist, getCurrentDir)
+import Path.IO (doesFileExist)
 import Prelude hiding (try)
+import Ribosome (Rpc, RpcError)
+import Ribosome.Api (nvimCwd)
 import Text.Parser.Char (CharParsing, anyChar, char, text)
 import Text.Parser.Combinators (choice, manyTill, skipMany, skipOptional, try)
 import Text.Parser.Token (TokenParsing, integer)
@@ -127,8 +129,9 @@ adaptPath cwd = \case
   OutputEvent (OutputEventMeta (Just (Location p line col)) level) ls -> do
     (newPath, newLines) <- case parseRelFile (toString (replaceStorePath p)) of
       Right localPath -> do
-        exists <- doesFileExist (cwd </> localPath)
-        pure (if exists then (toText (toFilePath localPath), sanitizeLine <$> ls) else (p, ls))
+        doesFileExist (cwd </> localPath) <&> \case
+          True -> (toText (toFilePath localPath), sanitizeLine <$> ls)
+          False -> (p, ls)
       Left _ ->
         pure (p, ls)
     pure (OutputEvent (OutputEventMeta (Just (Location newPath line col)) level) newLines)
@@ -141,16 +144,16 @@ adaptPath cwd = \case
       storePathRE . index 0 . match .~ ""
 
 adaptPaths ::
-  Member (Embed IO) r =>
+  Members [Rpc !! RpcError, Embed IO] r =>
   ParsedOutput ->
   Sem r ParsedOutput
 adaptPaths (ParsedOutput syntax (OutputEvents events)) = do
-  cwd <- embed getCurrentDir
-  eventsWithLocalPaths <- traverse (adaptPath cwd) events
+  cwd <- resumeAs Nothing (Just <$> nvimCwd)
+  eventsWithLocalPaths <- traverse (maybe pure adaptPath cwd) events
   pure (ParsedOutput syntax (OutputEvents eventsWithLocalPaths))
 
 nixOutputParser ::
-  Member (Embed IO) r =>
+  Members [Rpc !! RpcError, Embed IO] r =>
   OutputParser r
 nixOutputParser =
   OutputParser (adaptPaths <=< parseNix)

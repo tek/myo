@@ -4,6 +4,7 @@ import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
 import Polysemy.Test (TestError, UnitTest, (===))
+import Ribosome (Rpc, RpcError)
 import Ribosome.Test (testError)
 
 import Myo.Output.Data.OutputParser (runOutputParser)
@@ -39,7 +40,7 @@ target =
   ]
 
 parseNix ::
-  Members [Error TestError, Log, Embed IO] r =>
+  Members [Error TestError, Rpc !! RpcError, Embed IO] r =>
   Sem r ParsedOutput
 parseNix =
   testError (runOutputParser nixOutputParser nixOutput)
