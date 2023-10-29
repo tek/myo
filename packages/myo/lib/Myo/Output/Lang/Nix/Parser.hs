@@ -26,6 +26,8 @@ import Myo.Output.Lang.Nix.Data.NixEvent (NixEvent (NixEvent))
 import Myo.Output.Lang.Nix.Report (nixReport)
 import Myo.Regex (regexML, removeControlCharsRE)
 import Myo.Text.Parser.Combinators (anyTillChar, colon, minus, skipLine, tillEol, ws)
+import Exon (exon)
+import qualified Log
 
 number :: TokenParsing m => Integer -> m Char -> m Integer
 number base baseDigit =
@@ -115,12 +117,15 @@ sanitizeNixOutput =
       [removeControlCharsRE]
 
 parseNix ::
-  Member (Stop OutputError) r =>
+  Members [Stop OutputError, Log] r =>
   Text ->
   Sem r ParsedOutput
 parseNix out = do
-  parsed <- stopEitherWith (OutputError.Parse . toText) (parseOnly parseNixErrors (sanitizeNixOutput out))
+  Log.debug [exon|Parsing nix output: #{sanitized}|]
+  parsed <- stopEitherWith (OutputError.Parse . toText) (parseOnly parseNixErrors sanitized)
   stopEither (nixReport parsed)
+  where
+    sanitized = sanitizeNixOutput out
 
 storePathRE :: IndexedTraversal' Int Text Match
 storePathRE =
@@ -157,7 +162,7 @@ adaptPaths (ParsedOutput syntax (OutputEvents events)) = do
   pure (ParsedOutput syntax (OutputEvents eventsWithLocalPaths))
 
 nixOutputParser ::
-  Member (Embed IO) r =>
+  Members [Log, Embed IO] r =>
   OutputParser r
 nixOutputParser =
   OutputParser (adaptPaths <=< parseNix)

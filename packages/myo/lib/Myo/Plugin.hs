@@ -273,7 +273,7 @@ interpretMyoStack =
   interpretExecutions
 
 parsers ::
-  Member (Embed IO) r =>
+  Members [Log, Embed IO] r =>
   Map CommandLanguage [OutputParser r]
 parsers =
   [

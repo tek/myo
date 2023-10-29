@@ -107,6 +107,8 @@ internalError ::
 internalError =
   stopNote (RunError.Internal "Parameters inconsistent during command assembly")
 
+-- TODO collapse whitespace – a template usually contains multiple placeholders separated by whitespace, so if adjacent
+-- ones evaluate to empty strings, we get multiple whitespaces
 compileCommandSpec ::
   ∀ r .
   Members [Rpc !! RpcError, Stop RunError] r =>

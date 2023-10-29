@@ -39,7 +39,7 @@ target =
   ]
 
 parseNix ::
-  Members [Error TestError, Embed IO] r =>
+  Members [Error TestError, Log, Embed IO] r =>
   Sem r ParsedOutput
 parseNix =
   testError (runOutputParser nixOutputParser haskellOutput)
