@@ -2,6 +2,7 @@ module Myo.Ui.Data.Window where
 
 import Chiasma.Data.Ident (Ident, Identifiable (..))
 import Chiasma.Ui.Data.View (ViewTree)
+import Data.Data (Data)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 
 data Window =
@@ -9,7 +10,7 @@ data Window =
     ident :: Ident,
     layout :: ViewTree
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic, Data)
 
 instance Identifiable Window where
   identify = (.ident)

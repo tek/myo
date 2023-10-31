@@ -84,8 +84,15 @@ import Myo.Command.Log (myoLogs)
 import Myo.Command.Output (myoNext, myoPrev)
 import Myo.Command.Parse (myoParse, myoParseLatest)
 import Myo.Command.Run (myoLine, myoLineCmd, myoReRun, myoRun)
-import Myo.Command.VimTest (myoTestBuildArgs, myoTestBuildPosition, myoTestDetermineRunner, myoTestExecutable, myoVimTest)
+import Myo.Command.Test (myoTest)
 import Myo.Command.Update (fetchCommands, myoUpdateCommands)
+import Myo.Command.VimTest (
+  myoTestBuildArgs,
+  myoTestBuildPosition,
+  myoTestDetermineRunner,
+  myoTestExecutable,
+  myoVimTest,
+  )
 import Myo.Complete (myoCompleteCommand)
 import Myo.Data.CliOptions (CliOptions (CliOptions))
 import Myo.Data.CommandId (CommandId)
@@ -121,9 +128,9 @@ import Myo.Temp (interpretLogDir)
 import Myo.Ui.Data.UiState (UiState)
 import Myo.Ui.Default (detectDefaultUi)
 import Myo.Ui.Focus (myoFocus)
-import Myo.Ui.Toggle (myoToggleLayout, myoTogglePane)
+import Myo.Ui.State (myoLayoutState, myoPaneState)
+import Myo.Ui.Toggle (myoHideLayout, myoHidePane, myoOpenLayout, myoOpenPane, myoToggleLayout, myoTogglePane)
 import Myo.Ui.Update (updateUi)
-import Myo.Command.Test (myoTest)
 
 type MyoStack =
   [
@@ -208,9 +215,17 @@ handlers =
   <>
   rpc "MyoCommands" Async myoCommands
   <>
+  rpc "MyoOpenPane" Async myoOpenPane
+  <>
+  rpc "MyoOpenLayout" Async myoOpenLayout
+  <>
   rpc "MyoTogglePane" Async myoTogglePane
   <>
   rpc "MyoToggleLayout" Async myoToggleLayout
+  <>
+  rpc "MyoHidePane" Async myoHidePane
+  <>
+  rpc "MyoHideLayout" Async myoHideLayout
   <>
   rpc "MyoFocus" Async myoFocus
   <>
@@ -218,6 +233,8 @@ handlers =
   <>
   [
     rpcFunction "MyoRun" Async myoRun,
+    rpcFunction "MyoLayoutState" Sync myoLayoutState,
+    rpcFunction "MyoPaneState" Sync myoPaneState,
     completeBuiltin "shellcmd" (rpcCommand "Myo" Async myoLineCmd),
     rpcFunction "MyoTestDetermineRunner" Sync myoTestDetermineRunner,
     rpcFunction "MyoTestExecutable" Sync myoTestExecutable,

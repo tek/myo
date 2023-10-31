@@ -1,6 +1,7 @@
 module Myo.Ui.Data.Space where
 
 import Chiasma.Data.Ident (Ident, Identifiable (..))
+import Data.Data (Data)
 import Prettyprinter (Pretty (..), nest, vsep, (<+>))
 
 import Myo.Ui.Data.Window (Window)
@@ -10,7 +11,7 @@ data Space =
     ident :: Ident,
     windows :: [Window]
   }
-  deriving stock (Eq, Show, Generic)
+  deriving stock (Eq, Show, Generic, Data)
 
 instance Identifiable Space where
   identify = (.ident)

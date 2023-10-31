@@ -37,7 +37,7 @@ reconfiguration of the corresponding component:
 * `myo_ui`
 * `myo_commands`
 
-**myo** uses several autocommands to detect changes.
+**Myo** uses several autocommands to detect changes.
 
 For the examples in this Readme, I will be using a setup for compiling and testing [Scala] with [sbt].
 
@@ -87,7 +87,7 @@ The library used for interacting with tmux is [chiasma].
 
 Panes open automatically when a command is executed in them, but there are functions for doing so manually.
 
-## MyoToggle
+## Opening and minimizing panes and layouts
 
 ```vim
 :MyoTogglePane sbt
@@ -96,9 +96,43 @@ Panes open automatically when a command is executed in them, but there are funct
 will open the pane `sbt` in the lower right corner, or, if it is open already, minimize it to a size of two cells in the
 direction of its parent layout (in this case, vertically).
 
+```vim
+:MyoToggleLayout make
+```
+
+will open the primary pane of the layout `make` if no panes in the layout are open, or minimize the layout.
+
+```vim
+:MyoOpenPane sbt
+:MyoOpenLayout make
+```
+
+will perform the same tasks, but won't minimize an already open view.
+
+```vim
+:MyoHidePane sbt
+:MyoHideLayout make
+```
+
+will minimize the view if it is open, otherwise it will do nothing.
+
 ## MyoFocus
 
 This command takes a pane name and will set it as the active pane in tmux.
+
+## Inspecting view state
+
+```vim
+:echo MyoPaneState('make')
+```
+
+will print the current target state of a pane (what is configured by **Myo**, not the actual tmux state).
+
+```vim
+:echo MyoLayoutState('make')
+```
+
+will print the same for a layout.
 
 # Commands
 
@@ -181,7 +215,7 @@ Parameter values are determined from several sources, in decreasing order of pre
 
 ## MyoRun
 
-This Neovim command/function triggers the execution of a **myo** command:
+This Neovim command/function triggers the execution of a **Myo** command:
 
 ```vim
 MyoRun compile
@@ -197,7 +231,7 @@ Subsequent invocations will check the stored process ID and skip the second step
 ### Per-invocation option overrides
 
 The command's options may be overridden by a Neovim callback.
-If the callback exists, **myo** will call it whenever `MyoRun` is executed.
+If the callback exists, **Myo** will call it whenever `MyoRun` is executed.
 The functions name has the schema `MyoOverrides_<command-name>`, where the name is escaped by substituting
 non-alphanumerical characters by `_`.
 The name is either the command's `displayName` or, if that's undefined, its `ident`.
@@ -292,7 +326,7 @@ This command displays all defined commands in a menu like [`MyoHistory`](#myohis
 
 ## MyoVimTest
 
-**myo** features support for [vim-test], which is a plugin with many built-in heuristics for determining the appropriate
+**Myo** features support for [vim-test], which is a plugin with many built-in heuristics for determining the appropriate
 command to execute something relating to the current cursor position.
 When running this function:
 
@@ -300,12 +334,12 @@ When running this function:
 :MyoVimTest
 ```
 
-**myo** will call [vim-test] and execute its output in the pane or shell configured by `g:myo_test_pane` or
+**Myo** will call [vim-test] and execute its output in the pane or shell configured by `g:myo_test_pane` or
 `g:myo_test_shell` (default being `make`).
 
 # Output
 
-When a command is executed, its output is read into **myo**'s state.
+When a command is executed, its output is read into **Myo**'s state.
 Running the command
 
 ```vim

@@ -16,7 +16,7 @@ import Myo.Data.ViewError (ViewError)
 import Myo.Orphans ()
 import Myo.Ui.Data.ToggleError (ToggleError)
 import Myo.Ui.Data.UiState (UiState)
-import Myo.Ui.Lens.Toggle (openOnePane, toggleOneLayout, toggleOnePane)
+import Myo.Ui.Lens.Toggle (hideOneLayout, hideOnePane, openOneLayout, openOnePane, toggleOneLayout, toggleOnePane)
 import Myo.Ui.Render (renderTmux)
 
 type ToggleStack encode decode =
@@ -26,14 +26,25 @@ type ToggleStack encode decode =
     Codec (Panes Pane) encode decode !! CodecError
   ]
 
-ensurePaneOpen ::
+myoOpenPane ::
   Members (ToggleStack encode decode) r =>
-  Members [AtomicState Views, AtomicState UiState, Stop ViewError, Rpc, Stop ToggleError] r =>
+  Members [AtomicState Views, AtomicState UiState, Rpc !! RpcError] r =>
   Ident ->
-  Sem r ()
-ensurePaneOpen ident = do
-  openOnePane ident
-  resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)
+  Handler r ()
+myoOpenPane ident =
+  resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
+    openOnePane ident
+    resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)
+
+myoOpenLayout ::
+  Members (ToggleStack encode decode) r =>
+  Members [AtomicState Views, AtomicState UiState, Rpc !! RpcError] r =>
+  Ident ->
+  Handler r ()
+myoOpenLayout ident =
+  resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
+    openOneLayout ident
+    resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)
 
 myoTogglePane ::
   Members (ToggleStack encode decode) r =>
@@ -53,4 +64,24 @@ myoToggleLayout ::
 myoToggleLayout ident = do
   resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
     toggleOneLayout ident
+    resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)
+
+myoHidePane ::
+  Members (ToggleStack encode decode) r =>
+  Members [AtomicState Views, AtomicState UiState, Rpc !! RpcError] r =>
+  Ident ->
+  Handler r ()
+myoHidePane ident =
+  resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
+    hideOnePane ident
+    resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)
+
+myoHideLayout ::
+  Members (ToggleStack encode decode) r =>
+  Members [AtomicState Views, AtomicState UiState, Rpc !! RpcError] r =>
+  Ident ->
+  Handler r ()
+myoHideLayout ident =
+  resumeReport @Rpc $ mapReport @ToggleError $ mapReport @ViewError do
+    hideOneLayout ident
     resumeHoist ViewError.TmuxApi (mapStop ViewError.Render renderTmux)

@@ -36,6 +36,7 @@ import Myo.Test.Tmux.KillTest (test_tmuxKill)
 import Myo.Test.Tmux.ParseTest (test_parseCaptureTmux, test_parseTmux)
 import Myo.Test.Tmux.RunShellTest (test_tmuxRunShell, test_tmuxUnixShell)
 import Myo.Test.Tmux.RunTest (test_quitCopyMode, test_tmuxRunSys)
+import Myo.Test.Tmux.StateTest (test_viewState)
 import Myo.Test.Tmux.ToggleLayoutTest (test_toggleLayout)
 import Myo.Test.Tmux.TogglePaneTest (test_shellPanePin, test_togglePane)
 import Myo.Test.Tmux.UpdateTest (test_updateUi)
@@ -94,6 +95,7 @@ tests =
       unitTest "run a system command in tmux" test_tmuxRunSys,
       unitTest "quit the tmux copy mode" test_quitCopyMode,
       unitTest "toggle a tmux layout" test_toggleLayout,
+      unitTest "get layout and pane state" test_viewState,
       unitTest "toggle a tmux pane" test_togglePane,
       unitTest "pin a shell pane in tmux" test_shellPanePin,
       unitTest "update the UI config via variable watcher" test_updateUi

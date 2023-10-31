@@ -18,4 +18,4 @@ myoFocus ::
   Handler r ()
 myoFocus i =
   mapReport $ codecError $ resumeTmuxError $ withTmux_ do
-      selectPane =<< viewsError (Views.paneId i)
+    selectPane =<< viewsError (Views.paneId i)

@@ -1,12 +1,15 @@
 module Myo.Data.ViewError where
 
 import Chiasma.Data.CodecError (CodecError)
+import Chiasma.Data.Ident (Ident)
 import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError (NoExe))
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Effect.Codec (NativeCodec, NativeCodecE)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
+import Exon (exon)
 import Log (Severity (Error))
+import Prettyprinter (pretty)
 import Ribosome (Report (Report), Reportable (toReport), mapReport)
 
 data ViewError =
@@ -19,6 +22,8 @@ data ViewError =
   TreeMod TreeModError
   |
   Render RenderError
+  |
+  NoSuchLayout Ident
   deriving stock (Eq, Show)
 
 instance Reportable ViewError where
@@ -35,6 +40,8 @@ instance Reportable ViewError where
       Report "tmux views error" ["ViewError.TreeMod:", show e] Error
     Render e ->
       Report "tmux views error" ["ViewError.Render:", show e] Error
+    NoSuchLayout ident ->
+      Report [exon|No such layout: #{show (pretty ident)}|] ["ViewError.NoSuchLayout:", show ident] Error
 
 tmuxError ::
   Member (Stop ViewError) r =>

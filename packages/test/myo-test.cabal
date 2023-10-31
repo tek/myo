@@ -66,6 +66,7 @@ test-suite myo-test-test
       Myo.Test.Tmux.ParseTest
       Myo.Test.Tmux.RunShellTest
       Myo.Test.Tmux.RunTest
+      Myo.Test.Tmux.StateTest
       Myo.Test.Tmux.ToggleLayoutTest
       Myo.Test.Tmux.TogglePaneTest
       Myo.Test.Tmux.UpdateTest

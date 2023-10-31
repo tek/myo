@@ -36,5 +36,5 @@ test_toggleLayout =
     _ <- createSpace "s"
     _ <- createWindow (viewCoords "s" "w" "wroot")
     setupTree
-    myoToggleLayout ("l")
+    myoToggleLayout "l"
     assertEq 2 . length =<< withPanesNative_ panes

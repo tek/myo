@@ -180,6 +180,7 @@ library
       Myo.Ui.Lens.Toggle
       Myo.Ui.Render
       Myo.Ui.Space
+      Myo.Ui.State
       Myo.Ui.Toggle
       Myo.Ui.Update
       Myo.Ui.UpsertView
