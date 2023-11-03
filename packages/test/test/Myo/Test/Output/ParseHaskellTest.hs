@@ -214,6 +214,18 @@ haskellOutput =
     /path/to/File.hs:36:1: error:
     • Unhandled effect 'Resumable e (AtomicState SomeType)'
     |],
+    "",
+    [exon|
+    /path/to/File.hs:36:1: error:
+    • No instance for (GHC.Records.HasField "field" Mod.Rec b0)
+        arising from a use of ‘GHC.Records.getField’
+    |],
+    "",
+    [exon|
+    /path/to/File.hs:36:1: error:
+    • No instance for (GHC.Records.HasField "field" b0 Field)
+        arising from selecting the field ‘field’
+    |],
     ""
     ]
 
@@ -339,6 +351,16 @@ target = Vector.fromList [
   "",
   "/path/to/File.hs \57505 36",
   "!effect: AtomicState SomeType !! e",
+  "",
+  "/path/to/File.hs \57505 36",
+  "Invalid or out-of-scope record field",
+  "field",
+  "Mod.Rec",
+  "",
+  "/path/to/File.hs \57505 36",
+  "Undetermined record type in field selection",
+  "field",
+  "Field",
   ""
   ]
 

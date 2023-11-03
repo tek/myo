@@ -81,9 +81,17 @@ patternsMarker :: Text
 patternsMarker =
   "non-exhaustive patterns"
 
-dataCtorNotInScopeMarker :: Text
-dataCtorNotInScopeMarker =
+dataconNotInScopeMarker :: Text
+dataconNotInScopeMarker =
   "data constructor not in scope"
+
+invalidRecordFieldMarker :: Text
+invalidRecordFieldMarker =
+  "Invalid or out-of-scope record field"
+
+undeterminedRecordTypeMarker :: Text
+undeterminedRecordTypeMarker =
+  "Undetermined record type in field selection"
 
 haskellInclude :: SyntaxItem
 haskellInclude =
@@ -117,13 +125,15 @@ errorMessage =
   where
     item = syntaxRegion "MyoHsError" "^" errorEnd Nothing
     options = ["contained", "skipwhite", "skipnl"]
-    params = Map.fromList [("contains", contains1 <> contains2 <> contains3)]
+    params = Map.fromList [("contains", contains1 <> contains2 <> contains3 <> contains4)]
     contains1 =
       "MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard"
     contains2 =
       ",MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName"
     contains3 =
-      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataCtorNotInScope,MyoHsNoEffect"
+      ",MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataConNotInScope,MyoHsNoEffect"
+    contains4 =
+      ",MyoHsInvalidRecordField,MyoHsUndeterminedRecordType"
 
 foundReq :: SyntaxItem
 foundReq =
@@ -346,9 +356,32 @@ patterns :: SyntaxItem
 patterns =
   simpleMessage "NonExhaustivePatterns" "Code" patternsMarker
 
-dataCtor :: SyntaxItem
-dataCtor =
-  simpleMessage "DataCtorNotInScope" "Code" dataCtorNotInScopeMarker
+datacon :: SyntaxItem
+datacon =
+  simpleMessage "DataConNotInScope" "Code" dataconNotInScopeMarker
+
+invalidRecordField :: SyntaxItem
+invalidRecordField =
+  simpleMessage "InvalidRecordField" "RecordField" invalidRecordFieldMarker
+
+undeterminedRecordType :: SyntaxItem
+undeterminedRecordType =
+  simpleMessage "UndeterminedRecordType" "RecordField" undeterminedRecordTypeMarker
+
+recordField :: SyntaxItem
+recordField =
+  item { options, params }
+  where
+    item = syntaxMatch "RecordField" "^.*$"
+    options = ["contained", "skipwhite", "skipnl"]
+    params = Map.fromList [("nextgroup", "RecordFieldType")]
+
+recordFieldType :: SyntaxItem
+recordFieldType =
+  item { options }
+  where
+    item = syntaxMatch "RecordFieldType" "^.*$"
+    options = ["contained", "skipwhite", "skipnl"]
 
 noEffect :: SyntaxItem
 noEffect =
@@ -470,6 +503,14 @@ hlAmbiguousTypeVarMethod :: HiLink
 hlAmbiguousTypeVarMethod =
   HiLink "MyoHsAmbiguousTypeVarMethod" "MyoHsCode"
 
+hlRecordField :: HiLink
+hlRecordField =
+  HiLink "MyoHsRecordField" "MyoHsCode"
+
+hlRecordFieldType :: HiLink
+hlRecordFieldType =
+  HiLink "MyoHsRecordFieldType" "Type"
+
 hlEffectBang :: HiLink
 hlEffectBang =
   HiLink "MyoHsNoEffectBang" "Error"
@@ -493,12 +534,14 @@ haskellSyntax =
         notInScopeHead, moduleImport, nameImports, moduleLine, names, name, doNotationResultDiscarded,
         invalidImportName, invalidImportNameHead, moduleNameMismatch, unknownModule, unknownModuleHead,
         invalidQualifiedName, runtimeError, ambiguousTypeVar, ambiguousTypeVarVar, ambiguousTypeVarMethod, patterns,
-        dataCtor, noEffect, noEffectBang, noEffectKw, noEffectHead, noEffectEffect
+        datacon, invalidRecordField, undeterminedRecordType, recordField, recordFieldType, noEffect, noEffectBang,
+        noEffectKw, noEffectHead, noEffectEffect
       ]
     highlights = [hiReq, hiFound, hiTrigger, hiName]
     hilinks =
       [
         hlError, hlPath, hlLineNumber, hlBang, hlNoInstanceKw, hlNotInScope, hlModule, hlDoNotationResDiscarded,
         hlInvalidImportName, hlModuleNameMismatch, hlUnknownModule, hlInvalidQualifiedName, hlAmbiguousTypeVar,
-        hlAmbiguousTypeVarVar, hlAmbiguousTypeVarMethod, hlEffect, hlEffectBang, hlNoEffectKw
+        hlAmbiguousTypeVarVar, hlAmbiguousTypeVarMethod, hlRecordField, hlRecordFieldType, hlEffect, hlEffectBang,
+        hlNoEffectKw
       ]

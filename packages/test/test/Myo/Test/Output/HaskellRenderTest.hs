@@ -82,7 +82,7 @@ msg11 =
 
 msg12 :: HaskellMessage
 msg12 =
-  DataCtorNotInScope "Dat"
+  DataConNotInScope "Dat"
 
 reportMsgs :: [HaskellMessage]
 reportMsgs =
@@ -159,7 +159,7 @@ syntaxTarget =
   [
     "MyoPath        xxx match /^.*\\ze\\( \57505.*$\\)\\@=/  contained",
     "MyoLineNumber  xxx match /\\(\57505 \\)\\@<=\\zs\\d\\+\\ze/  contained",
-    "MyoHsError     xxx start=/^/ end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard,MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName,MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataCtorNotInScope,MyoHsNoEffect",
+    "MyoHsError     xxx start=/^/ end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsFoundReq,MyoHsNoInstance,MyoHsNotInScope,MyoHsModuleImport,MyoHsNameImports,MyoHsDoResDiscard,MyoHsInvalidImportName,MyoHsModuleNameMismatch,MyoHsUnknownModule,MyoHsInvalidQualifiedName,MyoHsAmbiguousTypeVar,MyoHsRuntimeError,MyoHsNonexhaustivePatterns,MyoHsDataConNotInScope,MyoHsNoEffect,MyoHsInvalidRecordField,MyoHsUndeterminedRecordType",
     "MyoLocation    xxx match /^.*\57505.*$/  contains=MyoPath,MyoLineNumber nextgroup=MyoHsError skipwhite skipnl",
     "MyoHsFoundReq  xxx start=/type mismatch/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsFound",
     "MyoHsNoInstance xxx start=/\\s*!instance:/ end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsNoInstanceHead",
@@ -174,8 +174,10 @@ syntaxTarget =
     "MyoHsAmbiguousTypeVar xxx start=/ambiguous type var for constraint/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsAmbiguousTypeVarVar",
     "MyoHsRuntimeError xxx start=/runtime error/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsCode",
     "MyoHsNonexhaustivePatterns xxx start=/non-exhaustive patterns/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsCode",
-    "MyoHsDataCtorNotInScope xxx start=/data constructor not in scope/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsCode",
+    "MyoHsDataConNotInScope xxx start=/data constructor not in scope/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsCode",
     "MyoHsNoEffect  xxx start=/\\s*!effect:/ end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsNoEffectHead",
+    "MyoHsInvalidRecordField xxx start=/Invalid or out-of-scope record field/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsRecordField",
+    "MyoHsUndeterminedRecordType xxx start=/Undetermined record type in field selection/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsRecordField",
     "MyoHsFound     xxx match /^.*$/  contained nextgroup=MyoHsReq skipnl",
     "MyoHsKindMismatch xxx start=/kind mismatch/ms=e+1 end=/\\v\\ze.*(\57505|\8224)/  contained contains=MyoHsFound",
     "MyoHsReq       xxx match /^.*$/  contained",
@@ -214,8 +216,10 @@ syntaxTarget =
     "MyoHsAmbiguousTypeVar xxx cleared",
     "MyoHsRuntimeError xxx cleared",
     "MyoHsNonexhaustivePatterns xxx cleared",
-    "MyoHsDataCtorNotInScope xxx cleared",
+    "MyoHsDataConNotInScope xxx cleared",
     "MyoHsNoEffect  xxx cleared",
+    "MyoHsInvalidRecordField xxx cleared",
+    "MyoHsUndeterminedRecordType xxx cleared",
     "MyoHsFound     xxx ctermfg=1 guifg=#dc322f",
     "MyoHsKindMismatch xxx cleared",
     "MyoHsReq       xxx ctermfg=2 guifg=#719e07",
@@ -233,6 +237,7 @@ syntaxTarget =
     "MyoHsUnknownModuleHead xxx links to Error",
     "MyoHsAmbiguousTypeVarVar xxx links to MyoHsName",
     "MyoHsAmbiguousTypeVarMethod xxx links to MyoHsCode",
+    "MyoHsRecordField xxx links to MyoHsCode",
     "MyoHsNoEffectHead xxx cleared",
     "MyoHsNoEffectKw xxx links to Directory",
     "MyoHsNoEffectBang xxx links to Error",
@@ -240,7 +245,8 @@ syntaxTarget =
     "MyoHsDoResDiscardHead xxx links to Error",
     "MyoHsModuleNameMismatchHead xxx links to Error",
     "MyoHsInvalidQualifiedNameHead xxx links to Error",
-    "MyoHsAmbiguousTypeVarHead xxx links to Error"
+    "MyoHsAmbiguousTypeVarHead xxx links to Error",
+    "MyoHsRecordFieldType xxx links to Type"
     ]
 
 setupHighlights ::

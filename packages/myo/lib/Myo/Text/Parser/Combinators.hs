@@ -1,10 +1,12 @@
 module Myo.Text.Parser.Combinators where
 
-import qualified Data.Text as Text (drop, dropEnd, intercalate, splitOn, take, takeEnd)
+import Data.Char (isAlphaNum)
+import qualified Data.Text as Text
+import Exon (exon)
 import Prelude hiding (try)
-import Text.Parser.Char (CharParsing, alphaNum, anyChar, char, noneOf, oneOf)
+import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, satisfy)
 import Text.Parser.Combinators (choice, manyTill, skipOptional, try)
-import Text.Parser.Token (TokenParsing, brackets, parens, whiteSpace)
+import Text.Parser.Token (TokenParsing (token), brackets, parens, whiteSpace)
 
 colon :: CharParsing m => m Char
 colon =
@@ -56,6 +58,10 @@ emptyLine :: Monad m => CharParsing m => m ()
 emptyLine =
   void $ lineBreak *> many (char ' ') *> lineBreak
 
+identifier :: CharParsing m => m Char
+identifier =
+  satisfy \ c -> isAlphaNum c || c == '_' || c == '\'' || c == '.'
+
 data Expr =
   Plain [Text]
   |
@@ -86,9 +92,31 @@ parensExpr ::
 parensExpr =
   choice [try parenthesized, Plain <$> plain]
   where
-    plain = fmap toText <$> many (some alphaNum <* ws)
+    plain = fmap toText <$> many (some identifier <* ws)
     parenthesized =
       Parenthesized <$> plain <*> parens parensExpr
+
+data Aexp =
+  AexpId Text
+  |
+  AexpParens [Aexp]
+  deriving stock (Eq, Show)
+
+aexp ::
+  TokenParsing m =>
+  m Aexp
+aexp =
+  token (choice [try parenthesized, plain])
+  where
+    plain = AexpId . toText <$> some identifier
+    parenthesized =
+      AexpParens <$> parens (many aexp)
+
+formatAexp :: Aexp -> Text
+formatAexp = \case
+  AexpId t -> t
+  AexpParens sub ->
+    [exon|(#{Text.unwords (formatAexp <$> sub)})|]
 
 unParens :: Text -> Text
 unParens a =
@@ -110,7 +138,7 @@ wordNot ::
   Text ->
   m Text
 wordNot cs =
-  toText <$> many (noneOf $ " " <> toString cs) <* ws
+  toText <$> many (noneOf $ " \n" <> toString cs) <* ws
 
 anyTillChar ::
   TokenParsing m =>

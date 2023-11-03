@@ -1,49 +1,56 @@
 module Myo.Output.Lang.Haskell.Report where
 
 import Data.Attoparsec.Text (parseOnly)
-import qualified Data.Text as Text (intercalate, lines)
+import Data.Char (isLower)
+import qualified Data.Text as Text
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
-import Text.Parser.Char (CharParsing, anyChar, noneOf, oneOf, string, char)
+import Exon (exon)
+import Prelude hiding (try)
+import Text.Parser.Char (CharParsing, anyChar, char, noneOf, oneOf, string)
 import Text.Parser.Combinators (between, choice, manyTill, sepBy1, skipMany, skipOptional, try)
-import Text.Parser.Token (TokenParsing, parens, token, whiteSpace)
+import Text.Parser.Token (TokenParsing, parens, stringLiteral, token, whiteSpace)
 
-import Myo.Output.Data.Location (Location(Location))
+import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
-import qualified Myo.Output.Data.OutputError as OutputError (OutputError(Parse))
-import Myo.Output.Data.OutputEvent (LangOutputEvent(LangOutputEvent), OutputEventMeta(OutputEventMeta))
-import Myo.Output.Data.ParsedOutput (ParsedOutput(ParsedOutput))
+import qualified Myo.Output.Data.OutputError as OutputError (OutputError (Parse))
+import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
+import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import Myo.Output.Data.String (lineNumber)
-import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent(HaskellEvent))
-import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType(..))
+import Myo.Output.Lang.Haskell.Data.HaskellEvent (EventType, HaskellEvent (HaskellEvent))
+import qualified Myo.Output.Lang.Haskell.Data.HaskellEvent as EventType (EventType (..))
 import Myo.Output.Lang.Haskell.Syntax (
   ambiguousTypeVarMarker,
-  dataCtorNotInScopeMarker,
+  dataconNotInScopeMarker,
   doResDiscardMarker,
   foundReqMarker,
   haskellSyntax,
   invalidImportNameMarker,
   invalidQualifiedNameMarker,
+  invalidRecordFieldMarker,
+  kindMismatchMarker,
   moduleImportMarker,
   moduleNameMismatchMarker,
   nameImportsMarker,
   patternsMarker,
   runtimeErrorMarker,
-  unknownModuleMarker, kindMismatchMarker
+  undeterminedRecordTypeMarker,
+  unknownModuleMarker,
   )
 import Myo.Output.Lang.Report (parsedOutputCons)
+import qualified Myo.Text.Parser.Combinators as Expr
 import Myo.Text.Parser.Combinators (
-  parensExpr,
-  unParens,
+  Aexp (..),
+  TypeExpr,
+  aexp,
+  formatAexp,
   formatExpr,
-  typeExpr,
   formatTypeExpr,
   formatTypeExprToplevel,
-  TypeExpr,
+  parensExpr,
+  typeExpr,
+  unParens,
   )
-import qualified Myo.Text.Parser.Combinators as Expr
-import Prelude hiding (try)
-import Exon (exon)
 
 data HaskellMessage =
   FoundReq1 Text Text
@@ -82,11 +89,15 @@ data HaskellMessage =
   |
   NonExhaustivePatterns Text
   |
-  DataCtorNotInScope Text
+  DataConNotInScope Text
   |
   KindMismatch Text Text
   |
   PolysemyEffect { effect :: Text, resumableError :: Maybe Text }
+  |
+  InvalidRecordField Text Text
+  |
+  UndeterminedRecordType Text Text
   deriving stock (Eq, Show)
 
 lqs :: String
@@ -273,11 +284,11 @@ invalidQualifiedName =
     name =
       string "Not in scope:" *> ws *> qname
 
-dataCtorNotInScope ::
+dataconNotInScope ::
   TokenParsing m =>
   m HaskellMessage
-dataCtorNotInScope =
-  DataCtorNotInScope <$> name
+dataconNotInScope =
+  DataConNotInScope <$> name
   where
     name =
       string "Not in scope: data constructor" *> ws *> qname
@@ -339,6 +350,27 @@ polysemyAmbiguous ::
 polysemyAmbiguous =
   string "Ambiguous use of effect" *> ws *> between (char '\'') (char '\'') (formatEffect <$> typeExpr)
 
+recordField ::
+  Monad m =>
+  TokenParsing m =>
+  m HaskellMessage
+recordField = do
+  string "No instance for" *> ws
+  parens do
+    optional (string "GHC.Records.") *> string "HasField" *> ws
+    field <- stringLiteral <* ws
+    recordType <- aexp
+    fieldType <- aexp
+    pure (recordSort field recordType fieldType)
+  where
+    recordSort field recordType fieldType
+      | AexpId name <- recordType
+      , Just (h, _) <- Text.uncons name
+      , isLower h
+      = UndeterminedRecordType field (formatAexp fieldType)
+
+      | otherwise = InvalidRecordField field (formatAexp recordType)
+
 verbatim :: CharParsing m => m HaskellMessage
 verbatim =
   Verbatim . toText <$> many anyChar
@@ -368,12 +400,13 @@ parseMessage =
         unknownModule,
         ambiguousTypeVar,
         invalidQualifiedName,
-        dataCtorNotInScope,
+        dataconNotInScope,
         nonExhausivePatterns,
         kindMismatch,
         polysemyCouldNotDeduce,
         polysemyUnhandled,
         polysemyAmbiguous,
+        recordField,
         verbatim
       ]
 
@@ -412,8 +445,8 @@ formatMessage (RuntimeError msg) =
   [runtimeErrorMarker, msg]
 formatMessage (NonExhaustivePatterns fun) =
   [patternsMarker, fun]
-formatMessage (DataCtorNotInScope name) =
-  [dataCtorNotInScopeMarker, name]
+formatMessage (DataConNotInScope name) =
+  [dataconNotInScopeMarker, name]
 formatMessage (Verbatim txt) =
   Text.lines txt
 formatMessage (KindMismatch found req) =
@@ -422,6 +455,10 @@ formatMessage (PolysemyEffect eff (Just err)) =
   [[exon|!effect: #{eff} !! #{err}|]]
 formatMessage (PolysemyEffect eff Nothing) =
   [[exon|!effect: #{eff}|]]
+formatMessage (InvalidRecordField field recordType) =
+  [invalidRecordFieldMarker, field, recordType]
+formatMessage (UndeterminedRecordType field fieldType) =
+  [undeterminedRecordTypeMarker, field, fieldType]
 
 formatLocation :: Location -> Text
 formatLocation (Location path line _) =
