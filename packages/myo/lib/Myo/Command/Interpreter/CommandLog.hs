@@ -155,6 +155,7 @@ interpretCommandLog maxSize =
     All ->
       atomicState' (swap . Map.mapAccumWithKey buildAndGetAccum mempty)
 
+-- TODO change this to use variable watcher and AtomicState
 maxSizeSetting ::
   Members [Settings !! SettingError, DataLog LogReport] r =>
   Sem r Int

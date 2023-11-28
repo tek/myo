@@ -76,7 +76,7 @@ import Myo.Command.Interpreter.Backend.Generic (interpretBackendFail)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
 import Myo.Command.Interpreter.Backend.Tmux (interpretBackendTmuxWithLog)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
-import Myo.Command.Interpreter.CommandLog (interpretCommandLogSetting)
+import Myo.Command.Interpreter.CommandLog (interpretCommandLog)
 import Myo.Command.Interpreter.Executions (interpretExecutions)
 import Myo.Command.Interpreter.SocatExe (interpretReaderSocatExe)
 import Myo.Command.Interpreter.SocketReader (interpretSocketReader)
@@ -286,7 +286,7 @@ interpretMyoStack =
   interpretAtomic def .
   interpretAtomic def .
   interpretAtomic def .
-  interpretCommandLogSetting .
+  interpretCommandLog (pure 10000) .
   interpretExecutions
 
 parsers ::

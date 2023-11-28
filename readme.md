@@ -203,6 +203,7 @@ There are three variants of interpolations:
 
 Parameter values are determined from several sources, in decreasing order of precedence:
 
+* [CLI-style options](#cli).
 * Overrides from edits in a menu.
 * Overrides from the command option callback.
 * The nvim function `Myo_param_<name>`.
@@ -281,7 +282,7 @@ above.
 If the `shell` attribute is returned, it will set the command by that name as the shell in which the test will run;
 otherwise, the `target` attribute may set the tmux pane target.
 
-### CLI style overrides
+### CLI style overrides {#cli}
 
 The commands `MyoRun` and `MyoTest` allow an additional method for parameter overrides – CLI arguments:
 
