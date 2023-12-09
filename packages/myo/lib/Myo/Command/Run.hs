@@ -109,7 +109,7 @@ reRun ::
 reRun target params =
   resumeReport @Controller do
     entry <- resumeReport @History (lookupHistory target)
-    Controller.runCommand entry.command (maybe (fold params) (.params) entry.execution) Nothing
+    Controller.runCommand entry.command (fold params <> foldMap (.params) entry.execution) Nothing
 
 reRunAsync ::
   Members [Controller !! RunError, History !! RunError, Async, ReportLog] r =>

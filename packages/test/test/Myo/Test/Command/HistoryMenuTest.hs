@@ -93,8 +93,8 @@ historyEdit = do
     spec = CommandSpec tpl (coerce params)
     tpl = parseCommandTemplate' ["garbage"]
 
-editEvents :: [PromptEvent]
-editEvents =
+editEvents1 :: [PromptEvent]
+editEvents1 =
   [
     Mapping "e",
     Update "new value",
@@ -106,18 +106,31 @@ editEvents =
     Mapping "<cr>"
   ]
 
+editEvents2 :: [PromptEvent]
+editEvents2 =
+  [
+    Mapping "e",
+    Update "third value",
+    Mapping "<cr>"
+  ]
+
 test_historyMenuEdit :: UnitTest
 test_historyMenuEdit =
   myoTest do
     initHistory <- historyEdit
     interpretBackendVim $ interpretHistoryTransient initHistory $
       interpretCommands $ interpretController $ testError @CommandError $ testError @RunError do
-        Success (Edit i) <- promptInput [Mapping "e"] do
-          historyMenu
-        (entry, action) <- promptInput editEvents do
-          editHistoryEntryMenu i
-        handleAction entry action
-        value <- nvimGetVar "command"
-        ("value 1 new value {par3}" :: Text) === value
+        value1 <- editWith editEvents1
+        ("value 1 new value {par3}" :: Text) === value1
         newId <- evalMaybe =<< head . fmap (.command.ident) <$> resumeTestError @History History.all
         exeId /== newId
+        value2 <- editWith editEvents2
+        ("value 1 third value {par3}" :: Text) === value2
+  where
+    editWith events = do
+      Success (Edit i) <- promptInput [Mapping "e"] do
+        historyMenu
+      (entry, action) <- promptInput events do
+        editHistoryEntryMenu i
+      handleAction entry action
+      nvimGetVar "command"
