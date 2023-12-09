@@ -251,7 +251,7 @@ app ::
 app =
   [
     (withInsert "<cr>", finish Run),
-    ("s", finish Save),
+    (withInsert "<c-s>", finish Save),
     (notPrompt "e", edit),
     (onlyPrompt "<esc>", update)
   ]
