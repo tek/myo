@@ -80,20 +80,27 @@ data EditResult =
   }
   deriving stock (Eq, Show, Generic)
 
+data LayoutParams =
+  LayoutParams {
+    width :: Int,
+    single :: Bool
+  }
+  deriving stock (Eq, Show, Generic)
+
 paramValues :: HistoryEntry -> [(ParamId, ParamValue)]
 paramValues = \case
   HistoryEntry {execution = Just exe} -> Map.toList exe.params
   HistoryEntry {command} -> Map.toList (coerce <$> command.cmdLines.params)
 
-paramItem :: Int -> ParamId -> ParamValue -> MenuItem EditItem
-paramItem width (ParamId i) v =
+paramItem :: LayoutParams -> ParamId -> ParamValue -> MenuItem EditItem
+paramItem params (ParamId i) v =
   MenuItem (Param (ParamId i) v) text [text]
   where
     text = [exon| 🛠 #{padding}#{i}: #{renderParamValue v}|]
-    padding = Text.replicate (max 0 (width - Text.length i)) " "
+    padding = Text.replicate (max 0 (params.width - Text.length i)) " "
 
-cmdlineItem :: Int -> Bool -> Int -> Text -> MenuItem EditItem
-cmdlineItem width single index cline =
+cmdlineItem :: LayoutParams -> Int -> Text -> MenuItem EditItem
+cmdlineItem LayoutParams {width, single} index cline =
   MenuItem (Cmdline index cline) text [text]
   where
     text = [exon| ✏️ #{padding}#{desc}: ##{cline}|]
@@ -102,18 +109,38 @@ cmdlineItem width single index cline =
     indexIndicator | single = ""
                    | otherwise = [exon| #{show index}|]
 
-editItems :: HistoryEntry -> [MenuItem EditItem]
+editItems :: HistoryEntry -> ([MenuItem EditItem], LayoutParams)
 editItems entry =
-  reverse (uncurry (paramItem width) <$> values) <>
-  reverse (zipWith (cmdlineItem width single) [0..] cmdlines)
+  (its, params)
   where
+    its =
+      reverse (uncurry (paramItem params) <$> values) <>
+      reverse (zipWith (cmdlineItem params) [0..] cmdlines)
+
+    params = LayoutParams {..}
+
+    single = length cmdlines == 1
+
     width = fromMaybe cmdlineWidth (maximum (cmdlineWidth : valueWidths))
+
     cmdlineWidth | single = 7
                  | otherwise = 9
-    single = length cmdlines == 1
+
     cmdlines = entry.command.cmdLines.template.rendered
+
     valueWidths = values <&> \ (ParamId i, _) -> Text.length i
+
     values = paramValues entry
+
+editCompiledItems :: [Text] -> ([MenuItem EditItem], LayoutParams)
+editCompiledItems cmdlines =
+  (reverse (zipWith (cmdlineItem params) [0..] cmdlines), params)
+  where
+    params = LayoutParams {..}
+
+    width | single = 7
+          | otherwise = 9
+    single = length cmdlines == 1
 
 itemValue :: EditItem -> Text
 itemValue = \case
@@ -125,26 +152,27 @@ edit =
   withFocus' \ item ->
     menuAttachPrompt (Just (fromText (itemValue item)))
 
-updateEditItem :: Text -> EditItem -> Either Text EditItem
-updateEditItem new = \case
+updateEditItem :: LayoutParams -> Text -> EditItem -> Either Text (MenuItem EditItem)
+updateEditItem params new = \case
   Param pid (ParamValue _) ->
-    Right (Param pid (fromText new))
+    Right (paramItem params pid (fromText new))
   Param pid (ParamFlag _) ->
-    Param pid <$> parseParamFlag new
+    paramItem params pid <$> parseParamFlag new
   Cmdline number _ ->
-    Right (Cmdline number (fromText new))
+    Right (cmdlineItem params number (fromText new))
 
-updateItem :: Text -> MenuItem EditItem -> Either Text (MenuItem EditItem)
-updateItem new MenuItem {meta} =
-  updateEditItem new meta <&> \ newMeta -> MenuItem {meta = newMeta, text = new, render = [new]}
+updateItem :: LayoutParams -> Text -> MenuItem EditItem -> Either Text (MenuItem EditItem)
+updateItem params new MenuItem {meta} =
+  updateEditItem params new meta
 
 tryUpdate ::
   Member ReportLog r =>
+  LayoutParams ->
   MenuSem (ModalState EditItem) r Bool
-tryUpdate = do
+tryUpdate params = do
   PromptText newValue <- asks (.prompt.text)
   result <- modifyFocus' \ old@Entry {..} -> do
-    case updateItem newValue item of
+    case updateItem params newValue item of
       Right new -> (Entry {item = new, ..}, Nothing)
       Left err -> (old, Just err)
   case join result of
@@ -156,19 +184,21 @@ tryUpdate = do
 
 update ::
   Member ReportLog r =>
+  LayoutParams ->
   MenuWidget (ModalState EditItem) r a
-update =
-  tryUpdate >>= \case
+update params =
+  tryUpdate params >>= \case
     True -> menuDetachPrompt (Just "")
     False -> menuOk
 
 finish ::
   Member ReportLog r =>
+  LayoutParams ->
   EditAction ->
   MenuWidget (ModalState EditItem) r EditResult
-finish action = do
+finish params action = do
   success <- ask >>= \case
-    PromptState {control = PromptControlApp} -> tryUpdate
+    PromptState {control = PromptControlApp} -> tryUpdate params
     _ -> pure True
   if success
   then menuState do
@@ -247,13 +277,14 @@ type EditMenuStack =
 
 app ::
   Member ReportLog r =>
+  LayoutParams ->
   MenuApp (ModalState EditItem) r EditResult
-app =
+app params =
   [
-    (withInsert "<cr>", finish Run),
-    (withInsert "<c-s>", finish Save),
+    (withInsert "<cr>", finish params Run),
+    (withInsert "<c-s>", finish params Save),
     (notPrompt "e", edit),
-    (onlyPrompt "<esc>", update)
+    (onlyPrompt "<esc>", update params)
   ]
 
 -- TODO edit also runner and other options?
@@ -263,7 +294,8 @@ editHistoryEntryMenu ::
   Sem r (HistoryEntry, MenuResult EditResult)
 editHistoryEntryMenu cid = do
   entry <- restop (History.queryId cid)
-  result <- staticWindowMenu (editItems entry) def opts app
+  let (its, params) = editItems entry
+  result <- staticWindowMenu its def opts (app params)
   pure (entry, result)
   where
     opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
@@ -277,14 +309,6 @@ editHistoryEntry cid = do
   (entry, result) <- editHistoryEntryMenu cid
   handleAction entry result
 
-editCompiledItems :: [Text] -> [MenuItem EditItem]
-editCompiledItems cmdlines =
-  reverse (zipWith (cmdlineItem width single) [0..] cmdlines)
-  where
-    width | single = 7
-          | otherwise = 9
-    single = length cmdlines == 1
-
 editHistoryEntryCompiledMenu ::
   Members EditMenuStack r =>
   CommandId ->
@@ -292,9 +316,10 @@ editHistoryEntryCompiledMenu ::
   Sem r (HistoryEntry, MenuResult EditResult)
 editHistoryEntryCompiledMenu cid cmdlines = do
   entry <- restop (History.queryId cid)
-  result <- staticWindowMenu (editCompiledItems cmdlines) def opts app
+  result <- staticWindowMenu its def opts (app params)
   pure (entry, result)
   where
+    (its, params) = editCompiledItems cmdlines
     opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
     name = "myo-command-edit"
 
