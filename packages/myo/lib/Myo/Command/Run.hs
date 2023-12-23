@@ -100,16 +100,16 @@ lookupHistory ::
 lookupHistory =
   History.query . either queryIdH queryIndex
 
--- TODO support optparse
 reRun ::
   Members [Controller !! RunError, History !! RunError, Stop Report] r =>
   Either CommandId Int ->
   Maybe ParamValues ->
+  Maybe OptparseArgs ->
   Sem r ()
-reRun target params =
+reRun target params optparseArgs =
   resumeReport @Controller do
     entry <- resumeReport @History (lookupHistory target)
-    Controller.runCommand entry.command (fold params <> foldMap (.params) entry.execution) Nothing
+    Controller.runCommand entry.command (fold params <> foldMap (.params) entry.execution) optparseArgs
 
 reRunAsync ::
   Members [Controller !! RunError, History !! RunError, Async, ReportLog] r =>
@@ -117,14 +117,15 @@ reRunAsync ::
   Maybe ParamValues ->
   Sem r ()
 reRunAsync target params =
-  runAsync (reRun target params)
+  runAsync (reRun target params Nothing)
 
 myoReRun ::
   Members [Controller !! RunError, History !! RunError] r =>
   Either CommandId Int ->
+  Args ->
   Handler r ()
-myoReRun spec =
-  reRun spec mempty
+myoReRun spec args =
+  reRun spec mempty (Optparse.fromArgs args)
 
 defaultTarget :: UiTarget
 defaultTarget = "make"

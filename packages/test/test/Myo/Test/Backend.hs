@@ -42,11 +42,10 @@ checkReport ::
   [Text] ->
   Sem r ()
 checkReport target = do
-  loggedError <- Map.lookup ctx <$> storedReports
-  assertJust [target] (fmap user <$> loggedError)
+  loggedErrors <- Map.lookup ctx <$> storedReports
+  assertJust target (user <$> (head =<< loggedErrors))
   where
-    user (StoredReport (Report _ l _) _) =
-      l
+    user (StoredReport (Report _ l _) _) = l
 
 dummyAccept :: RunTask -> Sem r (Maybe ())
 dummyAccept _ =

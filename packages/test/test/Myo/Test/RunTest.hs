@@ -15,7 +15,7 @@ import Myo.Command.Data.CommandSpec (parseCommandSpec')
 import Myo.Command.Data.Param (ParamDefault (ParamDefault), ParamId, ParamValue (ParamFlag))
 import Myo.Command.Data.RunLineOptions (line)
 import Myo.Command.Interpreter.Backend.Process (interpretBackendProcessNative)
-import Myo.Command.Run (myoLine, myoRun, runIdent)
+import Myo.Command.Run (myoLine, myoReRun, myoRun, runIdent)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Interpreter.Controller (interpretControllerTransient)
 import Myo.Test.Backend (checkReport, interpretBackendDummy, interpretBackendDummySingleLine, testError)
@@ -89,7 +89,7 @@ test_runParamCommandOptparse :: UnitTest
 test_runParamCommandOptparse = do
   let
     extra = interpretBackendDummySingleLine . interpretControllerTransient []
-    handlers = [rpcCommand "MyoRun" Sync myoRun]
+    handlers = [rpcCommand "MyoRun" Sync myoRun, rpcCommand "MyoReRun" Sync myoReRun]
   myoTestHandlers @[_, _, _] extra handlers do
     testHandler do
       myoAddSystemCommand paramCommand
@@ -98,4 +98,7 @@ test_runParamCommandOptparse = do
       defineFunction "Myo_param_par2" [] ["return 'fun value 2'"]
       Conc.timeout_ (throw "MyoRun command timed out") (Seconds 3) do
         nvimCommand [exon|MyoRun #{commandIdText ident} --par1=par1-opt --par2='par2 " opt' --par4="par4 ' op"t --par5|]
-    checkReport [[exon|cmd: par1-opt / sub (par1-opt) (par2 " opt) / default value 3 / par4 ' opt / bool value 1 / bool value 2|]]
+      checkReport [[exon|cmd: par1-opt / sub (par1-opt) (par2 " opt) / default value 3 / par4 ' opt / bool value 1 / bool value 2 / default value 8|]]
+      Conc.timeout_ (throw "MyoReRun command timed out") (Seconds 3) do
+        nvimCommand [exon|MyoReRun 0 --par1=par1-opt-2|]
+      checkReport [[exon|cmd: par1-opt-2 / sub (par1-opt-2) (par2 " opt) / default value 3 / par4 ' opt / bool value 1 / bool value 2 / default value 8|]]

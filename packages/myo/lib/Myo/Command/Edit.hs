@@ -241,7 +241,7 @@ runAction command newParams action changed
   , changed
   = runCommand command newParams Nothing
   | Run <- action
-  = reRun (Left command.ident) (Just newParams)
+  = reRun (Left command.ident) (Just newParams) Nothing
   | otherwise
   = stop (Misc "Save not implemented")
 
