@@ -13,7 +13,7 @@ import Myo.Command.RunTaskDetails (runDetails)
 import Myo.Effect.Commands (Commands)
 
 runTask ::
-  Members [Rpc !! RpcError, Commands, Stop RunError, Input Ident] r =>
+  Members [Rpc !! RpcError, Commands, Stop RunError, Input Ident, Log] r =>
   Command ->
   ParamValues ->
   Maybe OptparseArgs ->

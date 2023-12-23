@@ -111,7 +111,7 @@ runCommand cmd@Command {ident} params optparseArgs = do
 
 captureOutput ::
   Members [Rpc !! RpcError, History, Commands] r =>
-  Members [Backend !! RunError, Stop RunError, Stop CommandError, Input Ident] r =>
+  Members [Backend !! RunError, Stop RunError, Stop CommandError, Input Ident, Log] r =>
   CommandId ->
   Sem r ()
 captureOutput ident = do

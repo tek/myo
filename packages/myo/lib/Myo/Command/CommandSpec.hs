@@ -3,28 +3,27 @@ module Myo.Command.CommandSpec where
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum ((:=>)))
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as Text
 import Exon (exon)
+import qualified Log
 import Ribosome (Rpc, RpcError)
 
 import Myo.Command.CommandSpec.Resolve (paramNames, resolveParams, resolveParamsPure)
 import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command (Command))
 import Myo.Command.Data.CommandSpec (CommandSpec (..))
-import Myo.Command.Data.CommandTemplate (
-  CommandSegment (..),
-  CommandTemplate (CommandTemplate, segments),
-  ParamSegment (..),
-  )
+import Myo.Command.Data.CommandTemplate (CommandSegment (..), CommandTemplate (..), ParamSegment (..))
 import Myo.Command.Data.Param (
   DefinedParam (DefinedParam, UndefinedParam),
   DefinedParams,
   ParamDefault (ParamDefault),
+  ParamDefaults,
   ParamId (..),
   ParamTag (ParamBool, ParamText),
   ParamValue (ParamFlag, ParamValue),
   ParamValues,
   paramTagId,
-  paramTagName,
+  paramTagName, renderParamValue,
   )
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
@@ -107,23 +106,53 @@ internalError ::
 internalError =
   stopNote (RunError.Internal "Parameters inconsistent during command assembly")
 
+logResult ::
+  Member Log r =>
+  [Text] ->
+  ParamDefaults ->
+  ParamValues ->
+  Maybe ParamValues ->
+  ParamValues ->
+  [Text] ->
+  Sem r ()
+logResult rendered params overrides optparseOverrides values cmdlines =
+  traverse_ @[] Log.debug logLines
+  where
+    logLines =
+      "Compiled command template:" : rendered ++
+      renderValues "Defaults:" (coerce params) ++
+      renderValues "Execution overrides:" overrides ++
+      foldMap (renderValues "Optparse overrides:") optparseOverrides ++
+      renderValues "Final values:" values ++
+      [[exon|Command lines: #{Text.unlines cmdlines}|]]
+    renderValues :: Text -> ParamValues -> [Text]
+    renderValues desc vs
+      | Map.null vs
+      = []
+      | otherwise
+      = desc : (uncurry renderValue <$> Map.toList vs)
+    renderValue :: ParamId -> ParamValue -> Text
+    renderValue k v = [exon|  ##{k}: #{renderParamValue v}|]
+
 -- TODO collapse whitespace – a template usually contains multiple placeholders separated by whitespace, so if adjacent
 -- ones evaluate to empty strings, we get multiple whitespaces
 compileCommandSpec ::
   ∀ r .
-  Members [Rpc !! RpcError, Stop RunError] r =>
+  Members [Rpc !! RpcError, Stop RunError, Log] r =>
   ParamValues ->
   Maybe OptparseArgs ->
   CommandSpec ->
   Sem r (Map ParamId ParamValue, [Text])
-compileCommandSpec overrides optparseArgs CommandSpec {template = CommandTemplate {segments}, params} = do
+compileCommandSpec overrides optparseArgs CommandSpec {template = CommandTemplate {rendered, segments}, params} = do
   optparseOverrides <- traverse (stopEitherWith RunError.Optparse . optparseParams present) optparseArgs
   definedParams <- resolveParams params (fold optparseOverrides <> overrides) present
   let
     lookup :: ∀ x . ParamTag x -> Sem r (DefinedParam x)
     lookup ptag = internalError (DMap.lookup ptag definedParams)
+    values = toValues definedParams
   cmdlines <- traverse (foldParams pure (compileParam lookup noParam)) segments
-  pure (toValues definedParams, cmdlines)
+  logResult rendered params overrides optparseOverrides values cmdlines
+  pure (values, cmdlines)
   where
     present = foldMap collectParams segments
 
