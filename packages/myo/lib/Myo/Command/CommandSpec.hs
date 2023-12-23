@@ -118,7 +118,7 @@ compileCommandSpec ::
   Sem r (Map ParamId ParamValue, [Text])
 compileCommandSpec overrides optparseArgs CommandSpec {template = CommandTemplate {segments}, params} = do
   optparseOverrides <- traverse (stopEitherWith RunError.Optparse . optparseParams present) optparseArgs
-  definedParams <- resolveParams params (overrides <> fold optparseOverrides) present
+  definedParams <- resolveParams params (fold optparseOverrides <> overrides) present
   let
     lookup :: ∀ x . ParamTag x -> Sem r (DefinedParam x)
     lookup ptag = internalError (DMap.lookup ptag definedParams)
