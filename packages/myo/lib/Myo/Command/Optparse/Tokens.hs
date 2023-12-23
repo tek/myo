@@ -49,7 +49,11 @@ tokenize prefix m0 =
   runScanner (S m0 False) step >>= \case
     (token, S _ True) -> fail [exon|Trailing backslash in args: #{toString (prefix <> token)}|]
     ("", S mode False) -> case mode of
-      NoQuote -> pure []
+      NoQuote
+        | "" <- prefix
+        -> pure []
+        | otherwise
+        -> pure [prefix]
       Abort _ -> fail "Internal error: Inconsistent parser state"
       _ -> unbalanced prefix
     (token, S mode False) -> do

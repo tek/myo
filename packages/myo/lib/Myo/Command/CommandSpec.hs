@@ -23,7 +23,8 @@ import Myo.Command.Data.Param (
   ParamValue (ParamFlag, ParamValue),
   ParamValues,
   paramTagId,
-  paramTagName, renderParamValue,
+  paramTagName,
+  renderParamValue,
   )
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
@@ -122,7 +123,7 @@ logResult rendered params overrides optparseOverrides values cmdlines =
       "Compiled command template:" : rendered ++
       renderValues "Defaults:" (coerce params) ++
       renderValues "Execution overrides:" overrides ++
-      foldMap (renderValues "Optparse overrides:") optparseOverrides ++
+      renderValues "Optparse overrides:" (fold optparseOverrides) ++
       renderValues "Final values:" values ++
       [[exon|Command lines: #{Text.unlines cmdlines}|]]
     renderValues :: Text -> ParamValues -> [Text]
