@@ -57,14 +57,21 @@ test_runSubprocFail =
 
 paramDefaults :: Map ParamId ParamDefault
 paramDefaults =
-  [("par2", "default value 2"), ("par3", "default value 3"), ("par5", ParamDefault (ParamFlag False))]
+  [
+    ("par2", "default value 2"),
+    ("par3", "default value 3"),
+    ("par5", ParamDefault (ParamFlag False)),
+    ("par8", "default value 8")
+  ]
 
 paramCommand :: AddSystemCommandOptions
 paramCommand =
   systemOptions ident [line]
   & #params ?~ paramDefaults
   where
-    line = "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5? / bool value 1}{par6? / bool value 2}{par7:optional {par7}}"
+    line =
+      "cmd: {par1} / {par2:sub ({par1}) ({par2})} / {par3} / {par4:}{par5? / bool value 1}{par6?" <>
+      " / bool value 2}{par7:optional {par7}} / {par8}"
 
 test_runParamCommand :: UnitTest
 test_runParamCommand =
@@ -74,8 +81,9 @@ test_runParamCommand =
       nvimSetVar @Text "myo_param_par1" "var value 1"
       nvimSetVar "myo_param_par6" True
       defineFunction "Myo_param_par2" [] ["return 'fun value 2'"]
+      defineFunction "Myo_param_par8" [] ["return { 'ignore': 1 }"]
       runIdent ident mempty
-    checkReport ["cmd: var value 1 / sub (var value 1) (fun value 2) / default value 3 /  / bool value 2"]
+    checkReport ["cmd: var value 1 / sub (var value 1) (fun value 2) / default value 3 /  / bool value 2 / default value 8"]
 
 test_runParamCommandOptparse :: UnitTest
 test_runParamCommandOptparse = do

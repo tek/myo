@@ -195,11 +195,13 @@ let ghc_test_cmd = {
   \ }
 ```
 
-There are three variants of interpolations:
+There are four variants of interpolations:
 
 * `{param_name}` substitutes the value and terminates with error if it is undefined
 * `{param_name:}` substitutes the value or the empty string
 * `{param_name:expr}` processes `expr` as a template or substitutes the empty string if the parameter is undefined
+* `{param_name?expr}` processes `expr` as a template if the parameter is a boolean and true (`v:true` or a nonzero
+  number) or substitutes the empty string if the parameter is false or undefined
 
 Parameter values are determined from several sources, in decreasing order of precedence:
 
@@ -208,6 +210,10 @@ Parameter values are determined from several sources, in decreasing order of pre
 * Overrides from the command option callback.
 * The nvim function `Myo_param_<name>`.
   For example, for the param `{test_case}`, the function `Myo_param_test_case` is called.
+  The return value must be a string or boolean, depending on the parameter type.
+  Two special return values are recognized:
+  * `{ 'ignore': 1 }` continues resolution with the next sources (essentially "fallback to default")
+  * `{ 'error': 'Custom error message' }` will abort execution of the command and print the error message
 * The nvim variable `<scope>:myo_param_<name>` from the scopes `g:`, `t:`, `w:`, `b:` in that order.
   For example, `b:myo_param_test_case`.
 * The default values specified in the command config's attribute `params`.

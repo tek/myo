@@ -54,9 +54,13 @@ data Overrides =
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackDecode, MsgpackEncode)
 
-data ErrorResponse =
+data OverrideResponse =
   ErrorResponse {
     error :: Text
+  }
+  |
+  FallbackResponse {
+    ignore :: Bool
   }
   deriving stock (Eq, Show, Generic)
   deriving anyclass (MsgpackDecode, MsgpackEncode)
@@ -123,6 +127,9 @@ queryOverrides base callback = do
       pure (cmd, fold overrides.params)
     Just (Right (Left (ErrorResponse err))) -> do
       stop (CommandError.User [exon|#{callback} aborted: #{err}|])
+    Just (Right (Left (FallbackResponse _))) -> do
+      cmd <- base
+      pure (cmd, mempty)
     Just (Left line) -> do
       spec <- stopEitherWith (CommandError.InvalidTemplate False line) (parseCommandSpec (Left line))
       cmd <- base

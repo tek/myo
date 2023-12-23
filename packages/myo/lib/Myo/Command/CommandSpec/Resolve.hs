@@ -16,6 +16,7 @@ import Ribosome.Api.Variable (
 import qualified Ribosome.Host.Data.RpcError as RpcError
 
 import Myo.Api.Function (functionExists)
+import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.Param (
   DefinedParam (DefinedParam, UndefinedParam),
   DefinedParams,
@@ -29,6 +30,7 @@ import Myo.Command.Data.Param (
   )
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Override (OverrideResponse (ErrorResponse, FallbackResponse))
 
 paramNames :: ParamId -> (Text, Text)
 paramNames (ParamId pid) =
@@ -47,7 +49,13 @@ resolveParamFun ::
   Sem r (DefinedParam a)
 resolveParamFun ptag name = do
   resumeHoist RunError.Rpc (functionExists name) >>= \case
-    True -> DefinedParam <$> resumeHoist (resultError (Some ptag)) (nvimCallFunction name [])
+    True ->
+      resumeHoist (resultError (Some ptag)) (nvimCallFunction name []) >>= \case
+        Right a -> pure (DefinedParam a)
+        Left (ErrorResponse err) ->
+          stop (RunError.Command (CommandError.User [exon|#{name} aborted: #{err}|]))
+        Left (FallbackResponse _) ->
+          pure UndefinedParam
     False -> pure UndefinedParam
 
 resolveParamVar ::
