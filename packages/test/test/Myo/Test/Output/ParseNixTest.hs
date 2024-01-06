@@ -1,8 +1,8 @@
 module Myo.Test.Output.ParseNixTest where
 
-import qualified Data.Text as Text (unlines)
 import Data.Vector (Vector)
 import qualified Data.Vector as Vector (fromList)
+import Exon (exon)
 import Polysemy.Test (TestError, UnitTest, (===))
 import Ribosome (Rpc, RpcError)
 import Ribosome.Test (testError)
@@ -17,19 +17,23 @@ import Myo.Test.Embed (myoTest)
 
 nixOutput :: Text
 nixOutput =
-  Text.unlines [
-    "leading crap",
-    "error: value is a function while a list was expected",
-    "",
-    "       at /nix/store/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-source/test/fixtures/file.nix:23:5:",
-    "",
-    "          100|   funcname =",
-    "          101|     listToAttrs (n: nameValuePair name (cons n)) things;",
-    "             |     ^",
-    "          102|",
-    "(use '--show-trace' to show detailed location information)",
-    ""
-  ]
+  [exon|leading crap
+error:
+       … while calling the 'getAttr' builtin
+
+         at /builtin/derivation.nix:19:19: (source not available)
+
+       (stack trace truncated; use '--show-trace' to show the full trace)
+
+       error: value is a function while a list was expected
+
+       at /nix/store/eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee-source/test/fixtures/file.nix:23:5:
+
+          100|   funcname =
+          101|     listToAttrs (n: nameValuePair name (cons n)) things;
+             |     ^
+          102|
+|]
 
 target :: Vector Text
 target =

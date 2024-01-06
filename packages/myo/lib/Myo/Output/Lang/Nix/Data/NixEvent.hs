@@ -4,7 +4,7 @@ import Myo.Output.Data.Location (Location)
 
 data NixEvent =
   NixEvent {
-     _location :: Location,
-     _message :: Text
+     location :: Location,
+     message :: Text
   }
   deriving stock (Eq, Show)

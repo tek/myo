@@ -82,7 +82,7 @@ traceEvent =
     cons m l =
       NixEvent l m
     msg =
-      text "error:" *> ws *> tillEol
+      ws *> text "error:" *> ws *> tillEol
     loc =
       ws *> text "at" *> ws *> location
 

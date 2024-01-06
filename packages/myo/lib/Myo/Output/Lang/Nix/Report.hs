@@ -1,16 +1,19 @@
 module Myo.Output.Lang.Nix.Report where
 
+import qualified Data.Text as Text
+import qualified Data.Vector as Vector
 import Data.Vector (Vector)
-import qualified Data.Vector as Vector (fromList)
 import Text.Parser.Char (noneOf, oneOf)
 import Text.Parser.Combinators (between, sepBy1, skipOptional)
 import Text.Parser.Token (TokenParsing, whiteSpace)
 
+import qualified Myo.Output.Data.Location
 import Myo.Output.Data.Location (Location (Location))
 import Myo.Output.Data.OutputError (OutputError)
 import Myo.Output.Data.OutputEvent (LangOutputEvent (LangOutputEvent), OutputEventMeta (OutputEventMeta))
 import Myo.Output.Data.ParsedOutput (ParsedOutput (ParsedOutput))
 import Myo.Output.Data.String (lineNumber)
+import qualified Myo.Output.Lang.Nix.Data.NixEvent
 import Myo.Output.Lang.Nix.Data.NixEvent (NixEvent (NixEvent))
 import Myo.Output.Lang.Nix.Syntax (nixSyntax)
 import Myo.Output.Lang.Report (parsedOutputCons)
@@ -77,6 +80,10 @@ eventReport (NixEvent loc messageText) =
     event =
       LangOutputEvent (OutputEventMeta (Just loc) 0)
 
+notBuiltin :: NixEvent -> Bool
+notBuiltin event = not (Text.isPrefixOf "/builtin" event.location.path)
+
 nixReport :: Vector NixEvent -> Either OutputError ParsedOutput
-nixReport events =
-  ParsedOutput nixSyntax . parsedOutputCons formatReportLine <$> traverse eventReport events
+nixReport events = do
+  outputEvents <- traverse eventReport (Vector.filter notBuiltin events)
+  pure (ParsedOutput nixSyntax (parsedOutputCons formatReportLine outputEvents))
