@@ -11,7 +11,7 @@ jobs:
     name: 'Release'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: |
@@ -27,8 +27,7 @@ jobs:
         run: |
           nix -L build
           nix -L build .#min
-          nix bundle -o static-binary --bundler github:ralismark/nix-appimage .#static
-          mv static-binary myo
+          cp $(nix build .#appimage) myo
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:
