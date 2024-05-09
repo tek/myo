@@ -5,17 +5,16 @@ import Chiasma.Data.RenderError (RenderError)
 import Chiasma.Data.TmuxError (TmuxError)
 import Chiasma.Data.Views (ViewsError)
 import Chiasma.Ui.Data.TreeModError (TreeModError)
-import Data.Some (Some (Some))
 import Exon (exon)
 import Log (Severity (Debug, Error, Warn))
-import Ribosome (PersistError, Report (Report), Reportable (..), RpcError, rpcError)
+import Ribosome (PersistError, Report (Report), Reportable (..), RpcError)
 import Time (MilliSeconds (MilliSeconds))
 
 import Myo.Command.Data.Command (ident)
 import qualified Myo.Command.Data.Command as Cmd (Command (Command))
 import Myo.Command.Data.CommandError (CommandError (..))
-import Myo.Command.Data.Param (ParamId, ParamTag, paramTagName, paramTagType)
 import Myo.Command.Data.RunTask (RunTask)
+import Myo.Command.Data.TemplateError (TemplateError)
 import Myo.Data.CommandId (CommandId, commandIdText)
 import Myo.Ui.Data.ToggleError (ToggleError)
 
@@ -40,8 +39,6 @@ data RunError =
   |
   InvalidShell Cmd.Command
   |
-  InvalidCmdline Text
-  |
   Unsupported Text Text
   |
   VimTest Text
@@ -62,13 +59,7 @@ data RunError =
   |
   ShellDidntStart CommandId MilliSeconds
   |
-  NoParamValue ParamId Text Text
-  |
-  BadParamValue (Some ParamTag) (Maybe RpcError)
-  |
-  ParamFunError (Some ParamTag) RpcError
-  |
-  Optparse Text
+  Template TemplateError
   deriving stock (Show)
 
 instance Reportable RunError where
@@ -104,12 +95,6 @@ instance Reportable RunError where
     Report msg ["RunError.InvalidShell:", show command] Error
     where
       msg = "invalid command for shell: " <> show ident
-
-  toReport (InvalidCmdline err) =
-    Report msg [msg] Warn
-    where
-      msg =
-        "invalid command line: " <> err
 
   toReport (Unsupported runner tpe) =
     Report msg [msg] Warn
@@ -149,25 +134,5 @@ instance Reportable RunError where
     where
       log = ["RunError.ShellDidntStart:", show i, show timeout]
 
-  toReport (NoParamValue pid var fun) =
-    Report [exon|Neither 'g:#{var}' nor '#{fun}()' exists for command parameter '##{pid}' without default|] log Error
-    where
-      log = ["RunError.NoParamValue:", show pid, var, fun]
-
-  toReport (BadParamValue (Some ptag) err) =
-    Report [exon|The value returned for command parameter '#{name}' is not a #{tpe}|] log Error
-    where
-      log = ["RunError.BadParamValue:", name] <> foldMap (pure . rpcError) err
-      tpe = paramTagType ptag
-      name = paramTagName ptag
-
-  toReport (ParamFunError (Some ptag) err) =
-    Report [exon|The function for command parameter '#{name}' failed: #{rpcError err}|] log Error
-    where
-      log = ["RunError.ParamFunError:", name, rpcError err]
-      name = paramTagName ptag
-
-  toReport (Optparse err) =
-    Report err log Error
-    where
-      log = ["RunError.Optparse:", err]
+  toReport (Template e) =
+    toReport e

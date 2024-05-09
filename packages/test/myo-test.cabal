@@ -38,6 +38,7 @@ test-suite myo-test-test
       Myo.Test.Command.TestTest
       Myo.Test.Command.UpdateTest
       Myo.Test.Command.VimTestTest
+      Myo.Test.CommandTest
       Myo.Test.CompleteTest
       Myo.Test.DiagTest
       Myo.Test.Embed

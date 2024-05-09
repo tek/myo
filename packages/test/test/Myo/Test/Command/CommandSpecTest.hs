@@ -1,6 +1,6 @@
 module Myo.Test.Command.CommandSpecTest where
 
-import Polysemy.Test (UnitTest, assertRight, runTestAuto, unitTest)
+import Polysemy.Test (UnitTest, assertRight, runTestAuto, unitTest, evalEither)
 import Ribosome (fromMsgpack, toMsgpack)
 import Test.Tasty (TestTree, testGroup)
 
@@ -12,6 +12,7 @@ import Myo.Command.Data.CommandTemplate (
   parseCommandTemplate,
   )
 import Myo.Command.Data.Param (ParamDefault, ParamId)
+import Myo.Command.CommandSpec (compileTemplateWith)
 
 spec :: [Text]
 spec =
@@ -63,9 +64,33 @@ test_decodeCommandSpec =
   runTestAuto do
     assertRight targetSpec (fromMsgpack (toMsgpack targetSpec))
 
+spec_compile :: Text
+spec_compile = "rec: {rec}"
+
+template_compile :: Either Text CommandTemplate
+template_compile =
+  parseCommandTemplate (Left spec_compile)
+
+target_compile :: [Text]
+target_compile = ["rec: sub1: sub2: panda"]
+
+test_compileCommandTemplate :: UnitTest
+test_compileCommandTemplate =
+  runTestAuto do
+    tpl <- evalEither template_compile
+    assertRight target_compile (compileTemplateWith tpl mempty values)
+  where
+    values =
+      [
+        ("rec", "sub1: {sub1}"),
+        ("sub1", "sub2: {sub2}"),
+        ("sub2", "panda")
+      ]
+
 test_commandSpec :: TestTree
 test_commandSpec =
   testGroup "command spec" [
     unitTest "parse template" test_parseCommandTemplate,
-    unitTest "decode spec" test_decodeCommandSpec
+    unitTest "decode spec" test_decodeCommandSpec,
+    unitTest "compile template" test_compileCommandTemplate
   ]

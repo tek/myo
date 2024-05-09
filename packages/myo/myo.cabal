@@ -63,6 +63,7 @@ library
       Myo.Command.Data.SocatExe
       Myo.Command.Data.SocketReaderError
       Myo.Command.Data.StoreHistory
+      Myo.Command.Data.TemplateError
       Myo.Command.Data.TmuxMonitorError
       Myo.Command.Data.TmuxTask
       Myo.Command.Data.UiTarget
@@ -90,6 +91,7 @@ library
       Myo.Command.Optparse.Tokens
       Myo.Command.Output
       Myo.Command.Override
+      Myo.Command.Param
       Myo.Command.Parse
       Myo.Command.Proc
       Myo.Command.Run

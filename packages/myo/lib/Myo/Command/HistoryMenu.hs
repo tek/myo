@@ -1,7 +1,7 @@
 module Myo.Command.HistoryMenu where
 
 import Chiasma.Data.Ident (Ident)
-import Ribosome (Handler, ReportLog, Rpc, RpcError, ScratchId (ScratchId), Settings, mapReports, resumeReports, scratch)
+import Ribosome (Handler, ReportLog, Rpc, RpcError, ScratchId (ScratchId), Settings, mapReports, resumeReports, scratch, toReport, reportMessages)
 import Ribosome.Data.SettingError (SettingError)
 import Ribosome.Menu (
   MenuItem,
@@ -93,7 +93,9 @@ editCompiled =
         case compileTemplateWithDefaults command of
           Right compiled -> menuSuccess (EditCompiled i compiled)
           Left err -> do
-            Report.info "This command cannot be edited without parameters." ["Edit menu: Can't edit compiled", err]
+            Report.info
+              "This command cannot be edited without parameters."
+              ["Edit menu: Can't edit compiled", reportMessages (toReport err)]
             menuOk
 
 historyMenu ::

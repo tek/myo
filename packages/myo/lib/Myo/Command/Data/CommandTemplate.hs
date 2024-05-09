@@ -80,13 +80,16 @@ segmentLit =
 segments :: Parser [CommandSegment]
 segments = many (choice [segmentParam, segmentLit])
 
+parseCommandSegments :: Text -> Either Text (NonEmpty CommandSegment)
+parseCommandSegments raw = do
+  segs <- first toText (parseOnly segments raw)
+  maybeToRight "Empty command line" (nonEmpty segs)
+
 parseCommandTemplate :: Either Text [Text] -> Either Text CommandTemplate
 parseCommandTemplate raw =
-  bimap toText (CommandTemplate lns) (traverse (parseOnly segments1) lns)
+  CommandTemplate lns <$> traverse parseCommandSegments lns
   where
     lns = either pure id raw
-    segments1 = fromMaybeA (fail err) . nonEmpty =<< segments
-    err = "Empty command line"
 
 parseCommandTemplate' :: [Text] -> CommandTemplate
 parseCommandTemplate' raw =

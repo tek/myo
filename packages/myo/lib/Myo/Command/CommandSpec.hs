@@ -1,23 +1,33 @@
 module Myo.Command.CommandSpec where
 
+import qualified Data.Constraint.Extras as C
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum ((:=>)))
 import qualified Data.Map.Strict as Map
+import Data.Some (Some (Some))
 import qualified Data.Text as Text
 import Exon (exon)
 import qualified Log
-import Ribosome (Rpc, RpcError)
+import Polysemy (run)
+import Ribosome (MsgpackDecode, Rpc, RpcError)
 
-import Myo.Command.CommandSpec.Resolve (paramNames, resolveParams, resolveParamsPure)
+import Myo.Command.CommandSpec.Resolve (paramNames, resolveParam)
 import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command (Command))
 import Myo.Command.Data.CommandSpec (CommandSpec (..))
-import Myo.Command.Data.CommandTemplate (CommandSegment (..), CommandTemplate (..), ParamSegment (..))
+import Myo.Command.Data.CommandTemplate (
+  CommandSegment (..),
+  CommandTemplate (..),
+  ParamSegment (..),
+  parseCommandSegments,
+  )
+import qualified Myo.Command.Data.Param
 import Myo.Command.Data.Param (
   DefinedParam (DefinedParam, UndefinedParam),
   DefinedParams,
   ParamDefault (ParamDefault),
   ParamDefaults,
+  ParamEnv (ParamEnv),
   ParamId (..),
   ParamTag (ParamBool, ParamText),
   ParamValue (ParamFlag, ParamValue),
@@ -28,9 +38,12 @@ import Myo.Command.Data.Param (
   )
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Optparse (OptparseArgs, optparseParams)
+import qualified Myo.Command.Data.TemplateError as TemplateError
+import Myo.Command.Data.TemplateError (TemplateError)
+import Myo.Command.Optparse (OptparseArgs)
+import Myo.Command.Param (definedValues, newParamEnv, resolveParamEnv)
 
-foldParams ::
+foldSegments ::
   ∀ m a .
   Monad m =>
   Monoid a =>
@@ -38,7 +51,7 @@ foldParams ::
   (∀ x . m a -> ParamTag x -> ParamSegment x -> m a) ->
   NonEmpty CommandSegment ->
   m a
-foldParams lit f =
+foldSegments lit seg =
   segments
   where
     segments :: NonEmpty CommandSegment -> m a
@@ -46,7 +59,7 @@ foldParams lit f =
 
     segment = \case
       SegmentLit t -> lit t
-      SegmentParam pid sub -> f (paramSub sub) pid sub
+      SegmentParam pid sub -> seg (paramSub sub) pid sub
 
     paramSub :: ParamSegment x -> m a
     paramSub = \case
@@ -57,7 +70,7 @@ foldParams lit f =
 
 collectParams :: NonEmpty CommandSegment -> DefinedParams
 collectParams =
-  DMap.fromList . runIdentity . foldParams (pure mempty) \ res (paramTagName -> pid) sub ->
+  DMap.fromList . runIdentity . foldSegments (pure mempty) \ res (paramTagName -> pid) sub ->
     pure (param pid sub : runIdentity res)
   where
     param pid = \case
@@ -72,21 +85,21 @@ data ParamTask =
   }
 
 compileParam ::
-  ∀ x m .
-  Monad m =>
-  (∀ y . ParamTag y -> m (DefinedParam y)) ->
-  (∀ y a . ParamTag y -> m a) ->
-  m Text ->
+  ∀ x r .
+  (∀ y . ParamTag y -> Sem r (DefinedParam y)) ->
+  (∀ y a . ParamTag y -> Sem r a) ->
+  (∀ y . ParamTag y -> Text -> Sem r Text) ->
+  Sem r Text ->
   ParamTag x ->
   ParamSegment x ->
-  m Text
-compileParam lookup noParam sub ptag seg = do
+  Sem r Text
+compileParam lookup noParam dynamic sub ptag seg = do
   p <- lookup ptag
   case (seg, p) of
     (ParamRequired, UndefinedParam) -> noParam ptag
-    (ParamRequired, DefinedParam t) -> pure t
+    (ParamRequired, DefinedParam t) -> dynamic ptag t
     (ParamOptional, UndefinedParam) -> pure ""
-    (ParamOptional, DefinedParam t) -> pure t
+    (ParamOptional, DefinedParam t) -> dynamic ptag t
     (ParamTemplate _, UndefinedParam) -> pure ""
     (ParamTemplate _, DefinedParam _) -> sub
     (ParamFlagTemplate _, UndefinedParam) -> pure ""
@@ -101,39 +114,70 @@ toValues ps =
     ParamBool pid :=> DefinedParam value -> Just (ParamId pid, ParamFlag value)
 
 internalError ::
-  Member (Stop RunError) r =>
+  Member (Stop TemplateError) r =>
   Maybe a ->
   Sem r a
 internalError =
-  stopNote (RunError.Internal "Parameters inconsistent during command assembly")
+  stopNote (TemplateError.Internal "Parameters inconsistent during command assembly")
 
 logResult ::
   Member Log r =>
   [Text] ->
-  ParamDefaults ->
-  ParamValues ->
-  Maybe ParamValues ->
-  ParamValues ->
+  ParamEnv ->
   [Text] ->
   Sem r ()
-logResult rendered params overrides optparseOverrides values cmdlines =
+logResult rendered ParamEnv {defaults, overrides, cli, resolved} cmdlines =
   traverse_ @[] Log.debug logLines
   where
     logLines =
       "Compiled command template:" : rendered ++
-      renderValues "Defaults:" (coerce params) ++
+      renderValues "Defaults:" (coerce defaults) ++
       renderValues "Execution overrides:" overrides ++
-      renderValues "Optparse overrides:" (fold optparseOverrides) ++
-      renderValues "Final values:" values ++
+      renderValues "Optparse overrides:" cli ++
+      renderValues "Resolved values:" resolved ++
       [[exon|Command lines: #{Text.unlines cmdlines}|]]
-    renderValues :: Text -> ParamValues -> [Text]
-    renderValues desc vs
+    renderValues :: Text -> DefinedParams -> [Text]
+    renderValues desc (definedValues -> vs)
       | Map.null vs
       = []
       | otherwise
       = desc : (uncurry renderValue <$> Map.toList vs)
     renderValue :: ParamId -> ParamValue -> Text
     renderValue k v = [exon|  ##{k}: #{renderParamValue v}|]
+
+compileSegments ::
+  ∀ r .
+  Members [State ParamEnv, Stop TemplateError] r =>
+  (∀ x . ParamTag x -> Sem r (DefinedParam x)) ->
+  NonEmpty CommandSegment ->
+  Sem r Text
+compileSegments resolve =
+  spin
+  where
+    spin segments =
+      foldSegments pure (compileParam lookup noParam dynamic) segments
+      where
+        lookup :: ∀ x . ParamTag x -> Sem r (DefinedParam x)
+        lookup ptag = do
+          penv <- get
+          internalError (DMap.lookup ptag penv.resolved)
+
+        noParam :: ParamTag x -> Sem r a
+        noParam ptag =
+          stop (TemplateError.NoParamValue pid var fun)
+          where
+            (var, fun) = paramNames pid
+            pid = paramTagId ptag
+
+        dynamic :: ∀ x . ParamTag x -> Text -> Sem r Text
+        dynamic ptag value = do
+          let err = TemplateError.DynamicParseError (Some ptag)
+          nestedSegments <- stopEitherWith err (parseCommandSegments value)
+          let present = collectParams nestedSegments
+          penv <- get
+          newEnv <- resolveParamEnv resolve present penv
+          put newEnv
+          spin nestedSegments
 
 -- TODO collapse whitespace – a template usually contains multiple placeholders separated by whitespace, so if adjacent
 -- ones evaluate to empty strings, we get multiple whitespaces
@@ -143,39 +187,34 @@ compileCommandSpec ::
   ParamValues ->
   Maybe OptparseArgs ->
   CommandSpec ->
-  Sem r (Map ParamId ParamValue, [Text])
+  Sem r (ParamValues, [Text])
 compileCommandSpec overrides optparseArgs CommandSpec {template = CommandTemplate {rendered, segments}, params} = do
-  optparseOverrides <- traverse (stopEitherWith RunError.Optparse . optparseParams present) optparseArgs
-  definedParams <- resolveParams params (fold optparseOverrides <> overrides) present
-  let
-    lookup :: ∀ x . ParamTag x -> Sem r (DefinedParam x)
-    lookup ptag = internalError (DMap.lookup ptag definedParams)
-    values = toValues definedParams
-  cmdlines <- traverse (foldParams pure (compileParam lookup noParam)) segments
-  logResult rendered params overrides optparseOverrides values cmdlines
-  pure (values, cmdlines)
+  resolvedEnv <- templateError do
+    initialEnv <- newParamEnv params overrides optparseArgs present
+    resolveParamEnv resolve present initialEnv
+  (finalEnv, cmdlines) <- templateError (runState resolvedEnv (traverse (compileSegments resolve) segments))
+  logResult rendered finalEnv cmdlines
+  pure (definedValues finalEnv.resolved, cmdlines)
   where
     present = foldMap collectParams segments
+    resolve (ptag :: ParamTag x) = C.has @MsgpackDecode ptag (resolveParam @x ptag)
+    templateError = mapStop RunError.Template
 
-    noParam :: ParamTag x -> Sem r a
-    noParam ptag =
-      stop (RunError.NoParamValue pid var fun)
-      where
-        (var, fun) = paramNames pid
-        pid = paramTagId ptag
-
-compileTemplateWith :: CommandTemplate -> ParamValues -> Either Text [Text]
-compileTemplateWith CommandTemplate {segments} params = do
-  definedParams <- resolveParamsPure params present
-  let
-    lookup :: ∀ x . ParamTag x -> Either Text (DefinedParam x)
-    lookup ptag = maybeToRight "Parameters inconsistent" (DMap.lookup ptag definedParams)
-  traverse (foldParams pure (compileParam lookup noParam)) segments
+compileTemplateWith ::
+  CommandTemplate ->
+  ParamDefaults ->
+  ParamValues ->
+  Either TemplateError [Text]
+compileTemplateWith CommandTemplate {segments} defs params = do
+  run $ runStop do
+    initialEnv <- newParamEnv defs params Nothing present
+    resolvedEnv <- resolveParamEnv resolve present initialEnv
+    -- definedParams <- stopEither (resolveParamsPure params present)
+    evalState resolvedEnv (traverse (compileSegments resolve) segments)
   where
     present = foldMap collectParams segments
+    resolve _ = pure UndefinedParam
 
-    noParam (paramTagName -> name) = Left [exon|No value for '#{name}'|]
-
-compileTemplateWithDefaults :: Command -> Either Text [Text]
+compileTemplateWithDefaults :: Command -> Either TemplateError [Text]
 compileTemplateWithDefaults Command {cmdLines = CommandSpec {template, params}} =
-  compileTemplateWith template (coerce params)
+  compileTemplateWith template params (coerce params)

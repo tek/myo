@@ -1,12 +1,6 @@
 module Main where
 
-import Myo.Test.Command.CommandMenuTest (test_commandMenu)
-import Myo.Test.Command.CommandSpecTest (test_commandSpec)
-import Myo.Test.Command.HistoryMenuTest (test_historyMenu, test_historyMenuDelete, test_historyMenuEdit)
-import Myo.Test.Command.HistoryTest (test_history)
-import Myo.Test.Command.TestTest (test_testCommand, test_testCommandDefault, test_testCommandEmpty)
-import Myo.Test.Command.UpdateTest (test_updateCommands)
-import Myo.Test.Command.VimTestTest (test_vimTest)
+import Myo.Test.CommandTest (commandTests)
 import Myo.Test.CompleteTest (test_completeCommand)
 import Myo.Test.DiagTest (test_diag)
 import Myo.Test.Output.CycleTest (test_outputNext, test_outputPrev)
@@ -22,13 +16,6 @@ import Myo.Test.Output.SanitizeTest (test_sanitize)
 import Myo.Test.Output.ScalaRenderTest (test_scalaRender)
 import Myo.Test.Output.SelectTest (test_outputSelect)
 import Myo.Test.ProcTest (test_proc)
-import Myo.Test.RunTest (
-  test_runLineSingle,
-  test_runParamCommand,
-  test_runParamCommandOptparse,
-  test_runSubprocFail,
-  test_runSystem,
-  )
 import Myo.Test.SaveTest (test_save)
 import Myo.Test.Tmux.CommandLogTest (test_tmuxTruncCommandLog)
 import Myo.Test.Tmux.FocusTest (test_focusPane)
@@ -46,28 +33,7 @@ import Test.Tasty (TestTree, defaultMain, testGroup)
 tests :: TestTree
 tests =
   testGroup "all" [
-    testGroup "command" [
-      unitTest "run a command from the menu" test_commandMenu,
-      test_history,
-      testGroup "history menu" [
-        unitTest "select a command" test_historyMenu,
-        unitTest "delete some entries" test_historyMenuDelete,
-        unitTest "edit an entry" test_historyMenuEdit
-      ],
-      unitTest "update commands via variable watcher" test_updateCommands,
-      testGroup "run" [
-        unitTest "vim-test command" test_vimTest,
-        unitTest "command with the system runner" test_runSystem,
-        unitTest "single ad-hoc cmdline" test_runLineSingle,
-        unitTest "failing command with the subproc runner" test_runSubprocFail,
-        unitTest "command with parameters" test_runParamCommand,
-        unitTest "test command with optparse args" test_runParamCommandOptparse,
-        unitTest "test command" test_testCommand,
-        unitTest "test command with custom command with defaults" test_testCommandDefault,
-        unitTest "test command with empty cmdline" test_testCommandEmpty
-      ],
-      test_commandSpec
-    ],
+    commandTests,
     testGroup "output" [
       unitTest "cycle to the previous output event" test_outputPrev,
       unitTest "cycle to the next output event" test_outputNext,

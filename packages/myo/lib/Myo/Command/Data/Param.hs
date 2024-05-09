@@ -1,12 +1,13 @@
 module Myo.Command.Data.Param where
 
 import Data.Aeson (FromJSON (parseJSON), FromJSONKey, ToJSON (toJSON), ToJSONKey)
+import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Dependent.Map (DMap)
 import Data.GADT.Compare.TH (DeriveGCompare (deriveGCompare), DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (deriveGShow)
+import qualified Data.Text as Text
 import Ribosome (MsgpackDecode, MsgpackEncode)
 import Ribosome.Msgpack (MsgpackDecode (fromMsgpack), MsgpackEncode (toMsgpack))
-import Data.Constraint.Extras.TH (deriveArgDict)
 
 newtype ParamId =
   ParamId Text
@@ -45,10 +46,11 @@ instance FromJSON ParamValue where
 type ParamValues = Map ParamId ParamValue
 
 parseParamFlag :: Text -> Either Text ParamValue
-parseParamFlag = \case
-  "true" -> Right (ParamFlag True)
-  "false" -> Right (ParamFlag False)
-  _ -> Left "A boolean flag can only be 'true' or 'false'"
+parseParamFlag =
+  Text.toLower >>> \case
+    "true" -> Right (ParamFlag True)
+    "false" -> Right (ParamFlag False)
+    _ -> Left "A boolean flag can only be 'true' or 'false'"
 
 renderParamValue :: ParamValue -> Text
 renderParamValue = \case
@@ -84,11 +86,6 @@ instance IsString (ParamTag Text) where
 instance IsString (ParamTag Bool) where
   fromString = ParamBool . fromString
 
-matchParamTag :: ParamTag a -> ParamValue -> Maybe a
-matchParamTag (ParamText _) (ParamValue t) = Just t
-matchParamTag (ParamBool _) (ParamFlag f) = Just f
-matchParamTag _ _ = Nothing
-
 paramTagName :: ParamTag a -> Text
 paramTagName = \case
   ParamText n -> n
@@ -103,22 +100,29 @@ paramTagType = \case
   ParamText _ -> "string"
   ParamBool _ -> "boolean"
 
+type OtherTag :: Type -> Type
+type family OtherTag a where
+  OtherTag Text = Bool
+  OtherTag Bool = Text
+
+otherParamTag :: ParamTag a -> ParamTag (OtherTag a)
+otherParamTag = \case
+  ParamText n -> ParamBool n
+  ParamBool n -> ParamText n
+
 data DefinedParam a =
   DefinedParam a
   |
   UndefinedParam
   deriving stock (Eq, Show, Generic)
 
-definedParamToValue :: DefinedParam a -> ParamTag a -> Maybe ParamValue
-definedParamToValue (DefinedParam a) = \case
-  ParamText _ -> Just (ParamValue a)
-  ParamBool _ -> Just (ParamFlag a)
-definedParamToValue UndefinedParam = const Nothing
-
-toDefinedParam :: ParamTag a -> Maybe ParamValue -> Maybe (DefinedParam a)
-toDefinedParam (ParamText _) (Just (ParamValue t)) = Just (DefinedParam t)
-toDefinedParam (ParamBool _) (Just (ParamFlag t)) = Just (DefinedParam t)
-toDefinedParam _ (Just _) = Nothing
-toDefinedParam _ Nothing = Just UndefinedParam
-
 type DefinedParams = DMap ParamTag DefinedParam
+
+data ParamEnv =
+  ParamEnv {
+    defaults :: DefinedParams,
+    overrides :: DefinedParams,
+    cli :: DefinedParams,
+    resolved :: DefinedParams
+  }
+  deriving stock (Eq, Show, Generic)

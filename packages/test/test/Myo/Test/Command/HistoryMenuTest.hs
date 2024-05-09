@@ -86,7 +86,7 @@ historyEdit ::
   Member (Error TestError) r =>
   Sem r [HistoryEntry]
 historyEdit = do
-  compiled <- fromEither (first TestError (compileTemplateWith tpl params))
+  compiled <- fromEither (first (TestError . show) (compileTemplateWith tpl mempty params))
   pure [HistoryEntry cmd (Just (ExecutionParams exeId compiled params))]
   where
     cmd = Command.consSpec (CommandInterpreter.Vim False Nothing) "1" spec
