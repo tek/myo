@@ -1,5 +1,8 @@
 module Myo.Command.Data.HistoryEntry where
 
+import Data.Aeson (FromJSON (parseJSON), withObject, (.:), (.:?))
+
+import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.Param (ParamValues)
 import Myo.Data.CommandId (CommandId)
@@ -14,13 +17,22 @@ data ExecutionParams =
 
 json ''ExecutionParams
 
--- TODO after a few weeks, make ExecutionParams mandatory and create a json decoder that skips entries that lack them.
 data HistoryEntry =
   HistoryEntry {
     command :: Command,
     -- | The lines and parameter values used when the command was last executed.
-    execution :: Maybe ExecutionParams
+    execution :: ExecutionParams
   }
   deriving stock (Eq, Show, Generic)
+  deriving anyclass (ToJSON)
 
-json ''HistoryEntry
+simpleHistoryEntry :: Command -> HistoryEntry
+simpleHistoryEntry command =
+  HistoryEntry {command, execution = ExecutionParams {id = command.ident, compiled = [], params = mempty}}
+
+instance FromJSON HistoryEntry where
+  parseJSON = withObject "HistoryEntry" \ o -> do
+    command <- o .: "command"
+    o .:? "execution" <&> \case
+      Just execution -> HistoryEntry {..}
+      Nothing -> simpleHistoryEntry command

@@ -91,8 +91,7 @@ data LayoutParams =
 
 paramValues :: HistoryEntry -> ParamValues
 paramValues = \case
-  HistoryEntry {execution = Just exe} -> exe.params
-  HistoryEntry {command} -> coerce command.cmdLines.params
+  HistoryEntry {execution = exe} -> exe.params
 
 paramItem :: LayoutParams -> ParamId -> ParamValue -> MenuItem EditItem
 paramItem params (ParamId i) v =
@@ -327,7 +326,7 @@ editHistoryEntry ::
   Sem r ()
 editHistoryEntry cid = do
   entry <- restop (History.queryId cid)
-  result <- editCommandMenu True entry.command (paramValues entry)
+  result <- editCommandMenu True entry.command entry.execution.params
   handleAction entry.command result
 
 editHistoryEntryCompiled ::

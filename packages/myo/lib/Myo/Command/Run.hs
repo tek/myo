@@ -109,7 +109,7 @@ reRun ::
 reRun target params optparseArgs =
   resumeReport @Controller do
     entry <- resumeReport @History (lookupHistory target)
-    Controller.runCommand entry.command (fold params <> foldMap (.params) entry.execution) optparseArgs
+    Controller.runCommand entry.command (fold params <> entry.execution.params) optparseArgs
 
 reRunAsync ::
   Members [Controller !! RunError, History !! RunError, Async, ReportLog] r =>

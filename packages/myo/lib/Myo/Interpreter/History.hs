@@ -16,8 +16,6 @@ import Myo.Command.Commands (matcher)
 import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command (ident))
 import Myo.Command.Data.CommandError (CommandError (NoHistory, NoSuchCommand))
-import qualified Myo.Command.Data.CommandSpec
-import qualified Myo.Command.Data.CommandTemplate
 import qualified Myo.Command.Data.HistoryEntry
 import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry))
 import qualified Myo.Command.Data.HistoryState
@@ -67,7 +65,7 @@ setHistory ::
   [HistoryEntry] ->
   Sem r ()
 setHistory =
-  atomicSet #history
+  atomicSet #history . filter (not . null . (.execution.compiled))
 
 removeHistoryEntries ::
   Member (AtomicState HistoryState) r =>
@@ -123,17 +121,14 @@ pushHistory cmd exeId params compiled =
     Log.debug [exon|Pushing command '#{commandIdText cmd.ident}' to history, params: #{show params}|]
     atomicModify' (#history %~ prep)
   where
-    prep es = nubOrdOn entryKey (HistoryEntry cmd (Just (ExecutionParams exeId compiled params)) : es)
+    prep es = nubOrdOn entryKey (HistoryEntry cmd (ExecutionParams exeId compiled params) : es)
 
-    entryKey = \case
-      HistoryEntry _ (Just execution) -> execution.compiled
-      HistoryEntry c _ -> c.cmdLines.template.rendered
+    entryKey (HistoryEntry _ execution) = execution.compiled
 
 byExecutionId :: CommandQueryField -> [HistoryEntry] -> Maybe HistoryEntry
 byExecutionId = \case
   CommandById target -> find \case
-    HistoryEntry {execution = Just exe} -> exe.id == target
-    _ -> False
+    HistoryEntry {execution} -> execution.id == target
   _ -> const Nothing
 
 queryCommand ::

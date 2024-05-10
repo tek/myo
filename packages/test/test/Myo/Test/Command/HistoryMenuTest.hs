@@ -16,7 +16,7 @@ import qualified Myo.Command.Data.CommandInterpreter as CommandInterpreter
 import Myo.Command.Data.CommandSpec (CommandSpec (CommandSpec))
 import Myo.Command.Data.CommandTemplate (parseCommandTemplate')
 import qualified Myo.Command.Data.HistoryEntry
-import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry))
+import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry), simpleHistoryEntry)
 import Myo.Command.Data.Param (ParamDefault (ParamDefault), ParamValues)
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Edit (editHistoryEntry)
@@ -28,7 +28,7 @@ import Myo.Effect.History (History)
 import Myo.Interpreter.Commands (interpretCommands)
 import Myo.Interpreter.Controller (interpretController)
 import Myo.Interpreter.History (interpretHistoryTransient, interpretHistoryWith)
-import Myo.Test.Embed (myoTest, myoTest)
+import Myo.Test.Embed (myoTest)
 
 inputEvents :: [PromptEvent]
 inputEvents =
@@ -36,7 +36,7 @@ inputEvents =
 
 mkEntry :: CommandId -> HistoryEntry
 mkEntry n =
-  HistoryEntry (Command.cons (CommandInterpreter.System Nothing) n mempty) Nothing
+  simpleHistoryEntry (Command.cons (CommandInterpreter.System Nothing) n mempty)
 
 initialHistory :: [HistoryEntry]
 initialHistory =
@@ -87,7 +87,7 @@ historyEdit ::
   Sem r [HistoryEntry]
 historyEdit = do
   compiled <- fromEither (first (TestError . show) (compileTemplateWith tpl mempty params))
-  pure [HistoryEntry cmd (Just (ExecutionParams exeId compiled params))]
+  pure [HistoryEntry cmd (ExecutionParams exeId compiled params)]
   where
     cmd = Command.consSpec (CommandInterpreter.Vim False Nothing) "1" spec
     spec = CommandSpec tpl (coerce params)
