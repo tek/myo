@@ -27,7 +27,7 @@ jobs:
         run: |
           nix -L build
           nix -L build .#min
-          cp $(nix build .#appimage) myo
+          cp $(nix run .#appimage) myo
       - uses: 'marvinpinto/action-automatic-releases@latest'
         name: 'create release'
         with:
