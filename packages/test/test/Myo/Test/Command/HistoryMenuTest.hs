@@ -19,7 +19,7 @@ import qualified Myo.Command.Data.HistoryEntry
 import Myo.Command.Data.HistoryEntry (ExecutionParams (ExecutionParams), HistoryEntry (HistoryEntry))
 import Myo.Command.Data.Param (ParamDefault (ParamDefault), ParamValues)
 import Myo.Command.Data.RunError (RunError)
-import Myo.Command.Edit (editHistoryEntryMenu, handleAction)
+import Myo.Command.Edit (editHistoryEntry)
 import Myo.Command.HistoryMenu (HistoryAction (Edit, Run), historyMenu)
 import Myo.Command.Interpreter.Backend.Vim (interpretBackendVim)
 import Myo.Data.CommandId (CommandId (CommandId))
@@ -130,7 +130,6 @@ test_historyMenuEdit =
     editWith events = do
       Success (Edit i) <- promptInput [Mapping "e"] do
         historyMenu
-      (entry, action) <- promptInput events do
-        editHistoryEntryMenu i
-      handleAction entry action
+      promptInput events do
+        editHistoryEntry i
       nvimGetVar "command"

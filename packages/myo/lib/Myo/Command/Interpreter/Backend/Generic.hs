@@ -1,5 +1,7 @@
 module Myo.Command.Interpreter.Backend.Generic where
 
+import Conc (interpretAtomic)
+
 import qualified Myo.Command.Data.RunError as RunError
 import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Data.RunTask (RunTask)
@@ -50,3 +52,17 @@ captureUnsupported ::
   Sem r ()
 captureUnsupported name _ =
   stop (RunError.Unsupported name "capture")
+
+interpretBackendTrace ::
+  Members [Backend !! RunError, AtomicState [RunTask]] r =>
+  Sem r a ->
+  Sem r a
+interpretBackendTrace =
+  interceptBackend (pure . Just) (atomicModify' . (:)) (captureUnsupported "trace") unit
+
+withBackendTrace ::
+  Members [Backend !! RunError, Embed IO] r =>
+  InterpreterFor (AtomicState [RunTask]) r
+withBackendTrace =
+  interpretAtomic [] .
+  interpretBackendTrace

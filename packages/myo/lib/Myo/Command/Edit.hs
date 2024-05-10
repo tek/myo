@@ -57,6 +57,8 @@ import Myo.Command.Data.RunError (RunError)
 import Myo.Command.Edit.Syntax (editSyntax)
 import Myo.Command.Run (reRun, runCommand)
 import Myo.Data.CommandId (CommandId (CommandId))
+import qualified Myo.Effect.Commands as Commands
+import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller)
 import qualified Myo.Effect.History as History
 import Myo.Effect.History (History)
@@ -68,7 +70,7 @@ data EditItem =
   deriving stock (Eq, Show, Generic)
 
 data EditAction =
-  Run
+  Run { history :: Bool }
   |
   Save
   deriving stock (Eq, Show, Generic)
@@ -87,10 +89,10 @@ data LayoutParams =
   }
   deriving stock (Eq, Show, Generic)
 
-paramValues :: HistoryEntry -> [(ParamId, ParamValue)]
+paramValues :: HistoryEntry -> ParamValues
 paramValues = \case
-  HistoryEntry {execution = Just exe} -> Map.toList exe.params
-  HistoryEntry {command} -> Map.toList (coerce <$> command.cmdLines.params)
+  HistoryEntry {execution = Just exe} -> exe.params
+  HistoryEntry {command} -> coerce command.cmdLines.params
 
 paramItem :: LayoutParams -> ParamId -> ParamValue -> MenuItem EditItem
 paramItem params (ParamId i) v =
@@ -109,8 +111,8 @@ cmdlineItem LayoutParams {width, single} index cline =
     indexIndicator | single = ""
                    | otherwise = [exon| #{show index}|]
 
-editItems :: HistoryEntry -> ([MenuItem EditItem], LayoutParams)
-editItems entry =
+menuItems :: Command -> ParamValues -> ([MenuItem EditItem], LayoutParams)
+menuItems command (Map.toList -> values) =
   (its, params)
   where
     its =
@@ -126,14 +128,12 @@ editItems entry =
     cmdlineWidth | single = 7
                  | otherwise = 9
 
-    cmdlines = entry.command.cmdLines.template.rendered
+    cmdlines = command.cmdLines.template.rendered
 
     valueWidths = values <&> \ (ParamId i, _) -> Text.length i
 
-    values = paramValues entry
-
-editCompiledItems :: [Text] -> ([MenuItem EditItem], LayoutParams)
-editCompiledItems cmdlines =
+menuItems_compiled :: [Text] -> ([MenuItem EditItem], LayoutParams)
+menuItems_compiled cmdlines =
   (reverse (zipWith (cmdlineItem params) [0..] cmdlines), params)
   where
     params = LayoutParams {..}
@@ -237,25 +237,25 @@ runAction ::
   Bool ->
   Sem r ()
 runAction command newParams action changed
-  | Run <- action
-  , changed
-  = runCommand command newParams Nothing
-  | Run <- action
+  | Run { history = True } <- action
+  , not changed
   = reRun (Left command.ident) (Just newParams) Nothing
+  | Run {} <- action
+  = runCommand command newParams Nothing
   | otherwise
   = stop (Misc "Save not implemented")
 
 handleAction ::
   Members [Controller !! RunError, History !! RunError, Input Ident, Stop CommandError, Stop Report] r =>
-  HistoryEntry ->
+  Command ->
   MenuResult EditResult ->
   Sem r ()
-handleAction entry = \case
+handleAction command = \case
   Success (EditResult action newItems) -> do
     (newTemplate, newParams) <- stopEitherWith (InvalidTemplate True (show newItems)) (newCommandSpec newItems)
-    updateCommand newTemplate entry.command >>= \case
+    updateCommand newTemplate command >>= \case
       Just newCommand -> runAction newCommand newParams action True
-      Nothing -> runAction entry.command newParams action False
+      Nothing -> runAction command newParams action False
   Aborted ->
     unit
   Error err ->
@@ -277,51 +277,58 @@ type EditMenuStack =
 
 app ::
   Member ReportLog r =>
+  Bool ->
   LayoutParams ->
   MenuApp (ModalState EditItem) r EditResult
-app params =
+app history params =
   [
-    (withInsert "<cr>", finish params Run),
+    (withInsert "<cr>", finish params (Run history)),
     (withInsert "<c-s>", finish params Save),
     (notPrompt "e", edit),
     (onlyPrompt "<esc>", update params)
   ]
 
--- TODO edit also runner and other options?
-editHistoryEntryMenu ::
+editCommandItems ::
   Members EditMenuStack r =>
-  CommandId ->
-  Sem r (HistoryEntry, MenuResult EditResult)
-editHistoryEntryMenu cid = do
-  entry <- restop (History.queryId cid)
-  let (its, params) = editItems entry
-  result <- staticWindowMenu its def opts (app params)
-  pure (entry, result)
+  Bool ->
+  [MenuItem EditItem] ->
+  LayoutParams ->
+  Sem r (MenuResult EditResult)
+editCommandItems history its params =
+  staticWindowMenu its def opts (app history params)
   where
     opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
     name = "myo-command-edit"
+
+-- TODO edit also runner and other options?
+editCommandMenu ::
+  Members EditMenuStack r =>
+  Bool ->
+  Command ->
+  ParamValues ->
+  Sem r (MenuResult EditResult)
+editCommandMenu history command values = do
+  let (its, params) = menuItems command values
+  editCommandItems history its params
+
+editCommand ::
+  Members EditMenuStack r =>
+  Member (Commands !! CommandError) r =>
+  CommandId ->
+  Sem r ()
+editCommand cid = do
+  command <- restop (Commands.queryId cid)
+  result <- editCommandMenu False command (coerce command.cmdLines.params)
+  handleAction command result
 
 editHistoryEntry ::
   Members EditMenuStack r =>
   CommandId ->
   Sem r ()
 editHistoryEntry cid = do
-  (entry, result) <- editHistoryEntryMenu cid
-  handleAction entry result
-
-editHistoryEntryCompiledMenu ::
-  Members EditMenuStack r =>
-  CommandId ->
-  [Text] ->
-  Sem r (HistoryEntry, MenuResult EditResult)
-editHistoryEntryCompiledMenu cid cmdlines = do
   entry <- restop (History.queryId cid)
-  result <- staticWindowMenu its def opts (app params)
-  pure (entry, result)
-  where
-    (its, params) = editCompiledItems cmdlines
-    opts = def & #items .~ (scratch (ScratchId name) & #filetype ?~ name & #syntax .~ [editSyntax])
-    name = "myo-command-edit"
+  result <- editCommandMenu True entry.command (paramValues entry)
+  handleAction entry.command result
 
 editHistoryEntryCompiled ::
   Members EditMenuStack r =>
@@ -329,5 +336,7 @@ editHistoryEntryCompiled ::
   [Text] ->
   Sem r ()
 editHistoryEntryCompiled cid cmdlines = do
-  (entry, result) <- editHistoryEntryCompiledMenu cid cmdlines
-  handleAction entry result
+  entry <- restop (History.queryId cid)
+  let (its, params) = menuItems_compiled cmdlines
+  result <- editCommandItems True its params
+  handleAction entry.command result

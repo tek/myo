@@ -1,15 +1,19 @@
 module Myo.Command.CommandMenu where
 
+import Chiasma.Data.Ident (Ident)
 import Exon (exon)
 import Ribosome (Handler, ReportLog, Rpc, RpcError, ScratchId (ScratchId), mapReports, resumeReports, scratch)
 import Ribosome.Menu (
   MenuItem,
   MenuResult (Error, Success),
+  MenuWidget,
+  ModalState,
   ModalWindowMenus,
   WindowMenu,
   simpleMenuItem,
   staticWindowMenu,
   withFocus,
+  withInsert,
   )
 
 import qualified Myo.Command.Data.Command as Command
@@ -18,11 +22,19 @@ import qualified Myo.Command.Data.CommandError as CommandError
 import Myo.Command.Data.CommandError (CommandError)
 import Myo.Command.Data.CommandSpec (renderCommandSpec)
 import Myo.Command.Data.RunError (RunError)
+import Myo.Command.Edit (EditItem, editCommand)
 import Myo.Command.Run (runIdentAsync)
 import Myo.Data.CommandId (CommandId)
 import qualified Myo.Effect.Commands as Commands
 import Myo.Effect.Commands (Commands)
 import Myo.Effect.Controller (Controller)
+import Myo.Effect.History (History)
+
+data CommandAction =
+  Run CommandId
+  |
+  Edit CommandId
+  deriving stock (Eq, Show, Generic)
 
 cmdlineItem :: Maybe CommandId -> Command -> Maybe [Text] -> MenuItem CommandId
 cmdlineItem idOverride command compiled =
@@ -54,28 +66,43 @@ type CommandMenuStack ui =
     Log
   ]
 
+run :: MenuWidget (ModalState CommandId) r CommandAction
+run = withFocus \ i -> pure (Run i)
+
+edit :: MenuWidget (ModalState CommandId) r CommandAction
+edit = withFocus \ i -> pure (Edit i)
+
 commandMenu ::
   Members (CommandMenuStack ui) r =>
   Members [Stop CommandError, Stop RpcError] r =>
-  Sem r (MenuResult CommandId)
+  Sem r (MenuResult CommandAction)
 commandMenu = do
   items <- commandItems
-  staticWindowMenu items def opts [("<cr>", withFocus pure)]
+  staticWindowMenu items def opts actions
   where
     opts =
       def & #items .~ (scratch (ScratchId name) & #filetype ?~ name)
     name =
       "myo-commands"
 
+    actions =
+      [
+        (withInsert "<cr>", withFocus (pure . Run)),
+        ("e", edit)
+      ]
+
 myoCommands ::
   Members (CommandMenuStack WindowMenu) r =>
-  Members [Controller !! RunError, ReportLog, Async] r =>
+  Members [ModalWindowMenus EditItem !! RpcError, ReportLog, History !! RunError] r =>
+  Members [Controller !! RunError, Input Ident, Async] r =>
   Handler r ()
 myoCommands =
-  resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError] do
+  resumeReports @[Controller, Rpc] @[_, _] $ mapReports @[RpcError, CommandError, RunError] do
     commandMenu >>= \case
-      Success ident ->
+      Success (Run ident) ->
         runIdentAsync ident mempty
+      Success (Edit ident) ->
+        editCommand ident
       Error err ->
         stop (CommandError.Misc err)
       _ ->
