@@ -170,7 +170,11 @@ compileSegments resolve =
             pid = paramTagId ptag
 
         dynamic :: ∀ x . ParamTag x -> Text -> Sem r Text
-        dynamic ptag value = do
+        dynamic ptag value
+          | "" <- value
+          = pure ""
+          | otherwise
+          = do
           let err = TemplateError.DynamicParseError (Some ptag)
           nestedSegments <- stopEitherWith err (parseCommandSegments value)
           let present = collectParams nestedSegments
