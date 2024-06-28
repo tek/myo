@@ -64,11 +64,12 @@ commandEdit =
   Command.consSpec (CommandInterpreter.System Nothing) "1" spec
   where
     spec = CommandSpec tpl (coerce params)
-    tpl = parseCommandTemplate' ["{par1} {par2}"]
+    tpl = parseCommandTemplate' ["{par1} {par2}{par4:sub}"]
 
 editEvents :: [PromptEvent]
 editEvents =
   [
+    Mapping "k",
     Mapping "k",
     Mapping "e",
     Update "nest: {par3}",

@@ -104,7 +104,9 @@ compileParam lookup noParam dynamic sub ptag seg = do
     (ParamOptional, UndefinedParam) -> pure ""
     (ParamOptional, DefinedParam t) -> dynamic ptag t
     (ParamTemplate _, UndefinedParam) -> pure ""
-    (ParamTemplate _, DefinedParam _) -> sub
+    (ParamTemplate _, DefinedParam t)
+      | Text.null t -> pure ""
+      | otherwise -> sub
     (ParamFlagTemplate _, UndefinedParam) -> pure ""
     (ParamFlagTemplate _, DefinedParam True) -> sub
     (ParamFlagTemplate _, DefinedParam False) -> pure ""
