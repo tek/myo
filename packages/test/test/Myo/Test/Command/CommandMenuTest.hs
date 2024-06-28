@@ -54,7 +54,7 @@ test_commandMenu =
     ("c2" :: Text) === value
 
 params :: ParamValues
-params = [("par1", "value 1"), ("par2", "value 2"), ("par3", "value 3")]
+params = [("par2", "value 2"), ("par3", "value 3")]
 
 exeId :: CommandId
 exeId = CommandId (Str "exe1")
@@ -64,7 +64,7 @@ commandEdit =
   Command.consSpec (CommandInterpreter.System Nothing) "1" spec
   where
     spec = CommandSpec tpl (coerce params)
-    tpl = parseCommandTemplate' ["garbage"]
+    tpl = parseCommandTemplate' ["{par1} {par2}"]
 
 editEvents :: [PromptEvent]
 editEvents =
@@ -74,9 +74,9 @@ editEvents =
     Update "nest: {par3}",
     Mapping "<esc>",
     Mapping "k",
-    Mapping "k",
     Mapping "e",
-    Update "{par1} {par2}",
+    Update "value 1",
+    Mapping "<esc>",
     Mapping "<cr>"
   ]
 

@@ -17,6 +17,7 @@ import Myo.Command.Data.Param (
   ParamValue (..),
   ParamValues,
   otherParamTag,
+  paramTagId,
   )
 import qualified Myo.Command.Data.TemplateError as TemplateError
 import Myo.Command.Data.TemplateError (TemplateError)
@@ -31,17 +32,39 @@ toDefinedParams :: ParamValues -> DefinedParams
 toDefinedParams values =
   DMap.fromList (uncurry toDefinedParam <$> Map.toList values)
 
-definedValues :: DefinedParams -> ParamValues
-definedValues =
+toValue ::
+  (∀ x . ParamTag x -> Maybe x) ->
+  ParamTag a ->
+  DefinedParam a ->
+  Maybe ParamValue
+toValue undef t = \case
+  DefinedParam a -> Just (mk a)
+  UndefinedParam -> mk <$> undef t
+  where
+    mk = case t of
+      ParamText _ -> ParamValue
+      ParamBool _ -> ParamFlag
+
+toValues ::
+  (∀ x . ParamTag x -> Maybe x) ->
+  DefinedParams ->
+  ParamValues
+toValues undef =
   Map.fromList .
   mapMaybe convert .
   DMap.toList
   where
     convert :: DSum ParamTag DefinedParam -> Maybe (ParamId, ParamValue)
-    convert = \case
-      ParamText pid :=> DefinedParam a -> Just (ParamId pid, ParamValue a)
-      ParamBool pid :=> DefinedParam a -> Just (ParamId pid, ParamFlag a)
-      _ -> Nothing
+    convert (key :=> value) = (paramTagId key,) <$> toValue undef key value
+
+definedValues :: DefinedParams -> ParamValues
+definedValues = toValues (const Nothing)
+
+valuesOrEmpty :: DefinedParams -> ParamValues
+valuesOrEmpty =
+  toValues $ Just . \case
+    ParamText _ -> ""
+    ParamBool _ -> False
 
 newParamEnv ::
   Member (Stop TemplateError) r =>

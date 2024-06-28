@@ -30,7 +30,7 @@ import Myo.Command.Data.Param (
   ParamEnv (ParamEnv),
   ParamId (..),
   ParamTag (ParamBool, ParamText),
-  ParamValue (ParamFlag, ParamValue),
+  ParamValue,
   ParamValues,
   paramTagId,
   paramTagName,
@@ -41,7 +41,7 @@ import Myo.Command.Data.RunError (RunError)
 import qualified Myo.Command.Data.TemplateError as TemplateError
 import Myo.Command.Data.TemplateError (TemplateError)
 import Myo.Command.Optparse (OptparseArgs)
-import Myo.Command.Param (definedValues, newParamEnv, resolveParamEnv)
+import Myo.Command.Param (definedValues, newParamEnv, resolveParamEnv, valuesOrEmpty)
 
 foldSegments ::
   ∀ m a .
@@ -77,6 +77,9 @@ collectParams =
       ParamFlagTemplate _ -> ParamBool pid :=> UndefinedParam
       _ -> ParamText pid :=> UndefinedParam
 
+collectParamValuesOrEmpty :: NonEmpty CommandSegment -> ParamValues
+collectParamValuesOrEmpty = valuesOrEmpty . collectParams
+
 data ParamTask =
   ParamTask {
     pid :: ParamId,
@@ -105,13 +108,6 @@ compileParam lookup noParam dynamic sub ptag seg = do
     (ParamFlagTemplate _, UndefinedParam) -> pure ""
     (ParamFlagTemplate _, DefinedParam True) -> sub
     (ParamFlagTemplate _, DefinedParam False) -> pure ""
-
-toValues :: DefinedParams -> Map ParamId ParamValue
-toValues ps =
-  Map.fromList $ catMaybes $ DMap.toList ps <&> \case
-    _ :=> UndefinedParam -> Nothing
-    ParamText pid :=> DefinedParam value -> Just (ParamId pid, ParamValue value)
-    ParamBool pid :=> DefinedParam value -> Just (ParamId pid, ParamFlag value)
 
 internalError ::
   Member (Stop TemplateError) r =>
@@ -213,7 +209,6 @@ compileTemplateWith CommandTemplate {segments} defs params = do
   run $ runStop do
     initialEnv <- newParamEnv defs params Nothing present
     resolvedEnv <- resolveParamEnv resolve present initialEnv
-    -- definedParams <- stopEither (resolveParamsPure params present)
     evalState resolvedEnv (traverse (compileSegments resolve) segments)
   where
     present = foldMap collectParams segments

@@ -36,6 +36,7 @@ import Ribosome.Menu.Prompt (PromptControl (PromptControlApp))
 import qualified Ribosome.Menu.Prompt.Data.Prompt
 import qualified Ribosome.Report as Report
 
+import Myo.Command.CommandSpec (collectParamValuesOrEmpty)
 import qualified Myo.Command.Data.Command
 import Myo.Command.Data.Command (Command)
 import Myo.Command.Data.CommandError (CommandError (InvalidTemplate, Misc))
@@ -111,14 +112,14 @@ cmdlineItem LayoutParams {width, single} index cline =
                    | otherwise = [exon| #{show index}|]
 
 menuItems :: Command -> ParamValues -> ([MenuItem EditItem], LayoutParams)
-menuItems command (Map.toList -> values) =
-  (its, params)
+menuItems command givenValues =
+  (its, layoutParams)
   where
     its =
-      reverse (uncurry (paramItem params) <$> values) <>
-      reverse (zipWith (cmdlineItem params) [0..] cmdlines)
+      reverse (uncurry (paramItem layoutParams) <$> values) <>
+      reverse (zipWith (cmdlineItem layoutParams) [0..] cmdlines)
 
-    params = LayoutParams {..}
+    layoutParams = LayoutParams {..}
 
     single = length cmdlines == 1
 
@@ -130,6 +131,10 @@ menuItems command (Map.toList -> values) =
     cmdlines = command.cmdLines.template.rendered
 
     valueWidths = values <&> \ (ParamId i, _) -> Text.length i
+
+    values = Map.toList (givenValues <> tparams)
+
+    tparams = foldMap collectParamValuesOrEmpty command.cmdLines.template.segments
 
 menuItems_compiled :: [Text] -> ([MenuItem EditItem], LayoutParams)
 menuItems_compiled cmdlines =
@@ -170,7 +175,7 @@ tryUpdate ::
   MenuSem (ModalState EditItem) r Bool
 tryUpdate params = do
   PromptText newValue <- asks (.prompt.text)
-  result <- modifyFocus' \ old@Entry {..} -> do
+  result <- modifyFocus' \ old@Entry {..} ->
     case updateItem params newValue item of
       Right new -> (Entry {item = new, ..}, Nothing)
       Left err -> (old, Just err)
