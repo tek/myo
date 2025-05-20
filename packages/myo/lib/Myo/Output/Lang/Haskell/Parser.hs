@@ -125,7 +125,7 @@ locationHeader =
     tpe =
       choice [EventType.Error <$ stringAcrossNl "error", EventType.Warning <$ stringAcrossNl "warning"] <* trailing
     trailing =
-      ws *> colon *> ws *> skipOptional (brackets (many $ noneOf "]")) *> ws
+      ws *> colon *> ws *> skipMany (brackets (many $ noneOf "]")) *> ws
 
 dot :: CharParsing m => m Char
 dot =

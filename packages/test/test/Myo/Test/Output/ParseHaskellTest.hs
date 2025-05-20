@@ -38,7 +38,7 @@ haskellOutput =
     "19 | makeSomething :: Text -> [Something]",
     "   |                             ^^^^^^^^^",
     "",
-    "/path/to/Module/File.hs:2:77: warning: [-Wmissing-methods]",
+    "/path/to/Module/File.hs:2:77: warning: [GHC-12345] [-Wmissing-methods]",
     "    • No explicit implementation for",
     "        ‘meth’",
     "    • In the instance declaration for ‘Closs Int’",
