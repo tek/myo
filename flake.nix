@@ -119,6 +119,15 @@
         ];
       };
 
+      executables.space-test = {
+        enable = true;
+        source-dirs = "benchmark";
+        dependencies = [
+          "myo"
+        ];
+        ghc-options-exe = ["-threaded" "-rtsopts" "\"-with-rtsopts=-T -N\""];
+      };
+
     };
 
     main = "myo";
@@ -129,6 +138,13 @@
     cachixKey = "tek.cachix.org-1:+sdc73WFq8aEKnrVv5j/kuhmnW2hQJuqdPJF5SnaCBk=";
 
     envs.dev.buildInputs = with config.pkgs; [pkgs.neovim pkgs.tmux pkgs.socat];
+
+    outputs.checks.space = let
+      pkg = config.pkgs.haskell.lib.dontCheck config.outputs.packages.myo-test;
+    in config.pkgs.runCommand "myo-space-check" {} ''
+      ${pkg}/bin/space-test
+      touch $out
+    '';
 
     outputs.apps.myo = {
       type = "app";

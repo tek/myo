@@ -1,12 +1,11 @@
 module Myo.Command.Data.CommandOutput where
 
-import Data.ByteString.Builder (Builder)
 import qualified Data.Text as Text
 
 data OutputChunks =
   OutputChunks {
     chunks :: Seq ByteString,
-    size :: Int
+    size :: !Int
   }
   deriving stock (Eq, Show)
 
@@ -37,8 +36,8 @@ currentEmpty = \case
 
 data CommandOutput =
   CommandOutput {
-    prev :: Maybe (Either Text Builder),
-    current :: CurrentOutput
+    prev :: !(Maybe Text),
+    current :: !CurrentOutput
   }
   deriving stock (Generic)
 

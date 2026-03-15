@@ -25,6 +25,59 @@ source-repository head
   type: git
   location: https://github.com/tek/myo
 
+executable space-test
+  main-is: Main.hs
+  hs-source-dirs:
+      benchmark
+  default-extensions:
+      AllowAmbiguousTypes
+      ApplicativeDo
+      BlockArguments
+      DataKinds
+      DefaultSignatures
+      DeriveAnyClass
+      DerivingStrategies
+      DerivingVia
+      DisambiguateRecordFields
+      DuplicateRecordFields
+      FunctionalDependencies
+      GADTs
+      LambdaCase
+      LiberalTypeSynonyms
+      MonadComprehensions
+      MultiWayIf
+      OverloadedLabels
+      OverloadedLists
+      OverloadedStrings
+      PackageImports
+      PartialTypeSignatures
+      PatternSynonyms
+      QuantifiedConstraints
+      QuasiQuotes
+      RecordWildCards
+      RecursiveDo
+      RoleAnnotations
+      TemplateHaskell
+      TypeFamilies
+      TypeFamilyDependencies
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+      OverloadedRecordDot
+      NoFieldSelectors
+  ghc-options: -fplugin=Polysemy.Plugin -threaded -rtsopts "-with-rtsopts=-T -N" -Wall -Widentities -Wincomplete-uni-patterns -Wmissing-deriving-strategies -Wredundant-constraints -Wunused-type-patterns -Wunused-packages
+  build-depends:
+      base ==4.*
+    , myo
+    , polysemy
+    , polysemy-plugin
+    , prelate >=0.6 && <0.8
+  mixins:
+      base hiding (Prelude)
+    , prelate (Prelate as Prelude)
+    , prelate hiding (Prelate)
+  default-language: GHC2021
+
 test-suite myo-test-test
   type: exitcode-stdio-1.0
   main-is: Main.hs

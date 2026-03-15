@@ -18,14 +18,13 @@ truncOutputChunks ::
   Int ->
   OutputChunks ->
   OutputChunks
-truncOutputChunks maxSize =
-  spin
-  where
-    spin = \case
-      OutputChunks {chunks = h :<| t, size} | size > maxSize ->
-        spin OutputChunks { chunks = t, size = size - ByteString.length h }
-      c ->
-        c
+truncOutputChunks maxSize OutputChunks {chunks, size}
+  | size <= maxSize =
+    OutputChunks {chunks, size}
+  | otherwise =
+    case chunks of
+      h :<| t -> truncOutputChunks maxSize OutputChunks {chunks = t, size = size - ByteString.length h}
+      _ -> OutputChunks {chunks, size}
 
 trunc1 ::
   Int ->
@@ -92,18 +91,18 @@ buildCurrent CommandOutput {current, ..} =
     new =
       case current of
         Unbuilt c -> buildChunks c
-        PartiallyBuilt c t -> buildChunks c <> t
+        PartiallyBuilt c t -> t <> buildChunks c
         Built t -> t
 
 buildPrev :: CommandOutput -> Maybe Text
 buildPrev =
-  fmap (either id build) . (.prev)
+  (.prev)
 
-currentToPrev :: CurrentOutput -> Either Text Builder
+currentToPrev :: CurrentOutput -> Text
 currentToPrev = \case
-  Unbuilt s -> Right (builder s)
-  Built t -> Left t
-  PartiallyBuilt s t -> Left (t <> buildChunks s)
+  Unbuilt s -> buildChunks s
+  Built t -> t
+  PartiallyBuilt s t -> t <> buildChunks s
 
 archive :: CommandOutput -> CommandOutput
 archive CommandOutput {..}
@@ -111,7 +110,7 @@ archive CommandOutput {..}
     CommandOutput {..}
   | otherwise =
     CommandOutput {
-      prev = Just (currentToPrev current),
+      prev = Just $! currentToPrev current,
       current = def
     }
 
